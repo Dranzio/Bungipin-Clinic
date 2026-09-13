@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="../output.css" rel="stylesheet">
+    <title>Register</title>
+</head>
+<body class="min-h-screen bg-[#A2AC89]">
+<div class="relative min-h-screen">
+
+    <!-- Mobile register design format-->
+<div class="flex flex-col items-center lg:block">
+  <img
+    src="../images/logowithtitle.png"
+    class="lg:hidden w-[45%] max-w-[220px] mt-4 mb-2 animate-slideInLeft"/>
+<a href="login.html" class="lg:hidden bg-[#D5C04D] text-sm font-bold text-[#2A1001] px-6 py-2 rounded-full hover:bg-[#FDFCE9] transition duration-300 mb-4 animate-slideInLeft">
+    Back to Login</a>
+</div>
+<!-- Desktop register design format-->
+<div class="hidden lg:flex absolute right-0 top-0 h-full w-[40%] flex-col items-center justify-center z-20 gap-8">
+  <img
+    src="../images/logowithtitle.png"
+    class="w-[70%] max-w-[500px] pointer-events-none select-none drop-shadow-xl animate-slideInLeft"/>
+  <a href="login.html" class="z-30 bg-[#D5C04D] text-sm md:text-base font-bold text-[#2A1001] px-6 py-2 rounded-full animate-slideInLeft
+                transition-all duration-200 ease-in-out 
+               hover:scale-105 hover:bg-[#FDFCE9] hover:shadow-xl
+               active:scale-95 active:bg-[#c2ae3b]">
+    Back to Login
+  </a>
+
+</div>
+
+<!--Code to make the entire page responsive-->
+<div class="mx-4 mt-4 mb-4 md:mx-0 md:mt-0 md:mb-0 md:w-[60%] md:min-h-screen bg-[#D3DCBE]
+            rounded-[30px] md:rounded-none md:rounded-tr-[116px] md:rounded-br-[116px]
+            pt-8 pb-12 px-6 md:pt-11 md:pb-20 md:px-16
+            flex flex-col relative z-10 animate-slideInLeft">
+
+<!--Form Registration-->
+    <form  id="registerForm" action="#" method="POST">
+
+        <h1 class="text-2xl sm:text-3xl md:text-5xl 2xl:text-[73px] font-bold text-[#2A1001] font-['Poppins'] text-left">REGISTER</h1>
+        <p class="mt-3 text-sm text-left text-[#2A1001] font-['Poppins'] pb-6 md:pb-10">
+        Let’s get you all set up to begin your journey with Bungipin Dental Clinic!
+        </p>
+
+        <!--All are required to be filled up-->
+<!--Input fields are in separate containers by twos to format them by twos-->    
+<div class="flex flex-col sm:flex-row gap-4">
+  <div class="flex-1">
+    <label class="text-sm md:text-[20px] block font-semibold text-[#2A1001] font-poppins mb-2">First Name:</label>
+    <input type="text" id="first_name" required class="w-full h-8 md:h-11 px-4 bg-white outline-none rounded-[30px] mb-4 md:mb-12" placeholder="First Name" />
+  </div>
+
+  <div class="flex-1">
+    <label class="text-sm md:text-[20px] block font-semibold text-[#2A1001] font-poppins mb-2">Last Name:</label>
+    <input type="text" id="last_name" required class="w-full h-8 md:h-11 px-4 bg-white outline-none rounded-[30px] mb-4 md:mb-12" placeholder="Last Name" />
+  </div>
+</div>
+
+<!--Input fields are in separate containers by twos to format them by twos--> 
+<div class="flex flex-col sm:flex-row gap-4">
+  <div class="flex-1">
+    <label class="text-sm md:text-[20px] block font-semibold text-[#2A1001] font-poppins mb-2">Email:</label>
+    <input type="email" id="email" required class="w-full h-8 md:h-11 px-4 bg-white outline-none rounded-[30px] mb-4 md:mb-12" placeholder="Email" />
+  </div>
+
+
+  <div class="flex-1">
+    <label class="text-sm md:text-[20px] block font-semibold text-[#2A1001] font-poppins mb-2">Phone Number:</label>
+    <input type="tel" id="phone" required pattern="[0-9]{10,15}" class="w-full h-8 md:h-11 px-4 bg-white outline-none rounded-[30px] mb-4 md:mb-12" placeholder="Phone Number" />
+  </div>
+</div>
+
+<!--Input fields are in separate containers by twos to format them by twos--> 
+<!--Password and confirm password fields has input validation that requires them to match-->
+<div class="flex flex-col sm:flex-row gap-4">
+  <div class="flex-1">
+    <label class="text-sm md:text-[20px] block font-semibold text-[#2A1001] font-poppins mb-2">Password:</label>
+    <input type="password" id="password_hash" required minlength="8" class="w-full h-8 md:h-11 px-4 bg-white outline-none rounded-[30px] mb-4 md:mb-12" placeholder="Password" />
+  </div>
+
+
+  <div class="flex-1">
+    <label class="text-sm md:text-[20px] block font-semibold text-[#2A1001] font-poppins mb-2">Confirm Password:</label>
+    <input type="password" id="confirm_password" required minlength="8" class="w-full h-8 md:h-11 px-4 bg-white outline-none rounded-[30px] mb-4 md:mb-12" placeholder="Confirm Password"
+     oninput="this.setCustomValidity(this.value !== document.getElementById('password_hash').value ? 'Passwords do not match.' : '')" />
+    
+  </div>
+</div>
+
+<div class="flex items-center gap-6 mb-6 md:mb-12">
+  <label class="text-sm md:text-[20px] font-semibold text-[#2A1001] font-poppins whitespace-nowrap">Sex:</label>
+
+  <div class="flex items-center gap-6">
+    <label class="flex items-center gap-2 text-sm md:text-base text-[#2A1001] font-poppins cursor-pointer">
+      <input type="radio" id="male" name="sex" value="male" required class="w-4 h-4 accent-[#2A1001]" />
+      Male
+    </label>
+    <label class="flex items-center gap-2 text-sm md:text-base text-[#2A1001] font-poppins cursor-pointer">
+      <input type="radio" id="female" name="sex" value="female" class="w-4 h-4 accent-[#2A1001]" />
+      Female
+    </label>
+  </div>
+</div>
+
+<div class="flex justify-center">
+    <button type="submit" class="w-1/4 mx-4 bg-[#D5C04D] text-sm md:text-[20px] font-bold text-[#2A1001] py-2 rounded-full shadow-lg
+               transition-all duration-200 ease-in-out 
+               hover:scale-105 hover:bg-[#FDFCE9] hover:shadow-xl
+               active:scale-95 active:bg-[#c2ae3b]">
+        Create Account
+    </button>
+</div>
+
+
+<div class="flex items-start gap-2 mb-6 md:mb-8 flex justify-center">
+<input
+  type="checkbox"
+  id="terms"
+  required
+  class="w-4 h-4 mt-1 accent-[#2A1001] cursor-pointer"
+  oninvalid="this.setCustomValidity('Please agree to the Terms and Conditions before creating an account.')"
+  oninput="this.setCustomValidity('')"
+/>
+  <label for="terms" class="text-sm md:text-base text-[#2A1001] font-poppins cursor-pointer">
+    I agree to the <a href="#" class="text-blue-500 hover:underline">Terms and Conditions</a> and <a href="#" class="text-blue-500 hover:underline">Privacy Policy</a>
+  </label>
+</div>
+</form>
+<div id="successMessage" class="hidden text-center mt-4 p-4 bg-green-100 border border-green-400 text-green-800 rounded-2xl font-poppins">
+    Account created successfully!
+</div>
+</div>
+
+
+
+<script>
+  const form = document.getElementById('registerForm');
+  const password = document.getElementById('password_hash'); 
+  const confirmPassword = document.getElementById('confirm_password');
+  const successMessage = document.getElementById('successMessage');
+
+  form.addEventListener('submit', function (e) {
+
+    e.preventDefault(); 
+
+
+    if (password.value !== confirmPassword.value) {
+      confirmPassword.setCustomValidity('Passwords do not match.');
+      confirmPassword.reportValidity();
+      return; 
+    } else {
+      confirmPassword.setCustomValidity('');
+    }
+
+
+    form.reset();
+
+   
+    successMessage.classList.remove('hidden');
+    successMessage.style.display = 'block';
+
+    setTimeout(() => {
+      successMessage.classList.add('hidden');
+      successMessage.style.display = 'none';
+    }, 4000);
+  });
+
+  confirmPassword.addEventListener('input', function() {
+    if (password.value === confirmPassword.value) {
+      confirmPassword.setCustomValidity('');
+    }
+  });
+</script>
+</body>
+</html>
