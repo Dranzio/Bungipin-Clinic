@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="../output.css" rel="stylesheet">
+    <title>Booking Request</title>
+</head>
+
+<!--Header title with logo image-->
+<body class="min-h-screen bg-[#F3EFE4] relative">
+    <div class="flex justify-between items-start pt-5 pl-6 pr-4 md:pl-24 md:pr-8">
+            <h1 class="text-2xl sm:text-3xl md:text-5xl 2xl:text-[73px] pt-5 font-bold text-[#2A1001] font-['Poppins']">
+            Booking Request
+        </h1>
+        <img
+            src="../images/logowithtitle.png"
+            class="w-20 sm:w-24 md:w-28 h-auto object-contain shrink-0"
+            alt="Logo"/>
+    </div>
+    </div>
+   <hr class="border-t border-[#2A1001] mt-2 mb-6" />
+
+          <!--search and filter tabs -->
+        <div class="flex w-full justify-center gap-3">
+             <input
+                type="text"
+                    id="searchInput"
+                    placeholder="Search by name..."
+                    class="h-10 w-full max-w-md rounded-full border border-[#2A1001]/20 bg-white px-4 mb-6 outline-none"
+            />
+
+        </div>
+
+        <!-- BOOKING CARDS -->
+        <div id="booking-container" class="space-y-4 mb-10 w-full md:w-[90%] mx-auto">
+            <!-- cards injected by JS -->
+        </div>
+
+    </div>
+
+</div>
+
+<div id="declineModal" class="hidden fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+    <div class="bg-[#FFFFFF] rounded-3xl w-full max-w-sm p-8 text-center border-2">
+        <h2 class="text-xl font-bold text-[#2A1001] font-['Poppins'] mb-2">Decline Booking?</h2>
+        <p class="text-sm text-[#2A1001]/70 mb-6" id="declineModalText"></p>
+                <!-- Shown only if patient already paid -->
+        <div id="paidWarning" class="hidden bg-[#FDF3D6] border border-[#D5C04D] text-[#2A1001] text-sm rounded-xl p-3 mb-4 text-left">
+            ⚠️ This patient has already paid online. Consider rescheduling instead of declining.
+        </div>
+
+        <div class="flex justify-center gap-3">
+            <button id="cancelDeclineBtn" class="px-6 py-2 rounded-full font-semibold text-[#2A1001] bg-white border border-[#2A1001]/20 hover:bg-[#e8e2d0] transition">Cancel</button>
+            <button id="confirmDeclineBtn" class="px-6 py-2 rounded-full font-semibold text-white bg-[#D9534F] hover:bg-[#c9302c] transition">Yes, Decline</button>
+        </div>
+
+            <!-- Only appears when patient has paid -->
+            <button id="rescheduleBtn" class="hidden mt-2 px-6 py-2 rounded-full font-semibold text-[#2A1001] bg-[#D5C04D] hover:bg-[#c2ad3c] transition">
+                Reschedule Instead
+            </button>
+    </div>
+</div>
+
+<script>
+
+    //temporary data for bookings, will replace with actual data from backend
+    let bookings = [
+    { id: "PAT-1827", name: "Andrew Philip Bogtae", type: "Cleaning", requestedDate: "2026-09-16", submittedAt: "2026-09-15T10:30:00", paid: false },
+    { id: "PAT-8172", name: "Venus Coleen Silvestre", type: "Tooth Whitening", requestedDate: "2026-03-16", submittedAt: "2026-03-08T14:00:00", paid: true },
+    { id: "PAT-9182", name: "Lleyton Andrew Flores", type: "Check-Up", requestedDate: "2026-03-14", submittedAt: "2026-03-12T09:15:00", paid: false },
+    { id: "PAT-9928", name: "Justine Penelophy Reolada", type: "Whitening", requestedDate: "2026-03-10", submittedAt: "2026-02-20T16:45:00", paid: true },
+    ];
+
+    let currentSearch = "";
+    let pendingDeclineId = null;
+
+    function isNew(submittedAt) { // Check if the booking was submitted within the last 24 hours
+    const hoursSince = (new Date() - new Date(submittedAt)) / (1000 * 60 * 60);
+    return hoursSince <= 24; 
+    }
+
+    function getFiltered() { // Filter bookings based on the current search term
+        return bookings.filter(b =>
+            b.name.toLowerCase().includes(currentSearch.toLowerCase())
+        );
+    }
+
+    function renderBookings() { // Render the booking cards based on the filtered bookings
+        const container = document.getElementById('booking-container');
+        const filtered = getFiltered();
+
+        if (filtered.length === 0) {
+            container.innerHTML = `<p class="text-center text-[#2A1001]/60 py-10">No booking requests found.</p>`;
+            return;
+        }
+
+        container.innerHTML = filtered.map(b => `
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between bg-white border border-[#2A1001]/10 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all duration-300 gap-4">
+           <div>
+            <p class="text-xs font-semibold text-[#2A1001]/50 uppercase tracking-wide">Patient ID: ${b.id}</p>
+            <h3 class="text-lg font-bold text-[#2A1001] font-['Poppins']">${b.name}</h3>
+            <p class="text-sm text-[#2A1001]/70">
+                ${b.type} • Requested for ${b.requestedDate}
+                ${isNew(b.submittedAt) ? '<span class="text-[#8A9A6B] font-semibold"> • New</span>' : ''}
+                ${b.paid ? '<span class="text-blue-600 font-semibold"> • Paid Online</span>' : ''}
+                </p>
+            </div>
+                <div class="flex items-center gap-2 sm:w-auto w-full">
+                    <button class="declineBtn flex-1 sm:flex-none px-5 py-2 text-sm font-semibold text-white bg-[#D9534F] rounded-full hover:bg-[#c9302c] transition" data-id="${b.id}">Decline</button>
+                     <button class="acceptBtn flex-1 sm:flex-none px-5 py-2 text-sm font-semibold text-white bg-[#667733] rounded-full hover:bg-[#556022] transition" data-id="${b.id}">Accept</button>
+                </div>
+         </div>
+    `).join('');
+    }
+
+    document.getElementById('booking-container').addEventListener('click', function (e) { // Handle accept and decline button clicks
+    const id = e.target.dataset.id;
+    if (!id) return;
+
+    if (e.target.classList.contains('acceptBtn')) {
+        bookings = bookings.filter(b => b.id !== id);
+        renderBookings();
+    }
+
+    if (e.target.classList.contains('declineBtn')) {
+        pendingDeclineId = id;
+        const booking = bookings.find(b => b.id === id);
+
+        document.getElementById('declineModalText').textContent =
+            `Are you sure you want to decline the booking request from ${booking.name}? This cannot be undone.`;
+
+        const paidWarning = document.getElementById('paidWarning');
+        const rescheduleBtn = document.getElementById('rescheduleBtn');
+
+        if (booking.paid) {
+            paidWarning.classList.remove('hidden');
+            rescheduleBtn.classList.remove('hidden');
+        } else {
+            paidWarning.classList.add('hidden');
+            rescheduleBtn.classList.add('hidden');
+        }
+
+        document.getElementById('declineModal').classList.remove('hidden');
+    }
+});
+
+    // Modal buttons
+    document.getElementById('cancelDeclineBtn').addEventListener('click', () => {
+        pendingDeclineId = null;
+        document.getElementById('declineModal').classList.add('hidden');
+    });
+
+    document.getElementById('confirmDeclineBtn').addEventListener('click', () => {
+        if (pendingDeclineId) {
+            bookings = bookings.filter(b => b.id !== pendingDeclineId);
+            renderBookings();
+        }
+        pendingDeclineId = null;
+        document.getElementById('declineModal').classList.add('hidden');
+    });
+
+    document.getElementById('rescheduleBtn').addEventListener('click', () => {
+    const booking = bookings.find(b => b.id === pendingDeclineId);
+    alert(`TODO: open reschedule flow for ${booking.name} — pick a new date instead of declining nganiiiiiiiii wag bastos.`);
+    pendingDeclineId = null;
+    document.getElementById('declineModal').classList.add('hidden');
+});
+
+    // Search
+    document.getElementById('searchInput').addEventListener('input', function () {
+        currentSearch = this.value;
+        renderBookings();
+    });
+
+    renderBookings();
+</script>
+
+</body>
+</html>
