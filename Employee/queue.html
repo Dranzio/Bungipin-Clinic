@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+     <link href="../output.css" rel="stylesheet">
+    <title>Queue</title>
+</head>
+<body class="min-h-screen bg-[#F3EFE4] relative">
+   
+    <!--Header with logo-->
+<div class="flex justify-between items-start pt-5 pl-6 pr-4 md:pl-24 md:pr-8">
+        
+        <h1 class="text-2xl sm:text-3xl md:text-5xl 2xl:text-[73px] pt-5 font-bold text-[#2A1001] font-['Poppins']">
+            Queue Appointments
+        </h1>
+        <img
+            src="../images/logowithtitle.png"
+            class="w-20 sm:w-24 md:w-28 h-auto object-contain shrink-0"
+            alt="Logo"/>
+    </div>
+   <hr class="border-t border-[#2A1001] mt-2 mb-6" />
+
+    <!--Search Bar-->
+  <div class="flex w-full justify-center">
+  <input
+    type="text"
+    id="searchInput"
+    placeholder="Search by name..."
+    class="h-10 w-full max-w-md rounded-full border border-[#2A1001]/20 bg-white px-4 mb-6 outline-none"
+  />
+</div>
+
+    <!--Filter Cards-->
+        <div class="flex flex-wrap gap-4 mb-8 justify-center">
+            <button data-filter="Pending" class="filter-btn bg-[#F1B770] text-center px-6 py-3 rounded-2xl font-bold text-[#2A1001] min-w-[110px] shadow-lg
+               transition-all duration-200 ease-in-out 
+               hover:scale-105 hover:bg-[#FDFCE9] hover:shadow-xl
+               active:scale-95 active:bg-[#FF9F2A]">
+                Pending <span class="block text-2xl" id="countPending">0</span>
+            </button>
+            <button data-filter="Waiting" class="filter-btn bg-[#F4F18F] text-center px-6 py-3 rounded-2xl font-bold text-[#2A1001] min-w-[110px] shadow-lg
+               transition-all duration-200 ease-in-out 
+               hover:scale-105 hover:bg-[#FDFCE9] hover:shadow-xl
+               active:scale-95 active:bg-[#FFF835]">
+                Waiting <span class="block text-2xl" id="countWaiting">0</span>
+            </button>
+            <button data-filter="Ongoing" class="filter-btn bg-[#8CE8FA] text-center px-6 py-3 rounded-2xl font-bold text-[#2A1001] min-w-[110px] shadow-lg
+               transition-all duration-200 ease-in-out 
+               hover:scale-105 hover:bg-[#FDFCE9] hover:shadow-xl
+               active:scale-95 active:bg-[#36DEFF]">
+                Ongoing <span class="block text-2xl" id="countOngoing">0</span>
+            </button>
+            <button data-filter="Completed" class="filter-btn bg-[#BEF835] text-center px-6 py-3 rounded-2xl font-bold text-[#2A1001] min-w-[110px] shadow-lg
+               transition-all duration-200 ease-in-out 
+               hover:scale-105 hover:bg-[#FDFCE9] hover:shadow-xl
+               active:scale-95 active:bg-[#A6ED00]">
+                Completed <span class="block text-2xl" id="countCompleted">0</span>
+            </button>
+            <button data-filter="All" class="filter-btn bg-white border border-[#2A1001]/30 text-left px-6 py-3 rounded-2xl font-bold text-[#2A1001] min-w-[110px] shadow-lg
+               transition-all duration-200 ease-in-out 
+               hover:scale-105 hover:bg-[#FDFCE9] hover:shadow-xl
+               active:scale-95 active:bg-[#F9F9F9]">
+                Show All
+            </button>
+        </div>
+
+    <!--Queue Table-->
+    <div class="overflow-x-auto rounded-3xl w-full md:w-[80%] mx-auto shadow-xl">
+         <table class="w-full border-collapse">
+                <thead>
+                    <tr class="bg-[#667733] text-white">
+                        <th class="text-center py-3 px-4 rounded-tl-2xl">Name</th>
+                        <th class="text-center py-3 px-4">Phone Number</th>
+                        <th class="text-center py-3 px-4">Service</th>
+                        <th class="text-center py-3 px-4 rounded-tr-2xl">Status</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody" class="bg-[#ECF5E2]">
+                    <!-- rows injected by JS -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- PAGINATION -->
+        <div class="flex justify-center gap-2 my-8" id="pagination">
+            
+        </div>
+
+    </div>
+
+<script>
+    // Sample data — replace with real data later (or fetch from backend)
+const appointments = [
+    { name: "Juan Dela Cruz", phone: "0917 123 4567", service: "Cleaning", status: "Pending" },
+    { name: "Maria Santos", phone: "0918 234 5678", service: "Pasta", status: "Ongoing" },
+    { name: "Pedro Reyes", phone: "0919 345 6789", service: "Pasta", status: "Ongoing" },
+    { name: "Ana Cruz", phone: "0920 456 7890", service: "Checkup", status: "Pending" },
+    { name: "Jose Garcia", phone: "0921 567 8901", service: "Whitening", status: "Waiting" },
+    { name: "Liza Torres", phone: "0922 678 9012", service: "Cleaning", status: "Waiting" },
+    { name: "Mark Ramos", phone: "0923 789 0123", service: "Whitening", status: "Pending" },
+    { name: "Carla Mendoza", phone: "0924 890 1234", service: "Checkup", status: "Ongoing" },
+    { name: "Paolo Villanueva", phone: "0925 901 2345", service: "Pasta", status: "Completed" },
+    { name: "Grace Lim", phone: "0926 012 3456", service: "Whitening", status: "Completed" },
+    { name: "Ryan Bautista", phone: "0927 123 4567", service: "Pasta", status: "Ongoing" },
+    { name: "Bea Fernandez", phone: "0928 234 5678", service: "Cleaning", status: "Pending" },
+    { name: "Miguel Aquino", phone: "0929 345 6789", service: "Checkup", status: "Waiting" },
+    { name: "Sofia Tan", phone: "0930 456 7890", service: "Whitening", status: "Ongoing" },
+    { name: "Diego Morales", phone: "0931 567 8901", service: "Pasta", status: "Completed" },
+    { name: "Isabel Cruz", phone: "0932 678 9012", service: "Cleaning", status: "Pending" },
+    { name: "Gabriel Santos", phone: "0933 789 0123", service: "Checkup", status: "Ongoing" },
+    { name: "Camille Reyes", phone: "0934 890 1234", service: "Whitening", status: "Waiting" },
+    { name: "Nathaniel Cruz", phone: "0935 901 2345", service: "Pasta", status: "Pending" },
+    { name: "Andrea Villanueva", phone: "0936 012 3456", service: "Cleaning", status: "Completed" },
+    { name: "Rafael Garcia", phone: "0937 123 4567", service: "Checkup", status: "Waiting" },
+    { name: "Patricia Lim", phone: "0938 234 5678", service: "Whitening", status: "Ongoing" },
+    { name: "Vincent Torres", phone: "0939 345 6789", service: "Pasta", status: "Pending" },
+    { name: "Samantha Mendoza", phone: "0940 456 7890", service: "Cleaning", status: "Waiting" },
+    { name: "Christian Bautista", phone: "0941 567 8901", service: "Checkup", status: "Completed" },
+    { name: "Angela Fernandez", phone: "0942 678 9012", service: "Whitening", status: "Pending" },
+    { name: "Kevin Aquino", phone: "0943 789 0123", service: "Pasta", status: "Ongoing" },
+    { name: "Michelle Tan", phone: "0944 890 1234", service: "Cleaning", status: "Completed" },
+    { name: "Francis Morales", phone: "0945 901 2345", service: "Checkup", status: "Pending" },
+    { name: "Kristine Cruz", phone: "0946 012 3456", service: "Whitening", status: "Waiting" },
+    { name: "Anton Santos", phone: "0947 123 4567", service: "Pasta", status: "Ongoing" },
+    { name: "Jasmine Reyes", phone: "0948 234 5678", service: "Cleaning", status: "Pending" },
+    { name: "Daniel Cruz", phone: "0949 345 6789", service: "Checkup", status: "Waiting" },
+    { name: "Nicole Villanueva", phone: "0950 456 7890", service: "Whitening", status: "Completed" },
+    { name: "Marco Garcia", phone: "0951 567 8901", service: "Pasta", status: "Pending" },
+    { name: "Erika Lim", phone: "0952 678 9012", service: "Cleaning", status: "Ongoing" },
+    { name: "Joshua Torres", phone: "0953 789 0123", service: "Checkup", status: "Completed" },
+    { name: "Katherine Mendoza", phone: "0954 890 1234", service: "Whitening", status: "Pending" },
+    { name: "Benjamin Bautista", phone: "0955 901 2345", service: "Pasta", status: "Waiting" },
+    { name: "Charlene Fernandez", phone: "0956 012 3456", service: "Cleaning", status: "Ongoing" },
+    { name: "Aaron Aquino", phone: "0957 123 4567", service: "Checkup", status: "Pending" },
+    { name: "Denise Tan", phone: "0958 234 5678", service: "Whitening", status: "Completed" },
+    { name: "Leo Morales", phone: "0959 345 6789", service: "Pasta", status: "Ongoing" },
+    { name: "Christine Cruz", phone: "0960 456 7890", service: "Cleaning", status: "Waiting" },
+    { name: "Julian Santos", phone: "0961 567 8901", service: "Checkup", status: "Pending" },
+    { name: "Alyssa Reyes", phone: "0962 678 9012", service: "Whitening", status: "Ongoing" },
+    { name: "Adrian Cruz", phone: "0963 789 0123", service: "Pasta", status: "Completed" },
+    { name: "Rachel Villanueva", phone: "0964 890 1234", service: "Cleaning", status: "Pending" },
+    { name: "Sean Garcia", phone: "0965 901 2345", service: "Checkup", status: "Waiting" },
+    { name: "Danielle Lim", phone: "0966 012 3456", service: "Whitening", status: "Ongoing" },
+    { name: "Trisha Bautista", phone: "0967 123 4567", service: "Pasta", status: "Pending" },
+    { name: "Marcus Fernandez", phone: "0968 234 5678", service: "Cleaning", status: "Waiting" },
+    { name: "Jenny Aquino", phone: "0969 345 6789", service: "Checkup", status: "Ongoing" },
+    { name: "Oliver Tan", phone: "0970 456 7890", service: "Whitening", status: "Completed" },
+    { name: "Faith Morales", phone: "0971 567 8901", service: "Pasta", status: "Pending" },
+    { name: "Elijah Cruz", phone: "0972 678 9012", service: "Cleaning", status: "Ongoing" },
+    { name: "Bianca Santos", phone: "0973 789 0123", service: "Checkup", status: "Completed" },
+    { name: "Nathan Reyes", phone: "0974 890 1234", service: "Whitening", status: "Waiting" },
+    { name: "Mikaela Cruz", phone: "0975 901 2345", service: "Pasta", status: "Ongoing" },
+    { name: "Jerome Villanueva", phone: "0976 012 3456", service: "Cleaning", status: "Pending" },
+    { name: "Alexa Garcia", phone: "0977 123 4567", service: "Checkup", status: "Waiting" },
+    { name: "Timothy Lim", phone: "0978 234 5678", service: "Whitening", status: "Pending" },
+    { name: "Precious Torres", phone: "0979 345 6789", service: "Pasta", status: "Completed" },
+    { name: "Gerald Mendoza", phone: "0980 456 7890", service: "Cleaning", status: "Waiting" },
+    { name: "Hannah Bautista", phone: "0981 567 8901", service: "Checkup", status: "Ongoing" },
+    { name: "Lorenzo Fernandez", phone: "0982 678 9012", service: "Whitening", status: "Pending" },
+    { name: "Cassandra Aquino", phone: "0983 789 0123", service: "Pasta", status: "Waiting" },
+    { name: "Emmanuel Tan", phone: "0984 890 1234", service: "Cleaning", status: "Completed" },
+    { name: "Rosalie Morales", phone: "0985 901 2345", service: "Checkup", status: "Ongoing" },
+    { name: "Victor Cruz", phone: "0986 012 3456", service: "Whitening", status: "Completed" },
+];
+    const statusColors = {//color background for status dropdown
+        "Pending": "bg-[#E8A55C]",
+        "Waiting": "bg-[#E8DD5C]",
+        "Ongoing": "bg-[#7FD8E8]",
+        "Completed": "bg-[#B6E85C]"
+    };
+
+    const rowsPerPage = 8;
+    let currentPage = 1;
+    let currentFilter = "All";
+    let currentSearch = "";
+
+    function getFiltered() {
+    return appointments
+        .map((a, originalIndex) => ({ ...a, originalIndex })) // attach real index
+        .filter(a => {
+            const matchesFilter = currentFilter === "All" || a.status === currentFilter;
+            const matchesSearch = a.name.toLowerCase().includes(currentSearch.toLowerCase());
+            return matchesFilter && matchesSearch;
+        });
+    }
+
+    function renderCounts() { //update the counts in the filter cards based on current data
+        document.getElementById('countPending').textContent = appointments.filter(a => a.status === "Pending").length;
+        document.getElementById('countWaiting').textContent = appointments.filter(a => a.status === "Waiting").length;
+        document.getElementById('countOngoing').textContent = appointments.filter(a => a.status === "Ongoing").length;
+        document.getElementById('countCompleted').textContent = appointments.filter(a => a.status === "Completed").length;
+    }
+
+function renderTable() { //dynamically render table based on current filter, search, and pagination
+    const filtered = getFiltered();
+    const start = (currentPage - 1) * rowsPerPage;
+    const pageItems = filtered.slice(start, start + rowsPerPage);
+
+    const tbody = document.getElementById('tableBody');
+    tbody.innerHTML = '';
+
+    pageItems.forEach((item) => {
+        const row = document.createElement('tr');
+        row.className = "border-b border-[#2A1001]/10";
+        row.innerHTML = `
+            <td class="py-3 px-4 text-center">${item.name}</td>
+            <td class="py-3 px-4 text-center">${item.phone}</td>
+            <td class="py-3 px-4 text-center">${item.service}</td>
+            <td class="py-3 px-4 text-center">
+                <select class="statusSelect ${statusColors[item.status]} font-semibold text-[#2A1001] rounded-full px-3 py-1 outline-none cursor-pointer" data-index="${item.originalIndex}">
+                    <option class="bg-white text-[#2A1001]" ${item.status === "Pending" ? "selected" : ""}>Pending</option>
+                    <option class="bg-white text-[#2A1001]" ${item.status === "Waiting" ? "selected" : ""}>Waiting</option>
+                    <option class="bg-white text-[#2A1001]" ${item.status === "Ongoing" ? "selected" : ""}>Ongoing</option>
+                    <option class="bg-white text-[#2A1001]" ${item.status === "Completed" ? "selected" : ""}>Completed</option>
+                </select>
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+
+
+    renderPagination(filtered.length);
+}
+
+
+document.getElementById('tableBody').addEventListener('change', function (e) {//filter the table based on the status selected in the dropdown
+    if (e.target.classList.contains('statusSelect')) {
+        const idx = e.target.dataset.index;
+        appointments[idx].status = e.target.value;
+        renderCounts();
+        renderTable();
+    }
+});
+    function renderPagination(totalItems) { //dynamically render pagination buttons based on current filter, search, and total items
+    const totalPages = Math.max(1, Math.ceil(totalItems / rowsPerPage));
+    const pagination = document.getElementById('pagination');
+    pagination.innerHTML = '';
+
+    const maxVisible = 7;
+
+
+    const currentBatch = Math.floor((currentPage - 1) / maxVisible); 
+    const batchStart = currentBatch * maxVisible + 1;
+    const batchEnd = Math.min(batchStart + maxVisible - 1, totalPages);
+
+  
+    if (batchStart > 1) {// PREV arrow
+    const prevBtn = document.createElement('button');
+    prevBtn.textContent = '‹';
+    prevBtn.className = "w-9 h-9 rounded-full font-bold text-[#2A1001] bg-transparent border border-[#2A1001]/30 hover:bg-[#2A1001]/10 transition flex items-center justify-center";
+    prevBtn.addEventListener('click', () => {
+        currentPage = batchStart - 1;
+        renderTable();
+    });
+    pagination.appendChild(prevBtn);
+}
+
+    // Page number buttons for the current batch only
+    for (let i = batchStart; i <= batchEnd; i++) {
+        const btn = document.createElement('button');
+        btn.textContent = i;
+        btn.className = `w-9 h-9 rounded-full font-semibold ${i === currentPage ? 'bg-[#6B7A4C] text-white' : 'bg-white text-[#2A1001] border border-[#2A1001]/20'}`;
+        btn.addEventListener('click', () => {
+            currentPage = i;
+            renderTable();
+        });
+        pagination.appendChild(btn);
+    }
+
+    // NEXT arrow
+    if (batchEnd < totalPages) {
+    const nextBtn = document.createElement('button');
+    nextBtn.textContent = '›';
+    nextBtn.className = "w-9 h-9 rounded-full font-bold text-[#2A1001] bg-transparent border border-[#2A1001]/30 hover:bg-[#2A1001]/10 transition flex items-center justify-center";
+    nextBtn.addEventListener('click', () => {
+        currentPage = batchEnd + 1;
+        renderTable();
+    });
+    pagination.appendChild(nextBtn);
+}
+}
+
+    // Filter buttons
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.addEventListener('click', function () {
+            currentFilter = this.dataset.filter;
+            currentPage = 1;
+            renderTable();
+        });
+    });
+
+    // Search
+    document.getElementById('searchInput').addEventListener('input', function () {
+        currentSearch = this.value;
+        currentPage = 1;
+        renderTable();
+    });
+
+    // Initial render
+    renderCounts();
+    renderTable();
+</script>
+</body>
+</html>
