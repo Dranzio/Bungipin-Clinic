@@ -194,7 +194,28 @@
 </div>
 
     <script>
-    // Sample patient data — swap for real data from a backend later
+        /*Sample data — replace with real data later (or fetch from backend)
+
+
+    let patients = []; // Starts empty, will be filled by AJAX
+
+  //Fetch data from your backend API when the page loads
+  async function loadPatients() {
+    try {
+        const response = await fetch(url_to_your_backend_api); // Replace with your actual API endpoint
+        if (!response.ok) throw new Error('Failed to fetch appointments');
+        
+        appointments = await response.json();
+        
+        // Render everything once data arrives
+        renderTable();
+    } catch (error) {
+        console.error("Error loading patients:", error);
+    }
+}
+loadPatients();
+?*/
+        
 const patients = [
     {
         id: "P-0001", firstName: "Juan", lastName: "Dela Cruz", sex: "Male", birthday: "1990-05-14",
