@@ -90,79 +90,102 @@
     </div>
 
 <script>
-    // Sample data — replace with real data later (or fetch from backend)
+      /*Sample data — replace with real data later (or fetch from backend)
+
+
+    let appointments = []; // Starts empty, will be filled by AJAX
+
+  //Fetch data from your backend API when the page loads
+  async function loadAppointments() {
+    try {
+        const response = await fetch(url_to_your_backend_api); // Replace with your actual API endpoint
+        if (!response.ok) throw new Error('Failed to fetch appointments');
+        
+        appointments = await response.json();
+        
+        // Render everything once data arrives
+        renderCounts();
+        renderTable();
+    } catch (error) {
+        console.error("Error loading appointments:", error);
+    }
+}
+
+?*/
+    
 const appointments = [
-    { name: "Juan Dela Cruz", phone: "0917 123 4567", service: "Cleaning", status: "Pending" },
-    { name: "Maria Santos", phone: "0918 234 5678", service: "Pasta", status: "Ongoing" },
-    { name: "Pedro Reyes", phone: "0919 345 6789", service: "Pasta", status: "Ongoing" },
-    { name: "Ana Cruz", phone: "0920 456 7890", service: "Checkup", status: "Pending" },
-    { name: "Jose Garcia", phone: "0921 567 8901", service: "Whitening", status: "Waiting" },
-    { name: "Liza Torres", phone: "0922 678 9012", service: "Cleaning", status: "Waiting" },
-    { name: "Mark Ramos", phone: "0923 789 0123", service: "Whitening", status: "Pending" },
-    { name: "Carla Mendoza", phone: "0924 890 1234", service: "Checkup", status: "Ongoing" },
-    { name: "Paolo Villanueva", phone: "0925 901 2345", service: "Pasta", status: "Completed" },
-    { name: "Grace Lim", phone: "0926 012 3456", service: "Whitening", status: "Completed" },
-    { name: "Ryan Bautista", phone: "0927 123 4567", service: "Pasta", status: "Ongoing" },
-    { name: "Bea Fernandez", phone: "0928 234 5678", service: "Cleaning", status: "Pending" },
-    { name: "Miguel Aquino", phone: "0929 345 6789", service: "Checkup", status: "Waiting" },
-    { name: "Sofia Tan", phone: "0930 456 7890", service: "Whitening", status: "Ongoing" },
-    { name: "Diego Morales", phone: "0931 567 8901", service: "Pasta", status: "Completed" },
-    { name: "Isabel Cruz", phone: "0932 678 9012", service: "Cleaning", status: "Pending" },
-    { name: "Gabriel Santos", phone: "0933 789 0123", service: "Checkup", status: "Ongoing" },
-    { name: "Camille Reyes", phone: "0934 890 1234", service: "Whitening", status: "Waiting" },
-    { name: "Nathaniel Cruz", phone: "0935 901 2345", service: "Pasta", status: "Pending" },
-    { name: "Andrea Villanueva", phone: "0936 012 3456", service: "Cleaning", status: "Completed" },
-    { name: "Rafael Garcia", phone: "0937 123 4567", service: "Checkup", status: "Waiting" },
-    { name: "Patricia Lim", phone: "0938 234 5678", service: "Whitening", status: "Ongoing" },
-    { name: "Vincent Torres", phone: "0939 345 6789", service: "Pasta", status: "Pending" },
-    { name: "Samantha Mendoza", phone: "0940 456 7890", service: "Cleaning", status: "Waiting" },
-    { name: "Christian Bautista", phone: "0941 567 8901", service: "Checkup", status: "Completed" },
-    { name: "Angela Fernandez", phone: "0942 678 9012", service: "Whitening", status: "Pending" },
-    { name: "Kevin Aquino", phone: "0943 789 0123", service: "Pasta", status: "Ongoing" },
-    { name: "Michelle Tan", phone: "0944 890 1234", service: "Cleaning", status: "Completed" },
-    { name: "Francis Morales", phone: "0945 901 2345", service: "Checkup", status: "Pending" },
-    { name: "Kristine Cruz", phone: "0946 012 3456", service: "Whitening", status: "Waiting" },
-    { name: "Anton Santos", phone: "0947 123 4567", service: "Pasta", status: "Ongoing" },
-    { name: "Jasmine Reyes", phone: "0948 234 5678", service: "Cleaning", status: "Pending" },
-    { name: "Daniel Cruz", phone: "0949 345 6789", service: "Checkup", status: "Waiting" },
-    { name: "Nicole Villanueva", phone: "0950 456 7890", service: "Whitening", status: "Completed" },
-    { name: "Marco Garcia", phone: "0951 567 8901", service: "Pasta", status: "Pending" },
-    { name: "Erika Lim", phone: "0952 678 9012", service: "Cleaning", status: "Ongoing" },
-    { name: "Joshua Torres", phone: "0953 789 0123", service: "Checkup", status: "Completed" },
-    { name: "Katherine Mendoza", phone: "0954 890 1234", service: "Whitening", status: "Pending" },
-    { name: "Benjamin Bautista", phone: "0955 901 2345", service: "Pasta", status: "Waiting" },
-    { name: "Charlene Fernandez", phone: "0956 012 3456", service: "Cleaning", status: "Ongoing" },
-    { name: "Aaron Aquino", phone: "0957 123 4567", service: "Checkup", status: "Pending" },
-    { name: "Denise Tan", phone: "0958 234 5678", service: "Whitening", status: "Completed" },
-    { name: "Leo Morales", phone: "0959 345 6789", service: "Pasta", status: "Ongoing" },
-    { name: "Christine Cruz", phone: "0960 456 7890", service: "Cleaning", status: "Waiting" },
-    { name: "Julian Santos", phone: "0961 567 8901", service: "Checkup", status: "Pending" },
-    { name: "Alyssa Reyes", phone: "0962 678 9012", service: "Whitening", status: "Ongoing" },
-    { name: "Adrian Cruz", phone: "0963 789 0123", service: "Pasta", status: "Completed" },
-    { name: "Rachel Villanueva", phone: "0964 890 1234", service: "Cleaning", status: "Pending" },
-    { name: "Sean Garcia", phone: "0965 901 2345", service: "Checkup", status: "Waiting" },
-    { name: "Danielle Lim", phone: "0966 012 3456", service: "Whitening", status: "Ongoing" },
-    { name: "Trisha Bautista", phone: "0967 123 4567", service: "Pasta", status: "Pending" },
-    { name: "Marcus Fernandez", phone: "0968 234 5678", service: "Cleaning", status: "Waiting" },
-    { name: "Jenny Aquino", phone: "0969 345 6789", service: "Checkup", status: "Ongoing" },
-    { name: "Oliver Tan", phone: "0970 456 7890", service: "Whitening", status: "Completed" },
-    { name: "Faith Morales", phone: "0971 567 8901", service: "Pasta", status: "Pending" },
-    { name: "Elijah Cruz", phone: "0972 678 9012", service: "Cleaning", status: "Ongoing" },
-    { name: "Bianca Santos", phone: "0973 789 0123", service: "Checkup", status: "Completed" },
-    { name: "Nathan Reyes", phone: "0974 890 1234", service: "Whitening", status: "Waiting" },
-    { name: "Mikaela Cruz", phone: "0975 901 2345", service: "Pasta", status: "Ongoing" },
-    { name: "Jerome Villanueva", phone: "0976 012 3456", service: "Cleaning", status: "Pending" },
-    { name: "Alexa Garcia", phone: "0977 123 4567", service: "Checkup", status: "Waiting" },
-    { name: "Timothy Lim", phone: "0978 234 5678", service: "Whitening", status: "Pending" },
-    { name: "Precious Torres", phone: "0979 345 6789", service: "Pasta", status: "Completed" },
-    { name: "Gerald Mendoza", phone: "0980 456 7890", service: "Cleaning", status: "Waiting" },
-    { name: "Hannah Bautista", phone: "0981 567 8901", service: "Checkup", status: "Ongoing" },
-    { name: "Lorenzo Fernandez", phone: "0982 678 9012", service: "Whitening", status: "Pending" },
-    { name: "Cassandra Aquino", phone: "0983 789 0123", service: "Pasta", status: "Waiting" },
-    { name: "Emmanuel Tan", phone: "0984 890 1234", service: "Cleaning", status: "Completed" },
-    { name: "Rosalie Morales", phone: "0985 901 2345", service: "Checkup", status: "Ongoing" },
-    { name: "Victor Cruz", phone: "0986 012 3456", service: "Whitening", status: "Completed" },
+    { firstName: "Juan", lastName: "Dela Cruz", phone: "0917 123 4567", service: "Cleaning", status: "Pending" },
+    { firstName: "Maria", lastName: "Santos", phone: "0918 234 5678", service: "Pasta", status: "Ongoing" },
+    { firstName: "Pedro", lastName: "Reyes", phone: "0919 345 6789", service: "Pasta", status: "Ongoing" },
+    { firstName: "Ana", lastName: "Cruz", phone: "0920 456 7890", service: "Checkup", status: "Pending" },
+    { firstName: "Jose", lastName: "Garcia", phone: "0921 567 8901", service: "Whitening", status: "Waiting" },
+    { firstName: "Liza", lastName: "Torres", phone: "0922 678 9012", service: "Cleaning", status: "Waiting" },
+    { firstName: "Mark", lastName: "Ramos", phone: "0923 789 0123", service: "Whitening", status: "Pending" },
+    { firstName: "Carla", lastName: "Mendoza", phone: "0924 890 1234", service: "Checkup", status: "Ongoing" },
+    { firstName: "Paolo", lastName: "Villanueva", phone: "0925 901 2345", service: "Pasta", status: "Completed" },
+    { firstName: "Grace", lastName: "Lim", phone: "0926 012 3456", service: "Whitening", status: "Completed" },
+    { firstName: "Ryan", lastName: "Bautista", phone: "0927 123 4567", service: "Pasta", status: "Ongoing" },
+    { firstName: "Bea", lastName: "Fernandez", phone: "0928 234 5678", service: "Cleaning", status: "Pending" },
+    { firstName: "Miguel", lastName: "Aquino", phone: "0929 345 6789", service: "Checkup", status: "Waiting" },
+    { firstName: "Sofia", lastName: "Tan", phone: "0930 456 7890", service: "Whitening", status: "Ongoing" },
+    { firstName: "Diego", lastName: "Morales", phone: "0931 567 8901", service: "Pasta", status: "Completed" },
+    { firstName: "Isabel", lastName: "Cruz", phone: "0932 678 9012", service: "Cleaning", status: "Pending" },
+    { firstName: "Gabriel", lastName: "Santos", phone: "0933 789 0123", service: "Checkup", status: "Ongoing" },
+    { firstName: "Camille", lastName: "Reyes", phone: "0934 890 1234", service: "Whitening", status: "Waiting" },
+    { firstName: "Nathaniel", lastName: "Cruz", phone: "0935 901 2345", service: "Pasta", status: "Pending" },
+    { firstName: "Andrea", lastName: "Villanueva", phone: "0936 012 3456", service: "Cleaning", status: "Completed" },
+    { firstName: "Rafael", lastName: "Garcia", phone: "0937 123 4567", service: "Checkup", status: "Waiting" },
+    { firstName: "Patricia", lastName: "Lim", phone: "0938 234 5678", service: "Whitening", status: "Ongoing" },
+    { firstName: "Vincent", lastName: "Torres", phone: "0939 345 6789", service: "Pasta", status: "Pending" },
+    { firstName: "Samantha", lastName: "Mendoza", phone: "0940 456 7890", service: "Cleaning", status: "Waiting" },
+    { firstName: "Christian", lastName: "Bautista", phone: "0941 567 8901", service: "Checkup", status: "Completed" },
+    { firstName: "Angela", lastName: "Fernandez", phone: "0942 678 9012", service: "Whitening", status: "Pending" },
+    { firstName: "Kevin", lastName: "Aquino", phone: "0943 789 0123", service: "Pasta", status: "Ongoing" },
+    { firstName: "Michelle", lastName: "Tan", phone: "0944 890 1234", service: "Cleaning", status: "Completed" },
+    { firstName: "Francis", lastName: "Morales", phone: "0945 901 2345", service: "Checkup", status: "Pending" },
+    { firstName: "Kristine", lastName: "Cruz", phone: "0946 012 3456", service: "Whitening", status: "Waiting" },
+    { firstName: "Anton", lastName: "Santos", phone: "0947 123 4567", service: "Pasta", status: "Ongoing" },
+    { firstName: "Jasmine", lastName: "Reyes", phone: "0948 234 5678", service: "Cleaning", status: "Pending" },
+    { firstName: "Daniel", lastName: "Cruz", phone: "0949 345 6789", service: "Checkup", status: "Waiting" },
+    { firstName: "Nicole", lastName: "Villanueva", phone: "0950 456 7890", service: "Whitening", status: "Completed" },
+    { firstName: "Marco", lastName: "Garcia", phone: "0951 567 8901", service: "Pasta", status: "Pending" },
+    { firstName: "Erika", lastName: "Lim", phone: "0952 678 9012", service: "Cleaning", status: "Ongoing" },
+    { firstName: "Joshua", lastName: "Torres", phone: "0953 789 0123", service: "Checkup", status: "Completed" },
+    { firstName: "Katherine", lastName: "Mendoza", phone: "0954 890 1234", service: "Whitening", status: "Pending" },
+    { firstName: "Benjamin", lastName: "Bautista", phone: "0955 901 2345", service: "Pasta", status: "Waiting" },
+    { firstName: "Charlene", lastName: "Fernandez", phone: "0956 012 3456", service: "Cleaning", status: "Ongoing" },
+    { firstName: "Aaron", lastName: "Aquino", phone: "0957 123 4567", service: "Checkup", status: "Pending" },
+    { firstName: "Denise", lastName: "Tan", phone: "0958 234 5678", service: "Whitening", status: "Completed" },
+    { firstName: "Leo", lastName: "Morales", phone: "0959 345 6789", service: "Pasta", status: "Ongoing" },
+    { firstName: "Christine", lastName: "Cruz", phone: "0960 456 7890", service: "Cleaning", status: "Waiting" },
+    { firstName: "Julian", lastName: "Santos", phone: "0961 567 8901", service: "Checkup", status: "Pending" },
+    { firstName: "Alyssa", lastName: "Reyes", phone: "0962 678 9012", service: "Whitening", status: "Ongoing" },
+    { firstName: "Adrian", lastName: "Cruz", phone: "0963 789 0123", service: "Pasta", status: "Completed" },
+    { firstName: "Rachel", lastName: "Villanueva", phone: "0964 890 1234", service: "Cleaning", status: "Pending" },
+    { firstName: "Sean", lastName: "Garcia", phone: "0965 901 2345", service: "Checkup", status: "Waiting" },
+    { firstName: "Danielle", lastName: "Lim", phone: "0966 012 3456", service: "Whitening", status: "Ongoing" },
+    { firstName: "Trisha", lastName: "Bautista", phone: "0967 123 4567", service: "Pasta", status: "Pending" },
+    { firstName: "Marcus", lastName: "Fernandez", phone: "0968 234 5678", service: "Cleaning", status: "Waiting" },
+    { firstName: "Jenny", lastName: "Aquino", phone: "0969 345 6789", service: "Checkup", status: "Ongoing" },
+    { firstName: "Oliver", lastName: "Tan", phone: "0970 456 7890", service: "Whitening", status: "Completed" },
+    { firstName: "Faith", lastName: "Morales", phone: "0971 567 8901", service: "Pasta", status: "Pending" },
+    { firstName: "Elijah", lastName: "Cruz", phone: "0972 678 9012", service: "Cleaning", status: "Ongoing" },
+    { firstName: "Bianca", lastName: "Santos", phone: "0973 789 0123", service: "Checkup", status: "Completed" },
+    { firstName: "Nathan", lastName: "Reyes", phone: "0974 890 1234", service: "Whitening", status: "Waiting" },
+    { firstName: "Mikaela", lastName: "Cruz", phone: "0975 901 2345", service: "Pasta", status: "Ongoing" },
+    { firstName: "Jerome", lastName: "Villanueva", phone: "0976 012 3456", service: "Cleaning", status: "Pending" },
+    { firstName: "Alexa", lastName: "Garcia", phone: "0977 123 4567", service: "Checkup", status: "Waiting" },
+    { firstName: "Timothy", lastName: "Lim", phone: "0978 234 5678", service: "Whitening", status: "Pending" },
+    { firstName: "Precious", lastName: "Torres", phone: "0979 345 6789", service: "Pasta", status: "Completed" },
+    { firstName: "Gerald", lastName: "Mendoza", phone: "0980 456 7890", service: "Cleaning", status: "Waiting" },
+    { firstName: "Hannah", lastName: "Bautista", phone: "0981 567 8901", service: "Checkup", status: "Ongoing" },
+    { firstName: "Lorenzo", lastName: "Fernandez", phone: "0982 678 9012", service: "Whitening", status: "Pending" },
+    { firstName: "Cassandra", lastName: "Aquino", phone: "0983 789 0123", service: "Pasta", status: "Waiting" },
+    { firstName: "Emmanuel", lastName: "Tan", phone: "0984 890 1234", service: "Cleaning", status: "Completed" },
+    { firstName: "Rosalie", lastName: "Morales", phone: "0985 901 2345", service: "Checkup", status: "Ongoing" },
+    { firstName: "Victor", lastName: "Cruz", phone: "0986 012 3456", service: "Whitening", status: "Completed" }
 ];
+    
     const statusColors = {//color background for status dropdown
         "Pending": "bg-[#E8A55C]",
         "Waiting": "bg-[#E8DD5C]",
@@ -180,7 +203,7 @@ const appointments = [
         .map((a, originalIndex) => ({ ...a, originalIndex })) // attach real index
         .filter(a => {
             const matchesFilter = currentFilter === "All" || a.status === currentFilter;
-            const matchesSearch = a.name.toLowerCase().includes(currentSearch.toLowerCase());
+            const matchesSearch = `${a.firstName} ${a.lastName}`.toLowerCase().includes(currentSearch.toLowerCase());
             return matchesFilter && matchesSearch;
         });
     }
@@ -200,11 +223,11 @@ function renderTable() { //dynamically render table based on current filter, sea
     const tbody = document.getElementById('tableBody');
     tbody.innerHTML = '';
 
-    pageItems.forEach((item) => {
+        pageItems.forEach((item) => {
         const row = document.createElement('tr');
         row.className = "border-b border-[#2A1001]/10";
         row.innerHTML = `
-            <td class="py-3 px-4 text-center">${item.name}</td>
+            <td class="py-3 px-4 text-center">${item.firstName} ${item.lastName}</td>
             <td class="py-3 px-4 text-center">${item.phone}</td>
             <td class="py-3 px-4 text-center">${item.service}</td>
             <td class="py-3 px-4 text-center">
