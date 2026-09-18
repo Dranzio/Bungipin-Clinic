@@ -643,7 +643,7 @@ document.getElementById('saveSessionBtn').addEventListener('click', async functi
         btn.textContent = "Saving...";
         btn.disabled = true;
 
-        // Send the updated note to Philip's backend API
+        //send updated note
         const response = await fetch(`/api/appointments/${p.ongoing_appointment.appointment_id}`, {
             method: 'PUT', // PUT is used to update existing data
             headers: {
@@ -713,7 +713,7 @@ document.getElementById('completeSessionBtn').addEventListener('click', function
     activateTab('history'); // jump them to history so they can see it moved
 
     const confirmation = document.getElementById('saveConfirmation');
-    confirmation.textContent = '✅ Appointment completed and moved to history!';
+    confirmation.textContent = 'Appointment completed and moved to history!';
     confirmation.classList.remove('hidden');
     setTimeout(() => {
         confirmation.classList.add('hidden');
