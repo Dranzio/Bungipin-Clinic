@@ -32,38 +32,38 @@
 </div>
 
     <!--Filter Cards-->
-        <div class="flex flex-wrap gap-4 mb-8 justify-center">
-            <button data-filter="Pending" class="filter-btn bg-[#F1B770] text-center px-6 py-3 rounded-2xl font-bold text-[#2A1001] min-w-[110px] shadow-lg
-               transition-all duration-200 ease-in-out 
-               hover:scale-105 hover:bg-[#FDFCE9] hover:shadow-xl
-               active:scale-95 active:bg-[#FF9F2A]">
-                Pending <span class="block text-2xl" id="countPending">0</span>
-            </button>
-            <button data-filter="Waiting" class="filter-btn bg-[#F4F18F] text-center px-6 py-3 rounded-2xl font-bold text-[#2A1001] min-w-[110px] shadow-lg
-               transition-all duration-200 ease-in-out 
-               hover:scale-105 hover:bg-[#FDFCE9] hover:shadow-xl
-               active:scale-95 active:bg-[#FFF835]">
-                Waiting <span class="block text-2xl" id="countWaiting">0</span>
-            </button>
-            <button data-filter="Ongoing" class="filter-btn bg-[#8CE8FA] text-center px-6 py-3 rounded-2xl font-bold text-[#2A1001] min-w-[110px] shadow-lg
-               transition-all duration-200 ease-in-out 
-               hover:scale-105 hover:bg-[#FDFCE9] hover:shadow-xl
-               active:scale-95 active:bg-[#36DEFF]">
-                Ongoing <span class="block text-2xl" id="countOngoing">0</span>
-            </button>
-            <button data-filter="Completed" class="filter-btn bg-[#BEF835] text-center px-6 py-3 rounded-2xl font-bold text-[#2A1001] min-w-[110px] shadow-lg
-               transition-all duration-200 ease-in-out 
-               hover:scale-105 hover:bg-[#FDFCE9] hover:shadow-xl
-               active:scale-95 active:bg-[#A6ED00]">
-                Completed <span class="block text-2xl" id="countCompleted">0</span>
-            </button>
-            <button data-filter="All" class="filter-btn bg-white border border-[#2A1001]/30 text-left px-6 py-3 rounded-2xl font-bold text-[#2A1001] min-w-[110px] shadow-lg
-               transition-all duration-200 ease-in-out 
-               hover:scale-105 hover:bg-[#FDFCE9] hover:shadow-xl
-               active:scale-95 active:bg-[#F9F9F9]">
-                Show All
-            </button>
-        </div>
+<div class="flex flex-wrap gap-4 mb-8 justify-center">
+    <button data-filter="pending" class="filter-btn bg-[#F1B770] text-center px-6 py-3 rounded-2xl font-bold text-[#2A1001] min-w-[110px] shadow-lg
+       transition-all duration-200 ease-in-out 
+       hover:scale-105 hover:bg-[#FDFCE9] hover:shadow-xl
+       active:scale-95 active:bg-[#FF9F2A]">
+        Pending <span class="block text-2xl" id="countPending">0</span>
+    </button>
+    <button data-filter="waiting" class="filter-btn bg-[#F4F18F] text-center px-6 py-3 rounded-2xl font-bold text-[#2A1001] min-w-[110px] shadow-lg
+       transition-all duration-200 ease-in-out 
+       hover:scale-105 hover:bg-[#FDFCE9] hover:shadow-xl
+       active:scale-95 active:bg-[#FFF835]">
+        Waiting <span class="block text-2xl" id="countWaiting">0</span>
+    </button>
+    <button data-filter="ongoing" class="filter-btn bg-[#8CE8FA] text-center px-6 py-3 rounded-2xl font-bold text-[#2A1001] min-w-[110px] shadow-lg
+       transition-all duration-200 ease-in-out 
+       hover:scale-105 hover:bg-[#FDFCE9] hover:shadow-xl
+       active:scale-95 active:bg-[#36DEFF]">
+        Ongoing <span class="block text-2xl" id="countOngoing">0</span>
+    </button>
+    <button data-filter="completed" class="filter-btn bg-[#BEF835] text-center px-6 py-3 rounded-2xl font-bold text-[#2A1001] min-w-[110px] shadow-lg
+       transition-all duration-200 ease-in-out 
+       hover:scale-105 hover:bg-[#FDFCE9] hover:shadow-xl
+       active:scale-95 active:bg-[#A6ED00]">
+        Completed <span class="block text-2xl" id="countCompleted">0</span>
+    </button>
+    <button data-filter="All" class="filter-btn bg-white border border-[#2A1001]/30 text-left px-6 py-3 rounded-2xl font-bold text-[#2A1001] min-w-[110px] shadow-lg
+       transition-all duration-200 ease-in-out 
+       hover:scale-105 hover:bg-[#FDFCE9] hover:shadow-xl
+       active:scale-95 active:bg-[#F9F9F9]">
+        Show All
+    </button>
+</div>
 
     <!--Queue Table-->
     <div class="overflow-x-auto rounded-3xl w-full md:w-[80%] mx-auto shadow-xl">
@@ -90,237 +90,231 @@
     </div>
 
 <script>
-      /*Sample data — replace with real data later (or fetch from backend)
+
+//connection to database and fetch data from the database TEMP MUNA
+
+    async function getAppointments() {
+        return appointments;
+  
+    }
+
+    async function updateAppointmentStatus(appointmentId, newStatus) {
+        const appt = appointments.find(a => a.appointment_id === appointmentId);
+        if (appt) appt.queue_status = newStatus;
+    
+    }
 
 
-    let appointments = []; // Starts empty, will be filled by AJAX
-
-  //Fetch data from your backend API when the page loads
-  async function loadAppointments() {
+    //patry lng baka di gumana
+/*
+//for getting the data from the backend and booking request
+async function getAppointments() {
     try {
-        const response = await fetch(url_to_your_backend_api); // Replace with your actual API endpoint
-        if (!response.ok) throw new Error('Failed to fetch appointments');
+        // Retrieve the token just like you did in the update function
+        const token = localStorage.getItem('userToken');
+
+        // Call the backend API endpoint with the Authorization header
+        const response = await fetch('/api/appointments', {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}` 
+            }
+        });
         
-        appointments = await response.json();
+        // Check if the response is ok (will fail if token is missing or expired)
+        if (!response.ok) {
+            throw new Error(`Server error: ${response.status}`);
+        }
         
-        // Render everything once data arrives
-        renderCounts();
-        renderTable();
+        // Parse the JSON data from the response
+        const realAppointments = await response.json();
+        
+        // Return the real appointments data to be used in the UI
+        return realAppointments;
+        
     } catch (error) {
-        console.error("Error loading appointments:", error);
+        // Log the error to the console for debugging purposes
+        console.error("Failed to load appointments:", error);
+        return []; 
     }
 }
 
-?*/
-    
-const appointments = [
-    { firstName: "Juan", lastName: "Dela Cruz", phone: "0917 123 4567", service: "Cleaning", status: "Pending" },
-    { firstName: "Maria", lastName: "Santos", phone: "0918 234 5678", service: "Pasta", status: "Ongoing" },
-    { firstName: "Pedro", lastName: "Reyes", phone: "0919 345 6789", service: "Pasta", status: "Ongoing" },
-    { firstName: "Ana", lastName: "Cruz", phone: "0920 456 7890", service: "Checkup", status: "Pending" },
-    { firstName: "Jose", lastName: "Garcia", phone: "0921 567 8901", service: "Whitening", status: "Waiting" },
-    { firstName: "Liza", lastName: "Torres", phone: "0922 678 9012", service: "Cleaning", status: "Waiting" },
-    { firstName: "Mark", lastName: "Ramos", phone: "0923 789 0123", service: "Whitening", status: "Pending" },
-    { firstName: "Carla", lastName: "Mendoza", phone: "0924 890 1234", service: "Checkup", status: "Ongoing" },
-    { firstName: "Paolo", lastName: "Villanueva", phone: "0925 901 2345", service: "Pasta", status: "Completed" },
-    { firstName: "Grace", lastName: "Lim", phone: "0926 012 3456", service: "Whitening", status: "Completed" },
-    { firstName: "Ryan", lastName: "Bautista", phone: "0927 123 4567", service: "Pasta", status: "Ongoing" },
-    { firstName: "Bea", lastName: "Fernandez", phone: "0928 234 5678", service: "Cleaning", status: "Pending" },
-    { firstName: "Miguel", lastName: "Aquino", phone: "0929 345 6789", service: "Checkup", status: "Waiting" },
-    { firstName: "Sofia", lastName: "Tan", phone: "0930 456 7890", service: "Whitening", status: "Ongoing" },
-    { firstName: "Diego", lastName: "Morales", phone: "0931 567 8901", service: "Pasta", status: "Completed" },
-    { firstName: "Isabel", lastName: "Cruz", phone: "0932 678 9012", service: "Cleaning", status: "Pending" },
-    { firstName: "Gabriel", lastName: "Santos", phone: "0933 789 0123", service: "Checkup", status: "Ongoing" },
-    { firstName: "Camille", lastName: "Reyes", phone: "0934 890 1234", service: "Whitening", status: "Waiting" },
-    { firstName: "Nathaniel", lastName: "Cruz", phone: "0935 901 2345", service: "Pasta", status: "Pending" },
-    { firstName: "Andrea", lastName: "Villanueva", phone: "0936 012 3456", service: "Cleaning", status: "Completed" },
-    { firstName: "Rafael", lastName: "Garcia", phone: "0937 123 4567", service: "Checkup", status: "Waiting" },
-    { firstName: "Patricia", lastName: "Lim", phone: "0938 234 5678", service: "Whitening", status: "Ongoing" },
-    { firstName: "Vincent", lastName: "Torres", phone: "0939 345 6789", service: "Pasta", status: "Pending" },
-    { firstName: "Samantha", lastName: "Mendoza", phone: "0940 456 7890", service: "Cleaning", status: "Waiting" },
-    { firstName: "Christian", lastName: "Bautista", phone: "0941 567 8901", service: "Checkup", status: "Completed" },
-    { firstName: "Angela", lastName: "Fernandez", phone: "0942 678 9012", service: "Whitening", status: "Pending" },
-    { firstName: "Kevin", lastName: "Aquino", phone: "0943 789 0123", service: "Pasta", status: "Ongoing" },
-    { firstName: "Michelle", lastName: "Tan", phone: "0944 890 1234", service: "Cleaning", status: "Completed" },
-    { firstName: "Francis", lastName: "Morales", phone: "0945 901 2345", service: "Checkup", status: "Pending" },
-    { firstName: "Kristine", lastName: "Cruz", phone: "0946 012 3456", service: "Whitening", status: "Waiting" },
-    { firstName: "Anton", lastName: "Santos", phone: "0947 123 4567", service: "Pasta", status: "Ongoing" },
-    { firstName: "Jasmine", lastName: "Reyes", phone: "0948 234 5678", service: "Cleaning", status: "Pending" },
-    { firstName: "Daniel", lastName: "Cruz", phone: "0949 345 6789", service: "Checkup", status: "Waiting" },
-    { firstName: "Nicole", lastName: "Villanueva", phone: "0950 456 7890", service: "Whitening", status: "Completed" },
-    { firstName: "Marco", lastName: "Garcia", phone: "0951 567 8901", service: "Pasta", status: "Pending" },
-    { firstName: "Erika", lastName: "Lim", phone: "0952 678 9012", service: "Cleaning", status: "Ongoing" },
-    { firstName: "Joshua", lastName: "Torres", phone: "0953 789 0123", service: "Checkup", status: "Completed" },
-    { firstName: "Katherine", lastName: "Mendoza", phone: "0954 890 1234", service: "Whitening", status: "Pending" },
-    { firstName: "Benjamin", lastName: "Bautista", phone: "0955 901 2345", service: "Pasta", status: "Waiting" },
-    { firstName: "Charlene", lastName: "Fernandez", phone: "0956 012 3456", service: "Cleaning", status: "Ongoing" },
-    { firstName: "Aaron", lastName: "Aquino", phone: "0957 123 4567", service: "Checkup", status: "Pending" },
-    { firstName: "Denise", lastName: "Tan", phone: "0958 234 5678", service: "Whitening", status: "Completed" },
-    { firstName: "Leo", lastName: "Morales", phone: "0959 345 6789", service: "Pasta", status: "Ongoing" },
-    { firstName: "Christine", lastName: "Cruz", phone: "0960 456 7890", service: "Cleaning", status: "Waiting" },
-    { firstName: "Julian", lastName: "Santos", phone: "0961 567 8901", service: "Checkup", status: "Pending" },
-    { firstName: "Alyssa", lastName: "Reyes", phone: "0962 678 9012", service: "Whitening", status: "Ongoing" },
-    { firstName: "Adrian", lastName: "Cruz", phone: "0963 789 0123", service: "Pasta", status: "Completed" },
-    { firstName: "Rachel", lastName: "Villanueva", phone: "0964 890 1234", service: "Cleaning", status: "Pending" },
-    { firstName: "Sean", lastName: "Garcia", phone: "0965 901 2345", service: "Checkup", status: "Waiting" },
-    { firstName: "Danielle", lastName: "Lim", phone: "0966 012 3456", service: "Whitening", status: "Ongoing" },
-    { firstName: "Trisha", lastName: "Bautista", phone: "0967 123 4567", service: "Pasta", status: "Pending" },
-    { firstName: "Marcus", lastName: "Fernandez", phone: "0968 234 5678", service: "Cleaning", status: "Waiting" },
-    { firstName: "Jenny", lastName: "Aquino", phone: "0969 345 6789", service: "Checkup", status: "Ongoing" },
-    { firstName: "Oliver", lastName: "Tan", phone: "0970 456 7890", service: "Whitening", status: "Completed" },
-    { firstName: "Faith", lastName: "Morales", phone: "0971 567 8901", service: "Pasta", status: "Pending" },
-    { firstName: "Elijah", lastName: "Cruz", phone: "0972 678 9012", service: "Cleaning", status: "Ongoing" },
-    { firstName: "Bianca", lastName: "Santos", phone: "0973 789 0123", service: "Checkup", status: "Completed" },
-    { firstName: "Nathan", lastName: "Reyes", phone: "0974 890 1234", service: "Whitening", status: "Waiting" },
-    { firstName: "Mikaela", lastName: "Cruz", phone: "0975 901 2345", service: "Pasta", status: "Ongoing" },
-    { firstName: "Jerome", lastName: "Villanueva", phone: "0976 012 3456", service: "Cleaning", status: "Pending" },
-    { firstName: "Alexa", lastName: "Garcia", phone: "0977 123 4567", service: "Checkup", status: "Waiting" },
-    { firstName: "Timothy", lastName: "Lim", phone: "0978 234 5678", service: "Whitening", status: "Pending" },
-    { firstName: "Precious", lastName: "Torres", phone: "0979 345 6789", service: "Pasta", status: "Completed" },
-    { firstName: "Gerald", lastName: "Mendoza", phone: "0980 456 7890", service: "Cleaning", status: "Waiting" },
-    { firstName: "Hannah", lastName: "Bautista", phone: "0981 567 8901", service: "Checkup", status: "Ongoing" },
-    { firstName: "Lorenzo", lastName: "Fernandez", phone: "0982 678 9012", service: "Whitening", status: "Pending" },
-    { firstName: "Cassandra", lastName: "Aquino", phone: "0983 789 0123", service: "Pasta", status: "Waiting" },
-    { firstName: "Emmanuel", lastName: "Tan", phone: "0984 890 1234", service: "Cleaning", status: "Completed" },
-    { firstName: "Rosalie", lastName: "Morales", phone: "0985 901 2345", service: "Checkup", status: "Ongoing" },
-    { firstName: "Victor", lastName: "Cruz", phone: "0986 012 3456", service: "Whitening", status: "Completed" }
-];
-    
-    const statusColors = {//color background for status dropdown
-        "Pending": "bg-[#E8A55C]",
-        "Waiting": "bg-[#E8DD5C]",
-        "Ongoing": "bg-[#7FD8E8]",
-        "Completed": "bg-[#B6E85C]"
+async function updateAppointmentStatus(appointmentId, newStatus) {
+    try {
+        //retrieve the JWT token from local storage to include in the request headers for authentication
+        const token = localStorage.getItem('userToken'); 
+
+      //call the backend API endpoint to update the appointment status
+        const response = await fetch(`/api/appointments/${appointmentId}`, {
+            method: 'PUT', // Updated from PATCH to match your documentation
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}` // The required JWT security header
+            },
+            body: JSON.stringify({ queue_status: newStatus }) 
+        });
+        
+        if (!response.ok) {
+            // This will catch 401 Unauthorized or 403 Forbidden errors if the token is invalid
+            throw new Error(`Server error: ${response.status}`);
+        }
+        
+        return true;//return true if the update was successful
+        
+    } catch (error) {//log the error to the console for debugging purposes
+        console.error("Failed to update appointment status:", error);
+        return false; //return false if the update failed
+    }
+}
+*/
+
+
+ //temp to be replaced by backend later, tried my best to match the id's from the database di ko naklagay service_id..
+    let appointments = [
+        { appointment_id: 1, first_name: "Juan", last_name: "Dela Cruz", phone: "0917 123 4567", label: "Cleaning", queue_status: "pending" },
+        { appointment_id: 2, first_name: "Maria", last_name: "Santos", phone: "0918 234 5678", label: "Pasta", queue_status: "ongoing" },
+        { appointment_id: 3, first_name: "Pedro", last_name: "Reyes", phone: "0919 345 6789", label: "Checkup", queue_status: "ongoing" },
+        { appointment_id: 4, first_name: "Ana", last_name: "Cruz", phone: "0920 456 7890", label: "Cleaning", queue_status: "pending" },
+        { appointment_id: 5, first_name: "Jose", last_name: "Garcia", phone: "0921 567 8901", label: "Whitening", queue_status: "waiting" },
+        { appointment_id: 6, first_name: "Liza", last_name: "Torres", phone: "0922 678 9012", label: "Cleaning", queue_status: "waiting" },
+        { appointment_id: 7, first_name: "Mark", last_name: "Ramos", phone: "0923 789 0123", label: "Checkup", queue_status: "pending" },
+        { appointment_id: 8, first_name: "Carla", last_name: "Mendoza", phone: "0924 890 1234", label: "Cleaning", queue_status: "ongoing" },
+        { appointment_id: 9, first_name: "Paolo", last_name: "Villanueva", phone: "0925 901 2345", label: "Whitening", queue_status: "completed" },
+        { appointment_id: 10, first_name: "Grace", last_name: "Lim", phone: "0926 012 3456", label: "Checkup", queue_status: "completed" }
+    ];
+
+    const statusColors = { //for the dropdown background colors
+        "pending": "bg-[#E8A55C]",
+        "waiting": "bg-[#E8DD5C]",
+        "ongoing": "bg-[#7FD8E8]",
+        "completed": "bg-[#B6E85C]"
     };
 
-    const rowsPerPage = 8;
+    const statusLabels = {//for the dropdown text labels
+        "pending": "Pending",
+        "waiting": "Waiting",
+        "ongoing": "Ongoing",
+        "completed": "Completed"
+    };
+
+    const rowsPerPage = 8; // Number of rows to display per page
     let currentPage = 1;
     let currentFilter = "All";
     let currentSearch = "";
 
+
+
+    //for filtering and searching the appointments, this is for the search bar and filter buttons
     function getFiltered() {
-    return appointments
-        .map((a, originalIndex) => ({ ...a, originalIndex })) // attach real index
-        .filter(a => {
-            const matchesFilter = currentFilter === "All" || a.status === currentFilter;
-            const matchesSearch = `${a.firstName} ${a.lastName}`.toLowerCase().includes(currentSearch.toLowerCase());
+        return appointments.filter(a => {
+            const matchesFilter = currentFilter === "All" || a.queue_status === currentFilter;
+            const matchesSearch = `${a.first_name} ${a.last_name}`.toLowerCase().includes(currentSearch.toLowerCase());
             return matchesFilter && matchesSearch;
         });
     }
 
-    function renderCounts() { //update the counts in the filter cards based on current data
-        document.getElementById('countPending').textContent = appointments.filter(a => a.status === "Pending").length;
-        document.getElementById('countWaiting').textContent = appointments.filter(a => a.status === "Waiting").length;
-        document.getElementById('countOngoing').textContent = appointments.filter(a => a.status === "Ongoing").length;
-        document.getElementById('countCompleted').textContent = appointments.filter(a => a.status === "Completed").length;
+    
+//renders the counts of each status in the filter buttons
+    function renderCounts() {
+        document.getElementById('countPending').textContent = appointments.filter(a => a.queue_status === "pending").length;
+        document.getElementById('countWaiting').textContent = appointments.filter(a => a.queue_status === "waiting").length;
+        document.getElementById('countOngoing').textContent = appointments.filter(a => a.queue_status === "ongoing").length;
+        document.getElementById('countCompleted').textContent = appointments.filter(a => a.queue_status === "completed").length;
     }
+//renders the table based on the current filter and search term, also handles pagination
+    function renderTable() {
+        const filtered = getFiltered();
+        const start = (currentPage - 1) * rowsPerPage;
+        const pageItems = filtered.slice(start, start + rowsPerPage);
 
-function renderTable() { //dynamically render table based on current filter, search, and pagination
-    const filtered = getFiltered();
-    const start = (currentPage - 1) * rowsPerPage;
-    const pageItems = filtered.slice(start, start + rowsPerPage);
-
-    const tbody = document.getElementById('tableBody');
-    tbody.innerHTML = '';
+        const tbody = document.getElementById('tableBody');
+        tbody.innerHTML = '';
 
         pageItems.forEach((item) => {
-        const row = document.createElement('tr');
-        row.className = "border-b border-[#2A1001]/10";
-        row.innerHTML = `
-            <td class="py-3 px-4 text-center">${item.firstName} ${item.lastName}</td>
-            <td class="py-3 px-4 text-center">${item.phone}</td>
-            <td class="py-3 px-4 text-center">${item.service}</td>
-            <td class="py-3 px-4 text-center">
-                <select class="statusSelect ${statusColors[item.status]} font-semibold text-[#2A1001] rounded-full px-3 py-1 outline-none cursor-pointer" data-index="${item.originalIndex}">
-                    <option class="bg-white text-[#2A1001]" ${item.status === "Pending" ? "selected" : ""}>Pending</option>
-                    <option class="bg-white text-[#2A1001]" ${item.status === "Waiting" ? "selected" : ""}>Waiting</option>
-                    <option class="bg-white text-[#2A1001]" ${item.status === "Ongoing" ? "selected" : ""}>Ongoing</option>
-                    <option class="bg-white text-[#2A1001]" ${item.status === "Completed" ? "selected" : ""}>Completed</option>
-                </select>
-            </td>
-        `;
-        tbody.appendChild(row);
-    });
-
-
-    renderPagination(filtered.length);
-}
-
-
-document.getElementById('tableBody').addEventListener('change', function (e) {//filter the table based on the status selected in the dropdown
-    if (e.target.classList.contains('statusSelect')) {
-        const idx = e.target.dataset.index;
-        appointments[idx].status = e.target.value;
-        renderCounts();
-        renderTable();
-    }
-});
-    function renderPagination(totalItems) { //dynamically render pagination buttons based on current filter, search, and total items
-    const totalPages = Math.max(1, Math.ceil(totalItems / rowsPerPage));
-    const pagination = document.getElementById('pagination');
-    pagination.innerHTML = '';
-
-    const maxVisible = 7;
-
-
-    const currentBatch = Math.floor((currentPage - 1) / maxVisible); 
-    const batchStart = currentBatch * maxVisible + 1;
-    const batchEnd = Math.min(batchStart + maxVisible - 1, totalPages);
-
-  
-    if (batchStart > 1) {// PREV arrow
-    const prevBtn = document.createElement('button');
-    prevBtn.textContent = '‹';
-    prevBtn.className = "w-9 h-9 rounded-full font-bold text-[#2A1001] bg-transparent border border-[#2A1001]/30 hover:bg-[#2A1001]/10 transition flex items-center justify-center";
-    prevBtn.addEventListener('click', () => {
-        currentPage = batchStart - 1;
-        renderTable();
-    });
-    pagination.appendChild(prevBtn);
-}
-
-    // Page number buttons for the current batch only
-    for (let i = batchStart; i <= batchEnd; i++) {
-        const btn = document.createElement('button');
-        btn.textContent = i;
-        btn.className = `w-9 h-9 rounded-full font-semibold ${i === currentPage ? 'bg-[#6B7A4C] text-white' : 'bg-white text-[#2A1001] border border-[#2A1001]/20'}`;
-        btn.addEventListener('click', () => {
-            currentPage = i;
-            renderTable();
+            const row = document.createElement('tr');
+            row.className = "border-b border-[#2A1001]/10";
+            row.innerHTML = `
+                <td class="py-3 px-4 text-center">${item.first_name} ${item.last_name}</td>
+                <td class="py-3 px-4 text-center">${item.phone}</td>
+                <td class="py-3 px-4 text-center">${item.label}</td>
+                <td class="py-3 px-4 text-center">
+                    <select class="statusSelect ${statusColors[item.queue_status]} font-semibold text-[#2A1001] rounded-full px-3 py-1 outline-none cursor-pointer" data-id="${item.appointment_id}">
+                        ${Object.keys(statusLabels).map(key => `
+                            <option value="${key}" class="bg-white text-[#2A1001]" ${item.queue_status === key ? "selected" : ""}>
+                                ${statusLabels[key]}
+                            </option>
+                        `).join('')}
+                    </select>
+                </td>
+            `;
+            tbody.appendChild(row);
         });
-        pagination.appendChild(btn);
+
+        renderPagination(filtered.length);
     }
 
-    // NEXT arrow
-    if (batchEnd < totalPages) {
-    const nextBtn = document.createElement('button');
-    nextBtn.textContent = '›';
-    nextBtn.className = "w-9 h-9 rounded-full font-bold text-[#2A1001] bg-transparent border border-[#2A1001]/30 hover:bg-[#2A1001]/10 transition flex items-center justify-center";
-    nextBtn.addEventListener('click', () => {
-        currentPage = batchEnd + 1;
-        renderTable();
+//event listener for the status dropdown change, updates the appointment status and re-renders the counts and table
+    document.getElementById('tableBody').addEventListener('change', async function (e) {
+        if (e.target.classList.contains('statusSelect')) {
+            const id = Number(e.target.dataset.id);
+            await updateAppointmentStatus(id, e.target.value);
+            renderCounts();
+            renderTable();
+        }
     });
-    pagination.appendChild(nextBtn);
-}
-}
+//renders the pagination buttons based on the current page and total items
+    function renderPagination(totalItems) {
+        const totalPages = Math.max(1, Math.ceil(totalItems / rowsPerPage));
+        const pagination = document.getElementById('pagination');
+        pagination.innerHTML = '';
 
-    // Filter buttons
+        const maxVisible = 7;
+        const currentBatch = Math.floor((currentPage - 1) / maxVisible);
+        const batchStart = currentBatch * maxVisible + 1;
+        const batchEnd = Math.min(batchStart + maxVisible - 1, totalPages);
+
+        if (batchStart > 1) {
+            const prevBtn = document.createElement('button');
+            prevBtn.textContent = '‹';
+            prevBtn.className = "w-9 h-9 rounded-full font-bold text-[#2A1001] bg-transparent border border-[#2A1001]/30 hover:bg-[#2A1001]/10 transition flex items-center justify-center";
+            prevBtn.addEventListener('click', () => { currentPage = batchStart - 1; renderTable(); });
+            pagination.appendChild(prevBtn);
+        }
+
+        for (let i = batchStart; i <= batchEnd; i++) {
+            const btn = document.createElement('button');
+            btn.textContent = i;
+            btn.className = `w-9 h-9 rounded-full font-semibold ${i === currentPage ? 'bg-[#6B7A4C] text-white' : 'bg-white text-[#2A1001] border border-[#2A1001]/20'}`;
+            btn.addEventListener('click', () => { currentPage = i; renderTable(); });
+            pagination.appendChild(btn);
+        }
+
+        if (batchEnd < totalPages) {
+            const nextBtn = document.createElement('button');
+            nextBtn.textContent = '›';
+            nextBtn.className = "w-9 h-9 rounded-full font-bold text-[#2A1001] bg-transparent border border-[#2A1001]/30 hover:bg-[#2A1001]/10 transition flex items-center justify-center";
+            nextBtn.addEventListener('click', () => { currentPage = batchEnd + 1; renderTable(); });
+            pagination.appendChild(nextBtn);
+        }
+    }
+
+//filter buttons
     document.querySelectorAll('.filter-btn').forEach(btn => {
         btn.addEventListener('click', function () {
-            currentFilter = this.dataset.filter;
+            currentFilter = this.dataset.filter; 
             currentPage = 1;
             renderTable();
         });
     });
-
-    // Search
+//search input
     document.getElementById('searchInput').addEventListener('input', function () {
         currentSearch = this.value;
         currentPage = 1;
         renderTable();
     });
 
-    // Initial render
+//initial render of counts and table
+
     renderCounts();
     renderTable();
 </script>
