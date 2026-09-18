@@ -107,10 +107,12 @@
 
     //patry lng baka di gumana==================================================================================================================================================LOOKKKKKKK USE THIS
 /*
-//for getting the data from the backend and booking request
+// For getting the data from the backend and booking request
+let appointments = [];
+
 async function getAppointments() {
     try {
-        // Retrieve the token just like you did in the update function
+        // Retrieve the token 
         const token = localStorage.getItem('userToken');
 
         // Call the backend API endpoint with the Authorization header
@@ -141,12 +143,12 @@ async function getAppointments() {
 
 async function updateAppointmentStatus(appointmentId, newStatus) {
     try {
-        //retrieve the JWT token from local storage to include in the request headers for authentication
+        // Retrieve the JWT token from local storage for authentication
         const token = localStorage.getItem('userToken'); 
 
-      //call the backend API endpoint to update the appointment status
+        // Call the backend API endpoint to update the appointment status
         const response = await fetch(`/api/appointments/${appointmentId}`, {
-            method: 'PUT', // Updated from PATCH to match your documentation
+            method: 'PUT', 
             headers: { 
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${token}` // The required JWT security header
@@ -159,11 +161,12 @@ async function updateAppointmentStatus(appointmentId, newStatus) {
             throw new Error(`Server error: ${response.status}`);
         }
         
-        return true;//return true if the update was successful
+        return true; // Return true if the update was successful
         
-    } catch (error) {//log the error to the console for debugging purposes
+    } catch (error) {
+        // Log the error to the console for debugging purposes
         console.error("Failed to update appointment status:", error);
-        return false; //return false if the update failed
+        return false; // Return false if the update failed
     }
 }
 */
