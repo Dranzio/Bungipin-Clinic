@@ -33,7 +33,7 @@
     </script>
   </aside>
 
-  <!-- CONTENT WRAPPER (This fixes the layout!) -->
+  <!-- CONTENT WRAPPER-->
   <div class="flex-1 flex flex-col w-full max-h-screen overflow-y-auto">
       
     <!-- Header -->
@@ -56,12 +56,12 @@
         Profile changes updated successfully!
       </div>
 
-      <!-- PROFILE FORM -->
+      <!-- PROFILE FORM (Make sure ID matches your Javascript) -->
       <form id="employee_profile" class="flex flex-col items-center gap-12 w-full">
 
         <!-- Section 1: Basic Information -->
         <div class="relative w-full bg-[#ccd7a3] rounded-2xl p-7 pt-9 shadow-sm">
-          <span class="absolute -top-3.5 left-6 bg-[#556b2f] text-white text-xs font-bold px-4 py-1.5 rounded-full tracking-wider uppercase shadow-sm">
+          <span class="absolute -top-3.5 left-6 bg-[#667733] text-white text-xs font-bold px-4 py-1.5 rounded-full tracking-wider uppercase shadow-sm">
             Basic Information
           </span>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-5">
@@ -118,7 +118,7 @@
         
         <!-- Section 2: Contact Information -->
         <div class="relative w-full bg-[#ccd7a3] rounded-2xl p-7 pt-9 shadow-sm">
-          <span class="absolute -top-3.5 left-6 bg-[#556b2f] text-white text-xs font-bold px-4 py-1.5 rounded-full tracking-wider uppercase shadow-sm">
+          <span class="absolute -top-3.5 left-6 bg-[#667733] text-white text-xs font-bold px-4 py-1.5 rounded-full tracking-wider uppercase shadow-sm">
             Contact Information
           </span>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-5">
@@ -130,7 +130,7 @@
                 class="w-full px-4 py-2.5 rounded-full bg-[#dedede] text-[#2d372e]/70 font-semibold text-sm outline-none shadow-inner cursor-not-allowed border border-black/10">
             </div>
 
-            <!-- Phone Number (EDITABLE) -->
+            <!-- Phone Number (EDITABLE with 11-digit mask) -->
             <div class="flex flex-col gap-1.5">
               <label for="phone" class="text-[11px] font-extrabold tracking-wider text-[#2d372e] uppercase">Phone Number:</label>
               <input type="tel" id="phone" name="phone" placeholder="09XXXXXXXXX" maxlength="11"
@@ -141,7 +141,7 @@
 
         <!-- Section 3: Change Password -->
         <div class="relative w-full bg-[#ccd7a3] rounded-2xl p-7 pt-9 shadow-sm">
-          <span class="absolute -top-3.5 left-6 bg-[#556b2f] text-white text-xs font-bold px-4 py-1.5 rounded-full tracking-wider uppercase shadow-sm">
+          <span class="absolute -top-3.5 left-6 bg-[#667733] text-white text-xs font-bold px-4 py-1.5 rounded-full tracking-wider uppercase shadow-sm">
             Change Password
           </span>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-5">
@@ -160,7 +160,7 @@
         </div>
 
         <!-- Submit Button -->
-        <button type="submit" class="z-10 bg-[#d8be50] hover:bg-[#c9af43] text-[#382414] font-black text-xl px-12 py-3 rounded-full shadow-md active:scale-95 transition transform">
+        <button type="submit" class="z-10 bg-[#D5C04D] hover:bg-[#F6F2DB] text-[#382414] font-black text-xl px-12 py-3 rounded-full shadow-md active:scale-95 transition transform">
           Update Changes
         </button>
       </form>
