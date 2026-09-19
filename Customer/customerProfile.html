@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="../output.css" rel="stylesheet">
+  <title>Patient Profile</title>
+  <script src="https://kit.fontawesome.com/fc8c3f4103.js" crossorigin="anonymous"></script>
+  <script src="/Taskbar/Customer_Sidebar.js"></script>
+</head>
+
+<body class="min-h-screen bg-[#F3EFE4] relative flex flex-col md:flex-row antialiased">
+
+  <!-- SIDEBAR -->
+  <aside class="w-full md:w-64 min-h-screen shrink-0 bg-[#9ea988]">
+    <div id="sidebar-placeholder"></div>
+    <script>
+      (async () => {
+        try {
+          const response = await fetch('/Taskbar/Customer_Task.html');
+          if (response.ok) {
+            const data = await response.text();
+            document.getElementById('sidebar-placeholder').innerHTML = data;
+            const currentPage = window.location.pathname.split("/").pop();
+            document.querySelectorAll('.nav-link').forEach(link => {
+              if (link.getAttribute('data-page') === currentPage) {
+                link.classList.add('bg-[#FDFCE9]');
+              }
+            });
+            if (typeof initSidebar === 'function') {
+              initSidebar();
+            }
+          }
+        } catch (error) {
+          console.log('Sidebar fallback:', error);
+        }
+      })();
+    </script>
+  </aside>
+
+  <!-- CONTENT WRAPPER -->
+  <div class="flex-1 flex flex-col w-full max-h-screen overflow-y-auto">
+
+    <!-- Header -->
+    <div class="flex justify-between items-start pt-5 pl-6 pr-4 md:pl-24 md:pr-8">
+      <h1 class="text-2xl sm:text-3xl md:text-5xl 2xl:text-[73px] pt-5 font-bold text-[#2A1001] font-['Poppins']">
+        Profile
+      </h1>
+      <img
+        src="../images/logowithtitle.png"
+        class="w-20 sm:w-24 md:w-28 h-auto object-contain shrink-0"
+        alt="Logo"/>
+    </div>
+    <hr class="border-t border-[#2A1001] mt-2 mb-6" />
+
+    <!-- MAIN CONTENT -->
+    <main class="w-full max-w-4xl mx-auto py-8 px-6 md:px-12">
+
+      <!-- Success Message -->
+      <div id="successMessage" class="hidden mb-6 p-4 rounded-2xl bg-[#556b2f] text-white font-bold text-center text-sm shadow-md">
+        Profile changes updated successfully!
+      </div>
+
+      <!-- PROFILE FORM -->
+      <form id="customer_profile" class="flex flex-col items-center gap-10 sm:gap-12 w-full">
+
+        <!-- Section 1: Basic Information -->
+        <div class="relative w-full bg-[#D7E3A5] rounded-2xl p-5 sm:p-7 pt-8 sm:pt-9 shadow-sm border border-[#d2dbbe]">
+          <span class="absolute -top-3.5 left-4 sm:left-6 bg-[#667733] text-white text-[10px] sm:text-xs font-bold px-3 sm:px-4 py-1.5 rounded-full tracking-wider uppercase shadow-sm">
+            Basic Information
+          </span>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 sm:gap-y-5">
+
+            <!-- First Name (READONLY) -->
+            <div class="flex flex-col gap-1.5">
+              <label for="first-name" class="text-[11px] font-extrabold tracking-wider text-[#2c3e2b] uppercase">First Name:</label>
+              <input type="text" id="first-name" name="first_name" readonly
+                class="w-full px-4 py-2.5 rounded-full bg-[#dedede] text-[#2c3e2b]/70 font-semibold text-sm outline-none shadow-inner cursor-not-allowed border border-black/10">
+            </div>
+
+            <!-- Last Name (READONLY) -->
+            <div class="flex flex-col gap-1.5">
+              <label for="last-name" class="text-[11px] font-extrabold tracking-wider text-[#2c3e2b] uppercase">Last Name:</label>
+              <input type="text" id="last-name" name="last_name" readonly
+                class="w-full px-4 py-2.5 rounded-full bg-[#dedede] text-[#2c3e2b]/70 font-semibold text-sm outline-none shadow-inner cursor-not-allowed border border-black/10">
+            </div>
+
+            <!-- Sex (READONLY) -->
+            <div class="flex flex-col gap-1.5">
+              <label for="sex" class="text-[11px] font-extrabold tracking-wider text-[#2c3e2b] uppercase">Sex:</label>
+              <input type="text" id="sex" name="sex" readonly
+                class="w-full px-4 py-2.5 rounded-full bg-[#dedede] text-[#2c3e2b]/70 font-semibold text-sm outline-none shadow-inner cursor-not-allowed border border-black/10">
+            </div>
+
+            <!-- Birthday (EDITABLE) -->
+            <div class="flex flex-col gap-1.5">
+              <label for="birthday" class="text-[11px] font-extrabold tracking-wider text-[#2c3e2b] uppercase">Birthday:</label>
+              <input type="date" id="birthday" name="birthday"
+                class="w-full px-4 py-2.5 rounded-full bg-white text-[#2c3e2b] font-medium text-sm outline-none shadow-inner border border-[#c1ccab] focus:ring-2 focus:ring-[#4a5e3b]/50">
+            </div>
+
+            <!-- Civil Status (EDITABLE) -->
+            <div class="flex flex-col gap-1.5">
+              <label for="civil-status" class="text-[11px] font-extrabold tracking-wider text-[#2c3e2b] uppercase">Civil Status:</label>
+              <select id="civil-status" name="civil_status" required
+                class="w-full px-4 py-2.5 rounded-full bg-white text-[#2c3e2b] font-medium text-sm outline-none shadow-inner border border-[#c1ccab] focus:ring-2 focus:ring-[#4a5e3b]/50 cursor-pointer">
+                <option value="" disabled selected>Select civil status</option>
+                <option value="Single">Single</option>
+                <option value="Married">Married</option>
+                <option value="Divorced">Divorced</option>
+                <option value="Widowed">Widowed</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section 2: Contact Information -->
+        <div class="relative w-full bg-[#D7E3A5] rounded-2xl p-5 sm:p-7 pt-8 sm:pt-9 shadow-sm border border-[#d2dbbe]">
+          <span class="absolute -top-3.5 left-4 sm:left-6 bg-[#667733] text-white text-[10px] sm:text-xs font-bold px-3 sm:px-4 py-1.5 rounded-full tracking-wider uppercase shadow-sm">
+            Contact Information
+          </span>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 sm:gap-y-5">
+
+            <!-- Primary Email (READONLY  -->
+            <div class="flex flex-col gap-1.5">
+              <label for="email" class="text-[11px] font-extrabold tracking-wider text-[#2c3e2b] uppercase">Primary Email:</label>
+              <input type="email" id="email" name="email" readonly
+                class="w-full px-4 py-2.5 rounded-full bg-[#dedede] text-[#2c3e2b]/70 font-semibold text-sm outline-none shadow-inner cursor-not-allowed border border-black/10">
+            </div>
+
+            <!-- Secondary Email (EDITABLE) -->
+            <div class="flex flex-col gap-1.5">
+              <label for="secondary-email" class="text-[11px] font-extrabold tracking-wider text-[#2c3e2b] uppercase">Secondary Email:</label>
+              <input type="email" id="secondary-email" name="secondary_email"
+                class="w-full px-4 py-2.5 rounded-full bg-white text-[#2c3e2b] font-medium text-sm outline-none shadow-inner border border-[#c1ccab] focus:ring-2 focus:ring-[#4a5e3b]/50">
+            </div>
+
+            <!-- Address (EDITABLE) -->
+            <div class="flex flex-col gap-1.5">
+              <label for="address" class="text-[11px] font-extrabold tracking-wider text-[#2c3e2b] uppercase">Address:</label>
+              <input type="text" id="address" name="address"
+                class="w-full px-4 py-2.5 rounded-full bg-white text-[#2c3e2b] font-medium text-sm outline-none shadow-inner border border-[#c1ccab] focus:ring-2 focus:ring-[#4a5e3b]/50">
+            </div>
+
+            <!-- Phone Number (EDITABLE with 11-digit mask) -->
+            <div class="flex flex-col gap-1.5">
+              <label for="phone" class="text-[11px] font-extrabold tracking-wider text-[#2c3e2b] uppercase">Phone Number:</label>
+              <input type="tel" id="phone" name="phone" placeholder="09XXXXXXXXX" maxlength="11"
+                class="w-full px-4 py-2.5 rounded-full bg-white text-[#2c3e2b] font-medium text-sm outline-none shadow-inner border border-[#c1ccab] focus:ring-2 focus:ring-[#4a5e3b]/50">
+            </div>
+          </div>
+        </div>
+
+        <!-- Section 3: Change Password -->
+        <div class="relative w-full bg-[#D7E3A5] rounded-2xl p-5 sm:p-7 pt-8 sm:pt-9 shadow-sm border border-[#d2dbbe]">
+          <span class="absolute -top-3.5 left-4 sm:left-6 bg-[#667733] text-white text-[10px] sm:text-xs font-bold px-3 sm:px-4 py-1.5 rounded-full tracking-wider uppercase shadow-sm">
+            Change Password
+          </span>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 sm:gap-y-5">
+            <div class="flex flex-col gap-1.5">
+              <label for="new-password" class="text-[11px] font-extrabold tracking-wider text-[#2c3e2b] uppercase">New Account Password:</label>
+              <input type="password" id="new-password" name="new_password" placeholder="Enter New Password"
+                class="w-full px-4 py-2.5 rounded-full bg-white text-[#2c3e2b] font-medium text-sm outline-none shadow-inner border border-[#c1ccab] focus:ring-2 focus:ring-[#4a5e3b]/50">
+            </div>
+
+            <div class="flex flex-col gap-1.5">
+              <label for="confirm-password" class="text-[11px] font-extrabold tracking-wider text-[#2c3e2b] uppercase">Confirm Account Password:</label>
+              <input type="password" id="confirm-password" name="confirm_password" placeholder="Re-enter new password"
+                class="w-full px-4 py-2.5 rounded-full bg-white text-[#2c3e2b] font-medium text-sm outline-none shadow-inner border border-[#c1ccab] focus:ring-2 focus:ring-[#4a5e3b]/50">
+            </div>
+          </div>
+        </div>
+
+        <!-- Section 4: Medical Information -->
+        <div class="relative w-full bg-[#D7E3A5] rounded-2xl p-5 sm:p-7 pt-8 sm:pt-9 shadow-sm border border-[#d2dbbe]">
+          <span class="absolute -top-3.5 left-4 sm:left-6 bg-[#667733] text-white text-[10px] sm:text-xs font-bold px-3 sm:px-4 py-1.5 rounded-full tracking-wider uppercase shadow-sm">
+            Medical Information
+          </span>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 sm:gap-y-5">
+            <div class="flex flex-col gap-1.5">
+              <label class="text-[11px] font-extrabold tracking-wider text-[#2c3e2b] uppercase">Pre-existing Health Conditions:</label>
+              <div id="healthConditionsList" class="flex flex-wrap gap-2 mb-1"></div>
+              <div class="flex gap-2">
+                <input type="text" id="healthConditionInput" placeholder="e.g. Asthma"
+                  class="flex-1 px-4 py-2.5 rounded-full bg-white text-[#2c3e2b] font-medium text-sm outline-none shadow-inner border border-[#c1ccab] focus:ring-2 focus:ring-[#4a5e3b]/50">
+                <button type="button" id="addHealthConditionBtn"
+                  class="shrink-0 px-4 rounded-full bg-[#667733] hover:bg-[#556022] text-white font-bold text-sm transition">+ Add</button>
+              </div>
+            </div>
+
+            <div class="flex flex-col gap-1.5">
+              <label for="pregnancy-status" class="text-[11px] font-extrabold tracking-wider text-[#2c3e2b] uppercase">Pregnancy Status:</label>
+              <select id="pregnancy-status" name="pregnancy_status"
+                class="w-full px-4 py-2.5 rounded-full bg-white text-[#2c3e2b] font-medium text-sm outline-none shadow-inner border border-[#c1ccab] focus:ring-2 focus:ring-[#4a5e3b]/50 cursor-pointer">
+                <option value="N/A">N/A / Male</option>
+                <option value="1-3 Months">1-3 Months</option>
+                <option value="4-6 Months">4-6 Months</option>
+                <option value="7-9 Months">7-9 Months</option>
+              </select>
+            </div>
+
+            <div class="flex flex-col gap-1.5 md:col-span-2">
+              <label class="text-[11px] font-extrabold tracking-wider text-[#2c3e2b] uppercase">Current Prescriptions:</label>
+              <div id="prescriptionsList" class="flex flex-col gap-2 mb-1"></div>
+              <div class="flex flex-col sm:flex-row gap-2">
+                <input type="text" id="medicationNameInput" placeholder="Medication name"
+                  class="flex-1 px-4 py-2.5 rounded-full bg-white text-[#2c3e2b] font-medium text-sm outline-none shadow-inner border border-[#c1ccab] focus:ring-2 focus:ring-[#4a5e3b]/50">
+                <input type="text" id="dosageInput" placeholder="Dosage (optional)"
+                  class="sm:w-40 px-4 py-2.5 rounded-full bg-white text-[#2c3e2b] font-medium text-sm outline-none shadow-inner border border-[#c1ccab] focus:ring-2 focus:ring-[#4a5e3b]/50">
+                <button type="button" id="addPrescriptionBtn"
+                  class="shrink-0 px-4 rounded-full bg-[#667733] hover:bg-[#556022] text-white font-bold text-sm transition">+ Add</button>
+              </div>
+            </div>
+
+            <div class="flex flex-col gap-1.5 md:col-span-2">
+              <label class="text-[11px] font-extrabold tracking-wider text-[#2c3e2b] uppercase">Allergies / Historical Allergies:</label>
+              <div id="allergiesList" class="flex flex-wrap gap-2 mb-1"></div>
+              <div class="flex gap-2">
+                <input type="text" id="allergenInput" placeholder="e.g. Penicillin"
+                  class="flex-1 px-4 py-2.5 rounded-full bg-white text-[#2c3e2b] font-medium text-sm outline-none shadow-inner border border-[#c1ccab] focus:ring-2 focus:ring-[#4a5e3b]/50">
+                <button type="button" id="addAllergyBtn"
+                  class="shrink-0 px-4 rounded-full bg-[#667733] hover:bg-[#556022] text-white font-bold text-sm transition">+ Add</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Submit Button -->
+        <button type="submit" class="z-10 bg-[#D5C04D] hover:bg-[#F6F2DB] text-[#2A1001] font-black text-xl px-12 py-3 rounded-full shadow-md active:scale-95 transition transform">
+          Update Changes
+        </button>
+
+        <!-- Upload PDF Section -->
+        <div id="pdfDropZone" class="w-full bg-[#e3e8d8] rounded-2xl p-5 sm:p-8 border-2 border-dashed border-[#4a5e3b]/50 flex flex-col items-center justify-center gap-4 min-h-[180px] sm:min-h-[220px] cursor-pointer hover:bg-[#dbe4cb] transition">
+          <div class="flex flex-col sm:flex-row items-center gap-3 text-center sm:text-left">
+            <p class="text-[#2c3e2b] font-bold text-sm sm:text-base">
+              Click to upload a PDF of your medical conditions
+            </p>
+            <img src="../images/logowithtitle.png" alt="Clinic Logo" class="w-8 h-8 sm:w-10 sm:h-10 object-contain">
+          </div>
+          <input type="file" id="medical-pdf-upload" accept=".pdf" class="hidden">
+          <p id="uploadStatus" class="hidden text-sm font-semibold"></p>
+        </div>
+
+      </form>
+    </main>
+  </div>
+
+  <script>
+    const form = document.getElementById('customer_profile');
+    const newPassword = document.getElementById('new-password');
+    const confirmPassword = document.getElementById('confirm-password');
+    const phoneInput = document.getElementById('phone');
+    const successMessage = document.getElementById('successMessage');
+
+
+    // EXPANDABLE LISTS — health conditions, prescriptions, allergies
+    // Each patient can have MULTIPLE of these 
+
+
+    let healthConditions = []; // array of strings, e.g. ["Asthma", "Diabetes"]
+    let allergies = [];        // array of strings, e.g. ["Penicillin", "Latex"]
+    let prescriptions = [];    // array of { medication_name, dosage }
+
+    // Generic renderer for simple string-chip lists (health conditions, allergies)
+    function renderChipList(containerId, items, onRemove) {
+      const container = document.getElementById(containerId);
+      if (items.length === 0) {
+        container.innerHTML = `<p class="text-xs text-[#2c3e2b]/50 italic">None added yet.</p>`;
+        return;
+      }
+      container.innerHTML = items.map((item, i) => `
+        <span class="inline-flex items-center gap-2 bg-white border border-[#c1ccab] rounded-full px-4 py-1.5 text-sm text-[#2c3e2b] font-medium shadow-inner">
+          ${item}
+          <button type="button" class="removeChipBtn text-[#2c3e2b]/50 hover:text-red-600 font-bold" data-container="${containerId}" data-index="${i}">&times;</button>
+        </span>
+      `).join('');
+    }
+
+    function renderHealthConditions() { renderChipList('healthConditionsList', healthConditions); }
+    function renderAllergies() { renderChipList('allergiesList', allergies); }
+
+    function renderPrescriptions() {
+      const container = document.getElementById('prescriptionsList');
+      if (prescriptions.length === 0) {
+        container.innerHTML = `<p class="text-xs text-[#2c3e2b]/50 italic">None added yet.</p>`;
+        return;
+      }
+      container.innerHTML = prescriptions.map((rx, i) => `
+        <div class="flex items-center justify-between bg-white border border-[#c1ccab] rounded-full px-4 py-2 shadow-inner">
+          <span class="text-sm text-[#2c3e2b] font-medium">
+            ${rx.medication_name}${rx.dosage ? ` — ${rx.dosage}` : ''}
+          </span>
+          <button type="button" class="removePrescriptionBtn text-[#2c3e2b]/50 hover:text-red-600 font-bold" data-index="${i}">&times;</button>
+        </div>
+      `).join('');
+    }
+
+    // Add handlers
+    document.getElementById('addHealthConditionBtn').addEventListener('click', () => {
+      const input = document.getElementById('healthConditionInput');
+      const value = input.value.trim();
+      if (!value) return;
+      healthConditions.push(value);
+      input.value = '';
+      renderHealthConditions();
+    });
+
+    document.getElementById('addAllergyBtn').addEventListener('click', () => {
+      const input = document.getElementById('allergenInput');
+      const value = input.value.trim();
+      if (!value) return;
+      allergies.push(value);
+      input.value = '';
+      renderAllergies();
+    });
+
+    document.getElementById('addPrescriptionBtn').addEventListener('click', () => {
+      const nameInput = document.getElementById('medicationNameInput');
+      const dosageInput = document.getElementById('dosageInput');
+      const name = nameInput.value.trim();
+      if (!name) return;
+      prescriptions.push({ medication_name: name, dosage: dosageInput.value.trim() });
+      nameInput.value = '';
+      dosageInput.value = '';
+      renderPrescriptions();
+    });
+
+    // Allow pressing Enter in the text inputs to add, instead of only clicking the button
+    ['healthConditionInput', 'allergenInput', 'medicationNameInput', 'dosageInput'].forEach(id => {
+      document.getElementById(id).addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          if (id === 'healthConditionInput') document.getElementById('addHealthConditionBtn').click();
+          if (id === 'allergenInput') document.getElementById('addAllergyBtn').click();
+          if (id === 'medicationNameInput' || id === 'dosageInput') document.getElementById('addPrescriptionBtn').click();
+        }
+      });
+    });
+
+    // Remove handlers — event delegation since chips are re-rendered often
+    document.addEventListener('click', function (e) {
+      if (e.target.classList.contains('removeChipBtn')) {
+        const containerId = e.target.dataset.container;
+        const index = Number(e.target.dataset.index);
+        if (containerId === 'healthConditionsList') {
+          healthConditions.splice(index, 1);
+          renderHealthConditions();
+        } else if (containerId === 'allergiesList') {
+          allergies.splice(index, 1);
+          renderAllergies();
+        }
+      }
+      if (e.target.classList.contains('removePrescriptionBtn')) {
+        const index = Number(e.target.dataset.index);
+        prescriptions.splice(index, 1);
+        renderPrescriptions();
+      }
+    });
+
+    // MEDICAL PDF UPLOAD
+  document.getElementById('pdfDropZone').addEventListener('click', function (e) {
+      // Avoid double-triggering if the click landed on the status text itself
+      if (e.target.id !== 'uploadStatus') {
+        document.getElementById('medical-pdf-upload').click();
+      }
+    });
+
+    document.getElementById('medical-pdf-upload').addEventListener('change', async function (e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const status = document.getElementById('uploadStatus');
+      status.classList.remove('hidden', 'text-red-600', 'text-green-700');
+      status.textContent = `Uploading ${file.name}...`;
+
+      const formData = new FormData();
+      formData.append('medical_pdf', file);
+
+      try {
+        const token = localStorage.getItem('userToken');
+
+        const response = await fetch('/api/patient-profile/medical-pdf', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}` }, 
+        });
+
+        if (!response.ok) throw new Error(`Server error: ${response.status}`);
+
+        status.textContent = `✅ Uploaded: ${file.name}`;
+        status.classList.add('text-green-700');
+
+      } catch (error) {
+        console.error('Upload error:', error);
+        status.textContent = `Could not upload ${file.name}. Please try again.`;
+        status.classList.add('text-red-600');
+      }
+
+      e.target.value = ''; // reset so the same file can be re-selected if needed
+    });
+
+    // Live phone digit masking 
+    phoneInput.addEventListener('input', function () {
+      this.value = this.value.replace(/\D/g, '').slice(0, 11);
+    });
+
+    // Real-time password match validation 
+    confirmPassword.addEventListener('input', function () {
+      if (newPassword.value && this.value && newPassword.value !== this.value) {
+        this.setCustomValidity('Passwords do not match.');
+      } else {
+        this.setCustomValidity('');
+      }
+    });
+
+    newPassword.addEventListener('input', function () {
+      if (confirmPassword.value && this.value !== confirmPassword.value) {
+        confirmPassword.setCustomValidity('Passwords do not match.');
+      } else {
+        confirmPassword.setCustomValidity('');
+      }
+    });
+
+    // Collect data from database
+    async function loadProfileFromDatabase() {
+      try {
+        const token = localStorage.getItem('userToken');
+        if (!token) {
+          console.warn("No user token found. Redirecting to login or guest mode.");
+          return;
+        }
+
+        const response = await fetch('/api/patient-profile', {
+          method: 'GET',
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (!response.ok) throw new Error(`Server error: ${response.status}`);
+
+        const data = await response.json();
+
+        // Readonly fields 
+        document.getElementById('first-name').value = data.first_name || '';
+        document.getElementById('last-name').value  = data.last_name || '';
+        document.getElementById('sex').value         = data.sex || '';
+        document.getElementById('email').value       = data.email || '';
+
+        // Editable fields 
+        if (data.birthday) {
+          document.getElementById('birthday').value = data.birthday.split('T')[0];
+        }
+        document.getElementById('civil-status').value     = data.civil_status || '';
+        document.getElementById('secondary-email').value  = data.secondary_email || '';
+        document.getElementById('address').value          = data.address || '';
+        document.getElementById('phone').value             = data.phone || '';
+        document.getElementById('pregnancy-status').value = data.pregnancy_status || 'N/A';
+
+      
+        healthConditions = normalizeToStringArray(data.health_conditions, 'description');
+        allergies = normalizeToStringArray(data.allergies, 'allergen');
+        prescriptions = Array.isArray(data.prescriptions)
+          ? data.prescriptions.map(rx => ({ medication_name: rx.medication_name, dosage: rx.dosage || '' }))
+          : [];
+
+        renderHealthConditions();
+        renderAllergies();
+        renderPrescriptions();
+
+      } catch (error) {
+        console.error('Failed to load profile:', error);
+      }
+    }
+
+
+    function normalizeToStringArray(value, key) {
+      if (Array.isArray(value)) {
+        return value.map(item => (typeof item === 'string' ? item : item[key])).filter(Boolean);
+      }
+      if (typeof value === 'string' && value.trim()) {
+        return value.split(',').map(s => s.trim()).filter(Boolean);
+      }
+      return [];
+    }
+
+    // Update profile to database
+    form.addEventListener('submit', async function (e) {
+      e.preventDefault();
+
+      // Password check — was missing entirely before
+      if (newPassword.value && newPassword.value !== confirmPassword.value) {
+        confirmPassword.setCustomValidity('Passwords do not match.');
+        confirmPassword.reportValidity();
+        return;
+      } else {
+        confirmPassword.setCustomValidity('');
+      }
+
+      // Build payload — only editable fields
+      const payload = {
+        birthday:         document.getElementById('birthday').value,
+        civil_status:     document.getElementById('civil-status').value.trim(),
+        secondary_email:  document.getElementById('secondary-email').value.trim(),
+        address:          document.getElementById('address').value.trim(),
+        phone:            document.getElementById('phone').value.trim(),
+        pregnancy_status: document.getElementById('pregnancy-status').value,
+        health_conditions: healthConditions, 
+        prescriptions: prescriptions,         
+        allergies: allergies                  
+      };
+
+      // Only send a password if the user actually typed a new one — was previously always sent, even blank
+      if (newPassword.value) {
+        payload.new_password = newPassword.value;
+      }
+
+      try {
+        const token = localStorage.getItem('userToken');
+
+        const response = await fetch('/api/patient-profile', {
+          method: 'PATCH', 
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+          const errData = await response.json();
+          throw new Error(errData.message || 'Failed to update profile');
+        }
+
+        // Clear password fields after success
+        newPassword.value = '';
+        confirmPassword.value = '';
+
+        // Inline success banner instead of a browser alert 
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+
+        setTimeout(() => {
+          successMessage.classList.add('hidden');
+        }, 4000);
+
+      } catch (error) {
+        console.error('Error updating profile:', error);
+        alert('Could not update profile: ' + error.message);
+      }
+    });
+
+    // Load profile data when page opens
+    document.addEventListener('DOMContentLoaded', function () {
+      renderHealthConditions();
+      renderAllergies();
+      renderPrescriptions();
+      loadProfileFromDatabase();
+    });
+  </script>
+
+</body>
+</html>
