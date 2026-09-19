@@ -732,7 +732,7 @@ document.getElementById('showQrCodeBtn').addEventListener('click', () => {
     container.innerHTML = '';
     const p = patients.find(p => p.patient_id == currentPatientId);
     if (!p) return;
-    let json_patient = p.public_id; // encode just the short public ID, not the whole record
+   let json_patient = JSON.stringify(p);// encode whole record
     // Generate the QR code SVG element using the library
     const svgElement = QRCode({
         msg: json_patient, // Replace with your target data/URL
