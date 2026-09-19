@@ -141,7 +141,7 @@
             }
         });
     </script>
-    <script src="../Taskbar/Customer_Sidebar.js"></script>
+    <script src="/Taskbar/Customer_Sidebar.js"></script>
 </head>
 <body class="bg-[#F3EFE4] min-h-screen font-poppins text-[#2c3e2b] antialiased">
     <div class="min-h-screen flex flex-col md:flex-row w-full"> <!--Div for whole body-->
@@ -150,7 +150,7 @@
 <script>
     (async () => {
         try {
-            const response = await fetch('../Taskbar/Customer_Task.html');
+            const response = await fetch('/Taskbar/Customer_Task.html');
             if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
             
             const data = await response.text();
