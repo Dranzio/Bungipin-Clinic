@@ -33,7 +33,7 @@
     </script>
   </aside>
 
-  <!-- CONTENT WRAPPER -->
+  <!-- CONTENT WRAPPER (This fixes the layout!) -->
   <div class="flex-1 flex flex-col w-full max-h-screen overflow-y-auto">
       
     <!-- Header -->
@@ -48,7 +48,7 @@
     </div>
     <hr class="border-t border-[#2A1001] mt-2 mb-6" />
 
-    <!-- MAIN CONTENT -->
+   <!-- MAIN CONTENT -->
     <main class="w-full max-w-4xl mx-auto py-8 px-6 md:px-12">
       
       <!-- Success Message -->
@@ -87,14 +87,14 @@
                 class="w-full px-4 py-2.5 rounded-full bg-[#dedede] text-[#2d372e]/70 font-semibold text-sm outline-none shadow-inner cursor-not-allowed border border-black/10">
             </div>
 
-            <!-- Birthday (EDITABLE) -->
+            <!-- Birthday (EDITABLE - Will be auto-locked) -->
             <div class="flex flex-col gap-1.5">
               <label for="birthday" class="text-[11px] font-extrabold tracking-wider text-[#2d372e] uppercase">Birthday:</label>
               <input type="date" id="birthday" name="birthday"
                 class="w-full px-4 py-2.5 rounded-full bg-white text-[#2d372e] font-medium text-sm outline-none shadow-inner focus:ring-2 focus:ring-[#556b2f]/50">
             </div>
 
-            <!-- Civil Status (EDITABLE) -->
+            <!-- Civil Status (EDITABLE - Will be auto-locked) -->
             <div class="flex flex-col gap-1.5">
               <label for="civil_status" class="text-[11px] font-extrabold tracking-wider text-[#2d372e] uppercase">Civil Status:</label>
               <select id="civil_status" name="civil_status" required
@@ -130,7 +130,7 @@
                 class="w-full px-4 py-2.5 rounded-full bg-[#dedede] text-[#2d372e]/70 font-semibold text-sm outline-none shadow-inner cursor-not-allowed border border-black/10">
             </div>
 
-            <!-- Phone Number (EDITABLE with 11-digit mask) -->
+            <!-- Phone Number (EDITABLE - Will be auto-locked) -->
             <div class="flex flex-col gap-1.5">
               <label for="phone" class="text-[11px] font-extrabold tracking-wider text-[#2d372e] uppercase">Phone Number:</label>
               <input type="tel" id="phone" name="phone" placeholder="09XXXXXXXXX" maxlength="11"
@@ -145,12 +145,14 @@
             Change Password
           </span>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-5">
+            <!-- New Password (EDITABLE - Will be auto-locked) -->
             <div class="flex flex-col gap-1.5">
               <label for="new_password" class="text-[11px] font-extrabold tracking-wider text-[#2d372e] uppercase">New Account Password:</label>
               <input type="password" id="new_password" name="new_password" placeholder="Enter New Password"
                 class="w-full px-4 py-2.5 rounded-full bg-white text-[#2d372e] font-medium text-sm outline-none shadow-inner focus:ring-2 focus:ring-[#556b2f]/50">
             </div>
 
+            <!-- Confirm Password (EDITABLE - Will be auto-locked) -->
             <div class="flex flex-col gap-1.5">
               <label for="confirm_password" class="text-[11px] font-extrabold tracking-wider text-[#2d372e] uppercase">Confirm Account Password:</label>
               <input type="password" id="confirm_password" name="confirm_password" placeholder="Re-enter new password"
@@ -158,7 +160,6 @@
             </div>
           </div>
         </div>
-
         <!-- Submit Button -->
         <button type="submit" class="z-10 bg-[#D5C04D] hover:bg-[#F6F2DB] text-[#2A1001] font-black text-xl px-12 py-3 rounded-full shadow-md active:scale-95 transition transform">
           Update Changes
@@ -169,9 +170,7 @@
 
  
 
-    
-
-
+  
   <script>
 
     const form = document.getElementById('employee_profile');
@@ -221,7 +220,7 @@
         document.getElementById('last_name').value  = data.last_name || '';
         document.getElementById('staff_code').value = data.staff_code || data.public_id || '';
         document.getElementById('email').value      = data.email || '';
-        document.getElementById('sex').value        = data.sex || ''; // NEW: Added Sex field
+        document.getElementById('sex').value        = data.sex || ''; 
 
         // Editable fields
         if (data.birthday) {
@@ -295,8 +294,54 @@
       }
     });
 
-    // Load profile data when page opens
-    document.addEventListener('DOMContentLoaded', loadProfileFromDatabase);
+document.addEventListener('DOMContentLoaded', () => {
+        // List of editable field IDs specific to the employee page
+        const editableFields = [
+            'birthday', 'civil_status', 'phone', 'new_password', 'confirm_password'
+        ];
+
+        editableFields.forEach(id => {
+            const field = document.getElementById(id);
+            if (!field) return; 
+
+            // Lock the fields (keeps them white, prevents editing until clicked)
+            if (field.tagName === 'SELECT') {
+                field.classList.add('pointer-events-none'); 
+            } else {
+                field.setAttribute('readonly', 'true');
+                field.classList.add('cursor-default');
+            }
+
+            field.classList.add('pr-10'); 
+
+            //Create the wrapper for the icon
+            const wrapper = document.createElement('div');
+            wrapper.className = 'relative w-full flex items-center';
+            
+            field.parentNode.insertBefore(wrapper, field);
+            wrapper.appendChild(field);
+
+            //Create the circular pencil button
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'absolute right-2 w-7 h-7 bg-white rounded-full flex items-center justify-center shadow-md border border-gray-100 hover:bg-gray-50 transition z-10 cursor-pointer';
+            btn.innerHTML = `<img src="../images/editIcon.png" class="w-3.5 h-3.5 opacity-80" alt="Edit">`;
+
+            //Click event to unlock
+            btn.addEventListener('click', () => {
+                if (field.tagName === 'SELECT') {
+                    field.classList.remove('pointer-events-none');
+                } else {
+                    field.removeAttribute('readonly');
+                    field.classList.remove('cursor-default');
+                }
+                field.focus(); 
+                btn.classList.add('hidden'); // Hide pencil when unlocked
+            });
+
+            wrapper.appendChild(btn);
+        });
+    });
   </script>
 
 </body>
