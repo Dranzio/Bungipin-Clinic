@@ -258,13 +258,13 @@
     <script>
 
 
-        /*  Use this code when there is backend =============================================================================================================================================LOOK HEREEEE
+        //  Use this code when there is backend =============================================================================================================================================LOOK HEREEEE
 let patients = [];
 
 async function loadPatientsFromDatabase() {
     try {
         const token = localStorage.getItem('userToken');
-        const response = await fetch('/api/patients', {
+        const response = await fetch('http://localhost:3000/api/patients', {
             method: 'GET',
             headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -280,74 +280,73 @@ async function loadPatientsFromDatabase() {
 }
 
 loadPatientsFromDatabase();
-}*/
 
     // Sample patient data — swap for real data from a backend later DELETE LATER RAHHHHHHHHH ================================================================================== LOOK HERE
-let patients = [
-    {
-        patient_id: 1,
-        public_id: "PAT-0001",
-        first_name: "Juan",
-        last_name: "Dela Cruz",
-        sex: "Male",
-        birthday: "1990-05-14",
-        email: "juan.delacruz@email.com",
-        phone: "0917 123 4567",
-        civil_status: "Single",
-        pregnancy_status: "N/A",
-        health_conditions: [{ description: "None" }],
-        allergies: [{ allergen: "Penicillin" }],
-        prescriptions: [],
-        xrays: [
-           
-            { appointment_id: 150, file_url: "https://images.unsplash.com/photo-1516549655169-df83a0774514?w=300" }
-        ],
-        last_visit: "2025-09-10",
-        ongoing_appointment: {
-            appointment_id: 201,
-            dentist_note: "",
-            patient_note: "Tooth pain, upper left molar"
-        },
-        past_appointments: [
-            { appointment_id: 150, appointment_date: "2025-06-02", service_label: "Checkup", dentist_note: "No issues found.", patient_note: "Routine checkup" }
-        ]
-    },
-    {
-        patient_id: 2,
-        public_id: "PAT-0002",
-        first_name: "Maria",
-        last_name: "Santos",
-        sex: "Female",
-        birthday: "1995-08-22",
-        email: "maria.santos@email.com",
-        phone: "0918 987 6543",
-        civil_status: "Married",
-        pregnancy_status: "2nd Trimester",
-        health_conditions: [{ description: "Asthma" }],
-        allergies: [{ allergen: "None" }],
-        prescriptions: [{ medication_name: "Albuterol inhaler", dosage: "As needed" }],
-        xrays: [
-            
-            { appointment_id: 140, file_url: "https://images.unsplash.com/photo-1588776814546-1ffcf47267a5?w=300" }
-        ],
-        last_visit: "2025-10-15",
-        ongoing_appointment: {
-            appointment_id: 202, 
-            dentist_note: "",
-            patient_note: "Reporting gum sensitivity during brushing"
-        },
-        past_appointments: [
-            { appointment_id: 140, appointment_date: "2025-10-15", service_label: "Cleaning", dentist_note: "Mild plaque buildup.", patient_note: "Regular cleaning" }
-        ]
-    }
-];
+// let patients = [
+//     {
+//         patient_id: 1,
+//         public_id: "PAT-0001",
+//         first_name: "Juan",
+//         last_name: "Dela Cruz",
+//         sex: "Male",
+//         birthday: "1990-05-14",
+//         email: "juan.delacruz@email.com",
+//         phone: "0917 123 4567",
+//         civil_status: "Single",
+//         pregnancy_status: "N/A",
+//         health_conditions: [{ description: "None" }],
+//         allergies: [{ allergen: "Penicillin" }],
+//         prescriptions: [],
+//         xrays: [
+//
+//             { appointment_id: 150, file_url: "https://images.unsplash.com/photo-1516549655169-df83a0774514?w=300" }
+//         ],
+//         last_visit: "2025-09-10",
+//         ongoing_appointment: {
+//             appointment_id: 201,
+//             dentist_note: "",
+//             patient_note: "Tooth pain, upper left molar"
+//         },
+//         past_appointments: [
+//             { appointment_id: 150, appointment_date: "2025-06-02", service_label: "Checkup", dentist_note: "No issues found.", patient_note: "Routine checkup" }
+//         ]
+//     },
+//     {
+//         patient_id: 2,
+//         public_id: "PAT-0002",
+//         first_name: "Maria",
+//         last_name: "Santos",
+//         sex: "Female",
+//         birthday: "1995-08-22",
+//         email: "maria.santos@email.com",
+//         phone: "0918 987 6543",
+//         civil_status: "Married",
+//         pregnancy_status: "2nd Trimester",
+//         health_conditions: [{ description: "Asthma" }],
+//         allergies: [{ allergen: "None" }],
+//         prescriptions: [{ medication_name: "Albuterol inhaler", dosage: "As needed" }],
+//         xrays: [
+//
+//             { appointment_id: 140, file_url: "https://images.unsplash.com/photo-1588776814546-1ffcf47267a5?w=300" }
+//         ],
+//         last_visit: "2025-10-15",
+//         ongoing_appointment: {
+//             appointment_id: 202,
+//             dentist_note: "",
+//             patient_note: "Reporting gum sensitivity during brushing"
+//         },
+//         past_appointments: [
+//             { appointment_id: 140, appointment_date: "2025-10-15", service_label: "Cleaning", dentist_note: "Mild plaque buildup.", patient_note: "Regular cleaning" }
+//         ]
+//     }
+// ];
 let currentPatientId = null;
 
 // DELETE AFTER RAHHH REPLACE IT WITH FETCH SA TAAS ========================================================================================================================================================================LOOK HEREEEE-->
-function loadPatientsFromDatabase() {
-    populateSortDropdown();
-    renderTable();
-}
+// function loadPatientsFromDatabase() {
+//     populateSortDropdown();
+//     renderTable();
+// }
 
 //this is for tab switching 
 const tabSessionBtn = document.getElementById('tabSessionBtn');
