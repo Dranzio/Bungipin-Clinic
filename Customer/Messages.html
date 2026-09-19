@@ -8,7 +8,7 @@
     <!-- Tailwind CDN Fallback for missing builds -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://kit.fontawesome.com/fc8c3f4103.js" crossorigin="anonymous"></script>
-    <script src="../Taskbar/Customer_Sidebar.js"></script>
+    <script src="/Taskbar/Customer_Sidebar.js"></script>
     <script src="Messages.js"></script>
 </head>
 <body class="bg-[#F3EFE4] min-h-screen font-sans text-[#2c3e2b] antialiased">
@@ -16,7 +16,7 @@
         <aside id="sidebar-aside" class="w-full md:w-auto shrink-0 bg-[#9ea988]"> <!--Div for sidebar-->
         <div id="sidebar-placeholder"></div>
         <script>
-            fetch('../Taskbar/Customer_Task.html')
+            fetch('/Taskbar/Customer_Task.html')
                 .then(response => response.text())
                 .then(data => {
                     document.getElementById('sidebar-placeholder').innerHTML = data;
