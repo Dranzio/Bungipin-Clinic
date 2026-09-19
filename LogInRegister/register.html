@@ -69,7 +69,7 @@
 
   <div class="flex-1">
     <label class="text-sm md:text-[20px] block font-semibold text-[#2A1001] font-poppins mb-2">Phone Number:</label>
-    <input type="tel" id="phone" pattern="^09\d{9}$" maxlength="11" required class="w-full h-8 md:h-11 px-4 bg-white outline-none rounded-[30px] mb-4 md:mb-12" placeholder="09171234567" />
+    <input type="tel" id="phone" pattern="^09\d{9}$" maxlength="11" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 11);" required class="w-full h-8 md:h-11 px-4 bg-white outline-none rounded-[30px] mb-4 md:mb-12" placeholder="09171234567" />
   </div>
 </div>
 
@@ -105,6 +105,7 @@
   </div>
 </div>
 
+<!--All inputs must be answers and check box agreement must be checked before creating account-->
 <div class="flex justify-center">
     <button type="submit" class="w-1/4 mx-4 bg-[#D5C04D] text-sm md:text-[20px] font-bold text-[#2A1001] py-2 rounded-full shadow-lg
                transition-all duration-200 ease-in-out 
@@ -115,6 +116,8 @@
 </div>
 
 
+<!-- Terms and conditions is required to be checked first-->
+ <!--And a terms and conditions form modal soon!-->
 <div class="flex items-start gap-2 mb-6 md:mb-8 flex justify-center">
 <input
   type="checkbox"
@@ -129,6 +132,8 @@
   </label>
 </div>
 </form>
+
+<!--Temporary message for successful account creation-->
 <div id="successMessage" class="hidden text-center mt-4 p-4 bg-green-100 border border-green-400 text-green-800 rounded-2xl font-poppins">
     Account created successfully!
 </div>
@@ -146,7 +151,11 @@
 
     e.preventDefault(); 
 
+    document.getElementById('phone').addEventListener('input', function (e) {
+    this.value = this.value.replace(/\D/g, '').slice(0, 11);
+});
 
+//Checks if password and confirm password fields match, if not it will show an error message
     if (password.value !== confirmPassword.value) {
       confirmPassword.setCustomValidity('Passwords do not match.');
       confirmPassword.reportValidity();
@@ -158,10 +167,11 @@
 
     form.reset();
 
-   
+//Success message will show up for 4 seconds after account creation it will disappear and the user can continue to login with their new account
     successMessage.classList.remove('hidden');
     successMessage.style.display = 'block';
 
+  // Hide the success message after 4 seconds
     setTimeout(() => {
       successMessage.classList.add('hidden');
       successMessage.style.display = 'none';
@@ -174,6 +184,5 @@
     }
   });
 </script>
-</div>
 </body>
 </html>
