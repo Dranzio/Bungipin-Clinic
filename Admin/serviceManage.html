@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="../output.css" rel="stylesheet">
+    <title>Service Management</title>
+</head>
+<body class="min-h-screen bg-[#F3EFE4] relative">
+        <!--Header with logo-->
+<div class="flex justify-between items-start pt-5 pl-6 pr-4 md:pl-24 md:pr-8">
+        
+        <h1 class="text-2xl sm:text-3xl md:text-5xl 2xl:text-[73px] pt-5 font-bold text-[#2A1001] font-['Poppins']">
+            Service Management
+        </h1>
+        <img
+            src="../images/logowithtitle.png"
+            class="w-20 sm:w-24 md:w-28 h-auto object-contain shrink-0"
+            alt="Logo"/>
+    </div>
+<hr class="border-t border-[#2A1001] mt-2 mb-6" />
+
+        <div class="px-6 md:px-16">
+
+            <div class="flex justify-end mb-6">
+                <button id="addServiceBtn" class="bg-[#D5C04D] hover:bg-[#c2ad3c] transition text-[#2A1001] font-bold px-6 py-2 rounded-full">
+                    + Add New Service
+                </button>
+            </div>
+
+            <div id="serviceGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 mb-10">
+                <!-- cards injected by JS -->
+            </div>
+
+        </div>
+
+
+<div id="serviceModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-white rounded-[30px] w-full max-w-sm p-8 relative flex flex-col items-center shadow-xl">
+
+            <!-- Close Button-->
+            <button id="closeServiceModal" class="absolute top-5 right-6 text-3xl font-extrabold text-[#382414] hover:opacity-60 transition leading-none">&times;</button>
+
+            <!-- Editable Title -->
+            <div class="flex items-center justify-center gap-3 mb-6 w-full px-4 mt-2">
+                <input id="serviceNameInput" type="text" readonly class="text-2xl font-extrabold text-[#382414] font-['Poppins'] text-center bg-transparent outline-none w-full border-b border-transparent focus:border-gray-300 transition cursor-default focus:cursor-text" placeholder="Service Name" />
+                <!-- Circular Edit Button -->
+                <button id="editNameBtn" type="button" class="w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-md border border-gray-100 shrink-0 hover:bg-gray-50 transition cursor-pointer">
+                    <img src="../images/editIcon.png" class="w-4 h-4 object-contain opacity-80" alt="Edit">
+                </button>
+            </div>
+
+            <!-- Editable Icon -->
+            <div class="relative w-32 h-32 mb-8 group">
+                <img id="serviceIconPreview" src="" class="w-full h-full object-contain hidden transition-opacity group-hover:opacity-80" />
+                
+                <div id="iconPlaceholder" class="w-full h-full flex items-center justify-center border-2 border-dashed border-[#2A1001]/30 rounded-2xl group-hover:bg-gray-50">
+                    <span class="text-xs text-[#2A1001]/50 text-center px-2">Click edit to upload</span>
+                </div>
+
+                <!-- pencil edit overlay -->
+                <button id="editIconBtn" type="button" class="absolute -bottom-2 -right-2 w-9 h-9 bg-white rounded-full flex items-center justify-center shadow-md border border-gray-100 hover:bg-gray-50 transition z-10 cursor-pointer">
+                    <img src="../images/editIcon.png" class="w-4 h-4 object-contain opacity-80" alt="Edit">
+                </button>
+                <input type="file" id="serviceIconInput" accept="image/*" class="hidden" />
+            </div>
+
+            <!-- Editable Price -->
+            <div class="flex items-center justify-center gap-1 mb-8 w-full">
+                <span class="text-lg font-bold text-[#382414]">Total:</span>
+                <input id="servicePriceInput" type="number" min="0" readonly class="text-lg font-bold text-[#382414] text-right bg-transparent outline-none w-20 border-b border-transparent focus:border-gray-300 transition appearance-none cursor-default focus:cursor-text" placeholder="1500" />
+                <span class="text-lg font-bold text-[#382414]">Php</span>
+                <!-- Circular Edit Button -->
+                <button id="editPriceBtn" type="button" class="w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-md border border-gray-100 shrink-0 ml-2 hover:bg-gray-50 transition cursor-pointer">
+                    <img src="../images/editIcon.png" class="w-4 h-4 object-contain opacity-80" alt="Edit">
+                </button>
+            </div>
+
+            <!-- Save Button -->
+            <button id="saveServiceBtn" class="bg-[#d8be50] hover:bg-[#c9af43] transition text-[#382414] font-black px-10 py-2.5 rounded-full shadow-md w-32">
+                Save
+            </button>
+        </div>
+    </div>
+
+        <div id="deleteModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-[#F2F0EF] rounded-3xl w-full max-w-sm p-8 text-center">
+            <h2 class="text-xl font-bold text-[#2A1001] font-['Poppins'] mb-2">Delete Service?</h2>
+            <p class="text-sm text-[#2A1001]/70 mb-6" id="deleteModalText"></p>
+            <div class="flex justify-center gap-3">
+                <button id="cancelDeleteBtn" class="px-6 py-2 rounded-full font-semibold text-[#2A1001] bg-white border border-[#2A1001]/20 hover:bg-[#e8e2d0] transition">Cancel</button>
+                <button id="confirmDeleteBtn" class="px-6 py-2 rounded-full font-semibold text-white bg-[#D9534F] hover:bg-[#c9302c] transition">Yes, Delete</button>
+            </div>
+        </div>
+    </div>
+
+
+  <script>
+   
+ //=======================================================================================================================================LOOOOOOOOOOOOKKKKKKKKKKK AT ME ASHLEYS!
+    async function getServices() {//TEMPPPPPPPPPPPPPPP
+        const stored = localStorage.getItem('services');
+        return stored ? JSON.parse(stored) : [
+            { service_id: 1, label: "Cleaning", price: 1500, icon: null },
+            { service_id: 2, label: "Pasta", price: 1500, icon: null },
+            { service_id: 3, label: "Checkup", price: 1500, icon: null },
+            { service_id: 4, label: "Whitening", price: 1500, icon: null },
+        ];
+    }
+
+    /*
+
+    //fetches data from database
+        async function getServices() {
+        try {
+            const token = localStorage.getItem('userToken');
+            const response = await fetch('/api/services', {
+                method: 'GET',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (!response.ok) throw new Error('Failed to fetch services');
+            
+            const data = await response.json();
+            return data; 
+        } catch (error) {
+            console.error('Error fetching services:', error);
+            return []; // Fallback empty array on failure
+        }
+    }
+    */
+
+
+    //TEMPPP
+ async function saveService(service) { //=======================================================LOOKKKKKKKKKKKKKK DLETET AFTER
+        const services = await getServices();
+        if (service.service_id) {
+            const index = services.findIndex(s => s.service_id === service.service_id);
+            services[index] = service;
+        } else {
+            service.service_id = Date.now(); 
+            services.push(service);
+        }
+        localStorage.setItem('services', JSON.stringify(services));
+        return service;
+    }
+
+    /*
+
+    //Sends data to database
+    async function saveService(service) {
+        try {
+            const token = localStorage.getItem('userToken');
+            const isEditing = !!service.service_id; 
+            const url = isEditing ? `/api/services/${service.service_id}` : '/api/services';
+            const method = isEditing ? 'PUT' : 'POST'; //Post for brand new service, put for existing ones.
+
+            const response = await fetch(url, {
+                method: method,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(service) 
+            });
+
+            if (!response.ok) {
+                const err = await response.json();
+                throw new Error(err.message || 'Failed to save service');
+            }
+
+            return await response.json();
+            
+        } catch (error) {
+            console.error('Error saving service:', error);
+            alert("Could not save service: " + error.message);
+            throw error; 
+        }
+    }
+    */
+
+
+
+    async function deleteService(id) {//================================================LOOK REPLACE
+        const services = await getServices();
+        const filtered = services.filter(s => s.service_id != id); 
+        localStorage.setItem('services', JSON.stringify(filtered));
+    }
+
+    /*
+
+    //deletes a specific service from database
+        async function deleteService(id) {
+        try {
+            const token = localStorage.getItem('userToken');
+            const response = await fetch(`/api/services/${id}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (!response.ok) throw new Error('Failed to delete service');
+            
+        } catch (error) {
+            console.error('Error deleting service:', error);
+            alert("Could not delete service: " + error.message);
+            throw error;
+        }
+    }
+
+    */
+
+ 
+    let services = [];
+    let editingServiceId = null;
+    let pendingDeleteId = null;
+    let uploadedIconData = null;
+
+    const defaultIcons = {
+        "Cleaning": "../images/cleaning.png",
+        "Pasta": "../images/pasta.png",
+        "Checkup": "../images/consultation.png",
+        "Whitening": "../images/whitening.png",
+        "default": "../images/icons/tooth-default.png"
+    };
+
+
+   
+//fetches services and dynamically renders them into cards.
+async function renderServices() {
+        services = await getServices();
+        const grid = document.getElementById('serviceGrid');
+
+        if (services.length === 0) {
+            grid.innerHTML = `<p class="col-span-full text-center text-[#2A1001]/60 py-10">No services yet.</p>`;
+            return;
+        }
+
+    
+        grid.innerHTML = services.map(s => `
+            <div class="bg-white rounded-[30px] p-6 shadow-sm hover:shadow-md transition-all duration-300 relative flex flex-col items-center min-h-[320px]">
+                <!-- Context Menu -->
+                <div class="absolute top-4 right-4">
+                    <button class="menuBtn w-8 h-8 bg-transparent rounded-full flex items-center justify-center text-[#2A1001] hover:bg-gray-100 transition font-bold text-xl leading-none pb-2" data-id="${s.service_id}">
+                        ...
+                    </button>
+                    <div class="menuDropdown hidden absolute right-0 top-10 bg-white border border-[#2A1001]/10 rounded-xl shadow-lg z-10 w-36 overflow-hidden" data-menu-for="${s.service_id}">
+                        <button class="editOption w-full flex items-center gap-3 px-4 py-2.5 text-xs font-bold text-[#2A1001] hover:bg-[#F3EFE4]" data-id="${s.service_id}">
+                            <img src="../images/editIcon.png" class="w-4 h-4 object-contain" alt="Edit"> Edit Log
+                        </button>
+                        <button class="deleteOption w-full flex items-center gap-3 px-4 py-2.5 text-xs font-bold text-[#2A1001] hover:bg-[#F3EFE4]" data-id="${s.service_id}">
+                            <img src="../images/trashIcon.png" class="w-4 h-4 object-contain" alt="Delete"> Delete Log
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Title -->
+                <h3 class="font-extrabold text-[#382414] text-2xl mb-4 w-full text-center pr-8 pl-8 truncate">${s.label}</h3>
+
+                <!-- Icon -->
+                <div class="flex-1 flex justify-center items-center mb-6 w-36 h-36">
+                    <img src="${s.icon || defaultIcons[s.label] || defaultIcons['default']}" onerror="this.src='../images/logowithtitle.png'" class="w-full h-full object-contain" />
+                </div>
+
+                <!-- Price -->
+                <p class="text-center font-bold text-[#382414] text-lg">Total: ${s.price.toLocaleString()}Php</p>
+            </div>
+        `).join('');
+    }
+
+  
+//this function handles clicks on the service card to open dropdown menus, trigger service editing, or open the delete confirmation modal.
+    document.getElementById('serviceGrid').addEventListener('click', function (e) {
+        if (e.target.classList.contains('menuBtn')) {
+            const id = e.target.dataset.id;
+            document.querySelectorAll('.menuDropdown').forEach(menu => {
+                if (menu.dataset.menuFor !== id) menu.classList.add('hidden');
+            });
+            const thisMenu = document.querySelector(`.menuDropdown[data-menu-for="${id}"]`);
+            thisMenu.classList.toggle('hidden');
+            return;
+        }
+
+        if (e.target.closest('.editOption')) {
+            const id = e.target.closest('.editOption').dataset.id;
+            openServiceModal(id);
+            document.querySelectorAll('.menuDropdown').forEach(m => m.classList.add('hidden'));
+            return;
+        }
+
+        if (e.target.closest('.deleteOption')) {
+            const id = e.target.closest('.deleteOption').dataset.id;
+            const service = services.find(s => s.service_id == id);
+            pendingDeleteId = id;
+            
+        
+            document.getElementById('deleteModalText').textContent =
+                `Are you sure you want to delete "${service.label}"? This cannot be undone.`;
+                
+            document.getElementById('deleteModal').classList.remove('hidden');
+            document.querySelectorAll('.menuDropdown').forEach(m => m.classList.add('hidden'));
+            return;
+        }
+    });
+
+
+//for menu dropdown (DELETE/EDIT)
+    document.addEventListener('click', function (e) {
+        if (!e.target.classList.contains('menuBtn')) {
+            document.querySelectorAll('.menuDropdown').forEach(m => m.classList.add('hidden'));
+        }
+    });
+
+    //this functions opens and populates the service card modal for either adding a new service or editing an existing one.
+    function openServiceModal(id = null) {
+        editingServiceId = id;
+        uploadedIconData = null;
+
+        const nameInput = document.getElementById('serviceNameInput');
+        const priceInput = document.getElementById('servicePriceInput');
+        const iconPreview = document.getElementById('serviceIconPreview');
+        const iconPlaceholder = document.getElementById('iconPlaceholder');
+
+        nameInput.setAttribute('readonly', true);
+        priceInput.setAttribute('readonly', true);
+
+        if (id) {
+            const service = services.find(s => s.service_id == id);
+            nameInput.value = service.label;
+            priceInput.value = service.price;
+            if (service.icon) {
+                iconPreview.src = service.icon;
+                iconPreview.classList.remove('hidden');
+                iconPlaceholder.classList.add('hidden');
+                uploadedIconData = service.icon;
+            } else {
+                iconPreview.classList.add('hidden');
+                iconPlaceholder.classList.remove('hidden');
+            }
+        } else {
+            nameInput.value = '';
+            priceInput.value = '';
+            iconPreview.classList.add('hidden');
+            iconPlaceholder.classList.remove('hidden');
+        }
+
+        document.getElementById('serviceModal').classList.remove('hidden');
+    }
+
+
+    document.getElementById('addServiceBtn').addEventListener('click', () => openServiceModal(null)); //for add service button
+
+    document.getElementById('closeServiceModal').addEventListener('click', () => {//close modal when x is clicked
+        document.getElementById('serviceModal').classList.add('hidden');
+    });
+
+    document.getElementById('serviceModal').addEventListener('click', function (e) {//close modal when outside is clickeed
+        if (e.target === this) this.classList.add('hidden');
+    });
+
+
+
+   document.getElementById('editNameBtn').addEventListener('click', () => {
+            const input = document.getElementById('serviceNameInput');
+            input.removeAttribute('readonly'); // Unlock
+            input.focus();                     // Focus so user can type instantly
+        });
+
+        document.getElementById('editPriceBtn').addEventListener('click', () => {
+            const input = document.getElementById('servicePriceInput');
+            input.removeAttribute('readonly'); // Unlock
+            input.focus();                     // Focus so user can type instantly
+        });
+
+        // Icon upload which iriggers when the pencil button is clicked
+        document.getElementById('editIconBtn').addEventListener('click', () => {
+            document.getElementById('serviceIconInput').click();
+        });
+
+
+        //Reads an uploaded image file, converts it into a preview, and displays it on the modal
+        document.getElementById('serviceIconInput').addEventListener('change', function (e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function (event) {
+                uploadedIconData = event.target.result;
+                const preview = document.getElementById('serviceIconPreview');
+                preview.src = uploadedIconData;
+                preview.classList.remove('hidden');
+                document.getElementById('iconPlaceholder').classList.add('hidden');
+            };
+            reader.readAsDataURL(file);
+        });
+
+        // saves creation or editing of card service
+        document.getElementById('saveServiceBtn').addEventListener('click', async function () {///=======================================================LOOOK REPLACEEEEE
+            const labelValue = document.getElementById('serviceNameInput').value.trim();
+            const priceValue = parseFloat(document.getElementById('servicePriceInput').value);
+
+            if (!labelValue || isNaN(priceValue)) {
+                alert('Please enter a service name and a valid price.');
+                return;
+            }
+
+          await saveService({
+                service_id: editingServiceId ? Number(editingServiceId) : null, 
+                label: labelValue,                                              
+                price: priceValue,   
+                icon: uploadedIconData
+            });
+
+            document.getElementById('serviceModal').classList.add('hidden');
+            renderServices();
+        });
+
+        /*===========================================================================================================================looooooook!
+     document.getElementById('saveServiceBtn').addEventListener('click', async function () {
+        const labelValue = document.getElementById('serviceNameInput').value.trim();
+        const priceValue = parseFloat(document.getElementById('servicePriceInput').value);
+
+        if (!labelValue || isNaN(priceValue)) {
+            alert('Please enter a service name and a valid price.');
+            return;
+        }
+
+    
+        const serviceData = {
+            label: labelValue,
+            price: priceValue,
+            icon: uploadedIconData
+        };
+
+        if (editingServiceId) {
+            serviceData.service_id = Number(editingServiceId);
+        }
+
+        try {
+            await saveService(serviceData);
+            document.getElementById('serviceModal').classList.add('hidden');
+            renderServices();
+        } catch (error) {
+            console.log('Save aborted due to network error.');
+        }
+    });
+        */
+
+       // Cancel delete
+        document.getElementById('cancelDeleteBtn').addEventListener('click', () => {
+            pendingDeleteId = null;
+            document.getElementById('deleteModal').classList.add('hidden');
+        });
+
+        //confirm and execute delete
+        document.getElementById('confirmDeleteBtn').addEventListener('click', async () => {
+            if (pendingDeleteId) {
+                await deleteService(pendingDeleteId);
+                renderServices();
+            }
+            pendingDeleteId = null;
+            document.getElementById('deleteModal').classList.add('hidden');
+        });
+        // Close delete modal when clicking outside
+
+        document.getElementById('deleteModal').addEventListener('click', function (e) {
+            if (e.target === this) {
+                pendingDeleteId = null;
+                this.classList.add('hidden');
+            }
+        });
+
+    renderServices();
+</script>
+
+
+
+</body>
+</html>
