@@ -53,7 +53,7 @@
     </div>
     <hr class="border-t border-[#2A1001] mt-2 mb-6" />
 
-    <!-- MAIN CONTENT -->
+  <!-- MAIN CONTENT -->
     <main class="w-full max-w-4xl mx-auto py-8 px-6 md:px-12">
 
       <!-- Success Message -->
@@ -121,7 +121,7 @@
           </span>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 sm:gap-y-5">
 
-            <!-- Primary Email (READONLY  -->
+            <!-- Primary Email (READONLY) -->
             <div class="flex flex-col gap-1.5">
               <label for="email" class="text-[11px] font-extrabold tracking-wider text-[#2c3e2b] uppercase">Primary Email:</label>
               <input type="email" id="email" name="email" readonly
@@ -257,10 +257,10 @@
     // EXPANDABLE LISTS — health conditions, prescriptions, allergies
     // Each patient can have MULTIPLE of these 
 
-
-    let healthConditions = []; // array of strings, e.g. ["Asthma", "Diabetes"]
-    let allergies = [];        // array of strings, e.g. ["Penicillin", "Latex"]
-    let prescriptions = [];    // array of { medication_name, dosage }
+//array of strings
+    let healthConditions = []; 
+    let allergies = [];        
+    let prescriptions = [];    
 
     // Generic renderer for simple string-chip lists (health conditions, allergies)
     function renderChipList(containerId, items, onRemove) {
@@ -553,6 +553,58 @@
       renderAllergies();
       renderPrescriptions();
       loadProfileFromDatabase();
+    });
+
+    //auto lock 
+    document.addEventListener('DOMContentLoaded', () => {
+        // List of all editable fields specific to the customer page
+        const editableFields = [
+            'birthday', 'civil-status', 'secondary-email', 
+            'address', 'phone', 'new-password', 'confirm-password', 
+            'pregnancy-status'
+        ];
+
+        editableFields.forEach(id => {
+            const field = document.getElementById(id);
+            if (!field) return; 
+
+            // Lock the fields 
+            if (field.tagName === 'SELECT') {
+                field.classList.add('pointer-events-none'); 
+            } else {
+                field.setAttribute('readonly', 'true');
+                field.classList.add('cursor-default');
+            }
+
+            field.classList.add('pr-10'); 
+
+            // Create the relative wrapper 
+            const wrapper = document.createElement('div');
+            wrapper.className = 'relative w-full flex items-center';
+            
+            field.parentNode.insertBefore(wrapper, field);
+            wrapper.appendChild(field);
+
+            // Create the circular pencil button
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'absolute right-2 w-7 h-7 bg-white rounded-full flex items-center justify-center shadow-md border border-gray-100 hover:bg-gray-50 transition z-10 cursor-pointer';
+            btn.innerHTML = `<img src="../images/editIcon.png" class="w-3.5 h-3.5 opacity-80" alt="Edit">`;
+
+            // Click event to unlock the field
+            btn.addEventListener('click', () => {
+                if (field.tagName === 'SELECT') {
+                    field.classList.remove('pointer-events-none');
+                } else {
+                    field.removeAttribute('readonly');
+                    field.classList.remove('cursor-default');
+                }
+                field.focus(); 
+                btn.classList.add('hidden');
+            });
+
+            wrapper.appendChild(btn);
+        });
     });
   </script>
 
