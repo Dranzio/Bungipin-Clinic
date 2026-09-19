@@ -5,13 +5,123 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>User Profile</title>
     <link rel="stylesheet" href="../output.css">
-</head>
-<body>
-    <div> <!--Div for whole body-->
-        
-        <div> <!--Div for sidebar-->
+    <!-- Tailwind CDN Fallback for missing builds -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+    // 1. Fetch and populate existing profile data on page load
+    async function loadUserProfile() {
+        try {
+            const token = localStorage.getItem('userToken');
+            if (!token) {
+                console.warn("No user token found. Redirecting to login or guest mode.");
+                return;
+            }
 
-           <div id="sidebar-placeholder"></div> <!--Sidebar-->
+            const response = await fetch('/api/patient-profile', {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`Server error: ${response.status}`);
+            }
+
+            const profileData = await response.json();
+
+            // Populate the form fields mapping exactly to the SQL tables
+            // From users table
+            document.getElementById('first-name').value = profileData.first_name || '';
+            document.getElementById('last-name').value = profileData.last_name || '';
+            document.getElementById('sex').value = profileData.sex || '';
+            document.getElementById('email').value = profileData.email || '';
+            document.getElementById('phone').value = profileData.phone || '';
+            
+            // From patient_profiles table
+            // Ensure date format is YYYY-MM-DD for <input type="date">
+            document.getElementById('birthday').value = profileData.birthday ? profileData.birthday.split('T')[0] : '';
+            document.getElementById('civil-status').value = profileData.civil_status || '';
+            document.getElementById('secondary-email').value = profileData.secondary_email || '';
+            document.getElementById('address').value = profileData.address || '';
+            document.getElementById('pregnancy-status').value = profileData.pregnancy_status || 'N/A';
+            
+            // From 1-to-many child tables (assuming backend joins them into a comma-separated string for this UI)
+            document.getElementById('health-condition').value = profileData.health_conditions || ''; // maps to health_conditions.description
+            document.getElementById('medication-name').value = profileData.prescriptions || '';      // maps to prescriptions.medication_name
+            document.getElementById('allergen').value = profileData.allergies || '';                 // maps to allergies.allergen
+
+        } catch (error) {
+            console.error("Failed to load profile data:", error);
+        }
+    }
+
+    // Run the load function when the page loads
+    document.addEventListener('DOMContentLoaded', loadUserProfile);
+
+    // 2. Handle form submission via JavaScript fetch with the token
+    document.querySelector('form').addEventListener('submit', async function(e) {
+        e.preventDefault(); // Stop traditional HTML form submission/page reload
+
+        try {
+            const token = localStorage.getItem('userToken');
+            
+            // Gather values matching the updated SQL structure
+            const formData = {
+                // Fields mapping to users table
+                email: document.getElementById('email').value,
+                phone: document.getElementById('phone').value,
+                new_password: document.getElementById('new-password').value,
+                
+                // Fields mapping to patient_profiles table
+                birthday: document.getElementById('birthday').value,
+                civil_status: document.getElementById('civil-status').value,
+                secondary_email: document.getElementById('secondary-email').value,
+                address: document.getElementById('address').value,
+                pregnancy_status: document.getElementById('pregnancy-status').value,
+                
+                // Fields mapping to child tables
+                health_conditions: document.getElementById('health-condition').value,
+                prescriptions: document.getElementById('medication-name').value,
+                allergies: document.getElementById('allergen').value
+            };
+
+            const response = await fetch('/api/patient-profile', {
+                method: 'PUT', // or POST depending on your backend route
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(formData)
+            });
+
+            if (!response.ok) {
+                throw new Error(`Failed to update: ${response.status}`);
+            }
+
+            const result = await response.json();
+            alert("Profile updated successfully!");
+
+            // Clear passwords after successful update
+            document.getElementById('new-password').value = '';
+            document.getElementById('confirm-password').value = '';
+
+        } catch (error) {
+            console.error("Error updating profile:", error);
+            alert("Failed to update profile. Please try again.");
+        }
+    });
+    </script>
+    <script src="https://kit.fontawesome.com/fc8c3f4103.js" crossorigin="anonymous"></script>
+    <script src="../Taskbar/Customer_Sidebar.js"></script>
+</head>
+<body class="bg-[#F3EFE4] min-h-screen font-sans text-[#2c3e2b] antialiased">
+    <!-- Main Outer Layout (Sidebar + Main Content) -->
+    <div class="min-h-screen flex flex-col md:flex-row w-full"> 
+        
+        <!-- Sidebar Container -->
+        <aside id="sidebar-aside" class="w-full md:w-auto shrink-0 bg-[#9ea988]">
+            <div id="sidebar-placeholder"></div>
         
             <script>
                 fetch('../Taskbar/Customer_Task.html')
@@ -23,18 +133,166 @@
                     
                         document.querySelectorAll('.nav-link').forEach(link => {
                             if (link.getAttribute('data-page') === currentPage) {
-                            link.classList.add('bg-[#FDFCE9]');
+                                link.classList.add('bg-[#FDFCE9]');
                             }
-                        })
+                        });
+
+                        initSidebar();
                     })
             </script>
-
-        </div>
+        </aside>
         
-        <div> <!--Main Content Goes Here-->
-            
-            
+        <!-- Main Content Area Wrapper -->
+        <div class="flex-1 p-4 sm:p-6 md:p-10 flex justify-center items-start">
+            <main class="w-full max-w-4xl">
+                <!-- Top Header Bar -->
+                <header class="flex justify-between items-center mb-8 sm:mb-10 pb-3 border-b-2 border-[#2c3e2b]/20">
+                    <h1 class="text-2xl sm:text-3xl md:text-4xl font-extrabold text-[#1a281b] tracking-tight">Profile Here</h1>
+                    
+                    <!-- Clinic Logo -->
+                    <div class="w-12 h-12 sm:w-16 sm:h-16 flex items-center justify-center shrink-0">
+                        <img src="logowithtitle.png" alt="Bungipin Dental Clinic" class="w-full h-full object-contain">
+                    </div>
+                </header>
 
+                <!-- Single Form Enclosing All Sections -->
+                <form class="flex flex-col items-center gap-8 sm:gap-10">
+
+                    <!-- Form Section 1: Basic Information -->
+                    <div class="relative w-full bg-[#D7E3A5] rounded-2xl p-5 sm:p-7 pt-8 sm:pt-9 shadow-sm border border-[#d2dbbe]">
+                        <span class="absolute -top-3.5 left-4 sm:left-6 bg-[#667733] text-white text-[10px] sm:text-xs font-bold px-3 sm:px-4 py-1.5 rounded-full tracking-wider uppercase shadow-sm">
+                            Basic Information
+                        </span>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 sm:gap-y-5">
+                            <div class="flex flex-col gap-1.5">
+                                <label for="first-name" class="text-[11px] font-extrabold tracking-wider text-[#2c3e2b] uppercase">First Name:</label>
+                                <input type="text" id="first-name" name="first_name" disabled class="w-full px-4 py-2.5 rounded-full bg-[#E4E2DF] text-[#2c3e2b] font-medium text-sm outline-none shadow-inner border border-[#c1ccab] focus:ring-2 focus:ring-[#4a5e3b]/50">
+                            </div>
+
+                            <div class="flex flex-col gap-1.5">
+                                <label for="last-name" class="text-[11px] font-extrabold tracking-wider text-[#2c3e2b] uppercase">Last Name:</label>
+                                <input type="text" id="last-name" name="last_name" disabled class="w-full px-4 py-2.5 rounded-full bg-[#E4E2DF] text-[#2c3e2b] font-medium text-sm outline-none shadow-inner border border-[#c1ccab] focus:ring-2 focus:ring-[#4a5e3b]/50">
+                            </div>
+
+                            <div class="flex flex-col gap-1.5">
+                                <label for="sex" class="text-[11px] font-extrabold tracking-wider text-[#2c3e2b] uppercase">Sex:</label>
+                                <input type="text" id="sex" name="sex" disabled class="w-full px-4 py-2.5 rounded-full bg-[#E4E2DF] text-[#2c3e2b] font-medium text-sm outline-none shadow-inner border border-[#c1ccab] focus:ring-2 focus:ring-[#4a5e3b]/50">
+                            </div>
+
+                            <div class="flex flex-col gap-1.5">
+                                <label for="birthday" class="text-[11px] font-extrabold tracking-wider text-[#2c3e2b] uppercase">Birthday:</label>
+                                <input type="date" id="birthday" name="birthday" class="w-full px-4 py-2.5 rounded-full bg-white text-[#2c3e2b] font-medium text-sm outline-none shadow-inner border border-[#c1ccab] focus:ring-2 focus:ring-[#4a5e3b]/50">
+                            </div>
+
+                            <div class="flex flex-col gap-1.5">
+                                <label for="civil-status" class="text-[11px] font-extrabold tracking-wider text-[#2c3e2b] uppercase">Civil Status:</label>
+                                <input type="text" id="civil-status" name="civil_status" class="w-full px-4 py-2.5 rounded-full bg-white text-[#2c3e2b] font-medium text-sm outline-none shadow-inner border border-[#c1ccab] focus:ring-2 focus:ring-[#4a5e3b]/50">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Form Section 2: Contact Information -->
+                    <div class="relative w-full bg-[#D7E3A5] rounded-2xl p-5 sm:p-7 pt-8 sm:pt-9 shadow-sm border border-[#d2dbbe]">
+                        <span class="absolute -top-3.5 left-4 sm:left-6 bg-[#667733] text-white text-[10px] sm:text-xs font-bold px-3 sm:px-4 py-1.5 rounded-full tracking-wider uppercase shadow-sm">
+                            Contact Information
+                        </span>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 sm:gap-y-5">
+                            <div class="flex flex-col gap-1.5">
+                                <label for="email" class="text-[11px] font-extrabold tracking-wider text-[#2c3e2b] uppercase">Primary Email:</label>
+                                <input type="email" id="email" name="email" class="w-full px-4 py-2.5 rounded-full bg-white text-[#2c3e2b] font-medium text-sm outline-none shadow-inner border border-[#c1ccab] focus:ring-2 focus:ring-[#4a5e3b]/50">
+                            </div>
+
+                            <div class="flex flex-col gap-1.5">
+                                <label for="secondary-email" class="text-[11px] font-extrabold tracking-wider text-[#2c3e2b] uppercase">Secondary Email:</label>
+                                <input type="email" id="secondary-email" name="secondary_email" class="w-full px-4 py-2.5 rounded-full bg-white text-[#2c3e2b] font-medium text-sm outline-none shadow-inner border border-[#c1ccab] focus:ring-2 focus:ring-[#4a5e3b]/50">
+                            </div>
+
+                            <div class="flex flex-col gap-1.5">
+                                <label for="address" class="text-[11px] font-extrabold tracking-wider text-[#2c3e2b] uppercase">Address:</label>
+                                <input type="text" id="address" name="address" class="w-full px-4 py-2.5 rounded-full bg-white text-[#2c3e2b] font-medium text-sm outline-none shadow-inner border border-[#c1ccab] focus:ring-2 focus:ring-[#4a5e3b]/50">
+                            </div>
+
+                            <div class="flex flex-col gap-1.5">
+                                <label for="phone" class="text-[11px] font-extrabold tracking-wider text-[#2c3e2b] uppercase">Phone Number:</label>
+                                <input type="tel" id="phone" name="phone" class="w-full px-4 py-2.5 rounded-full bg-white text-[#2c3e2b] font-medium text-sm outline-none shadow-inner border border-[#c1ccab] focus:ring-2 focus:ring-[#4a5e3b]/50">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Form Section 3: Change Password -->
+                    <div class="relative w-full bg-[#D7E3A5] rounded-2xl p-5 sm:p-7 pt-8 sm:pt-9 shadow-sm border border-[#d2dbbe]">
+                        <span class="absolute -top-3.5 left-4 sm:left-6 bg-[#667733] text-white text-[10px] sm:text-xs font-bold px-3 sm:px-4 py-1.5 rounded-full tracking-wider uppercase shadow-sm">
+                            Change Password
+                        </span>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 sm:gap-y-5">
+                            <div class="flex flex-col gap-1.5">
+                                <label for="new-password" class="text-[11px] font-extrabold tracking-wider text-[#2c3e2b] uppercase">New Account Password:</label>
+                                <input type="password" id="new-password" name="new_password" class="w-full px-4 py-2.5 rounded-full bg-white text-[#2c3e2b] font-medium text-sm outline-none shadow-inner border border-[#c1ccab] focus:ring-2 focus:ring-[#4a5e3b]/50">
+                            </div>
+
+                            <div class="flex flex-col gap-1.5">
+                                <label for="confirm-password" class="text-[11px] font-extrabold tracking-wider text-[#2c3e2b] uppercase">Confirm Account Password:</label>
+                                <input type="password" id="confirm-password" name="confirm_password" class="w-full px-4 py-2.5 rounded-full bg-white text-[#2c3e2b] font-medium text-sm outline-none shadow-inner border border-[#c1ccab] focus:ring-2 focus:ring-[#4a5e3b]/50">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Form Section 4: Medical Information -->
+                    <div class="relative w-full bg-[#D7E3A5] rounded-2xl p-5 sm:p-7 pt-8 sm:pt-9 shadow-sm border border-[#d2dbbe]">
+                        <span class="absolute -top-3.5 left-4 sm:left-6 bg-[#667733] text-white text-[10px] sm:text-xs font-bold px-3 sm:px-4 py-1.5 rounded-full tracking-wider uppercase shadow-sm">
+                            Medical Information
+                        </span>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 sm:gap-y-5">
+                            <div class="flex flex-col gap-1.5">
+                                <label for="health-condition" class="text-[11px] font-extrabold tracking-wider text-[#2c3e2b] uppercase">Pre-existing Health Conditions:</label>
+                                <input type="text" id="health-condition" name="condition" class="w-full px-4 py-2.5 rounded-full bg-white text-[#2c3e2b] font-medium text-sm outline-none shadow-inner border border-[#c1ccab] focus:ring-2 focus:ring-[#4a5e3b]/50">
+                            </div>
+
+                            <div class="flex flex-col gap-1.5">
+                                <label for="pregnancy-status" class="text-[11px] font-extrabold tracking-wider text-[#2c3e2b] uppercase">Pregnancy Status:</label>
+                                <select id="pregnancy-status" name="pregnancy_status" class="w-full px-4 py-2.5 rounded-full bg-white text-[#2c3e2b] font-medium text-sm outline-none shadow-inner border border-[#c1ccab] focus:ring-2 focus:ring-[#4a5e3b]/50">
+                                    <option value="N/A">N/A / Male</option>
+                                    <option value="1-3 Months">1-3 Months</option>
+                                    <option value="4-6 Months">4-6 Months</option>
+                                    <option value="7-9 Months">7-9 Months</option>
+                                </select>
+                            </div>
+
+                            <div class="flex flex-col gap-1.5 md:col-span-2">
+                                <label for="medication-name" class="text-[11px] font-extrabold tracking-wider text-[#2c3e2b] uppercase">Current Prescriptions:</label>
+                                <input type="text" id="medication-name" name="medication_name" class="w-full px-4 py-2.5 rounded-full bg-white text-[#2c3e2b] font-medium text-sm outline-none shadow-inner border border-[#c1ccab] focus:ring-2 focus:ring-[#4a5e3b]/50">
+                            </div>
+
+                            <div class="flex flex-col gap-1.5 md:col-span-2">
+                                <label for="allergen" class="text-[11px] font-extrabold tracking-wider text-[#2c3e2b] uppercase">Allergies / Historical Allergies:</label>
+                                <input type="text" id="allergen" name="allergen" class="w-full px-4 py-2.5 rounded-full bg-white text-[#2c3e2b] font-medium text-sm outline-none shadow-inner border border-[#c1ccab] focus:ring-2 focus:ring-[#4a5e3b]/50">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Update Changes Button -->
+                    <button type="submit" class="z-10 w-full sm:w-auto bg-[#f0c238] hover:bg-[#dbae29] text-[#202b1c] font-black text-lg sm:text-xl px-10 sm:px-14 py-3 rounded-full shadow-md active:scale-95 transition transform">
+                        Update Changes
+                    </button>
+
+                    <!-- Upload PDF Section Box -->
+                    <div class="w-full bg-[#e3e8d8] rounded-2xl p-5 sm:p-8 border-2 border-dashed border-[#4a5e3b]/50 flex flex-col items-center justify-center gap-4 min-h-[180px] sm:min-h-[220px]">
+                        <div class="flex flex-col sm:flex-row items-center gap-3 text-center sm:text-left">
+                            <p class="text-[#2c3e2b] font-bold text-sm sm:text-base">
+                                Upload the pdf of your medical conditions here
+                            </p>
+                            <img src="logowithtitle.png" alt="Clinic Logo" class="w-8 h-8 sm:w-10 sm:h-10 object-contain">
+                        </div>
+                        <input type="file" id="medical-pdf-upload" accept=".pdf" class="hidden">
+                    </div>
+
+                    <!-- Upload File Button -->
+                    <button type="button" onclick="document.getElementById('medical-pdf-upload').click();" class="z-10 w-full sm:w-auto bg-[#f0c238] hover:bg-[#dbae29] text-[#202b1c] font-black text-lg sm:text-xl px-10 sm:px-14 py-3 rounded-full shadow-md active:scale-95 transition transform">
+                        Upload File
+                    </button>
+
+                </form>
+            </main>
         </div>
     </div>
 </body>
