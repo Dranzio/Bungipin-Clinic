@@ -182,7 +182,8 @@
 
     <script>    
      let bookings = [ //=============================REPLACE============================TEMPORARY!=================================================TEMPORARY!==================================================TEMPORARY!
-            { appointment_id: 1827, public_id: "1827", first_name: "Andrew", last_name: "Philip Bogtae", service_label: "Cleaning", appointment_date: "2026-09-16", time_slot: "10:00:00", created_at: "2026-09-15T10:30:00", payment_status: null },
+          { appointment_id: 9999, public_id: "9999", first_name: "Gary", last_name: "Velasco", service_label: "Checkup", appointment_date: "2026-09-25", time_slot: "09:00:00", created_at: "2026-09-20T18:00:00", payment_status: "paid" }, 
+            { appointment_id: 1827, public_id: "1827", first_name: "Andrew", last_name: "Philip Bogtae", service_label: "Cleaning", appointment_date: "2026-09-25", time_slot: "10:00:00", created_at: "2026-09-19T10:30:00", payment_status: null },
             { appointment_id: 8172, public_id: "8172", first_name: "Venus", last_name: "Coleen Silvestre", service_label: "Pasta", appointment_date: "2026-09-20", time_slot: "14:00:00", created_at: "2026-09-19T08:00:00", payment_status: "paid" },
             { appointment_id: 9182, public_id: "9182", first_name: "Lleyton", last_name: "Andrew Flores", service_label: "Consultation", appointment_date: "2026-09-18", time_slot: "09:00:00", created_at: "2026-09-17T09:15:00", payment_status: null },
             { appointment_id: 9928, public_id: "9928", first_name: "Justine", last_name: "Penelophy Reolada", service_label: "Cleaning", appointment_date: "2026-09-14", time_slot: "15:00:00", created_at: "2026-08-30T16:45:00", payment_status: "paid" },
@@ -289,6 +290,12 @@
             return bookings.filter(b =>
                 `${b.first_name} ${b.last_name}`.toLowerCase().includes(currentSearch.toLowerCase())
             );
+            // Sort by created_at descending (newest submissions first)
+            return filtered.sort((a, b) => {
+                const dateA = new Date(a.created_at || 0);
+                const dateB = new Date(b.created_at || 0);
+                return dateB - dateA;
+            });
         }
 
         //Render the booking cards
