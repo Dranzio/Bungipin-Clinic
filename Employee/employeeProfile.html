@@ -80,12 +80,27 @@
                 class="w-full px-4 py-2.5 rounded-full bg-[#dedede] text-[#2d372e]/70 font-semibold text-sm outline-none shadow-inner cursor-not-allowed border border-black/10">
             </div>
 
-            <!-- Employee ID / Staff Code (READONLY) -->
+                  <!-- Employee ID / Staff Code (READONLY) -->
             <div class="flex flex-col gap-1.5">
               <label for="staff_code" class="text-[11px] font-extrabold tracking-wider text-[#2d372e] uppercase">Employee ID:</label>
               <input type="text" id="staff_code" name="staff_code" readonly
                 class="w-full px-4 py-2.5 rounded-full bg-[#dedede] text-[#2d372e]/70 font-semibold text-sm outline-none shadow-inner cursor-not-allowed border border-black/10">
             </div>
+
+            <!-- Position (READONLY — only Admin can change this, via User Management) -->
+          <div class="flex flex-col gap-1.5">
+              <label for="position" class="text-[11px] font-extrabold tracking-wider text-[#2d372e] uppercase">Position:</label>
+              <input type="text" id="position" name="position" readonly
+               class="w-full px-4 py-2.5 rounded-full bg-[#dedede] text-[#2d372e]/70 font-semibold text-sm outline-none shadow-inner cursor-not-allowed border border-black/10">
+          </div>
+
+              <!--sex (READONLY)-->
+            <div class="flex flex-col gap-1.5">
+              <label for="sex" class="text-[11px] font-extrabold tracking-wider text-[#2d372e] uppercase">Sex:</label>
+              <input type="text" id="sex" name="sex" readonly
+                class="w-full px-4 py-2.5 rounded-full bg-[#dedede] text-[#2d372e]/70 font-semibold text-sm outline-none shadow-inner cursor-not-allowed border border-black/10">
+            </div>
+
 
             <!-- Birthday (EDITABLE - Will be auto-locked) -->
             <div class="flex flex-col gap-1.5">
@@ -107,12 +122,6 @@
               </select>
             </div>
             
-            <!--SEX (READONLY)-->
-            <div class="flex flex-col gap-1.5">
-              <label for="sex" class="text-[11px] font-extrabold tracking-wider text-[#2d372e] uppercase">Sex:</label>
-              <input type="text" id="sex" name="sex" readonly
-                class="w-full px-4 py-2.5 rounded-full bg-[#dedede] text-[#2d372e]/70 font-semibold text-sm outline-none shadow-inner cursor-not-allowed border border-black/10">
-            </div>
           </div>
         </div>
         
