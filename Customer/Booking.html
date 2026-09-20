@@ -10,6 +10,7 @@
     <script src="https://kit.fontawesome.com/fc8c3f4103.js" crossorigin="anonymous"></script>
     <script src="Booking.js"></script>
     
+    <!-- Integrated Booking.js Script Logic -->
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             let selectedDateValue = '';
@@ -18,7 +19,7 @@
             let selectedPriceValue = 0;
             let selectedPaymentMethod = 'cash';
 
-            
+            // 1. Time Slot Selection Logic
             document.querySelectorAll('[data-time]').forEach(slot => {
                 slot.addEventListener('click', () => {
                     document.querySelectorAll('[data-time]').forEach(s => s.classList.remove('bg-[#D7E3A5]'));
@@ -28,20 +29,26 @@
                 });
             });
 
-            
+            // 2. Service Selection Logic
             document.querySelectorAll('[data-service]').forEach(card => {
                 card.addEventListener('click', () => {
                     document.querySelectorAll('[data-service]').forEach(c => c.classList.remove('bg-[#D7E3A5]'));
                     card.classList.add('bg-[#D7E3A5]');
+
                     selectedServiceLabel = card.getAttribute('data-service');
                     selectedPriceValue = card.getAttribute('data-price').replace(',', '');
-                    
+                    const serviceId = card.getAttribute('data-service-id');
+
                     document.getElementById('selected-service').value = selectedServiceLabel;
+                    document.getElementById('selected-service-id').value = serviceId;
                     document.getElementById('selected-price').value = selectedPriceValue;
                 });
             });
 
-            
+            // Note: Your calendar script handles setting selectedDateValue and updating
+            // document.getElementById('selected-date').value = selectedDateValue;
+
+            // 3. Modal & Form Submission Workflow
             const bookingForm = document.getElementById('booking-form');
             const receiptModal = document.getElementById('receipt-modal');
             const closeModalBtn = document.getElementById('close-modal');
@@ -50,25 +57,31 @@
             const payCashBtn = document.getElementById('pay-cash-btn');
             const qrContainer = document.getElementById('qr-container');
 
+            // Change this if your backend uses a different API base URL.
+            const API_BASE_URL = window.BACKEND_API_BASE_URL || '';
+
             bookingForm.addEventListener('submit', (e) => {
                 e.preventDefault();
 
                 const dateVal = document.getElementById('selected-date').value;
                 const timeVal = document.getElementById('selected-time').value;
                 const serviceVal = document.getElementById('selected-service').value;
+                const serviceIdVal = document.getElementById('selected-service-id').value;
+                const noteVal = document.getElementById('PNote').value.trim();
 
-                if (!dateVal || !timeVal || !serviceVal) {
+                if (!dateVal || !timeVal || !serviceVal || !serviceIdVal) {
                     alert('Please select a date, time slot, and service.');
                     return;
                 }
 
-                
+                // The price shown here is for the frontend receipt only.
+                // The backend should retrieve the real price from the database using service_id.
                 receiptContent.innerHTML = `
-                    <p><strong>Service:</strong> ${selectedServiceLabel}</p>
-                    <p><strong>Date:</strong> ${dateVal}</p>
-                    <p><strong>Time:</strong> ${timeVal}</p>
+                    <p><strong>Service:</strong> ${escapeHtml(selectedServiceLabel)}</p>
+                    <p><strong>Date:</strong> ${escapeHtml(dateVal)}</p>
+                    <p><strong>Time:</strong> ${escapeHtml(timeVal)}</p>
                     <p><strong>Price:</strong> ₱${Number(selectedPriceValue).toLocaleString()}</p>
-                    <p><strong>Note:</strong> ${document.getElementById('PNote').value || 'None'}</p>
+                    <p><strong>Note:</strong> ${escapeHtml(noteVal || 'None')}</p>
                 `;
 
                 receiptModal.classList.remove('hidden');
@@ -94,50 +107,77 @@
             async function submitBookingToDatabase(method) {
                 const token = localStorage.getItem('userToken');
 
-                
-                const serviceMap = {
-                    'Dental Cleaning': 1,
-                    'Dental Filling': 2,
-                    'Dental Checkup': 3,
-                    'Teeth Whitening': 4
-                };
-
                 const payload = {
                     appointment_date: document.getElementById('selected-date').value,
                     time_slot: document.getElementById('selected-time').value,
-                    service_id: serviceMap[selectedServiceLabel] || 1,
-                    patient_note: document.getElementById('PNote').value,
-                    payment_method: method,
-                    amount: selectedPriceValue
+                    service_id: Number(document.getElementById('selected-service-id').value),
+                    patient_note: document.getElementById('PNote').value.trim(),
+                    payment_method: method
                 };
 
+                // The backend should calculate the final amount from service_id.
+                // selectedPriceValue is intentionally not used as the source of truth.
+
                 try {
-                    const response = await fetch('/api/appointments', {
+                    const headers = {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    };
+
+                    // Add authentication only when a token exists.
+                    if (token) {
+                        headers['Authorization'] = `Bearer ${token}`;
+                    }
+
+                    const response = await fetch(`${API_BASE_URL}/api/appointments`, {
                         method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${token}`
-                        },
+                        headers: headers,
                         body: JSON.stringify(payload)
                     });
 
-                    const result = await response.json();
-                    if (!response.ok) throw new Error(result.error || 'Failed to save appointment.');
+                    const contentType = response.headers.get('content-type') || '';
+                    const result = contentType.includes('application/json')
+                        ? await response.json()
+                        : { message: await response.text() };
 
-                    setTimeout(() => {
-                        alert('Booking and payment successfully recorded in the database!');
-                        receiptModal.classList.add('hidden');
-                        window.location.reload();
-                    }, method === 'online' ? 2000 : 500);
+                    if (!response.ok) {
+                        throw new Error(result.error || result.message || 'Failed to save appointment.');
+                    }
+
+                    alert(result.message || 'Booking successfully recorded!');
+
+                    receiptModal.classList.add('hidden');
+                    window.location.reload();
 
                 } catch (error) {
-                    console.error('Database Error:', error);
+                    console.error('Booking API Error:', error);
                     alert('Error saving booking: ' + error.message);
                 }
             }
+
+            // Prevent user-entered notes from being interpreted as HTML in the receipt.
+            function escapeHtml(value) {
+                const div = document.createElement('div');
+                div.textContent = value;
+                return div.innerHTML;
+            }
         });
     </script>
-    <script src="/Taskbar/Customer_Sidebar.js"></script>
+    <!--
+        BACKEND INTEGRATION:
+        POST /api/appointments
+        JSON fields:
+        - appointment_date
+        - time_slot
+        - service_id
+        - patient_note
+        - payment_method
+
+        The backend should authenticate the user, validate the appointment,
+        check slot availability, retrieve the service price from the database,
+        and save the appointment. Do not trust a frontend price as the final amount.
+    -->
+    <script src="../Taskbar/Customer_Sidebar.js"></script>
 </head>
 <body class="bg-[#F3EFE4] min-h-screen font-poppins text-[#2c3e2b] antialiased">
     <div class="min-h-screen flex flex-col md:flex-row w-full"> <!--Div for whole body-->
@@ -146,7 +186,7 @@
 <script>
     (async () => {
         try {
-            const response = await fetch('/Taskbar/Customer_Task.html');
+            const response = await fetch('../Taskbar/Customer_Task.html');
             if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
             
             const data = await response.text();
@@ -175,6 +215,7 @@
                 <input type="hidden" id="selected-date" name="appointment_date" required>
                 <input type="hidden" id="selected-time" name="time_slot" required>
                 <input type="hidden" id="selected-service" name="service_name" required>
+                <input type="hidden" id="selected-service-id" name="service_id" required>
                 <input type="hidden" id="selected-price" name="service_price" required>
 
                 <div class="w-full flex flex-row gap-5 justify-center items-center">
@@ -256,28 +297,28 @@
 
                 <div class="flex flex-row gap-5 w-full justify-center"> <!--Div for services-->
                     <!--Div for cleaning-->
-                    <div data-service="Dental Cleaning" data-price="1,500" class="flex flex-col w-[200px] h-[250px] justify-between items-center text-center bg-[#FFFFFF] rounded-[8px] border-4 border-black hover:bg-[#D7E3A5] transition-all duration-250 hover:scale-[1.035] cursor-pointer p-3">
+                    <div data-service="Dental Cleaning" data-service-id="1" data-price="1,500" class="flex flex-col w-[200px] h-[250px] justify-between items-center text-center bg-[#FFFFFF] rounded-[8px] border-4 border-black hover:bg-[#D7E3A5] transition-all duration-250 hover:scale-[1.035] cursor-pointer p-3">
                         <h1 class="font-bold text-[20px]">Cleaning</h1>
                         <img src="../assets/Cleaning.png" class="w-28 h-28 object-contain">
                         <h2 class="font-bold text-[18px]">Price: 1,500</h2>
                     </div>
 
                     <!--Div for pasta-->
-                    <div data-service="Dental Filling" data-price="2,500" class="flex flex-col w-[200px] h-[250px] justify-between items-center text-center bg-[#FFFFFF] rounded-[8px] border-4 border-black hover:bg-[#D7E3A5] transition-all duration-250 hover:scale-[1.035] cursor-pointer p-3">
+                    <div data-service="Dental Filling" data-service-id="2" data-price="2,500" class="flex flex-col w-[200px] h-[250px] justify-between items-center text-center bg-[#FFFFFF] rounded-[8px] border-4 border-black hover:bg-[#D7E3A5] transition-all duration-250 hover:scale-[1.035] cursor-pointer p-3">
                         <h1 class="font-bold text-[20px]">Pasta</h1>
                         <img src="../assets/Pasta.png" class="w-28 h-28 object-contain">
                         <h2 class="font-bold text-[18px]">Price: 2,500</h2>
                     </div>
 
                     <!--Div for checkup-->
-                    <div data-service="Dental Checkup" data-price="500" class="flex flex-col w-[200px] h-[250px] justify-between items-center text-center bg-[#FFFFFF] rounded-[8px] border-4 border-black hover:bg-[#D7E3A5] transition-all duration-250 hover:scale-[1.035] cursor-pointer p-3">
+                    <div data-service="Dental Checkup" data-service-id="3" data-price="500" class="flex flex-col w-[200px] h-[250px] justify-between items-center text-center bg-[#FFFFFF] rounded-[8px] border-4 border-black hover:bg-[#D7E3A5] transition-all duration-250 hover:scale-[1.035] cursor-pointer p-3">
                         <h1 class="font-bold text-[20px]">Checkup</h1>
                         <img src="../assets/Checkup.png" class="w-28 h-28 object-contain">
                         <h2 class="font-bold text-[18px]">Price: 500</h2>
                     </div>
 
                     <!--Div for whitening-->
-                    <div data-service="Teeth Whitening" data-price="3,000" class="flex flex-col w-[200px] h-[250px] justify-between items-center text-center bg-[#FFFFFF] rounded-[8px] border-4 border-black hover:bg-[#D7E3A5] transition-all duration-250 hover:scale-[1.035] cursor-pointer p-3">
+                    <div data-service="Teeth Whitening" data-service-id="4" data-price="3,000" class="flex flex-col w-[200px] h-[250px] justify-between items-center text-center bg-[#FFFFFF] rounded-[8px] border-4 border-black hover:bg-[#D7E3A5] transition-all duration-250 hover:scale-[1.035] cursor-pointer p-3">
                         <h1 class="font-bold text-[20px]">Whitening</h1>
                         <img src="../assets/Whitening.png" class="w-28 h-28 object-contain">
                         <h2 class="font-bold text-[18px]">Price: 3,000</h2>
