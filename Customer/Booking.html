@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Booking</title>
+    <link rel="stylesheet" href="../output.css">
+    <!-- Tailwind CDN Fallback for missing builds -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://kit.fontawesome.com/fc8c3f4103.js" crossorigin="anonymous"></script>
+    <script src="Booking.js"></script>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            let selectedDateValue = '';
+            let selectedTimeValue = '';
+            let selectedServiceLabel = '';
+            let selectedPriceValue = 0;
+            let selectedPaymentMethod = 'cash';
+
+            
+            document.querySelectorAll('[data-time]').forEach(slot => {
+                slot.addEventListener('click', () => {
+                    document.querySelectorAll('[data-time]').forEach(s => s.classList.remove('bg-[#D7E3A5]'));
+                    slot.classList.add('bg-[#D7E3A5]');
+                    selectedTimeValue = slot.getAttribute('data-time');
+                    document.getElementById('selected-time').value = selectedTimeValue;
+                });
+            });
+
+            
+            document.querySelectorAll('[data-service]').forEach(card => {
+                card.addEventListener('click', () => {
+                    document.querySelectorAll('[data-service]').forEach(c => c.classList.remove('bg-[#D7E3A5]'));
+                    card.classList.add('bg-[#D7E3A5]');
+                    selectedServiceLabel = card.getAttribute('data-service');
+                    selectedPriceValue = card.getAttribute('data-price').replace(',', '');
+                    
+                    document.getElementById('selected-service').value = selectedServiceLabel;
+                    document.getElementById('selected-price').value = selectedPriceValue;
+                });
+            });
+
+            
+            const bookingForm = document.getElementById('booking-form');
+            const receiptModal = document.getElementById('receipt-modal');
+            const closeModalBtn = document.getElementById('close-modal');
+            const receiptContent = document.getElementById('receipt-content');
+            const payOnlineBtn = document.getElementById('pay-online-btn');
+            const payCashBtn = document.getElementById('pay-cash-btn');
+            const qrContainer = document.getElementById('qr-container');
+
+            bookingForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+
+                const dateVal = document.getElementById('selected-date').value;
+                const timeVal = document.getElementById('selected-time').value;
+                const serviceVal = document.getElementById('selected-service').value;
+
+                if (!dateVal || !timeVal || !serviceVal) {
+                    alert('Please select a date, time slot, and service.');
+                    return;
+                }
+
+                
+                receiptContent.innerHTML = `
+                    <p><strong>Service:</strong> ${selectedServiceLabel}</p>
+                    <p><strong>Date:</strong> ${dateVal}</p>
+                    <p><strong>Time:</strong> ${timeVal}</p>
+                    <p><strong>Price:</strong> ₱${Number(selectedPriceValue).toLocaleString()}</p>
+                    <p><strong>Note:</strong> ${document.getElementById('PNote').value || 'None'}</p>
+                `;
+
+                receiptModal.classList.remove('hidden');
+            });
+
+            closeModalBtn.addEventListener('click', () => {
+                receiptModal.classList.add('hidden');
+                qrContainer.classList.add('hidden');
+            });
+
+            payOnlineBtn.addEventListener('click', () => {
+                selectedPaymentMethod = 'online';
+                qrContainer.classList.remove('hidden');
+                submitBookingToDatabase('online');
+            });
+
+            payCashBtn.addEventListener('click', () => {
+                selectedPaymentMethod = 'cash';
+                qrContainer.classList.add('hidden');
+                submitBookingToDatabase('cash');
+            });
+
+            async function submitBookingToDatabase(method) {
+                const token = localStorage.getItem('userToken');
+
+                
+                const serviceMap = {
+                    'Dental Cleaning': 1,
+                    'Dental Filling': 2,
+                    'Dental Checkup': 3,
+                    'Teeth Whitening': 4
+                };
+
+                const payload = {
+                    appointment_date: document.getElementById('selected-date').value,
+                    time_slot: document.getElementById('selected-time').value,
+                    service_id: serviceMap[selectedServiceLabel] || 1,
+                    patient_note: document.getElementById('PNote').value,
+                    payment_method: method,
+                    amount: selectedPriceValue
+                };
+
+                try {
+                    const response = await fetch('/api/appointments', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify(payload)
+                    });
+
+                    const result = await response.json();
+                    if (!response.ok) throw new Error(result.error || 'Failed to save appointment.');
+
+                    setTimeout(() => {
+                        alert('Booking and payment successfully recorded in the database!');
+                        receiptModal.classList.add('hidden');
+                        window.location.reload();
+                    }, method === 'online' ? 2000 : 500);
+
+                } catch (error) {
+                    console.error('Database Error:', error);
+                    alert('Error saving booking: ' + error.message);
+                }
+            }
+        });
+    </script>
+    <script src="/Taskbar/Customer_Sidebar.js"></script>
+</head>
+<body class="bg-[#F3EFE4] min-h-screen font-poppins text-[#2c3e2b] antialiased">
+    <div class="min-h-screen flex flex-col md:flex-row w-full"> <!--Div for whole body-->
+        <aside id="sidebar-aside" class="w-full md:w-auto shrink-0 bg-[#9ea988]"> <!--Div for sidebar-->
+        <div id="sidebar-placeholder"></div>
+<script>
+    (async () => {
+        try {
+            const response = await fetch('/Taskbar/Customer_Task.html');
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+            
+            const data = await response.text();
+            document.getElementById('sidebar-placeholder').innerHTML = data;
+            
+            const currentPage = window.location.pathname.split("/").pop();
+            document.querySelectorAll('.nav-link').forEach(link => {
+                if (link.getAttribute('data-page') === currentPage) {
+                    link.classList.add('bg-[#FDFCE9]');
+                }
+            });
+
+            initSidebar();
+        } catch (error) {
+            console.error('Failed to load the sidebar taskbar:', error);
+        }
+    })();
+</script>
+        </aside>
+
+        <!-- Main Content Area Wrapper -->
+        <div class="flex-1 p-4 sm:p-6 md:p-10 flex justify-center items-start">
+            <form id="booking-form" method="post" class="w-full max-w-4xl flex flex-col items-center gap-8">
+                
+                <!-- Hidden Database Fields -->
+                <input type="hidden" id="selected-date" name="appointment_date" required>
+                <input type="hidden" id="selected-time" name="time_slot" required>
+                <input type="hidden" id="selected-service" name="service_name" required>
+                <input type="hidden" id="selected-price" name="service_price" required>
+
+                <div class="w-full flex flex-row gap-5 justify-center items-center">
+                    <!--AM Time slot-->
+                    <div class="flex flex-col w-[180px] gap-3">
+                        <h1 class="font-extrabold text-[#2c3e2b]">AM-Time</h1>
+                        <div data-time="07:00:00" class="flex w-full h-[60px] bg-white rounded-3xl border-[3.5px] border-black items-center justify-center text-center hover:bg-[#D7E3A5] transition-all duration-250 hover:scale-[1.035] cursor-pointer">
+                            <h2>7AM - 8AM</h2>
+                        </div>
+                        <div data-time="08:00:00" class="flex w-full h-[60px] bg-white rounded-3xl border-[3.5px] border-black items-center justify-center text-center hover:bg-[#D7E3A5] transition-all duration-250 hover:scale-[1.035] cursor-pointer">
+                            <h2>8AM - 9AM</h2>
+                        </div>
+                        <div data-time="09:00:00" class="flex w-full h-[60px] bg-white rounded-3xl border-[3.5px] border-black items-center justify-center text-center hover:bg-[#D7E3A5] transition-all duration-250 hover:scale-[1.035] cursor-pointer">
+                            <h2>9AM - 10AM</h2>
+                        </div>
+                        <div data-time="10:00:00" class="flex w-full h-[60px] bg-white rounded-3xl border-[3.5px] border-black items-center justify-center text-center hover:bg-[#D7E3A5] transition-all duration-250 hover:scale-[1.035] cursor-pointer">
+                            <h2>10AM - 11AM</h2>
+                        </div>
+                        <div data-time="11:00:00" class="flex w-full h-[60px] bg-white rounded-3xl border-[3.5px] border-black items-center justify-center text-center hover:bg-[#D7E3A5] transition-all duration-250 hover:scale-[1.035] cursor-pointer">
+                            <h2>11AM - 12PM</h2>
+                        </div>
+                    </div>
+
+                    <!--PM Time slot-->
+                    <div class="flex flex-col w-[180px] gap-3">
+                        <h1 class="font-extrabold text-[#2c3e2b]">PM-Time</h1>
+                        <div data-time="12:00:00" class="flex w-full h-[60px] bg-white rounded-3xl border-[3.5px] border-black items-center justify-center text-center hover:bg-[#D7E3A5] transition-all duration-250 hover:scale-[1.035] cursor-pointer">
+                            <h2>12PM - 1PM</h2>
+                        </div>
+                        <div data-time="13:00:00" class="flex w-full h-[60px] bg-white rounded-3xl border-[3.5px] border-black items-center justify-center text-center hover:bg-[#D7E3A5] transition-all duration-250 hover:scale-[1.035] cursor-pointer">
+                            <h2>1PM - 2PM</h2>
+                        </div>
+                        <div data-time="14:00:00" class="flex w-full h-[60px] bg-white rounded-3xl border-[3.5px] border-black items-center justify-center text-center hover:bg-[#D7E3A5] transition-all duration-250 hover:scale-[1.035] cursor-pointer">
+                            <h2>2PM - 3PM</h2>
+                        </div>
+                        <div data-time="15:00:00" class="flex w-full h-[60px] bg-white rounded-3xl border-[3.5px] border-black items-center justify-center text-center hover:bg-[#D7E3A5] transition-all duration-250 hover:scale-[1.035] cursor-pointer">
+                            <h2>3PM - 4PM</h2>
+                        </div>
+                        <div data-time="16:00:00" class="flex w-full h-[60px] bg-white rounded-3xl border-[3.5px] border-black items-center justify-center text-center hover:bg-[#D7E3A5] transition-all duration-250 hover:scale-[1.035] cursor-pointer">
+                            <h2>4PM - 5PM</h2>
+                        </div>
+                    </div>
+
+                    <div>
+                        <!--Calendar-->
+                        <div class="flex flex-col w-[410px] h-[360px] rounded-3xl border-[3.5px] border-black bg-white overflow-hidden">
+                            
+                            <!--Header-->
+                            <div class="flex justify-between items-center p-[10px] w-full h-15 bg-[#667733]">
+
+                                <!--Left Button-->
+                                <div class="cursor-pointer text-[25px] bold text-[#D7E3A5]" id="prev"><i class="fa-solid fa-arrow-left"></i></div>
+
+                                <!--Month-Year-->
+                                <div id="month-year" class="text-[25px] bold text-[#D7E3A5]"></div>
+
+                                <!--Right Button-->
+                                <div class="cursor-pointer text-[25px] bold text-[#D7E3A5]" id="next"><i class="fa-solid fa-arrow-right"></i></div>
+                            </div>
+                           
+                            <!--Days-->
+                            <div class="grid grid-cols-7 gap-3 px-4 py-2">
+                                <div>Sun</div>
+                                <div>Mon</div>
+                                <div>Tue</div>
+                                <div>Wed</div>
+                                <div>Thu</div>
+                                <div>Fri</div>
+                                <div>Sat</div>
+                            </div>
+                            <div class="grid grid-cols-7 gap-3 px-4 py-1" id="days"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="w-full flex flex-col items-start">
+                    <h1 class="font-extrabold text-xl text-[#2c3e2b]">What do you need?</h1>
+                </div>
+
+                <div class="flex flex-row gap-5 w-full justify-center"> <!--Div for services-->
+                    <!--Div for cleaning-->
+                    <div data-service="Dental Cleaning" data-price="1,500" class="flex flex-col w-[200px] h-[250px] justify-between items-center text-center bg-[#FFFFFF] rounded-[8px] border-4 border-black hover:bg-[#D7E3A5] transition-all duration-250 hover:scale-[1.035] cursor-pointer p-3">
+                        <h1 class="font-bold text-[20px]">Cleaning</h1>
+                        <img src="../assets/Cleaning.png" class="w-28 h-28 object-contain">
+                        <h2 class="font-bold text-[18px]">Price: 1,500</h2>
+                    </div>
+
+                    <!--Div for pasta-->
+                    <div data-service="Dental Filling" data-price="2,500" class="flex flex-col w-[200px] h-[250px] justify-between items-center text-center bg-[#FFFFFF] rounded-[8px] border-4 border-black hover:bg-[#D7E3A5] transition-all duration-250 hover:scale-[1.035] cursor-pointer p-3">
+                        <h1 class="font-bold text-[20px]">Pasta</h1>
+                        <img src="../assets/Pasta.png" class="w-28 h-28 object-contain">
+                        <h2 class="font-bold text-[18px]">Price: 2,500</h2>
+                    </div>
+
+                    <!--Div for checkup-->
+                    <div data-service="Dental Checkup" data-price="500" class="flex flex-col w-[200px] h-[250px] justify-between items-center text-center bg-[#FFFFFF] rounded-[8px] border-4 border-black hover:bg-[#D7E3A5] transition-all duration-250 hover:scale-[1.035] cursor-pointer p-3">
+                        <h1 class="font-bold text-[20px]">Checkup</h1>
+                        <img src="../assets/Checkup.png" class="w-28 h-28 object-contain">
+                        <h2 class="font-bold text-[18px]">Price: 500</h2>
+                    </div>
+
+                    <!--Div for whitening-->
+                    <div data-service="Teeth Whitening" data-price="3,000" class="flex flex-col w-[200px] h-[250px] justify-between items-center text-center bg-[#FFFFFF] rounded-[8px] border-4 border-black hover:bg-[#D7E3A5] transition-all duration-250 hover:scale-[1.035] cursor-pointer p-3">
+                        <h1 class="font-bold text-[20px]">Whitening</h1>
+                        <img src="../assets/Whitening.png" class="w-28 h-28 object-contain">
+                        <h2 class="font-bold text-[18px]">Price: 3,000</h2>
+                    </div>
+                </div>
+                <!--Note For Users-->
+                <textarea id="PNote" name="PNote" class="w-full h-[225px] rounded bg-[#FFFFFF] text-[#2c3e2b] font-medium text-lg outline-none resize-none shadow-inner border-4 border-[#000000] p-4"></textarea>
+
+                <button type="submit" id="submit-btn" class="w-full py-4 bg-[#667733] text-[#D7E3A5] font-extrabold text-xl rounded-xl border-4 border-black hover:opacity-90 transition-all cursor-pointer shadow-md">
+                    Submit Booking
+                </button>
+
+                <!-- Receipt Modal -->
+                <div id="receipt-modal" class="fixed inset-0 bg-black/50 flex items-center justify-center hidden z-50 p-4">
+                    <div class="bg-white rounded-3xl border-4 border-black w-full max-w-md p-6 flex flex-col gap-4 relative shadow-2xl">
+                        <!-- Close Button -->
+                        <button type="button" id="close-modal" class="absolute top-4 right-4 w-8 h-8 flex items-center justify-center font-bold text-lg bg-gray-100 rounded-full border-2 border-black cursor-pointer hover:bg-gray-200">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                        <h1 class="font-extrabold text-2xl text-[#2c3e2b]">Booking Receipt</h1>
+
+                        <!-- Receipt Content -->
+                        <div id="receipt-content" class="text-[#2c3e2b] flex flex-col gap-2 border-2 border-black p-4 rounded-xl bg-[#FDFCE9]">
+                        </div>
+
+                        <!-- Pay Options -->
+                        <div class="flex gap-3 mt-2">
+                            <button type="button" id="pay-online-btn" class="flex-1 py-3 bg-[#667733] text-[#D7E3A5] font-bold rounded-xl border-2 border-black cursor-pointer hover:opacity-90 transition-all">
+                                Pay Online
+                            </button>
+                            <button type="button" id="pay-cash-btn" class="flex-1 py-3 bg-white text-[#2c3e2b] font-bold rounded-xl border-2 border-black cursor-pointer hover:bg-gray-100 transition-all">
+                                Pay Cash
+                            </button>
+                        </div>
+                    
+                        <!--QR Code-->
+                        <div id="qr-container" class="hidden flex flex-col items-center gap-2 mt-2 p-4 bg-white rounded-xl border-2 border-dashed border-black">
+                            <p class="font-bold text-sm text-[#2c3e2b]">Scan QR Code to Pay</p>
+                            <div class="w-36 h-36 bg-gray-100 border-2 border-black flex items-center justify-center rounded-lg">
+                                <img src="../assets/QRTest.png">
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+            </form>
+        </div>
+
+    </div>
+</body>
+</html>

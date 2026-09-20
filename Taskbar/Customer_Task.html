@@ -1,0 +1,62 @@
+<div id="sidebar" class="relative md:fixed top-0 left-0 w-full md:w-[268px] md:h-full bg-[#A2AC89] font-poppins z-40 flex flex-col md:justify-between shadow-xl py-4 md:py-6 gap-4 md:gap-0 transition-all duration-300">
+
+    <!-- Toggle button (desktop only) -->
+    <div class="hidden md:flex w-full justify-start px-6 absolute top-6 left-0">
+        <button id="sidebar-toggle" class="text-[#2A1001] text-[26px] cursor-pointer hover:opacity-70 transition-opacity z-50">
+            <i class="fa-solid fa-bars"></i>
+        </button>
+    </div>
+
+    <!-- Main Content Wrapper -->
+    <div class="flex flex-col gap-4 overflow-hidden md:mt-10">
+
+        <!-- Profile Section -->
+        <div id="profile-section" class="flex flex-row md:flex-col items-center justify-start md:justify-center gap-3 md:w-full px-4 md:px-0 mx-auto transition-all duration-300">
+            <!-- Profile Circle -->
+            <div id="profile-circle" class="h-10 w-10 md:h-[100px] md:w-[100px] bg-white rounded-full shrink-0 overflow-hidden flex items-center justify-center shadow-sm transition-all duration-300">
+                <img id="sidebar-user-avatar" src="" alt="User Avatar" class="w-full h-full object-cover hidden">
+                <i id="sidebar-default-avatar" class="fa-solid fa-user text-gray-300 text-2xl md:text-[50px]"></i>
+            </div>
+
+            <!-- Name + Email Badge -->
+            <div id="name-badge" class="flex flex-col items-center justify-center px-4 py-2 md:w-52 bg-[#D3DCBE] rounded-[35px] text-center gap-0.5 transition-all duration-300">
+                <h2 id="sidebar-user-name" class="text-base md:text-[16px] font-bold text-[#2A1001] whitespace-nowrap">Loading...</h2>
+                <p id="sidebar-user-email" class="text-[10px] md:text-[11px] font-medium text-[#2A1001]/70 whitespace-nowrap overflow-hidden text-ellipsis max-w-[180px]"></p>
+            </div>
+        </div>
+
+        <!-- Navigation Links -->
+        <div id="nav-links" class="flex flex-row flex-wrap md:flex-col gap-1 md:gap-0 md:mt-2 justify-around md:justify-start w-full">
+
+            <a href="../Customer/customerProfile.html" data-page="Index.html" class="nav-link flex flex-row items-center gap-4 px-4 md:px-8 py-2 md:py-3 w-full text-base md:text-lg font-medium text-[#2A1001] hover:bg-[#FDFCE9] transition-colors">
+                <i class="fa-solid fa-user w-5 text-center shrink-0"></i>
+                <span class="sidebar-label whitespace-nowrap">Profile</span>
+            </a>
+
+            <a href="../Customer/Booking.html" data-page="Booking.html" class="nav-link flex flex-row items-center gap-4 px-4 md:px-8 py-2 md:py-3 w-full text-base md:text-lg font-medium text-[#2A1001] hover:bg-[#FDFCE9] transition-colors">
+                <i class="fa-solid fa-calendar-days w-5 text-center shrink-0"></i>
+                <span class="sidebar-label whitespace-nowrap">Booking</span>
+            </a>
+
+            <a href="../Customer/Messages.html" data-page="Messages.html" class="nav-link flex flex-row items-center gap-4 px-4 md:px-8 py-2 md:py-3 w-full text-base md:text-lg font-medium text-[#2A1001] hover:bg-[#FDFCE9] transition-colors">
+                <i class="fa-solid fa-comments w-5 text-center shrink-0"></i>
+                <span class="sidebar-label whitespace-nowrap">Messages</span>
+            </a>
+
+            <a href="../Customer/History.html" data-page="History.html" class="nav-link flex flex-row items-center gap-4 px-4 md:px-8 py-2 md:py-3 w-full text-base md:text-lg font-medium text-[#2A1001] hover:bg-[#FDFCE9] transition-colors">
+                <i class="fa-solid fa-clock-rotate-left w-5 text-center shrink-0"></i>
+                <span class="sidebar-label whitespace-nowrap">My Appointments</span>
+            </a>
+
+        </div>
+    </div>
+
+    <!-- Sign-Out -->
+    <div class="pt-2 border-t border-[#8f9976] md:border-none w-full">
+        <a href="../Login/Login.html" class="flex flex-row items-center gap-4 px-4 md:px-8 py-2 md:py-3 w-full text-base md:text-lg font-medium text-[#2A1001] hover:bg-[#FDFCE9] transition-colors">
+            <i class="fa-solid fa-right-from-bracket w-5 text-center shrink-0"></i>
+            <span class="sidebar-label whitespace-nowrap">Sign-Out</span>
+        </a>
+    </div>
+
+</div>
