@@ -286,7 +286,7 @@ INSERT INTO patient_profiles (patient_id, birthday, civil_status, pregnancy_stat
 (2, '1995-08-22', 'Married', '2nd Trimester');
 
 INSERT INTO employee_profiles (employee_id, staff_code, birthday, civil_status) VALUES
-(3, 'STF-2026-001', '1985-06-10', 'Married', 'dentist');
+(3, 'STF-2026-001', '1985-06-10', 'Married', 'receptionist');
 
 INSERT INTO health_conditions (patient_id, description) VALUES
 (2, 'Asthma');
