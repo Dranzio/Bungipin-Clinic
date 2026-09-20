@@ -151,6 +151,19 @@
                     </div>
                 </div>
 
+                <div id="editPermissionWrapper" class="mb-6 hidden">
+                    <label class="block text-xs font-bold text-[#2A1001]/70 uppercase mb-1">Permission Level</label>
+                    <div class="relative">
+                        <select id="editPermission" disabled class="w-full h-10 pl-4 pr-10 rounded-full border border-[#2A1001]/20 outline-none cursor-not-allowed appearance-none bg-white text-[#2A1001]">
+                            <option value="Super Admin">Super Admin</option>
+                            <option value="Regular Admin">Regular Admin</option>
+                        </select>
+                    <button type="button" class="unlockBtn absolute right-1.5 top-1/2 -translate-y-1/2 w-7 h-7 bg-white rounded-full flex items-center justify-center shadow-[0_1px_4px_rgba(0,0,0,0.15)] border border-gray-100 hover:bg-gray-50 transition z-10" data-target="editPermission">
+                    <img src="../images/editIcon.png" class="w-3.5 h-3.5 object-contain opacity-80" alt="Edit">
+                    </button>
+                </div>
+                </div>
+
                 <div class="flex justify-center">
                     <button type="submit" id="saveEditBtn" class="bg-[#667733] hover:bg-[#556022] transition text-white font-bold px-8 py-2.5 rounded-full">
                         Save Changes
@@ -250,6 +263,14 @@
                     </select>
                 </div>
 
+                <div id="newPermissionWrapper" class="mb-4 hidden">
+                    <label class="block text-xs font-bold text-[#2A1001] uppercase mb-1">Permission Level</label>
+                    <select id="newPermission" class="w-full h-10 px-4 rounded-full border border-[#2A1001]/20 outline-none cursor-pointer">
+                        <option value="Super Admin">Super Admin</option>
+                        <option value="Regular Admin">Regular Admin</option>
+                    </select>
+                </div>
+
                 <div class="mb-6">
                     <label class="block text-xs font-bold text-[#2A1001] uppercase mb-1">Temporary Password</label>
                     <input type="text" id="newPassword" disabled value="Auto-generated (matches system ID)" class="w-full h-10 px-4 rounded-full border border-[#2A1001]/20 outline-none bg-gray-100 text-gray-500 font-medium" />
@@ -283,7 +304,6 @@ let users = [
         { user_id: 3, public_id: "EMP-1234", first_name: "Santos", last_name: "Reyes", email: "taravalosielirahhhhh@gmail.com", phone: "09193456789", sex: "F", role: "employee", position: "Dentist", account_status: "active" },
         { user_id: 4, public_id: "EMP-2323", first_name: "Xyrelle", last_name: "Martinez", email: "ilovefeeshrahhhh@gmail.com", phone: "09204567890", sex: "F", role: "employee", position: "Receptionist", account_status: "suspended" }
     ];
-
 
     let currentSearch = "";
     let currentRole = "All";
@@ -467,11 +487,6 @@ let users = [
         return `${prefix}${u.first_name} ${u.last_name}`;
     }
 
-//decides what role text gets displayed on the user's card or profile 
-    function roleLabel(u) {
-        if (u.role === 'employee' && u.position) return u.position;
-        return u.role.charAt(0).toUpperCase() + u.role.slice(1);
-    }
 //filters the list of users based on what you are searching for and what role is selected
     function getFiltered() {
         return users.filter(u => {
@@ -564,8 +579,37 @@ container.innerHTML = filtered.map(u => `
     });
 
    
-//for the modals
-    function openEditModal(id) {
+
+
+    function roleLabel(u) {
+        if (u.role === 'employee' && u.position) return u.position;
+        if (u.role === 'admin' && u.permission_level) return u.permission_level;
+        return u.role.charAt(0).toUpperCase() + u.role.slice(1);
+    }
+
+function toggleEditPositionField(role, position, permissionLevel) {
+        const posWrapper = document.getElementById('editPositionWrapper');
+        const permWrapper = document.getElementById('editPermissionWrapper');
+
+        if (role === 'employee') {
+            posWrapper.classList.remove('hidden');
+            permWrapper.classList.add('hidden');
+            document.getElementById('editPosition').value = position || 'Dentist';
+        } else if (role === 'admin') {
+            posWrapper.classList.add('hidden');
+            permWrapper.classList.remove('hidden');
+            document.getElementById('editPermission').value = permissionLevel || 'Regular Admin';
+        } else {
+            posWrapper.classList.add('hidden');
+            permWrapper.classList.add('hidden');
+        }
+    }
+
+   document.getElementById('editRole').addEventListener('change', function () {
+        toggleEditPositionField(this.value, null, null);
+    });
+
+     function openEditModal(id) {
         const u = users.find(u => u.user_id == id);
         if (!u) return;
 
@@ -576,23 +620,10 @@ container.innerHTML = filtered.map(u => `
         document.getElementById('editPhone').value = u.phone;
         document.getElementById('editRole').value = u.role;
 
-        toggleEditPositionField(u.role, u.position);
+        toggleEditPositionField(u.role, u.position, u.permission_level);
         document.getElementById('editModal').classList.remove('hidden');
     }
 
-    function toggleEditPositionField(role, position) {//This function shows or hides the position field in the Edit modal based on the user's role
-        const wrapper = document.getElementById('editPositionWrapper');
-        if (role === 'employee') {//if employee may ibang position
-            wrapper.classList.remove('hidden');
-            document.getElementById('editPosition').value = position || 'Dentist';
-        } else {//if admin no roles
-            wrapper.classList.add('hidden');
-        }
-    }
-
-    document.getElementById('editRole').addEventListener('change', function () {
-        toggleEditPositionField(this.value, null);
-    });
 
     document.getElementById('closeEditModal').addEventListener('click', () => {
         document.getElementById('editModal').classList.add('hidden');
@@ -610,25 +641,24 @@ document.getElementById('editAccountForm').addEventListener('submit', async func
         const id = document.getElementById('editUserId').value;
         const role = document.getElementById('editRole').value;
 
-        const payload = {
+        const payload = {//existing inputs
             first_name: document.getElementById('editFirstName').value.trim(),
             last_name: document.getElementById('editLastName').value.trim(),
             email: document.getElementById('editEmail').value.trim(),
             phone: document.getElementById('editPhone').value.trim(),
             role: role,
-            position: role === 'employee' ? document.getElementById('editPosition').value : null
+            position: role === 'employee' ? document.getElementById('editPosition').value : null,
+            permission_level: role === 'admin' ? document.getElementById('editPermission').value : null
         };
 
         await updateUser(id, payload);
 
-        // Show the green success banner inside the edit modal
         const editSuccessBanner = document.getElementById('editSuccessMessage');
         editSuccessBanner.classList.remove('hidden');
         editSuccessBanner.style.display = 'block';
 
         renderUsers();
-
-        // After 2 seconds, hide banner, reset form, and close modal
+//success banner
         setTimeout(() => {
             editSuccessBanner.classList.add('hidden');
             editSuccessBanner.style.display = 'none';
@@ -704,23 +734,24 @@ document.getElementById('editAccountForm').addEventListener('submit', async func
     });
 
     ///create account
-  document.getElementById('createAccountBtn').addEventListener('click', () => {
+document.getElementById('createAccountBtn').addEventListener('click', () => {
         document.getElementById('newFirstName').value = '';
         document.getElementById('newLastName').value = '';
         document.getElementById('newEmail').value = '';
         document.getElementById('newPhone').value = '';
         
-
         document.getElementById('newRole').value = 'employee'; 
-        
         document.getElementById('newPositionWrapper').classList.remove('hidden'); 
+        document.getElementById('newPermissionWrapper').classList.add('hidden'); 
         
         document.getElementById('createModal').classList.remove('hidden');
     });
 
-    document.getElementById('newRole').addEventListener('change', function () {
-        // Show position wrapper only if role is 'employee'
-        document.getElementById('newPositionWrapper').classList.toggle('hidden', this.value !== 'employee');
+   document.getElementById('newRole').addEventListener('change', function () { //show positions depends if admin or employee
+        const isEmp = this.value === 'employee';
+        const isAdmin = this.value === 'admin';
+        document.getElementById('newPositionWrapper').classList.toggle('hidden', !isEmp);
+        document.getElementById('newPermissionWrapper').classList.toggle('hidden', !isAdmin);
     });
 
     document.getElementById('closeCreateModal').addEventListener('click', () => {
@@ -750,19 +781,18 @@ document.getElementById('createAccountForm').addEventListener('submit', async fu
             phone: phoneVal,
             sex: document.querySelector('input[name="newSex"]:checked').value,
             role: role,
-            position: role === 'employee' ? document.getElementById('newPosition').value : null
+            position: role === 'employee' ? document.getElementById('newPosition').value : null,
+            permission_level: role === 'admin' ? document.getElementById('newPermission').value : null
         };
 
         await createUser(payload);
         
-        // Show the green success banner inside the modal
         const successBanner = document.getElementById('successMessage');
         successBanner.classList.remove('hidden');
         successBanner.style.display = 'block';
 
         renderUsers();
-
-        // After 2 seconds, reset form, hide banner, and close modal
+//success banner
         setTimeout(() => {
             successBanner.classList.add('hidden');
             successBanner.style.display = 'none';
