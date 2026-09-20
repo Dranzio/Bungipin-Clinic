@@ -28,7 +28,6 @@
                active:scale-95 active:bg-[#c2ae3b]">
     Back to Login
   </a>
-
 </div>
 
 <!--Code to make the entire page responsive-->
@@ -38,151 +37,202 @@
             flex flex-col relative z-10 animate-slideInLeft">
 
 <!--Form Registration-->
-    <form  id="registerForm" action="#" method="POST">
+    <form id="registerForm" action="#" method="POST">
 
         <h1 class="text-2xl sm:text-3xl md:text-5xl 2xl:text-[73px] font-bold text-[#2A1001] font-['Poppins'] text-left">REGISTER</h1>
         <p class="mt-3 text-sm text-left text-[#2A1001] font-['Poppins'] pb-6 md:pb-10">
         Let’s get you all set up to begin your journey with Bungipin Dental Clinic!
         </p>
 
-        <!--All are required to be filled up-->
 <!--Input fields are in separate containers by twos to format them by twos-->    
 <div class="flex flex-col sm:flex-row gap-4">
   <div class="flex-1">
     <label class="text-sm md:text-[20px] block font-semibold text-[#2A1001] font-poppins mb-2">First Name:</label>
-    <input type="text" id="first_name" required class="w-full h-8 md:h-11 px-4 bg-white outline-none rounded-[30px] mb-4 md:mb-12" placeholder="Coleen" />
+    <input type="text" id="first_name" required class="w-full h-8 md:h-11 px-4 bg-white outline-none rounded-[30px] border border-gray-200 mb-4 md:mb-12" placeholder="Coleen" />
   </div>
 
   <div class="flex-1">
     <label class="text-sm md:text-[20px] block font-semibold text-[#2A1001] font-poppins mb-2">Last Name:</label>
-    <input type="text" id="last_name" required class="w-full h-8 md:h-11 px-4 bg-white outline-none rounded-[30px] mb-4 md:mb-12" placeholder="Silvestre" />
+    <input type="text" id="last_name" required class="w-full h-8 md:h-11 px-4 bg-white outline-none rounded-[30px] border border-gray-200 mb-4 md:mb-12" placeholder="Silvestre" />
   </div>
 </div>
 
-<!--Input fields are in separate containers by twos to format them by twos--> 
 <div class="flex flex-col sm:flex-row gap-4">
   <div class="flex-1">
     <label class="text-sm md:text-[20px] block font-semibold text-[#2A1001] font-poppins mb-2">Email:</label>
-    <input type="email" id="email" required class="w-full h-8 md:h-11 px-4 bg-white outline-none rounded-[30px] mb-4 md:mb-12" placeholder="bungipin123@gmail.com" />
+    <input type="email" id="email" required class="w-full h-8 md:h-11 px-4 bg-white outline-none rounded-[30px] border border-gray-200 mb-4 md:mb-12" placeholder="bungipin123@gmail.com" />
   </div>
-
 
   <div class="flex-1">
     <label class="text-sm md:text-[20px] block font-semibold text-[#2A1001] font-poppins mb-2">Phone Number:</label>
-    <input type="tel" id="phone" pattern="^09\d{9}$" maxlength="11" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 11);" required class="w-full h-8 md:h-11 px-4 bg-white outline-none rounded-[30px] mb-4 md:mb-12" placeholder="09171234567" />
+    <input type="tel" id="phone" pattern="^09\d{9}$" maxlength="11" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 11);" required class="w-full h-8 md:h-11 px-4 bg-white outline-none rounded-[30px] border border-gray-200 mb-4 md:mb-12" placeholder="09171234567" />
   </div>
 </div>
 
-<!--Input fields are in separate containers by twos to format them by twos--> 
-<!--Password and confirm password fields has input validation that requires them to match-->
 <div class="flex flex-col sm:flex-row gap-4">
   <div class="flex-1">
     <label class="text-sm md:text-[20px] block font-semibold text-[#2A1001] font-poppins mb-2">Password:</label>
-    <input type="password" id="password_hash" required minlength="8" class="w-full h-8 md:h-11 px-4 bg-white outline-none rounded-[30px] mb-4 md:mb-12" placeholder="12345678" />
+    <input type="password" id="password_hash" required minlength="8" class="w-full h-8 md:h-11 px-4 bg-white outline-none rounded-[30px] border border-gray-200 mb-4 md:mb-12" placeholder="12345678" />
   </div>
-
 
   <div class="flex-1">
     <label class="text-sm md:text-[20px] block font-semibold text-[#2A1001] font-poppins mb-2">Confirm Password:</label>
-    <input type="password" id="confirm_password" required minlength="8" class="w-full h-8 md:h-11 px-4 bg-white outline-none rounded-[30px] mb-4 md:mb-12" placeholder="Confirm Password"
+    <input type="password" id="confirm_password" required minlength="8" class="w-full h-8 md:h-11 px-4 bg-white outline-none rounded-[30px] border border-gray-200 mb-4 md:mb-12" placeholder="Confirm Password"
      oninput="this.setCustomValidity(this.value !== document.getElementById('password_hash').value ? 'Passwords do not match.' : '')" />
-    
   </div>
 </div>
 
 <div class="flex items-center gap-6 mb-6 md:mb-12">
   <label class="text-sm md:text-[20px] font-semibold text-[#2A1001] font-poppins whitespace-nowrap">Sex:</label>
-
   <div class="flex items-center gap-6">
     <label class="flex items-center gap-2 text-sm md:text-base text-[#2A1001] font-poppins cursor-pointer">
-      <input type="radio" id="male" name="sex" value="male" required class="w-4 h-4 accent-[#2A1001]" />
-      Male
+      <input type="radio" id="male" name="sex" value="M" required class="w-4 h-4 accent-[#2A1001]" /> Male
     </label>
     <label class="flex items-center gap-2 text-sm md:text-base text-[#2A1001] font-poppins cursor-pointer">
-      <input type="radio" id="female" name="sex" value="female" class="w-4 h-4 accent-[#2A1001]" />
-      Female
+      <input type="radio" id="female" name="sex" value="F" class="w-4 h-4 accent-[#2A1001]" /> Female
     </label>
   </div>
 </div>
 
-<!--All inputs must be answers and check box agreement must be checked before creating account-->
 <div class="flex justify-center">
-    <button type="submit" class="w-1/4 mx-4 bg-[#D5C04D] text-sm md:text-[20px] font-bold text-[#2A1001] py-2 rounded-full shadow-lg
-               transition-all duration-200 ease-in-out 
-               hover:scale-105 hover:bg-[#FDFCE9] hover:shadow-xl
-               active:scale-95 active:bg-[#c2ae3b]">
+    <button type="submit" class="w-1/4 mx-4 bg-[#D5C04D] text-sm md:text-[20px] font-bold text-[#2A1001] py-2 rounded-full shadow-lg transition-all duration-200 ease-in-out hover:scale-105 hover:bg-[#FDFCE9] hover:shadow-xl active:scale-95 active:bg-[#c2ae3b]">
         Create Account
     </button>
 </div>
 
-
-<!-- Terms and conditions is required to be checked first-->
- <!--And a terms and conditions form modal soon!-->
-<div class="flex items-start gap-2 mb-6 md:mb-8 flex justify-center">
-<input
-  type="checkbox"
-  id="terms"
-  required
-  class="w-4 h-4 mt-1 accent-[#2A1001] cursor-pointer"
-  oninvalid="this.setCustomValidity('Please agree to the Terms and Conditions before creating an account.')"
-  oninput="this.setCustomValidity('')"
-/>
-  <label for="terms" class="text-sm md:text-base text-[#2A1001] font-poppins cursor-pointer">
-    I agree to the <a href="#" class="text-blue-500 hover:underline">Terms and Conditions</a> and <a href="#" class="text-blue-500 hover:underline">Privacy Policy</a>
-  </label>
+<!-- Checkbox HTML -->
+<div class="flex items-center justify-center gap-2 mt-6 mb-6 md:mb-8">
+    <input type="checkbox" id="terms" required class="w-4 h-4 accent-[#2A1001] cursor-pointer"
+      oninvalid="this.setCustomValidity('Please agree to the Terms and Conditions before creating an account.')"
+      oninput="this.setCustomValidity('')" />
+      
+    <div class="text-sm md:text-base text-[#2A1001] font-poppins">
+        <label for="terms" class="cursor-pointer hover:text-gray-700">I agree to the</label>
+        <span id="termsLink" class="text-blue-500 hover:underline cursor-pointer">Terms and Conditions</span> 
+        and 
+        <span id="privacyLink" class="text-blue-500 hover:underline cursor-pointer">Privacy Policy</span>
+    </div>
 </div>
+
 </form>
 
-<!--Temporary message for successful account creation-->
 <div id="successMessage" class="hidden text-center mt-4 p-4 bg-green-100 border border-green-400 text-green-800 rounded-2xl font-poppins">
     Account created successfully!
 </div>
 </div>
 
+<!--policy modal -->
+<div id="policyModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4 transition-opacity duration-300">
+    <div class="bg-[#F2F0EF] rounded-[30px] w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl relative p-6 md:p-8">
+        
+
+        <button id="closeServiceModal" class="absolute top-5 right-6 text-3xl font-extrabold text-[#382414] hover:opacity-60 transition leading-none">&times;</button>
+
+        <img src="../images/logowithtitle.png" class="absolute top-4 right-16 w-20 h-20 object-contain z-10" alt="Logo"/>
+
+        <h2 id="modalTitle" class="text-2xl md:text-3xl font-extrabold text-[#2A1001] font-poppins text-center mt-2 mb-6 border-b border-gray-100 pb-4">
+            Terms & Conditions
+        </h2>
+
+        <!-- Content Area -->
+        <div id="modalContent" class="overflow-y-auto flex-1 text-sm md:text-base text-[#2A1001] font-poppins space-y-4 pr-3 mb-6">
+            <!-- Content injected here via JS -->
+        </div>
+
+       <div class="flex justify-center pt-2">
+    <button id="closeModalBtn" class="bg-[#D5C04D] text-[#2A1001] font-bold py-3 px-12 rounded-[20px] shadow-md hover:bg-[#e6d057] hover:scale-105 transition-all text-lg">
+        Close
+    </button>
+</div>
+    </div>
+</div>
 
 
 <script>
-  const form = document.getElementById('registerForm');
-  const password = document.getElementById('password_hash'); 
-  const confirmPassword = document.getElementById('confirm_password');
-  const successMessage = document.getElementById('successMessage');
+    const form = document.getElementById('registerForm');
+    const password = document.getElementById('password_hash'); 
+    const confirmPassword = document.getElementById('confirm_password');
+    const successMessage = document.getElementById('successMessage');
 
-  form.addEventListener('submit', function (e) {
+    const policyModal = document.getElementById('policyModal');
+    const termsLink = document.getElementById('termsLink');
+    const privacyLink = document.getElementById('privacyLink');
+    const closeModalBtn = document.getElementById('closeModalBtn');
+    const closeModalIcon = document.getElementById('closeModalIcon');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalContent = document.getElementById('modalContent');
+    
+    const termsText = `
+        <p><strong>1. Acceptance of Terms:</strong> ddfsddsfdsfds.</p>
+        <p><strong>2. Privacy and Data Security:</strong> fsdfsfsf.</p>
+        <p><strong>3. Modification of Terms:</strong> sdfsdfdsf.</p>
+    `;
 
-    e.preventDefault(); 
+    const privacyText = `
+        <p><strong>1. Data Collection:</strong> sdfsdfdsfdsf.</p>
+        <p><strong>2. Usage of Information:</strong> dsfdsfdsfdsf</p>
+        <p><strong>3. Security:</strong>sdfdsfdsfds.</p>
+    `;
 
-    document.getElementById('phone').addEventListener('input', function (e) {
-    this.value = this.value.replace(/\D/g, '').slice(0, 11);
-});
-
-//Checks if password and confirm password fields match, if not it will show an error message
-    if (password.value !== confirmPassword.value) {
-      confirmPassword.setCustomValidity('Passwords do not match.');
-      confirmPassword.reportValidity();
-      return; 
-    } else {
-      confirmPassword.setCustomValidity('');
+    function openModal(title, content) {//for modal to show up
+        modalTitle.innerText = title;
+        modalContent.innerHTML = content;
+        policyModal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden'; 
     }
 
-
-    form.reset();
-
-//Success message will show up for 4 seconds after account creation it will disappear and the user can continue to login with their new account
-    successMessage.classList.remove('hidden');
-    successMessage.style.display = 'block';
-
-  // Hide the success message after 4 seconds
-    setTimeout(() => {
-      successMessage.classList.add('hidden');
-      successMessage.style.display = 'none';
-    }, 4000);
-  });
-
-  confirmPassword.addEventListener('input', function() {
-    if (password.value === confirmPassword.value) {
-      confirmPassword.setCustomValidity('');
+    function closeModal() {//for modal to close
+        policyModal.classList.add('hidden');
+        document.body.style.overflow = ''; 
     }
-  });
+
+    termsLink.addEventListener('click', () => {
+        openModal('Terms & Conditions', termsText);
+    });
+
+    privacyLink.addEventListener('click', () => {
+        openModal('Privacy Policy', privacyText);
+    });
+
+    closeModalBtn.addEventListener('click', closeModal);
+   closeServiceModal.addEventListener('click', closeModal);
+
+    policyModal.addEventListener('click', (e) => {
+        if (e.target === policyModal) {
+            closeModal();
+        }
+    });
+
+    form.addEventListener('submit', function (e) {
+        e.preventDefault(); 
+        
+        if (password.value !== confirmPassword.value) {
+            confirmPassword.setCustomValidity('Passwords do not match.');
+            confirmPassword.reportValidity();
+            return; 
+        } else {
+            confirmPassword.setCustomValidity('');
+        }
+
+        form.reset();
+        successMessage.classList.remove('hidden');
+        successMessage.style.display = 'block';
+
+        setTimeout(() => {
+            successMessage.classList.add('hidden');//message only shows up temporarily
+            successMessage.style.display = 'none';
+        }, 4000);
+    });
+
+    document.getElementById('phone').addEventListener('input', function (e) {//makes sure no letters and strictly numbers
+        this.value = this.value.replace(/\D/g, '').slice(0, 11);
+    });
+
+    confirmPassword.addEventListener('input', function() {//validates password matches
+        if (password.value === confirmPassword.value) {
+            confirmPassword.setCustomValidity('');
+        }
+    });
 </script>
 </div>
 </body>

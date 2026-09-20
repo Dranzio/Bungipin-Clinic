@@ -320,10 +320,13 @@ async function renderServices() {
         const iconPreview = document.getElementById('serviceIconPreview');
         const iconPlaceholder = document.getElementById('iconPlaceholder');
 
-        nameInput.setAttribute('readonly', true);
-        priceInput.setAttribute('readonly', true);
-
         if (id) {
+            // EDITING: Start locked (readonly) for safety
+            nameInput.setAttribute('readonly', true);
+            nameInput.classList.add('cursor-default');
+            priceInput.setAttribute('readonly', true);
+            priceInput.classList.add('cursor-default');
+
             const service = services.find(s => s.service_id == id);
             nameInput.value = service.label;
             priceInput.value = service.price;
@@ -337,6 +340,12 @@ async function renderServices() {
                 iconPlaceholder.classList.remove('hidden');
             }
         } else {
+            // ADDING NEW: Start UNLOCKED so the admin can type immediately
+            nameInput.removeAttribute('readonly');
+            nameInput.classList.remove('cursor-default');
+            priceInput.removeAttribute('readonly');
+            priceInput.classList.remove('cursor-default');
+
             nameInput.value = '';
             priceInput.value = '';
             iconPreview.classList.add('hidden');
@@ -345,7 +354,6 @@ async function renderServices() {
 
         document.getElementById('serviceModal').classList.remove('hidden');
     }
-
 
     document.getElementById('addServiceBtn').addEventListener('click', () => openServiceModal(null)); //for add service button
 

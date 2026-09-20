@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="../output.css" rel="stylesheet">
+    <title>User Management</title>
+</head>
+
+<body class="min-h-screen bg-[#F3EFE4] relative flex flex-col md:flex-row antialiased">
+
+    <!-- SIDEBAR -->
+    <aside class="w-full md:w-64 min-h-screen shrink-0 bg-[#9ea988]">
+        <div id="sidebar-placeholder"></div>
+        <script>
+            (async () => {
+                try {
+                    const response = await fetch('/Taskbar/Admin_Task.html');
+                    if (response.ok) {
+                        const data = await response.text();
+                        document.getElementById('sidebar-placeholder').innerHTML = data;
+                        const currentPage = window.location.pathname.split("/").pop();
+                        document.querySelectorAll('.nav-link').forEach(link => {
+                            if (link.getAttribute('data-page') === currentPage) {
+                                link.classList.add('bg-[#FDFCE9]');
+                            }
+                        });
+                    }
+                } catch (error) {
+                    console.log('Sidebar fallback:', error);
+                }
+            })();
+        </script>
+    </aside>
+
+    <!-- CONTENT WRAPPER -->
+    <div class="flex-1 flex flex-col w-full max-h-screen overflow-y-auto">
+
+        <!-- Header -->
+        <div class="flex justify-between items-start pt-5 pl-6 pr-4 md:pl-12 md:pr-8">
+            <h1 class="text-2xl sm:text-3xl md:text-5xl pt-5 font-bold text-[#2A1001] font-['Poppins']">
+                User Management
+            </h1>
+            <img src="../images/logowithtitle.png" class="w-20 sm:w-24 md:w-28 h-auto object-contain shrink-0" alt="Logo"/>
+        </div>
+        <hr class="border-t border-[#2A1001] mt-2 mb-6" />
+
+        <div class="px-6 md:px-12">
+
+            <!-- Search + Role filter + Create button -->
+            <div class="flex flex-wrap items-center gap-3 mb-6">
+                <input
+                    type="text"
+                    id="searchInput"
+                    placeholder="Search by name..."
+                    class="h-11 flex-1 min-w-[200px] max-w-sm rounded-full border border-[#2A1001]/20 bg-white px-4 outline-none"
+                />
+
+                <div class="relative">
+                    <select id="roleFilter" class="h-11 pl-4 pr-8 rounded-full bg-[#D5C04D] font-bold text-[#2A1001] outline-none cursor-pointer appearance-none">
+                       <option value="All" class="bg-white text-[#2A1001]">Role</option>
+                       <option value="patient" class="bg-white text-[#2A1001]">Patient</option>
+                       <option value="employee" class="bg-white text-[#2A1001]">Employee</option>
+                       <option value="admin" class="bg-white text-[#2A1001]">Admin</option>
+                    </select>
+                    <div class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[#2A1001]">▾</div>
+                </div>
+
+                <button id="createAccountBtn" class="h-11 shrink-0 px-6 rounded-full bg-[#D5C04D] hover:bg-[#c2ad3c] transition text-[#2A1001] font-bold">
+                    + Create New Account
+                </button>
+            </div>
+
+            <!-- user list cards -->
+            <div id="user-container" class="space-y-4 mb-10">
+                <!-- rows injected by JS -->
+            </div>
+
+        </div>
+    </div>
+
+
+    <!-- =====Edit account modal===== -->
+   <div id="editModal" class="hidden fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl w-full max-w-md p-6 md:p-8 relative">
+            <button id="closeEditModal" type="button" class="absolute top-4 right-4 text-2xl font-bold text-[#2A1001] hover:opacity-60">&times;</button>
+            <h2 class="text-xl font-bold text-[#2A1001] font-['Poppins'] mb-6">Edit Account</h2>
+
+            <!-- Wrap inputs in a form for native HTML validation -->
+            <form id="editAccountForm">
+                <input type="hidden" id="editUserId" />
+
+               <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="block text-xs font-bold text-[#2A1001] uppercase mb-1">First Name</label>
+                        <div class="relative">
+                            <input type="text" id="editFirstName" readonly required class="w-full h-10 pl-4 pr-10 rounded-full border border-[#2A1001]/20 outline-none cursor-default focus:cursor-text text-[#2A1001]" />
+                            <button type="button" class="unlockBtn absolute right-1.5 top-1/2 -translate-y-1/2 w-7 h-7 bg-white rounded-full flex items-center justify-center shadow-[0_1px_4px_rgba(0,0,0,0.15)] border border-gray-100 hover:bg-gray-50 transition" data-target="editFirstName">
+                                <img src="../images/editIcon.png" class="w-3.5 h-3.5 object-contain opacity-80" alt="Edit">
+                            </button>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-[#2A1001] uppercase mb-1">Last Name</label>
+                        <div class="relative">
+                            <input type="text" id="editLastName" readonly required class="w-full h-10 pl-4 pr-10 rounded-full border border-[#2A1001]/20 outline-none cursor-default focus:cursor-text text-[#2A1001]" />
+                            <button type="button" class="unlockBtn absolute right-1.5 top-1/2 -translate-y-1/2 w-7 h-7 bg-white rounded-full flex items-center justify-center shadow-[0_1px_4px_rgba(0,0,0,0.15)] border border-gray-100 hover:bg-gray-50 transition" data-target="editLastName">
+                                <img src="../images/editIcon.png" class="w-3.5 h-3.5 object-contain opacity-80" alt="Edit">
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label class="block text-xs font-bold text-[#2A1001] uppercase mb-1">Email</label>
+                    <div class="relative">
+                        <input type="email" id="editEmail" readonly required class="w-full h-10 pl-4 pr-10 rounded-full border border-[#2A1001]/20 outline-none cursor-default focus:cursor-text text-[#2A1001]" />
+                        <button type="button" class="unlockBtn absolute right-1.5 top-1/2 -translate-y-1/2 w-7 h-7 bg-white rounded-full flex items-center justify-center shadow-[0_1px_4px_rgba(0,0,0,0.15)] border border-gray-100 hover:bg-gray-50 transition" data-target="editEmail">
+                            <img src="../images/editIcon.png" class="w-3.5 h-3.5 object-contain opacity-80" alt="Edit">
+                        </button>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label class="block text-xs font-bold text-[#2A1001] uppercase mb-1">Phone</label>
+                    <div class="relative">
+                        <input type="tel" id="editPhone" pattern="^09\d{9}$" maxlength="11" readonly required class="w-full h-10 pl-4 pr-10 rounded-full border border-[#2A1001]/20 outline-none cursor-default focus:cursor-text text-[#2A1001]" 
+                         oninvalid="this.setCustomValidity('Phone number must be exactly 11 digits and start with 09.')"
+                         oninput="this.setCustomValidity(''); this.value = this.value.replace(/\D/g, '').slice(0, 11);" />
+                        <button type="button" class="unlockBtn absolute right-1.5 top-1/2 -translate-y-1/2 w-7 h-7 bg-white rounded-full flex items-center justify-center shadow-[0_1px_4px_rgba(0,0,0,0.15)] border border-gray-100 hover:bg-gray-50 transition" data-target="editPhone">
+                            <img src="../images/editIcon.png" class="w-3.5 h-3.5 object-contain opacity-80" alt="Edit">
+                        </button>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label class="block text-xs font-bold text-[#2A1001] uppercase mb-1">Role</label>
+                    <input type="text" id="editRole" disabled class="w-full h-10 px-4 rounded-full border border-[#2A1001]/20 outline-none bg-gray-100 text-gray-500 font-medium cursor-not-allowed capitalize" />
+                </div>
+
+                <div id="editPositionWrapper" class="mb-6 hidden">
+                    <label class="block text-xs font-bold text-[#2A1001]/70 uppercase mb-1">Position</label>
+                    <div class="relative">
+                        <select id="editPosition" disabled class="w-full h-10 pl-4 pr-10 rounded-full border border-[#2A1001]/20 outline-none cursor-not-allowed appearance-none bg-white text-[#2A1001]">
+                            <option value="Dentist">Dentist</option>
+                            <option value="Receptionist">Receptionist</option>
+                        </select>
+                        <button type="button" class="unlockBtn absolute right-1.5 top-1/2 -translate-y-1/2 w-7 h-7 bg-white rounded-full flex items-center justify-center shadow-[0_1px_4px_rgba(0,0,0,0.15)] border border-gray-100 hover:bg-gray-50 transition z-10" data-target="editPosition">
+                            <img src="../images/editIcon.png" class="w-3.5 h-3.5 object-contain opacity-80" alt="Edit">
+                        </button>
+                    </div>
+                </div>
+
+                <div id="editPermissionWrapper" class="mb-6 hidden">
+                    <label class="block text-xs font-bold text-[#2A1001]/70 uppercase mb-1">Permission Level</label>
+                    <div class="relative">
+                        <select id="editPermission" disabled class="w-full h-10 pl-4 pr-10 rounded-full border border-[#2A1001]/20 outline-none cursor-not-allowed appearance-none bg-white text-[#2A1001]">
+                            <option value="Super Admin">Super Admin</option>
+                            <option value="Regular Admin">Regular Admin</option>
+                        </select>
+                    <button type="button" class="unlockBtn absolute right-1.5 top-1/2 -translate-y-1/2 w-7 h-7 bg-white rounded-full flex items-center justify-center shadow-[0_1px_4px_rgba(0,0,0,0.15)] border border-gray-100 hover:bg-gray-50 transition z-10" data-target="editPermission">
+                    <img src="../images/editIcon.png" class="w-3.5 h-3.5 object-contain opacity-80" alt="Edit">
+                    </button>
+                </div>
+                </div>
+
+                <div class="flex justify-center">
+                    <button type="submit" id="saveEditBtn" class="bg-[#667733] hover:bg-[#556022] transition text-white font-bold px-8 py-2.5 rounded-full">
+                        Save Changes
+                    </button>
+                </div>
+                <div id="editSuccessMessage" class="hidden text-center mt-3 p-3 w-full bg-green-100 border border-green-400 text-green-800 rounded-2xl font-poppins text-sm">
+                        Changes saved successfully!
+                    </div>
+            </form>
+        </div>
+    </div>
+
+
+    <!-- =======disable and enable=========== -->
+    <div id="statusModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-[#F2F0EF]  rounded-3xl w-full max-w-sm p-8 text-center">
+            <h2 class="text-xl font-bold text-[#2A1001] font-['Poppins'] mb-2" id="statusModalTitle">Disable Account?</h2>
+            <p class="text-sm text-[#2A1001]/70 mb-6" id="statusModalText"></p>
+            <div class="flex justify-center gap-3">
+                <button id="cancelStatusBtn" class="px-6 py-2 rounded-full font-semibold text-[#2A1001] bg-white border border-[#2A1001]/20 hover:bg-[#e8e2d0] transition">Cancel</button>
+                <button id="confirmStatusBtn" class="px-6 py-2 rounded-full font-semibold text-white bg-[#D9534F] hover:bg-[#c9302c] transition">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- ==========delete modal========== -->
+    <div id="deleteModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-[#F2F0EF] rounded-3xl w-full max-w-sm p-8 text-center">
+            <h2 class="text-xl font-bold text-[#2A1001] font-['Poppins'] mb-2">Delete Account?</h2>
+            <p class="text-sm text-[#2A1001]/70 mb-6" id="deleteModalText"></p>
+            <div class="flex justify-center gap-3">
+                <button id="cancelDeleteBtn" class="px-6 py-2 rounded-full font-semibold text-[#2A1001] bg-white border border-[#2A1001]/20 hover:bg-[#e8e2d0] transition">Cancel</button>
+                <button id="confirmDeleteBtn" class="px-6 py-2 rounded-full font-semibold text-white bg-[#D9534F] hover:bg-[#c9302c] transition">Yes, Delete</button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- =======create account modal========== -->
+<div id="createModal" class="hidden fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl w-full max-w-md p-6 md:p-8 relative max-h-[90vh] overflow-y-auto">
+            <button id="closeCreateModal" type="button" class="absolute top-4 right-4 text-2xl font-bold text-[#2A1001] hover:opacity-60">&times;</button>
+            <h2 class="text-xl font-bold text-[#2A1001] font-['Poppins'] mb-6">Create New Account</h2>
+
+            <!-- Wrap inputs in a form to trigger native HTML validation -->
+            <form id="createAccountForm">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="block text-xs font-bold text-[#2A1001] uppercase mb-1">First Name</label>
+                        <input type="text" id="newFirstName" required class="w-full h-10 px-4 rounded-full border border-[#2A1001]/20 outline-none" />
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-[#2A1001] uppercase mb-1">Last Name</label>
+                        <input type="text" id="newLastName" required class="w-full h-10 px-4 rounded-full border border-[#2A1001]/20 outline-none" />
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label class="block text-xs font-bold text-[#2A1001] uppercase mb-1">Email</label>
+                    <input type="email" id="newEmail" required class="w-full h-10 px-4 rounded-full border border-[#2A1001]/20 outline-none" />
+                </div>
+
+                <div class="mb-4">
+                    <label class="block text-xs font-bold text-[#2A1001] uppercase mb-1">Phone</label>
+                    <input type="tel" id="newPhone" pattern="^09\d{9}$" maxlength="11" required class="w-full h-10 px-4 rounded-full border border-[#2A1001]/20 outline-none" placeholder="09171234567" 
+                        oninvalid="this.setCustomValidity('Phone number must be exactly 11 digits and start with 09.')"
+                        oninput="this.setCustomValidity(''); this.value = this.value.replace(/\D/g, '').slice(0, 11);" />
+                </div>
+
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                  <div>
+                        <label class="block text-xs font-bold text-[#2A1001] uppercase mb-1">Sex</label>
+                        <div class="flex items-center gap-6 h-10 px-4 rounded-full bg-white">
+                            <label class="flex items-center gap-2 text-sm text-[#2A1001] font-medium cursor-pointer">
+                                <input type="radio" name="newSex" value="M" checked class="w-4 h-4 accent-[#2A1001]" /> Male
+                            </label>
+                            <label class="flex items-center gap-2 text-sm text-[#2A1001] font-medium cursor-pointer">
+                                <input type="radio" name="newSex" value="F" class="w-4 h-4 accent-[#2A1001]" /> Female
+                            </label>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-[#2A1001] uppercase mb-1">Role</label>
+                        <select id="newRole" class="w-full h-10 px-4 rounded-full border border-[#2A1001]/20 outline-none cursor-pointer">
+                            <option value="employee">Employee</option>
+                            <option value="admin">Admin</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div id="newPositionWrapper" class="mb-4 hidden">
+                    <label class="block text-xs font-bold text-[#2A1001] uppercase mb-1">Position</label>
+                    <select id="newPosition" class="w-full h-10 px-4 rounded-full border border-[#2A1001]/20 outline-none cursor-pointer">
+                        <option value="Dentist">Dentist</option>
+                        <option value="Receptionist">Receptionist</option>
+                    </select>
+                </div>
+
+                <div id="newPermissionWrapper" class="mb-4 hidden">
+                    <label class="block text-xs font-bold text-[#2A1001] uppercase mb-1">Permission Level</label>
+                    <select id="newPermission" class="w-full h-10 px-4 rounded-full border border-[#2A1001]/20 outline-none cursor-pointer">
+                        <option value="Super Admin">Super Admin</option>
+                        <option value="Regular Admin">Regular Admin</option>
+                    </select>
+                </div>
+
+                <div class="mb-6">
+                    <label class="block text-xs font-bold text-[#2A1001] uppercase mb-1">Temporary Password</label>
+                    <input type="text" id="newPassword" disabled value="Auto-generated (matches system ID)" class="w-full h-10 px-4 rounded-full border border-[#2A1001]/20 outline-none bg-gray-100 text-gray-500 font-medium" />
+                    <p class="text-[11px] text-[#2A1001]/50 mt-1">The user will use their assigned ID to log in. They must change it upon first login.</p>
+                </div>
+
+                <div class="flex justify-center">
+                    <!-- Changed to type="submit" so the form handles validation natively -->
+                    <button type="submit" id="saveCreateBtn" class="bg-[#667733] hover:bg-[#556022] transition text-white font-bold px-8 py-2.5 rounded-full">
+                        Create Account
+                    </button>
+                </div>
+
+                  <div id="successMessage" class="hidden text-center p-3 bg-green-100 border border-green-400 text-green-800 rounded-2xl font-poppins text-sm">
+        Account created successfully!
+    </div>
+            </form>
+        </div>
+    </div>
+
+        
+<script>
+
+
+//temp mock data=========================================================================================================================================LOOK AND REPLACE
+
+//let users - []; 
+let users = [
+        { user_id: 1, public_id: "PAT-1827", first_name: "Lleyton", last_name: "Andrew Flores", email: "lleytonnnrahhhh@gmail.com", phone: "09171234567", sex: "M", role: "patient", position: null, account_status: "active" },
+        { user_id: 2, public_id: "EMP-1012", first_name: "Kwakwak", last_name: "Duck", email: "motherkwakwak@gmail.com", phone: "09182345678", sex: "M", role: "employee", position: "Dentist", account_status: "active" },
+        { user_id: 3, public_id: "EMP-1234", first_name: "Santos", last_name: "Reyes", email: "taravalosielirahhhhh@gmail.com", phone: "09193456789", sex: "F", role: "employee", position: "Dentist", account_status: "active" },
+        { user_id: 4, public_id: "EMP-2323", first_name: "Xyrelle", last_name: "Martinez", email: "ilovefeeshrahhhh@gmail.com", phone: "09204567890", sex: "F", role: "employee", position: "Receptionist", account_status: "suspended" }
+    ];
+
+    let currentSearch = "";
+    let currentRole = "All";
+    let pendingStatusId = null;
+    let pendingDeleteId = null;
+
+    async function getUsers() {
+        return users;
+     
+    }
+
+        /* ==============================================================================================================
+    async function getUsers() {
+        try {
+            const token = localStorage.getItem('userToken');
+            const response = await fetch('/api/users', {
+                method: 'GET',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (!response.ok) throw new Error(`Server error: ${response.status}`);
+
+            users = await response.json();
+            return users;
+        } catch (error) {
+            console.error("Failed to fetch users:", error);
+            return users; // Fallback to current state if offline
+        }
+    }
+        */
+
+    async function updateUser(userId, payload) {
+        const u = users.find(u => u.user_id == userId);
+        if (u) Object.assign(u, payload);
+       
+    }
+    /* 
+ async function updateUser(userId, payload) {====================================================================================================
+        try {
+            const token = localStorage.getItem('userToken');
+            const response = await fetch(`/api/users/${userId}`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) throw new Error(`Server error: ${response.status}`);
+
+            const updated = await response.json();
+            const u = users.find(u => u.user_id == userId);
+            if (u) Object.assign(u, updated);
+        } catch (error) {
+            console.error("Failed to update user:", error);
+            // Fallback mock update if backend is offline
+            const u = users.find(u => u.user_id == userId);
+            if (u) Object.assign(u, payload);
+        }
+    }
+        */
+
+
+    async function toggleAccountStatus(userId) {
+        const u = users.find(u => u.user_id == userId);
+        if (u) u.account_status = u.account_status === 'active' ? 'suspended' : 'active';
+       
+    }
+
+    /*
+    async function toggleAccountStatus(userId) {==============================================================================================================
+        const u = users.find(u => u.user_id == userId);
+        if (!u) return;
+        const newStatus = u.account_status === 'active' ? 'suspended' : 'active';
+
+        try {
+            const token = localStorage.getItem('userToken');
+            const response = await fetch(`/api/users/${userId}/status`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ account_status: newStatus })
+            });
+
+            if (!response.ok) throw new Error(`Server error: ${response.status}`);
+
+            u.account_status = newStatus;
+        } catch (error) {
+            console.error("Failed to toggle account status:", error);
+            u.account_status = newStatus; // Fallback update
+        }
+    }
+    */
+
+    async function deleteUser(userId) {
+        users = users.filter(u => u.user_id != userId);
+    
+    }
+    /*
+    async function deleteUser(userId) {=====================================================================================================================
+        try {
+            const token = localStorage.getItem('userToken');
+            const response = await fetch(`/api/users/${userId}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (!response.ok) throw new Error(`Server error: ${response.status}`);
+
+            users = users.filter(u => u.user_id != userId);
+        } catch (error) {
+            console.error("Failed to delete user:", error);
+            users = users.filter(u => u.user_id != userId); // Fallback update
+        }
+    }
+    */
+
+    async function createUser(payload) {
+        // Automatically generate the System ID (ADM-XXXX or EMP-XXXX)
+        const generated_id = (payload.role === 'admin' ? 'ADM-' : 'EMP-') + Math.floor(1000 + Math.random() * 9000);
+        
+        const newUser = {
+            user_id: Date.now(),
+            public_id: generated_id,
+            ...payload,
+            temp_password: generated_id, // Automatically set temporary password to match the system ID
+            account_status: 'active'
+        };
+        users.unshift(newUser);
+        return newUser;
+    }
+
+    /*
+    async function createUser(payload) {=============================================================================================================
+        // Automatically generate the System ID (ADM-XXXX or EMP-XXXX)
+        const prefix = payload.role === 'admin' ? 'ADM-' : (payload.role === 'employee' ? 'EMP-' : 'PAT-');
+        const generated_id = prefix + Math.floor(1000 + Math.random() * 9000);
+        
+        const fullPayload = {
+            ...payload,
+            public_id: generated_id,
+            temp_password: generated_id, // Automatically set temporary password to match the system ID
+            account_status: 'active'
+        };
+
+        try {
+            const token = localStorage.getItem('userToken');
+            const response = await fetch('/api/users', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(fullPayload)
+            });
+
+            if (!response.ok) throw new Error(`Server error: ${response.status}`);
+
+            const newUser = await response.json();
+            users.unshift(newUser);
+            return newUser;
+        } catch (error) {
+            console.error("Failed to create user:", error);
+            // Fallback local mock insertion if backend is offline
+            const newUser = {
+                user_id: Date.now(),
+                ...fullPayload
+            };
+            users.unshift(newUser);
+            return newUser;
+        }
+    }
+    */
+
+
+    function displayName(u) { 
+        const prefix = u.position === 'Dentist' ? 'Dr. ' : ''; //when the position is dentist they have Dr in their name
+        return `${prefix}${u.first_name} ${u.last_name}`;
+    }
+
+//filters the list of users based on what you are searching for and what role is selected
+    function getFiltered() {
+        return users.filter(u => {
+            const matchesRole = currentRole === 'All' || u.role === currentRole;
+            const matchesSearch = `${u.first_name} ${u.last_name}`.toLowerCase().includes(currentSearch.toLowerCase());
+            return matchesRole && matchesSearch;
+        });
+    }
+
+
+    //forda card render with content
+    async function renderUsers() {
+        users = await getUsers();
+        const container = document.getElementById('user-container');
+        const filtered = getFiltered();
+
+        if (filtered.length === 0) {
+            container.innerHTML = `<p class="text-center text-[#2A1001]/60 py-10">No accounts found.</p>`;
+            return;
+        }
+
+container.innerHTML = filtered.map(u => `
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between bg-white rounded-2xl p-5 shadow-sm hover:shadow-md transition-all duration-300 gap-4">
+        <div class="flex items-center gap-4">
+          
+            <img src="../images/userIcon.png" alt="User" class="w-12 h-12 object-contain" />
+
+            <div>
+                <h3 class="font-bold text-[#2A1001] text-lg">${displayName(u)}</h3>
+                <p class="text-xs text-[#2A1001]/50">${u.public_id}</p>
+            </div>
+        </div>
+
+        <div class="flex-1">
+            <p class="font-bold text-[#2A1001] text-sm">Role: ${roleLabel(u)}</p>
+            <p class="text-sm text-[#2A1001]/70">${u.email}</p>
+            ${u.account_status === 'suspended' ? '<span class="text-xs font-bold text-red-600">Account Disabled</span>' : ''}
+        </div>
+
+        <div class="flex items-center gap-2">
+            <button class="editBtn w-9 h-9 flex items-center justify-center rounded-lg bg-[#D5C04D] hover:bg-[#c2ad3c] transition" data-id="${u.user_id}" title="Edit">
+                <img src="../images/editIcon.png" alt="Edit" class="w-5 h-5 object-contain" />
+            </button>
+            
+            <button class="statusBtn w-9 h-9 flex items-center justify-center rounded-lg bg-[#D9534F] hover:bg-[#c9302c] transition" data-id="${u.user_id}" title="${u.account_status === 'active' ? 'Disable' : 'Enable'}">
+                ${
+                    u.account_status === 'active' 
+                        ? '<img src="../images/closeIcon.png" alt="Disable" class="w-5 h-5 object-contain" />' 
+                        : '<img src="../images/checkIcon.png" alt="Enable" class="w-5 h-5 object-contain" />'
+                }
+            </button>
+
+            <button class="deleteBtn w-9 h-9 flex items-center justify-center rounded-lg bg-[#D9534F] hover:bg-[#c9302c] transition" data-id="${u.user_id}" title="Delete">
+                <img src="../images/trashIcon.png" alt="Delete" class="w-5 h-5 object-contain" />
+            </button>
+        </div>
+    </div>
+`).join('');
+    }
+
+  
+
+    //This  handles clicks inside the user list. it is even delegation since there are multiple
+    document.getElementById('user-container').addEventListener('click', function (e) {
+        const btn = e.target.closest('button');
+        if (!btn) return;
+        const id = btn.dataset.id;
+
+        if (btn.classList.contains('editBtn')) {
+            openEditModal(id);
+        }
+
+        if (btn.classList.contains('statusBtn')) {
+            const u = users.find(u => u.user_id == id);
+            pendingStatusId = id;
+            const willDisable = u.account_status === 'active';
+            document.getElementById('statusModalTitle').textContent = willDisable ? 'Disable Account?' : 'Enable Account?';
+            document.getElementById('statusModalText').textContent =
+                `Are you sure you want to ${willDisable ? 'disable' : 're-enable'} ${u.first_name} ${u.last_name}'s account?`;
+            document.getElementById('statusModal').classList.remove('hidden');
+        }
+
+        if (btn.classList.contains('deleteBtn')) {
+            const u = users.find(u => u.user_id == id);
+            pendingDeleteId = id;
+            document.getElementById('deleteModalText').textContent =
+                `Are you sure you want to permanently delete ${u.first_name} ${u.last_name}'s account? This cannot be undone.`;
+            document.getElementById('deleteModal').classList.remove('hidden');
+        }
+    });
+
+   
+
+
+    function roleLabel(u) {//show positions based on roles
+        if (u.role === 'employee' && u.position) return u.position;
+        if (u.role === 'admin' && u.permission_level) return u.permission_level;
+        return u.role.charAt(0).toUpperCase() + u.role.slice(1);
+    }
+
+function toggleEditPositionField(role, position, permissionLevel) {
+        const posWrapper = document.getElementById('editPositionWrapper');
+        const permWrapper = document.getElementById('editPermissionWrapper');
+
+        if (role === 'employee') {
+            posWrapper.classList.remove('hidden');
+            permWrapper.classList.add('hidden');
+            document.getElementById('editPosition').value = position || 'Dentist';
+        } else if (role === 'admin') {
+            posWrapper.classList.add('hidden');
+            permWrapper.classList.remove('hidden');
+            document.getElementById('editPermission').value = permissionLevel || 'Regular Admin';
+        } else {
+            posWrapper.classList.add('hidden');
+            permWrapper.classList.add('hidden');
+        }
+    }
+
+   document.getElementById('editRole').addEventListener('change', function () {
+        toggleEditPositionField(this.value, null, null);
+    });
+
+     function openEditModal(id) {
+        const u = users.find(u => u.user_id == id);
+        if (!u) return;
+
+        document.getElementById('editUserId').value = u.user_id;
+        document.getElementById('editFirstName').value = u.first_name;
+        document.getElementById('editLastName').value = u.last_name;
+        document.getElementById('editEmail').value = u.email;
+        document.getElementById('editPhone').value = u.phone;
+        document.getElementById('editRole').value = u.role;
+
+        toggleEditPositionField(u.role, u.position, u.permission_level);
+        document.getElementById('editModal').classList.remove('hidden');
+    }
+
+
+    document.getElementById('closeEditModal').addEventListener('click', () => {
+        document.getElementById('editModal').classList.add('hidden');
+    });
+
+document.getElementById('editModal').addEventListener('click', function (e) {
+        if (!e.target.closest('.bg-white')) this.classList.add('hidden');
+    });
+
+
+    //for edit modal
+document.getElementById('editAccountForm').addEventListener('submit', async function (e) {
+        e.preventDefault(); 
+
+        const id = document.getElementById('editUserId').value;
+        const role = document.getElementById('editRole').value;
+
+        const payload = {//existing inputs
+            first_name: document.getElementById('editFirstName').value.trim(),
+            last_name: document.getElementById('editLastName').value.trim(),
+            email: document.getElementById('editEmail').value.trim(),
+            phone: document.getElementById('editPhone').value.trim(),
+            role: role,
+            position: role === 'employee' ? document.getElementById('editPosition').value : null,
+            permission_level: role === 'admin' ? document.getElementById('editPermission').value : null
+        };
+
+        await updateUser(id, payload);
+
+        const editSuccessBanner = document.getElementById('editSuccessMessage');
+        editSuccessBanner.classList.remove('hidden');
+        editSuccessBanner.style.display = 'block';
+
+        renderUsers();
+//success banner
+        setTimeout(() => {
+            editSuccessBanner.classList.add('hidden');
+            editSuccessBanner.style.display = 'none';
+            this.reset();
+            document.getElementById('editModal').classList.add('hidden');
+        }, 2000);
+    });
+
+    //for the edit lock and unlock
+    document.addEventListener('click', function(e) {
+        const unlockBtn = e.target.closest('.unlockBtn');
+        if (unlockBtn) {
+            const targetId = unlockBtn.getAttribute('data-target');
+            const inputEl = document.getElementById(targetId);
+            
+            if (inputEl) {
+                if (inputEl.tagName === 'SELECT') {
+                    inputEl.removeAttribute('disabled');
+                    inputEl.classList.remove('cursor-not-allowed');
+                    inputEl.classList.add('cursor-pointer');
+                } else {
+                    inputEl.removeAttribute('readonly');
+                    inputEl.classList.remove('cursor-default');
+                    inputEl.focus();
+                }
+            }
+        }
+    })
+
+
+
+
+    document.getElementById('cancelStatusBtn').addEventListener('click', () => {// When the Cancel button is clicked close the status modal
+        pendingStatusId = null;
+        document.getElementById('statusModal').classList.add('hidden');
+    });
+
+    document.getElementById('confirmStatusBtn').addEventListener('click', async () => {//// When the Confirm button is clicked, toggle the user's active/suspended status, refresh the list, and close the modal
+        if (pendingStatusId) {
+            await toggleAccountStatus(pendingStatusId);
+            renderUsers();
+        }
+        pendingStatusId = null;
+        document.getElementById('statusModal').classList.add('hidden');
+    });
+
+    document.getElementById('statusModal').addEventListener('click', function (e) {//// When clicking on the dark background outside the modal box, close the status modal
+        if (e.target === this) {
+            pendingStatusId = null;
+            this.classList.add('hidden');
+        }
+    });
+
+    document.getElementById('cancelDeleteBtn').addEventListener('click', () => {// When the Cancel button is clicked close the status modal
+        pendingDeleteId = null;
+        document.getElementById('deleteModal').classList.add('hidden');
+    });
+
+    document.getElementById('confirmDeleteBtn').addEventListener('click', async () => {// When the Confirm button is clicked, permanently delete the user
+        if (pendingDeleteId) {
+            await deleteUser(pendingDeleteId);
+            renderUsers();
+        }
+        pendingDeleteId = null;
+        document.getElementById('deleteModal').classList.add('hidden');
+    });
+
+    document.getElementById('deleteModal').addEventListener('click', function (e) {//when we click outside the modal close it
+        if (e.target === this) {
+            pendingDeleteId = null;
+            this.classList.add('hidden');
+        }
+    });
+
+    ///create account
+document.getElementById('createAccountBtn').addEventListener('click', () => {
+        document.getElementById('newFirstName').value = '';
+        document.getElementById('newLastName').value = '';
+        document.getElementById('newEmail').value = '';
+        document.getElementById('newPhone').value = '';
+        
+        document.getElementById('newRole').value = 'employee'; 
+        document.getElementById('newPositionWrapper').classList.remove('hidden'); 
+        document.getElementById('newPermissionWrapper').classList.add('hidden'); 
+        
+        document.getElementById('createModal').classList.remove('hidden');
+    });
+
+   document.getElementById('newRole').addEventListener('change', function () { //show positions depends if admin or employee
+        const isEmp = this.value === 'employee';
+        const isAdmin = this.value === 'admin';
+        document.getElementById('newPositionWrapper').classList.toggle('hidden', !isEmp);
+        document.getElementById('newPermissionWrapper').classList.toggle('hidden', !isAdmin);
+    });
+
+    document.getElementById('closeCreateModal').addEventListener('click', () => {
+        document.getElementById('createModal').classList.add('hidden');
+    });
+
+document.getElementById('createModal').addEventListener('click', function (e) {
+        if (!e.target.closest('.bg-white')) this.classList.add('hidden');
+    });
+
+    // Number restriction handler for the phone input
+    document.getElementById('newPhone').addEventListener('input', function () {
+        this.value = this.value.replace(/\D/g, '').slice(0, 11);
+    });
+
+    // Form submit listener
+document.getElementById('createAccountForm').addEventListener('submit', async function (e) {
+        e.preventDefault(); 
+
+        const phoneVal = document.getElementById('newPhone').value.trim();
+        const role = document.getElementById('newRole').value;
+        
+        const payload = {
+            first_name: document.getElementById('newFirstName').value.trim(),
+            last_name: document.getElementById('newLastName').value.trim(),
+            email: document.getElementById('newEmail').value.trim(),
+            phone: phoneVal,
+            sex: document.querySelector('input[name="newSex"]:checked').value,
+            role: role,
+            position: role === 'employee' ? document.getElementById('newPosition').value : null,
+            permission_level: role === 'admin' ? document.getElementById('newPermission').value : null
+        };
+
+        await createUser(payload);
+        
+        const successBanner = document.getElementById('successMessage');
+        successBanner.classList.remove('hidden');
+        successBanner.style.display = 'block';
+
+        renderUsers();
+//success banner
+        setTimeout(() => {
+            successBanner.classList.add('hidden');
+            successBanner.style.display = 'none';
+            this.reset();
+            document.getElementById('createModal').classList.add('hidden');
+        }, 2000);
+    });
+
+    document.getElementById('searchInput').addEventListener('input', function () {
+        currentSearch = this.value;
+        renderUsers();
+    });
+
+    document.getElementById('roleFilter').addEventListener('change', function () {
+        currentRole = this.value;
+        renderUsers();
+    });
+
+    // Initial render
+    renderUsers();
+</script>
+
+</body>
+</html>
