@@ -581,7 +581,7 @@ container.innerHTML = filtered.map(u => `
    
 
 
-    function roleLabel(u) {
+    function roleLabel(u) {//show positions based on roles
         if (u.role === 'employee' && u.position) return u.position;
         if (u.role === 'admin' && u.permission_level) return u.permission_level;
         return u.role.charAt(0).toUpperCase() + u.role.slice(1);
