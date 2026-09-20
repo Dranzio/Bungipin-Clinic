@@ -1,10 +1,14 @@
+require("dotenv").config();
 const express = require("express");
 const db = require("./db");
 const cors = require("cors");
+const authRoutes = require("./auth");
 
 const app = express();
 app.use(express.json());
 app.use(cors());
+
+app.use('/api/auth', authRoutes);
 
 // API to get data from db. check by doing https://localhost:3000/api/{x}
 app.get('/api/users', async (req, res) => {

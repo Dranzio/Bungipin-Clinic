@@ -276,7 +276,7 @@ END$$
 DELIMITER ;
 
 -- Double Check
-CALL sp_register_user('Juan', 'Dela Cruz', 'juan.delacruz@email.com', '0917 123 4567', '<hashed_pw>', 'M', 'patient', @uid1);
+CALL sp_register_user('Juan', 'Dela Cruz', 'juan.delacruz@email.com', '0917 123 4567', '$2b$10$AF8/uQfAuDsfedwPRjBftu6pS2P9k1PCpTmeOgVuFDqGMAqa9340C', 'M', 'patient', @uid1);
 CALL sp_register_user('Maria', 'Santos', 'maria.santos@email.com', '0918 987 6543', '<hashed_pw>', 'F', 'patient', @uid2);
 
 CALL sp_register_user('Ramon', 'Cruz', 'ramon.cruz@example.com', '09201112222', '<hashed_pw>', 'M', 'employee', @uid3);
@@ -313,4 +313,4 @@ INSERT INTO xrays (patient_id, appointment_id, uploaded_by, file_url) VALUES
 (1, 150, 3, 'https://images.unsplash.com/photo-1516549655169-df83a0774514?w=300'),
 (2, 140, 3, 'https://images.unsplash.com/photo-1588776814546-1ffcf47267a5?w=300');
 
-
+select * from users;
