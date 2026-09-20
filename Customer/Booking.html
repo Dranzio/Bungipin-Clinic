@@ -10,7 +10,6 @@
     <script src="https://kit.fontawesome.com/fc8c3f4103.js" crossorigin="anonymous"></script>
     <script src="Booking.js"></script>
     
-    <!-- Integrated Booking.js Script Logic -->
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             let selectedDateValue = '';
@@ -19,7 +18,7 @@
             let selectedPriceValue = 0;
             let selectedPaymentMethod = 'cash';
 
-            // 1. Time Slot Selection Logic
+            
             document.querySelectorAll('[data-time]').forEach(slot => {
                 slot.addEventListener('click', () => {
                     document.querySelectorAll('[data-time]').forEach(s => s.classList.remove('bg-[#D7E3A5]'));
@@ -29,7 +28,7 @@
                 });
             });
 
-            // 2. Service Selection Logic
+            
             document.querySelectorAll('[data-service]').forEach(card => {
                 card.addEventListener('click', () => {
                     document.querySelectorAll('[data-service]').forEach(c => c.classList.remove('bg-[#D7E3A5]'));
@@ -42,10 +41,7 @@
                 });
             });
 
-            // Note: Your calendar script handles setting selectedDateValue and updating 
-            // document.getElementById('selected-date').value = selectedDateValue;
-
-            // 3. Modal & Form Submission Workflow
+            
             const bookingForm = document.getElementById('booking-form');
             const receiptModal = document.getElementById('receipt-modal');
             const closeModalBtn = document.getElementById('close-modal');
@@ -66,7 +62,7 @@
                     return;
                 }
 
-                // Populate Receipt Content
+                
                 receiptContent.innerHTML = `
                     <p><strong>Service:</strong> ${selectedServiceLabel}</p>
                     <p><strong>Date:</strong> ${dateVal}</p>
@@ -96,9 +92,9 @@
             });
 
             async function submitBookingToDatabase(method) {
-                const token = localStorage.getItem('userToken'); // Patient authentication token
+                const token = localStorage.getItem('userToken');
 
-                // Map your service label names to their corresponding database service_id integers
+                
                 const serviceMap = {
                     'Dental Cleaning': 1,
                     'Dental Filling': 2,
