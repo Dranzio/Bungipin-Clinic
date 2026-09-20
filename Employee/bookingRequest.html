@@ -96,7 +96,7 @@
             <div class="bg-[#F3EFE4] rounded-3xl p-6 sm:p-8 relative max-w-4xl w-full shadow-2xl border-[3px] border-[#2A1001]/20 my-auto">
                 
                 <!-- Close Button -->
-                <button id="closeRescheduleModal" class="absolute top-4 right-4 text-3xl font-bold text-[#2A1001] hover:text-[#D9534F] transition leading-none">
+                <button id="closeRescheduleModal" class="absolute top-5 right-6 text-3xl font-extrabold text-[#382414] hover:opacity-60 transition leading-none">
                     &times;
                 </button>
 
@@ -445,7 +445,7 @@
                 // If the slot is already booked, make it red and disable it
                 if (isBooked) {
                     slotBtn.disabled = true;
-                    slotBtn.className = baseClass + 'bg-[#FA8D8D] text-gray-400 border-gray-300 cursor-not-allowed line-through';
+                    slotBtn.className = baseClass + 'bg-[#FA8D8D] text-[#2A1001] border-gray-300 cursor-not-allowed';
                     slotBtn.textContent = slot.label;
                 } else {
                     //highlight green if selected by the user
