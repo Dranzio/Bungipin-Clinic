@@ -5,7 +5,7 @@ const SALT_ROUNDS = 10;
 
 function registerPatientProfileRoute(app, db) {
 
-    // GET /api/patient-profile — loads the logged-in patient's own full record
+    // GET /api/patient-profile
     app.get('/api/patient-profile', authenticateToken, async (req, res) => {
         if (req.user.role !== 'patient') {
             return res.status(403).json({ message: 'Only patients can access this profile' });
