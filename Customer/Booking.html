@@ -3,738 +3,371 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link href="/output.css" rel="stylesheet">
+    <title>Booking</title>
+    <link rel="stylesheet" href="../output.css">
+    <!-- Tailwind CDN Fallback for missing builds -->
+    <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://kit.fontawesome.com/fc8c3f4103.js" crossorigin="anonymous"></script>
-        <title>Booking Request</title>
-    <script src="/Taskbar/Employee_Task.js"></script>
+    <script src="Booking.js"></script>
+    
+    <!-- Integrated Booking.js Script Logic -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            let selectedDateValue = '';
+            let selectedTimeValue = '';
+            let selectedServiceLabel = '';
+            let selectedPriceValue = 0;
+            let selectedPaymentMethod = 'cash';
 
-</head>
-
-<body class="min-h-screen bg-[#F3EFE4] relative flex flex-col md:flex-row text-[#2A1001]">
-
-    <!-- SIDEBAR -->
-    <aside class="w-full md:w-64 min-h-screen shrink-0 bg-[#9ea988]">
-        <div id="sidebar-placeholder"></div>
-        <script>
-            (async () => {
-                try {
-                    const response = await fetch('../Taskbar/Employee_Task.html');
-                    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-                    
-                    const data = await response.text();
-                    document.getElementById('sidebar-placeholder').innerHTML = data;
-                    
-                    const currentPage = window.location.pathname.split("/").pop();
-                    document.querySelectorAll('.nav-link').forEach(link => {
-                        if (link.getAttribute('data-page') === currentPage) {
-                            link.classList.add('bg-[#FDFCE9]');
-                        }
-                    });
-                } catch (error) {
-                    console.error('Failed to load the sidebar taskbar:', error);
-                }
-            })();
-        </script>
-    </aside>
-
-    <main class="flex-1 w-full relative">
-        <div class="flex justify-between items-start pt-5 pl-6 pr-4 md:pl-24 md:pr-8">
-            <h1 class="text-2xl sm:text-3xl md:text-5xl 2xl:text-[73px] pt-5 font-bold text-[#2A1001] font-['Poppins']">
-                Booking Request
-            </h1>
-            <img
-                src="../assets/logowithtitle.png"
-                onerror="this.style.display='none'"
-                class="w-20 sm:w-24 md:w-28 h-auto object-contain shrink-0"
-                alt="Logo"/>
-        </div>
-        
-        <hr class="border-t border-[#2A1001] mt-2 mb-6" />
-
-        <!-- Search input -->
-        <div class="flex w-full justify-center gap-3">
-             <input
-                type="text"
-                id="searchInput"
-                placeholder="Search by name..."
-                class="h-10 w-full max-w-md rounded-full border border-[#2A1001]/20 bg-white px-4 mb-6 outline-none"
-            />
-        </div>
-
-        <!-- booking cards -->
-        <div id="booking-container" class="space-y-4 mb-10 w-full md:w-[90%] mx-auto">
-            <!-- cards injected by JS -->
-        </div>
-
-        <!-- decline modal -->
-        <div id="declineModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div class="bg-[#F2F0EF] rounded-3xl p-6 sm:p-8 max-w-md w-full border border-[#2A1001]/20 shadow-2xl relative">
-                <h3 class="text-xl font-bold text-[#2A1001] mb-2 font-['Poppins']">Decline Booking</h3>
-                <p id="declineModalText" class="text-sm text-[#2A1001]/80 mb-4">
-                    Are you sure you want to decline this booking request? This action cannot be undone.
-                </p>
-                <div id="paidWarning" class="hidden bg-amber-100 border-l-4 border-amber-500 text-amber-900 p-3 rounded-r-xl text-xs mb-4">
-                    <i class="fa-solid fa-circle-exclamation mr-1"></i>
-                    <strong>Notice:</strong> This patient has already paid online. Consider rescheduling instead of declining.
-                </div>
-                <div class="flex flex-col sm:flex-row items-center justify-end gap-2 mt-6">
-                    <button id="cancelDeclineBtn" class="w-full sm:w-auto px-5 py-2.5 text-sm font-semibold text-[#2A1001] bg-white border border-[#2A1001]/20 rounded-full hover:bg-gray-100 transition">
-                        Cancel
-                    </button>
-                    <button id="rescheduleBtn" class="hidden w-full sm:w-auto px-5 py-2.5 text-sm font-semibold text-white bg-[#667733] rounded-full hover:bg-[#556022] transition">
-                        <i class="fa-regular fa-calendar-days mr-1"></i> Reschedule Instead
-                    </button>
-                    <button id="confirmDeclineBtn" class="w-full sm:w-auto px-5 py-2.5 text-sm font-semibold text-white bg-[#D9534F] rounded-full hover:bg-[#c9302c] transition">
-                        Confirm Decline
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <!--reschedule modal-->
-        <div id="rescheduleModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
-            <div class="bg-[#F3EFE4] rounded-3xl p-6 sm:p-8 relative max-w-4xl w-full shadow-2xl border-[3px] border-[#2A1001]/20 my-auto">
-                
-                <!-- Close Button -->
-                <button id="closeRescheduleModal" class="absolute top-5 right-6 text-3xl font-extrabold text-[#382414] hover:opacity-60 transition leading-none">
-                    &times;
-                </button>
-
-        
-                <div class="mb-5 text-center">
-                    <h2 class="text-2xl font-bold text-[#2A1001] font-['Poppins']" id="rescheduleModalTitle">
-                        Reschedule Appointment
-                    </h2>
-                    <p class="text-xs sm:text-sm text-[#2A1001]/70 mt-1" id="reschedulePatientSummary">
-                        Select a new date and available slot for the patient.
-                    </p>
-                </div>
-
-                
-                <div class="flex flex-col-reverse lg:flex-row gap-8 items-center justify-center mt-4">
-                    
-                    <!-- Available slots panel-->
-                    <div class="flex justify-center gap-6 sm:gap-8 bg-white/70 p-5 rounded-3xl border-2 border-[#2A1001]/20 shadow-sm w-full lg:w-auto">
-                        <!-- AM time -->
-                        <div class="flex flex-col w-36">
-                            <h4 class="font-bold text-sm text-[#2A1001] mb-3 text-center border-b pb-1 border-[#2A1001]/10">AM - Time</h4>
-                            <div id="amSlotsContainer" class="space-y-3 w-full"></div>
-                        </div>
-                        <!-- PM time -->
-                        <div class="flex flex-col w-36">
-                            <h4 class="font-bold text-sm text-[#2A1001] mb-3 text-center border-b pb-1 border-[#2A1001]/10">PM - Time</h4>
-                            <div id="pmSlotsContainer" class="space-y-3 w-full"></div>
-                        </div>
-                    </div>
-
-                    <!--Dynamic calendar -->
-                    <div class="flex flex-col w-[410px] h-[360px] rounded-3xl border-[3.5px] border-black bg-white overflow-hidden shadow-lg shrink-0">
-                        
-                        <div class="flex justify-between items-center p-[10px] w-full h-15 bg-[#667733]">
-                            <div class="cursor-pointer text-[25px] bold text-[#D7E3A5] px-2 hover:text-white transition" id="prev">
-                                &lt;
-                            </div>
-
-                            <!-- Display Month-Year -->
-                            <div id="month-year" class="text-[25px] bold text-[#D7E3A5]"></div>
-
-                            <div class="cursor-pointer text-[25px] bold text-[#D7E3A5] px-2 hover:text-white transition" id="next">
-                                &gt;
-                            </div>
-                        </div>
-                       
-                        <!-- The days of the week -->
-                        <div class="grid grid-cols-7 gap-3 px-4 py-2 text-center text-[#2A1001] font-semibold text-sm">
-                            <div>Sun</div>
-                            <div>Mon</div>
-                            <div>Tue</div>
-                            <div>Wed</div>
-                            <div>Thu</div>
-                            <div>Fri</div>
-                            <div>Sat</div>
-                        </div>
-
-                        <!--days of the month grid -->
-                        <div class="grid grid-cols-7 gap-3 px-4 py-1 place-items-center" id="days"></div>
-                    </div>
-
-                </div>
-
-                <!-- selected date and time indicator -->
-                <p class="text-sm text-[#2A1001] text-center font-medium mt-6" id="selectedDateDisplay">
-                    No date selected yet.
-                </p>
-
-                <!--Confirmation Buttons -->
-                <div class="mt-4 flex flex-col sm:flex-row items-center justify-center gap-3">
-                    <button id="cancelRescheduleModalBtn" class="w-full sm:w-auto px-6 py-2.5 text-sm font-semibold text-[#2A1001] bg-white border border-[#2A1001]/20 rounded-full hover:bg-gray-100 transition">
-                        Cancel
-                    </button>
-                    <button id="confirmRescheduleBtn" disabled class="w-full sm:w-auto bg-[#667733] hover:bg-[#556022] transition text-white font-bold px-8 py-2.5 rounded-full shadow disabled:opacity-40 disabled:cursor-not-allowed">
-                        Confirm Reschedule
-                    </button>
-                </div>
-
-            </div>
-        </div>
-
-    </main>
-
-    <script>    
-     let bookings = [ //=============================REPLACE============================TEMPORARY!=================================================TEMPORARY!==================================================TEMPORARY!
-            { appointment_id: 1827, public_id: "1827", first_name: "Andrew", last_name: "Philip Bogtae", service_label: "Cleaning", appointment_date: "2026-09-16", time_slot: "10:00:00", created_at: "2026-09-15T10:30:00", payment_status: null },
-            { appointment_id: 8172, public_id: "8172", first_name: "Venus", last_name: "Coleen Silvestre", service_label: "Pasta", appointment_date: "2026-09-20", time_slot: "14:00:00", created_at: "2026-09-19T08:00:00", payment_status: "paid" },
-            { appointment_id: 9182, public_id: "9182", first_name: "Lleyton", last_name: "Andrew Flores", service_label: "Consultation", appointment_date: "2026-09-18", time_slot: "09:00:00", created_at: "2026-09-17T09:15:00", payment_status: null },
-            { appointment_id: 9928, public_id: "9928", first_name: "Justine", last_name: "Penelophy Reolada", service_label: "Cleaning", appointment_date: "2026-09-14", time_slot: "15:00:00", created_at: "2026-08-30T16:45:00", payment_status: "paid" },
-            { appointment_id: 3452, public_id: "3452", first_name: "Maria", last_name: "Santos", service_label: "Whitening", appointment_date: "2026-09-22", time_slot: "09:00:00", created_at: "2026-09-19T14:10:00", payment_status: "paid" },
-            { appointment_id: 5621, public_id: "5621", first_name: "John", last_name: "Doe", service_label: "Cleaning", appointment_date: "2026-09-21", time_slot: "13:00:00", created_at: "2026-09-18T11:00:00", payment_status: null },
-            { appointment_id: 7890, public_id: "7890", first_name: "Sofia", last_name: "Reyes", service_label: "Whitening", appointment_date: "2026-09-23", time_slot: "11:00:00", created_at: "2026-09-19T18:30:00", payment_status: "paid" }
-        ];
-
-        //let bookings = []; ====================================== ADD THIS WHEN BACKEND
-        //let occupiedSlots = []; // Stores all taken slots from database ==============ADD WHEN BACKEND
-        let currentSearch = "";
-        let pendingDeclineId = null;
-        let pendingRescheduleId = null;
-
-        // Standard clinic slots schedule (AM and PM)
-        const clinicSlots = [
-            { id: "09:00:00", label: "9:00 AM - 10:00 AM" },
-            { id: "10:00:00", label: "10:00 AM - 11:00 AM" },
-            { id: "11:00:00", label: "11:00 AM - 12:00 PM" },
-            { id: "13:00:00", label: "1:00 PM - 2:00 PM" },
-            { id: "14:00:00", label: "2:00 PM - 3:00 PM" },
-            { id: "15:00:00", label: "3:00 PM - 4:00 PM" },
-            { id: "16:00:00", label: "4:00 PM - 5:00 PM" }
-        ];
-
-        
-
-        // Calendar form elements 
-        const monthYear = document.getElementById('month-year');
-        const daysContainer = document.getElementById('days');
-        const prevButton = document.getElementById('prev');
-        const nextButton = document.getElementById('next');
-
-        const months = [
-            'January', 'February', 'March', 'April', 'May', 'June', 'July',
-            'August', 'September', 'October', 'November', 'December'
-        ];
-
-        let currentDate = new Date();
-        let today = new Date();
-
-        let selectedDate = null;
-        let selectedDateFormatted = null; // YYYY-MM-DD
-        let selectedTime = null;
-
-        /*  //load bookings
-           async function loadBookingsFromDatabase() {
-        try {
-            const token = localStorage.getItem('userToken');
-            const response = await fetch('/api/appointments?status=pending', {
-                method: 'GET',
-                headers: { 
-                    'Authorization': `Bearer ${token}` 
-                }
-            });
-            if (!response.ok) throw new Error(`Server error: ${response.status}`);
-            bookings = await response.json();
-            renderBookings();
-        } catch (error) {
-            console.error("Failed to load booking requests:", error);
-            if (bookings.length === 0) {
-                renderBookings();
-            }
-        }
-    }
-
-
-        //load all occupied time slots
-            async function loadOccupiedSlotsFromDatabase() {
-        try {
-            const token = localStorage.getItem('userToken');
-            const response = await fetch('/api/appointments/occupied', {
-                method: 'GET',
-                headers: { 
-                    'Authorization': `Bearer ${token}` 
-                }
-            });
-            if (!response.ok) throw new Error(`Server error: ${response.status}`);
-            occupiedSlots = await response.json();
-        } catch (error) {
-            console.error("Failed to load occupied slots:", error);
-        }
-    }
-
-
-        */
-
-        //It converts a 24-hour time format into a readable 12-hour format with AM/PM
-        function formatTime12h(timeStr) {
-            if (!timeStr) return "";
-            const [hours, minutes] = timeStr.split(":");
-            let h = parseInt(hours, 10);
-            const ampm = h >= 12 ? "PM" : "AM";
-            h = h % 12 || 12;
-            return `${h}:${minutes} ${ampm}`;
-        }
-
-        function isNew(submittedAt) {  //Checks if the booking was submitted within the last 24 hours
-            const hoursSince = (new Date() - new Date(submittedAt)) / (1000 * 60 * 60);
-            return hoursSince <= 24; 
-        }
-
-        function getFiltered() { // Filter bookings based on the current search 
-            return bookings.filter(b =>
-                `${b.first_name} ${b.last_name}`.toLowerCase().includes(currentSearch.toLowerCase())
-            );
-        }
-
-        //Render the booking cards
-        function renderBookings() { 
-            const container = document.getElementById('booking-container');
-            const filtered = getFiltered();
-
-            if (filtered.length === 0) { //if the system has no bookings it will display text
-                container.innerHTML = `<p class="text-center text-[#2A1001]/60 py-10">No booking requests found.</p>`;
-                return;
-            }
-
-            container.innerHTML = filtered.map(b => `
-                <div class="flex flex-col md:flex-row md:items-center md:justify-between bg-white border border-[#2A1001]/10 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all duration-300 gap-4">
-                    <div>
-                        <div class="flex items-center gap-2 mb-1">
-                            <span class="text-xs font-semibold text-[#2A1001]/60 uppercase tracking-wide">Patient ID: ${b.public_id}</span>
-                            ${isNew(b.created_at) ? '<span class="text-xs bg-green-100 text-green-700 font-semibold px-2 py-0.5 rounded-full">New</span>' : ''} 
-                            ${b.payment_status === 'paid' ? '<span class="text-xs bg-blue-100 text-blue-700 font-semibold px-2 py-0.5 rounded-full">Paid Online</span>' : '<span class="text-xs bg-gray-100 text-[#2A1001]/70 font-semibold px-2 py-0.5 rounded-full">Cash</span>'}
-                        </div>
-                        <h3 class="text-lg font-bold text-[#2A1001] font-['Poppins']">${b.first_name} ${b.last_name}</h3>
-                        <p class="text-sm text-[#2A1001]/80 mt-0.5">
-                            <span class="font-medium text-[#667733]">${b.service_label}</span> • Requested for <strong>${b.appointment_date}</strong> at <strong>${formatTime12h(b.time_slot)}</strong>
-                        </p>
-                    </div>
-                    <div class="flex items-center gap-2 flex-wrap sm:flex-nowrap">
-                            <button class="declineBtn flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-[#D9534F] rounded-full hover:bg-[#c9302c] transition shadow-sm" data-id="${b.appointment_id}">
-                                <img src="../assets/closeIcon.png" alt="Decline" class="w-3.5 h-3.5 object-contain pointer-events-none" onerror="this.style.display='none'">
-                                <span>Decline</span>
-                            </button>
-                        <button class="rescheduleDirectBtn px-4 py-2 text-sm font-semibold text-[#2A1001] bg-[#D5C04D] rounded-full hover:bg-[#E1D282] transition flex items-center justify-center gap-1.5" data-id="${b.appointment_id}">
-                            <img src="../assets/calendarIcon.png" alt="resched" class="w-3.5 h-3.5 object-contain pointer-events-none" onerror="this.style.display='none'">
-                            <span>Reschedule</span>
-                        </button>
-                         <button class="acceptBtn flex items-center justify-center gap-2 px-5 py-2 text-sm font-semibold text-white bg-[#667733] rounded-full hover:bg-[#556022] transition shadow-sm" data-id="${b.appointment_id}">
-                            <img src="../assets/checkIcon.png" alt="Accept" class="w-3.5 h-3.5 object-contain pointer-events-none" onerror="this.style.display='none'">
-                            <span>Accept</span>
-                        </button>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-   
-        function renderCalendar(date) {
-            const year = date.getFullYear();
-            const month = date.getMonth();
-            const firstDay = new Date(year, month, 1).getDay();
-            const lastDay = new Date(year, month + 1, 0).getDate();
-
-            monthYear.textContent = `${months[month]} ${year}`;
-            daysContainer.innerHTML = '';
-        // Handles what happens when a specific calendar day is clicked
-            function handleDayClick(dayDiv, displayDateStr, sqlDateStr) {
-                dayDiv.addEventListener('click', function () {
-                    //Remove highlight/selection styling from all other days
-                    document.querySelectorAll('#days > div').forEach(d => {
-                        d.classList.remove('bg-[#D7E3A5]', 'border-2', 'border-[#2A1001]');
-                    });
-                    //Apply highlight styling to the clicked day
-                    dayDiv.classList.add('bg-[#D7E3A5]', 'border-2', 'border-[#2A1001]');
-
-                    //Save the chosen date
-                    selectedDate = displayDateStr;
-                    selectedDateFormatted = sqlDateStr; 
-                    selectedTime = null; // Reset previously chosen time slot since date changed
-                
-                    //Update the UI summary text and fetch available slots for this date
-                    updateSummaryDisplay();
-                    renderAvailableSlots(sqlDateStr);
+            // 1. Time Slot Selection Logic
+            document.querySelectorAll('[data-time]').forEach(slot => {
+                slot.addEventListener('click', () => {
+                    document.querySelectorAll('[data-time]').forEach(s => s.classList.remove('bg-[#D7E3A5]'));
+                    slot.classList.add('bg-[#D7E3A5]');
+                    selectedTimeValue = slot.getAttribute('data-time');
+                    document.getElementById('selected-time').value = selectedTimeValue;
                 });
-            }
-
-            //Get the total number of days in the previous month
-            const prevMonthLastDay = new Date(year, month, 0).getDate();
-            // Fill in the blank grid spaces at the start of the calendar with the trailing days of the previous month
-             //made prev months text white
-            for (let i = firstDay; i > 0; i--) {
-                const dayDiv = document.createElement('div');
-                dayDiv.classList.add('w-8', 'h-8', 'rounded-full', 'flex', 'items-center', 'justify-center', 'font-medium', 'text-[#fff]', 'cursor-default');
-                dayDiv.textContent = prevMonthLastDay - i + 1;
-                daysContainer.appendChild(dayDiv);
-            }
-
-            // Loop through every day of the month
-            for (let i = 1; i <= lastDay; i++) {
-                const dayDiv = document.createElement('div');
-                // Add styles and hover effects to the day box
-                dayDiv.classList.add(
-                    'w-8', 'h-8', 'rounded-full', 'flex', 'items-center', 'justify-center',
-                    'font-medium', 'text-[#2A1001]', 'cursor-pointer', 'transition-colors',
-                    'hover:bg-[#D7E3A5]', 'hover:rounded-full', 'hover:border-2',
-                    'hover:border-[#2A1001]', 'hover:scale-[1.25]'
-                );
-
-                //put numbers 
-                dayDiv.textContent = i;
-                // Highlight if it is today's date
-                if (i === today.getDate() && month === today.getMonth() && year === today.getFullYear()) {
-                    dayDiv.classList.add('today');
-                }
-
-                const displayStr = `${months[month]} ${i}, ${year}`;
-                const formattedMonth = String(month + 1).padStart(2, '0');
-                const formattedDay = String(i).padStart(2, '0');
-                const sqlStr = `${year}-${formattedMonth}-${formattedDay}`;
-
-                // Keep the day highlighted if it was selected by the user
-                if (selectedDateFormatted === sqlStr) {
-                    dayDiv.classList.add('bg-[#D7E3A5]', 'border-2', 'border-[#2A1001]');
-                }
-
-                // Make the day clickable and put it on the calendar
-                handleDayClick(dayDiv, displayStr, sqlStr);
-                daysContainer.appendChild(dayDiv);
-            }
-        }
-
-
-        function renderAvailableSlots(dateStr) {
-            const amContainer = document.getElementById('amSlotsContainer');
-            const pmContainer = document.getElementById('pmSlotsContainer');
-            // Clear previous time slots
-            amContainer.innerHTML = '';
-            pmContainer.innerHTML = '';
-            // If no date is clicked yet, show a placeholder message
-            if (!dateStr) {
-                amContainer.innerHTML = '<p class="text-xs text-center text-gray-400 py-4">Select date</p>';
-                pmContainer.innerHTML = '<p class="text-xs text-center text-gray-400 py-4">Select date</p>';
-                return;
-            }
-            // this finds which time slots are already booked on this specific date
-            const bookedSlotsOnDate = bookings
-            .filter(slot => {
-                const sDate = (slot.appointment_date || '').split('T')[0];
-                return sDate === dateStr && slot.appointment_id != pendingRescheduleId;
-            })
-                .map(b => b.time_slot);
-
-                // Loop through all available clinic time slots
-            clinicSlots.forEach(slot => {
-                const isBooked = bookedSlotsOnDate.includes(slot.id);
-                const isSelected = selectedTime === slot.id;
-                
-                // Separate slots into AM and PM based on hour
-                const hour = parseInt(slot.id.split(':')[0], 10);
-                const isAM = hour < 12;
-
-                // Create a button for the time slot
-                const slotBtn = document.createElement('button');
-                slotBtn.type = 'button';
-                
-                let baseClass = "w-full py-2.5 px-2 text-xs rounded-full border-[1.5px] transition text-center font-medium ";
-                // If the slot is already booked, make it red and disable it
-                if (isBooked) {
-                    slotBtn.disabled = true;
-                    slotBtn.className = baseClass + 'bg-[#FA8D8D] text-[#2A1001] border-gray-300 cursor-not-allowed';
-                    slotBtn.textContent = slot.label;
-                } else {
-                    //highlight green if selected by the user
-                    slotBtn.className = baseClass + (isSelected 
-                        ? 'bg-[#667733] text-white border-[#667733] font-bold shadow-inner' 
-                        : 'bg-white text-[#2A1001] border-black hover:bg-[#D7E3A5]/40');
-                    slotBtn.textContent = slot.label;
-                    // When clicked, save the selected time and refresh the display
-                    slotBtn.addEventListener('click', function () {
-                        selectedTime = slot.id;
-                        renderAvailableSlots(dateStr);
-                        updateSummaryDisplay();
-                    });
-                }
-            // Put the button into either the AM or PM column container
-                if (isAM) {
-                    amContainer.appendChild(slotBtn);
-                } else {
-                    pmContainer.appendChild(slotBtn);
-                }
             });
-        }
 
-        function updateSummaryDisplay() {
-            const display = document.getElementById('selectedDateDisplay');
-            const confirmBtn = document.getElementById('confirmRescheduleBtn');
+            // 2. Service Selection Logic
+            document.querySelectorAll('[data-service]').forEach(card => {
+                card.addEventListener('click', () => {
+                    document.querySelectorAll('[data-service]').forEach(c => c.classList.remove('bg-[#D7E3A5]'));
+                    card.classList.add('bg-[#D7E3A5]');
 
-            //if both a date AND a time slot are selected
-            if (selectedDate && selectedTime) {
-                const slotObj = clinicSlots.find(s => s.id === selectedTime);
-                display.innerHTML = `Selected Schedule: <strong>${selectedDate}</strong> at <strong>${slotObj ? slotObj.label : selectedTime}</strong>`;
-                confirmBtn.disabled = false;
-                //Only a date is selected (missing time slot)
-            } else if (selectedDate) {
-                display.innerHTML = `Selected Date: <strong>${selectedDate}</strong> (Please choose an available AM or PM slot)`;
-                confirmBtn.disabled = true;
-                //Nothing is selected yet
-            } else {
-                display.textContent = 'No date selected yet.';
-                confirmBtn.disabled = true;
-            }
-        }
+                    selectedServiceLabel = card.getAttribute('data-service');
+                    selectedPriceValue = card.getAttribute('data-price').replace(',', '');
+                    const serviceId = card.getAttribute('data-service-id');
 
-        function openRescheduleModal(appointmentId) {
-            //Save the ID of the appointment that is about to reschedule
-            pendingRescheduleId = appointmentId;
-            //Find the correct booking details 
-            const booking = bookings.find(b => b.appointment_id == appointmentId);
-            if (!booking) return;
+                    document.getElementById('selected-service').value = selectedServiceLabel;
+                    document.getElementById('selected-service-id').value = serviceId;
+                    document.getElementById('selected-price').value = selectedPriceValue;
+                });
+            });
 
-            document.getElementById('rescheduleModalTitle').textContent =
-                `Reschedule Appointment - ${booking.first_name} ${booking.last_name}`;
+            // Note: Your calendar script handles setting selectedDateValue and updating
+            // document.getElementById('selected-date').value = selectedDateValue;
 
-            document.getElementById('reschedulePatientSummary').innerHTML =
-                `Patient: <strong>${booking.first_name} ${booking.last_name}</strong> (${booking.service_label}) — Current: ${booking.appointment_date} at ${formatTime12h(booking.time_slot)}`;
+            // 3. Modal & Form Submission Workflow
+            const bookingForm = document.getElementById('booking-form');
+            const receiptModal = document.getElementById('receipt-modal');
+            const closeModalBtn = document.getElementById('close-modal');
+            const receiptContent = document.getElementById('receipt-content');
+            const payOnlineBtn = document.getElementById('pay-online-btn');
+            const payCashBtn = document.getElementById('pay-cash-btn');
+            const qrContainer = document.getElementById('qr-container');
 
-                //Reset previously selected date and time slots
-            selectedDate = null;
-            selectedDateFormatted = null;
-            selectedTime = null;
-            //Draw the calendar and clear out the slot panels
-            renderCalendar(currentDate);
-            renderAvailableSlots(null);
-            updateSummaryDisplay();
+            // Change this if your backend uses a different API base URL.
+            const API_BASE_URL = window.BACKEND_API_BASE_URL || '';
 
-            document.getElementById('rescheduleModal').classList.remove('hidden');//make modal visible
-        }
+            bookingForm.addEventListener('submit', (e) => {
+                e.preventDefault();
 
+                const dateVal = document.getElementById('selected-date').value;
+                const timeVal = document.getElementById('selected-time').value;
+                const serviceVal = document.getElementById('selected-service').value;
+                const serviceIdVal = document.getElementById('selected-service-id').value;
+                const noteVal = document.getElementById('PNote').value.trim();
 
-        function closeRescheduleModal() {
-            document.getElementById('rescheduleModal').classList.add('hidden');
-            pendingRescheduleId = null;
-        }
-       // Go to the previous month when the left arrow is clicked
-        prevButton.addEventListener('click', function () {
-            currentDate.setMonth(currentDate.getMonth() - 1);
-            renderCalendar(currentDate);
-        });
-         // Go to the next month when the right arrow is clicked
-        nextButton.addEventListener('click', function () {
-            currentDate.setMonth(currentDate.getMonth() + 1);
-            renderCalendar(currentDate);
-        });
-        //close modal when click x
-        document.getElementById('closeRescheduleModal').addEventListener('click', closeRescheduleModal);
-        // Close modal when clicking the 'Cancel' button
-        document.getElementById('cancelRescheduleModalBtn').addEventListener('click', closeRescheduleModal);
-        // Close modal if the user clicks outside of the modal box
-        document.getElementById('rescheduleModal').addEventListener('click', function (e) {
-            if (e.target === this) closeRescheduleModal();
-        });
+                if (!dateVal || !timeVal || !serviceVal || !serviceIdVal) {
+                    alert('Please select a date, time slot, and service.');
+                    return;
+                }
 
-        // Confirm Reschedule ===========================================================================================================LOOOK REPLACE THIS
-        document.getElementById('confirmRescheduleBtn').addEventListener('click', async function () {
-            if (!selectedDateFormatted || !selectedTime || !pendingRescheduleId) {
-                alert('Please select both a Date and a Time Slot!');
-                return;
-            }
+                // The price shown here is for the frontend receipt only.
+                // The backend should retrieve the real price from the database using service_id.
+                receiptContent.innerHTML = `
+                    <p><strong>Service:</strong> ${escapeHtml(selectedServiceLabel)}</p>
+                    <p><strong>Date:</strong> ${escapeHtml(dateVal)}</p>
+                    <p><strong>Time:</strong> ${escapeHtml(timeVal)}</p>
+                    <p><strong>Price:</strong> ₱${Number(selectedPriceValue).toLocaleString()}</p>
+                    <p><strong>Note:</strong> ${escapeHtml(noteVal || 'None')}</p>
+                `;
 
-            const booking = bookings.find(b => b.appointment_id == pendingRescheduleId);
-            if (!booking) return;
+                receiptModal.classList.remove('hidden');
+            });
 
-            try {
+            closeModalBtn.addEventListener('click', () => {
+                receiptModal.classList.add('hidden');
+                qrContainer.classList.add('hidden');
+            });
+
+            payOnlineBtn.addEventListener('click', () => {
+                selectedPaymentMethod = 'online';
+                qrContainer.classList.remove('hidden');
+                submitBookingToDatabase('online');
+            });
+
+            payCashBtn.addEventListener('click', () => {
+                selectedPaymentMethod = 'cash';
+                qrContainer.classList.add('hidden');
+                submitBookingToDatabase('cash');
+            });
+
+            async function submitBookingToDatabase(method) {
                 const token = localStorage.getItem('userToken');
 
-                booking.appointment_date = selectedDateFormatted;
-                booking.time_slot = selectedTime;
+                const payload = {
+                    appointment_date: document.getElementById('selected-date').value,
+                    time_slot: document.getElementById('selected-time').value,
+                    service_id: Number(document.getElementById('selected-service-id').value),
+                    patient_note: document.getElementById('PNote').value.trim(),
+                    payment_method: method
+                };
 
-                alert(`Appointment for ${booking.first_name} ${booking.last_name} successfully rescheduled to ${selectedDate} at ${formatTime12h(selectedTime)}!`);
-                
-                closeRescheduleModal();
-                renderBookings();
+                // The backend should calculate the final amount from service_id.
+                // selectedPriceValue is intentionally not used as the source of truth.
 
-            } catch (error) {
-                console.error(error);
-                alert("Could not reschedule appointment on the server.");
-            }
-        });
-
-        /* document.getElementById('confirmRescheduleBtn').addEventListener('click', async function () {===============================================================================!!!!!!!!
-        if (!selectedDateFormatted || !selectedTime || !pendingRescheduleId) {
-            alert('Please select both a Date and a Time Slot!');
-            return;
-        }
-        const booking = bookings.find(b => b.appointment_id == pendingRescheduleId);
-        if (!booking) return;
-        try {
-            const token = localStorage.getItem('userToken');
-            const response = await fetch(`/api/appointments/${pendingRescheduleId}/reschedule`, {
-                method: 'PATCH',
-                headers: { 
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}` 
-                },
-                body: JSON.stringify({ 
-                    appointment_date: selectedDateFormatted,
-                    time_slot: selectedTime
-                })
-            });
-            if (!response.ok) {
-                const err = await response.json();
-                throw new Error(err.message || 'Failed to reschedule appointment');
-            }
-            alert(`Appointment for ${booking.first_name} ${booking.last_name} successfully rescheduled! A notification was sent to their dashboard.`);
-            
-            closeRescheduleModal();
-            // Re-fetch fresh data from database
-            await loadBookingsFromDatabase();
-            await loadOccupiedSlotsFromDatabase();
-        } catch (error) {
-            console.error("Reschedule error:", error);
-            alert("Could not reschedule appointment on the server: " + error.message);
-        }
-    });
-*/
-
-        // Card button delegation
-        document.getElementById('booking-container').addEventListener('click', async function (e) { //===========================TEMP!!!! REPLACE
-            const btn = e.target.closest('button');
-            if (!btn) return;
-            const id = btn.dataset.id;
-            if (!id) return;
-
-            if (btn.classList.contains('rescheduleDirectBtn')) {
-                openRescheduleModal(id);
-                return;
-            }
-
-            if (btn.classList.contains('acceptBtn')) {
                 try {
-        
-                    bookings = bookings.filter(b => b.appointment_id != id);
-                    renderBookings();
-                } catch (error) {
-                    console.error(error);
-                    alert("Could not accept booking on the server.");
-                }
-            }
+                    const headers = {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    };
 
-            if (btn.classList.contains('declineBtn')) {
-                pendingDeclineId = id;
-                const booking = bookings.find(b => b.appointment_id == id);
-                if (!booking) return;
+                    // Add authentication only when a token exists.
+                    if (token) {
+                        headers['Authorization'] = `Bearer ${token}`;
+                    }
 
-                document.getElementById('declineModalText').textContent =
-                    `Are you sure you want to decline the booking request from ${booking.first_name} ${booking.last_name}? This cannot be undone.`;
-
-                const paidWarning = document.getElementById('paidWarning');
-                const rescheduleBtn = document.getElementById('rescheduleBtn'); 
-
-                if (booking.payment_status === 'paid') {
-                    paidWarning.classList.remove('hidden');
-                    rescheduleBtn.classList.remove('hidden'); 
-                } else {
-                    paidWarning.classList.add('hidden');
-                    rescheduleBtn.classList.add('hidden'); 
-                }
-
-                document.getElementById('declineModal').classList.remove('hidden');
-            }
-        });
-
-        /*     
-        
-        document.getElementById('booking-container').addEventListener('click', async function (e) {
-        const btn = e.target.closest('button');
-        if (!btn) return;
-        const id = btn.dataset.id; // Exactly appointments.appointment_id
-        if (!id) return;
-        const token = localStorage.getItem('userToken');
-        // Direct Reschedule
-        if (btn.classList.contains('rescheduleDirectBtn')) {
-            openRescheduleModal(id);
-            return;
-        }
-        // ACCEPT
-        if (btn.classList.contains('acceptBtn')) {
-            if (confirm('Approve this booking request?')) {
-                try {
-                    const response = await fetch(`/api/appointments/${id}/status`, {
-                        method: 'PATCH',
-                        headers: { 
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${token}` 
-                        },
-                        body: JSON.stringify({ appointment_status: 'approved' }) 
+                    const response = await fetch(`${API_BASE_URL}/api/appointments`, {
+                        method: 'POST',
+                        headers: headers,
+                        body: JSON.stringify(payload)
                     });
-                    if (!response.ok) throw new Error('Failed to approve appointment');
-                    alert('Appointment approved successfully!');
-                    await loadBookingsFromDatabase();
-                    await loadOccupiedSlotsFromDatabase();
+
+                    const contentType = response.headers.get('content-type') || '';
+                    const result = contentType.includes('application/json')
+                        ? await response.json()
+                        : { message: await response.text() };
+
+                    if (!response.ok) {
+                        throw new Error(result.error || result.message || 'Failed to save appointment.');
+                    }
+
+                    alert(result.message || 'Booking successfully recorded!');
+
+                    receiptModal.classList.add('hidden');
+                    window.location.reload();
+
                 } catch (error) {
-                    console.error("Accept error:", error);
-                    alert("Could not accept booking: " + error.message);
+                    console.error('Booking API Error:', error);
+                    alert('Error saving booking: ' + error.message);
                 }
             }
-        }
-        // DECLINE
-        if (btn.classList.contains('declineBtn')) {
-            pendingDeclineId = id;
-            const booking = bookings.find(b => b.appointment_id == id);
-            if (!booking) return;
-            document.getElementById('declineModalText').textContent =
-                `Are you sure you want to decline the booking request from ${booking.first_name} ${booking.last_name}? This cannot be undone.`;
-            const paidWarning = document.getElementById('paidWarning');
-            const rescheduleBtn = document.getElementById('rescheduleBtn'); 
-            if (booking.payment_status === 'paid') {
-                paidWarning.classList.remove('hidden');
-                rescheduleBtn.classList.remove('hidden'); 
-            } else {
-                paidWarning.classList.add('hidden');
-                rescheduleBtn.classList.add('hidden'); 
-            }
-            document.getElementById('declineModal').classList.remove('hidden');
-        }
-    });
-    
-    */
 
-        document.getElementById('cancelDeclineBtn').addEventListener('click', () => { 
-            pendingDeclineId = null;
-            document.getElementById('declineModal').classList.add('hidden');
-        });
-
-        document.getElementById('confirmDeclineBtn').addEventListener('click', async () => {
-            if (pendingDeclineId) {
-           
-                bookings = bookings.filter(b => b.appointment_id != pendingDeclineId);
-                renderBookings();
-            }
-            pendingDeclineId = null;
-            document.getElementById('declineModal').classList.add('hidden');
-        });
-
-        document.getElementById('rescheduleBtn').addEventListener('click', () => {
-            const targetId = pendingDeclineId;
-            document.getElementById('declineModal').classList.add('hidden');
-            pendingDeclineId = null;
-            if (targetId) {
-                openRescheduleModal(targetId);
+            // Prevent user-entered notes from being interpreted as HTML in the receipt.
+            function escapeHtml(value) {
+                const div = document.createElement('div');
+                div.textContent = value;
+                return div.innerHTML;
             }
         });
-
-        document.getElementById('searchInput').addEventListener('input', function () {
-            currentSearch = this.value;
-            renderBookings();
-        });
-
-        renderBookings();
     </script>
+    <!--
+        BACKEND INTEGRATION:
+        POST /api/appointments
+        JSON fields:
+        - appointment_date
+        - time_slot
+        - service_id
+        - patient_note
+        - payment_method
+
+        The backend should authenticate the user, validate the appointment,
+        check slot availability, retrieve the service price from the database,
+        and save the appointment. Do not trust a frontend price as the final amount.
+    -->
+    <script src="../Taskbar/Customer_Sidebar.js"></script>
+</head>
+<body class="bg-[#F3EFE4] min-h-screen font-poppins text-[#2c3e2b] antialiased">
+    <div class="min-h-screen flex flex-col md:flex-row w-full"> <!--Div for whole body-->
+        <aside id="sidebar-aside" class="w-full md:w-auto shrink-0 bg-[#9ea988]"> <!--Div for sidebar-->
+        <div id="sidebar-placeholder"></div>
+<script>
+    (async () => {
+        try {
+            const response = await fetch('../Taskbar/Customer_Task.html');
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+            
+            const data = await response.text();
+            document.getElementById('sidebar-placeholder').innerHTML = data;
+            
+            const currentPage = window.location.pathname.split("/").pop();
+            document.querySelectorAll('.nav-link').forEach(link => {
+                if (link.getAttribute('data-page') === currentPage) {
+                    link.classList.add('bg-[#FDFCE9]');
+                }
+            });
+
+            initSidebar();
+        } catch (error) {
+            console.error('Failed to load the sidebar taskbar:', error);
+        }
+    })();
+</script>
+        </aside>
+
+        <!-- Main Content Area Wrapper -->
+        <div class="flex-1 p-4 sm:p-6 md:p-10 flex justify-center items-start">
+            <form id="booking-form" method="post" class="w-full max-w-4xl flex flex-col items-center gap-8">
+                
+                <!-- Hidden Database Fields -->
+                <input type="hidden" id="selected-date" name="appointment_date" required>
+                <input type="hidden" id="selected-time" name="time_slot" required>
+                <input type="hidden" id="selected-service" name="service_name" required>
+                <input type="hidden" id="selected-service-id" name="service_id" required>
+                <input type="hidden" id="selected-price" name="service_price" required>
+
+                <div class="w-full flex flex-row gap-5 justify-center items-center">
+                    <!--AM Time slot-->
+                    <div class="flex flex-col w-[180px] gap-3">
+                        <h1 class="font-extrabold text-[#2c3e2b]">AM-Time</h1>
+                        <div data-time="07:00:00" class="flex w-full h-[60px] bg-white rounded-3xl border-[3.5px] border-black items-center justify-center text-center hover:bg-[#D7E3A5] transition-all duration-250 hover:scale-[1.035] cursor-pointer">
+                            <h2>7AM - 8AM</h2>
+                        </div>
+                        <div data-time="08:00:00" class="flex w-full h-[60px] bg-white rounded-3xl border-[3.5px] border-black items-center justify-center text-center hover:bg-[#D7E3A5] transition-all duration-250 hover:scale-[1.035] cursor-pointer">
+                            <h2>8AM - 9AM</h2>
+                        </div>
+                        <div data-time="09:00:00" class="flex w-full h-[60px] bg-white rounded-3xl border-[3.5px] border-black items-center justify-center text-center hover:bg-[#D7E3A5] transition-all duration-250 hover:scale-[1.035] cursor-pointer">
+                            <h2>9AM - 10AM</h2>
+                        </div>
+                        <div data-time="10:00:00" class="flex w-full h-[60px] bg-white rounded-3xl border-[3.5px] border-black items-center justify-center text-center hover:bg-[#D7E3A5] transition-all duration-250 hover:scale-[1.035] cursor-pointer">
+                            <h2>10AM - 11AM</h2>
+                        </div>
+                        <div data-time="11:00:00" class="flex w-full h-[60px] bg-white rounded-3xl border-[3.5px] border-black items-center justify-center text-center hover:bg-[#D7E3A5] transition-all duration-250 hover:scale-[1.035] cursor-pointer">
+                            <h2>11AM - 12PM</h2>
+                        </div>
+                    </div>
+
+                    <!--PM Time slot-->
+                    <div class="flex flex-col w-[180px] gap-3">
+                        <h1 class="font-extrabold text-[#2c3e2b]">PM-Time</h1>
+                        <div data-time="12:00:00" class="flex w-full h-[60px] bg-white rounded-3xl border-[3.5px] border-black items-center justify-center text-center hover:bg-[#D7E3A5] transition-all duration-250 hover:scale-[1.035] cursor-pointer">
+                            <h2>12PM - 1PM</h2>
+                        </div>
+                        <div data-time="13:00:00" class="flex w-full h-[60px] bg-white rounded-3xl border-[3.5px] border-black items-center justify-center text-center hover:bg-[#D7E3A5] transition-all duration-250 hover:scale-[1.035] cursor-pointer">
+                            <h2>1PM - 2PM</h2>
+                        </div>
+                        <div data-time="14:00:00" class="flex w-full h-[60px] bg-white rounded-3xl border-[3.5px] border-black items-center justify-center text-center hover:bg-[#D7E3A5] transition-all duration-250 hover:scale-[1.035] cursor-pointer">
+                            <h2>2PM - 3PM</h2>
+                        </div>
+                        <div data-time="15:00:00" class="flex w-full h-[60px] bg-white rounded-3xl border-[3.5px] border-black items-center justify-center text-center hover:bg-[#D7E3A5] transition-all duration-250 hover:scale-[1.035] cursor-pointer">
+                            <h2>3PM - 4PM</h2>
+                        </div>
+                        <div data-time="16:00:00" class="flex w-full h-[60px] bg-white rounded-3xl border-[3.5px] border-black items-center justify-center text-center hover:bg-[#D7E3A5] transition-all duration-250 hover:scale-[1.035] cursor-pointer">
+                            <h2>4PM - 5PM</h2>
+                        </div>
+                    </div>
+
+                    <div>
+                        <!--Calendar-->
+                        <div class="flex flex-col w-[410px] h-[360px] rounded-3xl border-[3.5px] border-black bg-white overflow-hidden">
+                            
+                            <!--Header-->
+                            <div class="flex justify-between items-center p-[10px] w-full h-15 bg-[#667733]">
+
+                                <!--Left Button-->
+                                <div class="cursor-pointer text-[25px] bold text-[#D7E3A5]" id="prev"><i class="fa-solid fa-arrow-left"></i></div>
+
+                                <!--Month-Year-->
+                                <div id="month-year" class="text-[25px] bold text-[#D7E3A5]"></div>
+
+                                <!--Right Button-->
+                                <div class="cursor-pointer text-[25px] bold text-[#D7E3A5]" id="next"><i class="fa-solid fa-arrow-right"></i></div>
+                            </div>
+                           
+                            <!--Days-->
+                            <div class="grid grid-cols-7 gap-3 px-4 py-2">
+                                <div>Sun</div>
+                                <div>Mon</div>
+                                <div>Tue</div>
+                                <div>Wed</div>
+                                <div>Thu</div>
+                                <div>Fri</div>
+                                <div>Sat</div>
+                            </div>
+                            <div class="grid grid-cols-7 gap-3 px-4 py-1" id="days"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="w-full flex flex-col items-start">
+                    <h1 class="font-extrabold text-xl text-[#2c3e2b]">What do you need?</h1>
+                </div>
+
+                <div class="flex flex-row gap-5 w-full justify-center"> <!--Div for services-->
+                    <!--Div for cleaning-->
+                    <div data-service="Dental Cleaning" data-service-id="1" data-price="1,500" class="flex flex-col w-[200px] h-[250px] justify-between items-center text-center bg-[#FFFFFF] rounded-[8px] border-4 border-black hover:bg-[#D7E3A5] transition-all duration-250 hover:scale-[1.035] cursor-pointer p-3">
+                        <h1 class="font-bold text-[20px]">Cleaning</h1>
+                        <img src="../assets/Cleaning.png" class="w-28 h-28 object-contain">
+                        <h2 class="font-bold text-[18px]">Price: 1,500</h2>
+                    </div>
+
+                    <!--Div for pasta-->
+                    <div data-service="Dental Filling" data-service-id="2" data-price="2,500" class="flex flex-col w-[200px] h-[250px] justify-between items-center text-center bg-[#FFFFFF] rounded-[8px] border-4 border-black hover:bg-[#D7E3A5] transition-all duration-250 hover:scale-[1.035] cursor-pointer p-3">
+                        <h1 class="font-bold text-[20px]">Pasta</h1>
+                        <img src="../assets/Pasta.png" class="w-28 h-28 object-contain">
+                        <h2 class="font-bold text-[18px]">Price: 2,500</h2>
+                    </div>
+
+                    <!--Div for checkup-->
+                    <div data-service="Dental Checkup" data-service-id="3" data-price="500" class="flex flex-col w-[200px] h-[250px] justify-between items-center text-center bg-[#FFFFFF] rounded-[8px] border-4 border-black hover:bg-[#D7E3A5] transition-all duration-250 hover:scale-[1.035] cursor-pointer p-3">
+                        <h1 class="font-bold text-[20px]">Checkup</h1>
+                        <img src="../assets/Checkup.png" class="w-28 h-28 object-contain">
+                        <h2 class="font-bold text-[18px]">Price: 500</h2>
+                    </div>
+
+                    <!--Div for whitening-->
+                    <div data-service="Teeth Whitening" data-service-id="4" data-price="3,000" class="flex flex-col w-[200px] h-[250px] justify-between items-center text-center bg-[#FFFFFF] rounded-[8px] border-4 border-black hover:bg-[#D7E3A5] transition-all duration-250 hover:scale-[1.035] cursor-pointer p-3">
+                        <h1 class="font-bold text-[20px]">Whitening</h1>
+                        <img src="../assets/Whitening.png" class="w-28 h-28 object-contain">
+                        <h2 class="font-bold text-[18px]">Price: 3,000</h2>
+                    </div>
+                </div>
+                <!--Note For Users-->
+                <textarea id="PNote" name="PNote" class="w-full h-[225px] rounded bg-[#FFFFFF] text-[#2c3e2b] font-medium text-lg outline-none resize-none shadow-inner border-4 border-[#000000] p-4"></textarea>
+
+                <button type="submit" id="submit-btn" class="w-full py-4 bg-[#667733] text-[#D7E3A5] font-extrabold text-xl rounded-xl border-4 border-black hover:opacity-90 transition-all cursor-pointer shadow-md">
+                    Submit Booking
+                </button>
+
+                <!-- Receipt Modal -->
+                <div id="receipt-modal" class="fixed inset-0 bg-black/50 flex items-center justify-center hidden z-50 p-4">
+                    <div class="bg-white rounded-3xl border-4 border-black w-full max-w-md p-6 flex flex-col gap-4 relative shadow-2xl">
+                        <!-- Close Button -->
+                        <button type="button" id="close-modal" class="absolute top-4 right-4 w-8 h-8 flex items-center justify-center font-bold text-lg bg-gray-100 rounded-full border-2 border-black cursor-pointer hover:bg-gray-200">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                        <h1 class="font-extrabold text-2xl text-[#2c3e2b]">Booking Receipt</h1>
+
+                        <!-- Receipt Content -->
+                        <div id="receipt-content" class="text-[#2c3e2b] flex flex-col gap-2 border-2 border-black p-4 rounded-xl bg-[#FDFCE9]">
+                        </div>
+
+                        <!-- Pay Options -->
+                        <div class="flex gap-3 mt-2">
+                            <button type="button" id="pay-online-btn" class="flex-1 py-3 bg-[#667733] text-[#D7E3A5] font-bold rounded-xl border-2 border-black cursor-pointer hover:opacity-90 transition-all">
+                                Pay Online
+                            </button>
+                            <button type="button" id="pay-cash-btn" class="flex-1 py-3 bg-white text-[#2c3e2b] font-bold rounded-xl border-2 border-black cursor-pointer hover:bg-gray-100 transition-all">
+                                Pay Cash
+                            </button>
+                        </div>
+                    
+                        <!--QR Code-->
+                        <div id="qr-container" class="hidden flex flex-col items-center gap-2 mt-2 p-4 bg-white rounded-xl border-2 border-dashed border-black">
+                            <p class="font-bold text-sm text-[#2c3e2b]">Scan QR Code to Pay</p>
+                            <div class="w-36 h-36 bg-gray-100 border-2 border-black flex items-center justify-center rounded-lg">
+                                <img src="../assets/QRTest.png">
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+            </form>
+        </div>
+
+    </div>
 </body>
 </html>
