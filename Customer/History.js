@@ -68,6 +68,7 @@ async function fetchAppointments() {
     }
 
     const token = localStorage.getItem('userToken');
+
     if (!token) {
         appointmentList.innerHTML = '<p class="text-center text-gray-500 py-6 font-bold">Please log in to view your appointments.</p>';
         return;
@@ -153,6 +154,9 @@ function openDetailModal(appt) {
         : 'N/A';
     const amount      = appt.amount ? `${Number(appt.amount).toLocaleString()}php` : 'N/A';
     const method      = appt.method ? appt.method.charAt(0).toUpperCase() + appt.method.slice(1) : 'N/A';
+    const paymentStatus = appt.payment_status
+        ? appt.payment_status.charAt(0).toUpperCase() + appt.payment_status.slice(1)
+        : 'N/A';
     const service     = appt.label || 'General Appointment';
     const dentistName = (appt.dentist_first_name || appt.dentist_last_name)
         ? `Dr. ${appt.dentist_first_name || ''} ${appt.dentist_last_name || ''}`.trim()
@@ -178,7 +182,7 @@ function openDetailModal(appt) {
             </div>
             <div class="mt-3">
                 <button
-                    onclick="closeDetailModal(); openCancelModal(${appt.appointment_id})"
+                    onclick="event.stopPropagation(); closeDetailModal(); openCancelModal(${appt.appointment_id})"
                     class="bg-red-500 hover:bg-red-600 text-white font-extrabold text-sm px-6 py-2 rounded-full border-2 border-[#1a281b] shadow-sm active:scale-95 transition-all cursor-pointer">
                     Cancel Appointment
                 </button>
@@ -200,6 +204,19 @@ function openDetailModal(appt) {
                 <div class="flex items-end justify-between gap-4">
                     <p class="text-sm text-[#1a281b] italic">${dentistNote || 'No notes left by dentist.'}</p>
                     <img src="../assets/logowithtitle.png" onerror="this.src='../Customer/logowithtitle.png'" alt="Clinic Logo" class="w-14 h-14 object-contain shrink-0">
+                </div>
+            </div>
+        `;
+    } else if (appt.appointment_status === 'cancelled') {
+        bottomSection = `
+            <div class="mt-4 pt-3 border-t border-[#d2dbbe]">
+                <div class="rounded-xl bg-red-50 border border-red-200 p-4">
+                    <p class="text-sm text-red-700 font-bold">
+                        This appointment has been cancelled.
+                    </p>
+                    <p class="text-xs text-red-600 mt-1">
+                        The clinic has been notified of the cancellation.
+                    </p>
                 </div>
             </div>
         `;
@@ -238,6 +255,7 @@ function openDetailModal(appt) {
                 <p class="font-extrabold text-base">Pay Now</p>
                 <p class="text-sm">Mode of Payment: ${method}</p>
                 <p class="text-sm font-bold">Total: ${amount}</p>
+                <p class="text-sm">Payment Status: ${paymentStatus}</p>
             </div>
 
             <!-- Status-specific bottom -->
@@ -254,8 +272,16 @@ function closeDetailModal() {
 
 // ── Cancel Modal logic ──────────────────────────────────────────────────────
 function openCancelModal(appointmentId) {
-    document.getElementById('cancel-modal').classList.remove('hidden');
-    document.getElementById('confirm-cancel-btn').onclick = () => cancelAppointment(appointmentId);
+    const cancelModal = document.getElementById('cancel-modal');
+    const confirmButton = document.getElementById('confirm-cancel-btn');
+
+    cancelModal.classList.remove('hidden');
+
+    confirmButton.disabled = false;
+    confirmButton.textContent = 'Yes, Cancel It';
+    confirmButton.classList.remove('opacity-60', 'cursor-not-allowed');
+
+    confirmButton.onclick = () => cancelAppointment(appointmentId);
 }
 
 function closeCancelModal() {
@@ -264,16 +290,36 @@ function closeCancelModal() {
 
 async function cancelAppointment(appointmentId) {
     const token = localStorage.getItem('userToken');
-    closeCancelModal();
+    const confirmButton = document.getElementById('confirm-cancel-btn');
+
+    if (!token) {
+        alert('Your session has expired. Please log in again.');
+        closeCancelModal();
+        return;
+    }
+
+    if (confirmButton.disabled) {
+        return;
+    }
+
+    confirmButton.disabled = true;
+    confirmButton.textContent = 'Cancelling...';
+    confirmButton.classList.add('opacity-60', 'cursor-not-allowed');
 
     if (TEST_MODE) {
+        closeCancelModal();
+
         const card = document.getElementById(`appt-card-${appointmentId}`);
         if (card) card.remove();
+
         const appointmentList = document.getElementById('appointment-list');
+
         if (appointmentList.children.length === 0) {
             appointmentList.innerHTML = '<p class="text-center text-gray-500 py-6 font-bold">No appointments found. Book one today!</p>';
         }
+
         alert('(TEST MODE) Appointment cancelled. In production, the clinic will be notified.');
+
         return;
     }
 
@@ -287,27 +333,34 @@ async function cancelAppointment(appointmentId) {
         });
 
         if (response.ok) {
-            const card = document.getElementById(`appt-card-${appointmentId}`);
-            if (card) card.remove();
+            closeCancelModal();
 
-            const appointmentList = document.getElementById('appointment-list');
-            if (appointmentList.children.length === 0) {
-                appointmentList.innerHTML = '<p class="text-center text-gray-500 py-6 font-bold">No appointments found. Book one today!</p>';
-            }
+            // Reload the list so the cancelled appointment remains in history.
+            await fetchAppointments();
 
-            alert('Your appointment has been cancelled. The clinic has been notified.');
+            const result = await response.json();
 
-            // Backend handles:
-            //   UPDATE appointments SET appointment_status='cancelled' WHERE appointment_id = ?
-            //   INSERT INTO notifications (user_id=receptionist_id, type='cancellation', ...)
-            //   INSERT INTO notifications (user_id=employee_id, type='cancellation', ...)
+            alert(
+                result.message ||
+                'Your appointment has been cancelled. The clinic has been notified.'
+            );
 
         } else {
             const err = await response.json();
-            alert('Failed to cancel: ' + (err.message || 'Please try again.'));
+
+            alert(
+                'Failed to cancel: ' +
+                (err.message || 'Please try again.')
+            );
         }
+
     } catch(err) {
         console.error("Cancel error:", err);
         alert('Error cancelling appointment. Please check your connection.');
+
+    } finally {
+        confirmButton.disabled = false;
+        confirmButton.textContent = 'Yes, Cancel It';
+        confirmButton.classList.remove('opacity-60', 'cursor-not-allowed');
     }
 }

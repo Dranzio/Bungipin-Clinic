@@ -26,6 +26,7 @@ function registerHistoryRoutes(app, db) {
                      a.dentist_note,
                      pay.amount,
                      pay.method,
+                     pay.status AS payment_status,
                      emp.first_name AS dentist_first_name,
                      emp.last_name  AS dentist_last_name,
                      u.public_id,
@@ -42,6 +43,7 @@ function registerHistoryRoutes(app, db) {
                  ORDER BY a.appointment_date DESC, a.time_slot DESC`,
                 [req.user.user_id]
             );
+
             res.json(rows);
         } catch (err) {
             console.error('Load patient history error:', err);
@@ -60,13 +62,17 @@ function registerHistoryRoutes(app, db) {
         }
 
         const appointmentId = req.params.id;
-        const connection = await db.getConnection();
+        let connection;
 
         try {
+            connection = await db.getConnection();
             await connection.beginTransaction();
 
             const [apptRows] = await connection.query(
-                'SELECT patient_id, appointment_status FROM appointments WHERE appointment_id = ?',
+                `SELECT patient_id, appointment_status
+                 FROM appointments
+                 WHERE appointment_id = ?
+                 FOR UPDATE`,
                 [appointmentId]
             );
 
@@ -74,40 +80,67 @@ function registerHistoryRoutes(app, db) {
                 await connection.rollback();
                 return res.status(404).json({ message: 'Appointment not found' });
             }
-            if (apptRows[0].patient_id !== req.user.user_id) {
+
+            if (Number(apptRows[0].patient_id) !== Number(req.user.user_id)) {
                 await connection.rollback();
                 return res.status(403).json({ message: 'Not authorized' });
             }
+
             if (apptRows[0].appointment_status !== 'pending') {
                 await connection.rollback();
                 return res.status(409).json({ message: 'Only pending appointments can be cancelled' });
             }
 
             await connection.query(
-                `UPDATE appointments SET appointment_status = 'cancelled' WHERE appointment_id = ?`,
+                `UPDATE appointments
+                 SET appointment_status = 'cancelled'
+                 WHERE appointment_id = ?`,
+                [appointmentId]
+            );
+
+            await connection.query(
+                `UPDATE payments
+                 SET status = CASE
+                                  WHEN status = 'paid' THEN 'refunded'
+                                  ELSE status
+                     END
+                 WHERE appointment_id = ?`,
                 [appointmentId]
             );
 
             const [staff] = await connection.query(
                 `SELECT user_id FROM users WHERE role IN ('employee', 'admin')`
             );
+
             for (const member of staff) {
                 await connection.query(
-                    `INSERT INTO notifications (user_id, type, title, message, appointment_id)
-                     VALUES (?, 'appointment_cancelled', 'Appointment Cancelled', 'A patient has cancelled a pending appointment.', ?)`,
+                    `INSERT INTO notifications
+                         (user_id, type, title, message, appointment_id)
+                     VALUES (?, 'appointment_cancelled', 'Appointment Cancelled',
+                             'A patient has cancelled a pending appointment.', ?)`,
                     [member.user_id, appointmentId]
                 );
             }
 
             await connection.commit();
-            res.json({ message: 'Appointment cancelled successfully' });
+
+            res.json({
+                message: 'Appointment cancelled successfully',
+                appointment_id: Number(appointmentId)
+            });
 
         } catch (err) {
-            await connection.rollback();
+            if (connection) {
+                await connection.rollback();
+            }
+
             console.error('Cancel appointment error:', err);
             res.status(500).json({ message: 'Internal Server Error' });
+
         } finally {
-            connection.release();
+            if (connection) {
+                connection.release();
+            }
         }
     });
 }
