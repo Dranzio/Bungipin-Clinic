@@ -9,7 +9,7 @@
   <script src="/Taskbar/Customer_Sidebar.js"></script>
 </head>
 
-<body class="h-screen overflow-hidden bg-[#F3EFE4] relative flex flex-col md:flex-row antialiased">
+<body class="min-h-screen md:h-screen md:overflow-hidden bg-[#F3EFE4] relative flex flex-col md:flex-row antialiased">
 
   <!-- SIDEBAR -->
     <div id="sidebar-placeholder"></div>
@@ -60,7 +60,7 @@ function syncContentOffset() {
 </script>
 
   <!-- CONTENT WRAPPER -->
-<div id="main-content" class="flex-1 min-w-0 min-h-0 overflow-y-auto">
+<div id="main-content" class="flex-1 min-w-0 md:min-h-0 md:overflow-y-auto">
 
 
   <div class="shrink-0 flex justify-between items-start pt-5 pl-6 pr-4 md:pl-24 md:pr-8">
