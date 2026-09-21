@@ -199,18 +199,18 @@
               </select>
             </div>
 
-            <div class="flex flex-col gap-1.5 md:col-span-2">
+               <div class="flex flex-col gap-1.5 md:col-span-2">
               <label class="text-[11px] font-extrabold tracking-wider text-[#2c3e2b] uppercase">Current Prescriptions:</label>
               <div id="prescriptionsList" class="flex flex-col gap-2 mb-1"></div>
               <div class="flex flex-col sm:flex-row gap-2">
-                <input type="text" id="medicationNameInput" placeholder="Medication name"
-                  class="flex-1 px-4 py-2.5 rounded-full bg-white text-[#2c3e2b] font-medium text-sm outline-none shadow-inner border border-[#c1ccab] focus:ring-2 focus:ring-[#4a5e3b]/50">
-                <input type="text" id="dosageInput" placeholder="Dosage (optional)"
-                  class="sm:w-40 px-4 py-2.5 rounded-full bg-white text-[#2c3e2b] font-medium text-sm outline-none shadow-inner border border-[#c1ccab] focus:ring-2 focus:ring-[#4a5e3b]/50">
-                <button type="button" id="addPrescriptionBtn"
-                  class="shrink-0 px-4 rounded-full bg-[#667733] hover:bg-[#556022] text-white font-bold text-sm transition">+ Add</button>
-              </div>
-            </div>
+            <input type="text" id="medicationNameInput" placeholder="Medication name"
+            class="min-w-0 flex-1 px-4 py-2.5 rounded-full bg-white text-[#2c3e2b] font-medium text-sm outline-none shadow-inner border border-[#c1ccab] focus:ring-2 focus:ring-[#4a5e3b]/50">
+            <input type="text" id="dosageInput" placeholder="Dosage (optional)"
+      class="min-w-0 sm:w-40 px-4 py-2.5 rounded-full bg-white text-[#2c3e2b] font-medium text-sm outline-none shadow-inner border border-[#c1ccab] focus:ring-2 focus:ring-[#4a5e3b]/50">
+    <button type="button" id="addPrescriptionBtn"
+      class="shrink-0 w-full sm:w-auto px-4 py-2.5 whitespace-nowrap rounded-full bg-[#667733] hover:bg-[#556022] text-white font-bold text-sm transition">+ Add</button>
+  </div>
+</div>
 
             <div class="flex flex-col gap-1.5 md:col-span-2">
               <label class="text-[11px] font-extrabold tracking-wider text-[#2c3e2b] uppercase">Allergies / Historical Allergies:</label>
