@@ -933,6 +933,103 @@ function populateSortDropdown() {
     populateSortDropdown();
     renderTable();
     activateTab('session');
+
+    
+const escHtml = s => String(s ?? '').replace(/[&<>"']/g, c =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+ 
+function buildPrintableRecord(p) {
+    const listText = (arr, fmt) => (arr && arr.length ? arr.map(fmt).join(', ') : 'None');
+    const row = (label, value) =>
+        `<tr><td>${label}</td><td>${escHtml(value) || '&mdash;'}</td></tr>`;
+ 
+    const conditions    = listText(p.health_conditions, c => c.description);
+    const allergies     = listText(p.allergies, a => a.allergen);
+    const prescriptions = listText(p.prescriptions,
+        rx => (rx.dosage ? `${rx.medication_name} (${rx.dosage})` : rx.medication_name));
+ 
+    // Read the textarea so notes that haven't been saved yet are included
+    const todayNote = p.ongoing_appointment
+        ? document.getElementById('mNotes').value.trim()
+        : '';
+ 
+    const visits = (p.past_appointments || []).map(a => `
+        <div class="visit">
+            <div class="visit-head">
+                <strong>${escHtml(a.appointment_date)}</strong>
+                <span>${escHtml(a.service_label)}</span>
+            </div>
+            <div><b>Patient concern:</b> ${escHtml(a.patient_note) || 'None noted'}</div>
+            <div><b>Dentist note:</b> ${escHtml(a.dentist_note) || 'No notes recorded'}</div>
+        </div>`).join('') || '<p class="muted">No previous visits recorded.</p>';
+ 
+    return `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Patient Record - ${escHtml(p.public_id || p.patient_id)}</title>
+<style>
+    @page { margin: 16mm; }
+    body { font-family: Arial, sans-serif; color: #2A1001; font-size: 13px; line-height: 1.45; }
+    h1 { font-size: 22px; margin: 0 0 4px; }
+    h2 { font-size: 15px; margin: 22px 0 8px; padding-bottom: 4px; border-bottom: 2px solid #667733; }
+    .muted { color: #666; font-size: 11px; }
+    table.info { width: 100%; border-collapse: collapse; }
+    table.info td { padding: 5px 8px; border-bottom: 1px solid #ddd; vertical-align: top; }
+    table.info td:first-child { width: 190px; font-weight: bold; }
+    .note { white-space: pre-wrap; border: 1px solid #ccc; border-radius: 6px; padding: 8px 12px; }
+    .visit { border: 1px solid #ccc; border-radius: 6px; padding: 8px 12px; margin-bottom: 8px; page-break-inside: avoid; }
+    .visit-head { display: flex; justify-content: space-between; margin-bottom: 4px; }
+</style>
+</head>
+<body>
+    <h1>Patient Record</h1>
+    <p class="muted">${escHtml(p.public_id || '')} &middot; Printed ${escHtml(new Date().toLocaleString())}</p>
+ 
+    <h2>Personal Information</h2>
+    <table class="info">
+        ${row('First name', p.first_name)}
+        ${row('Last name', p.last_name)}
+        ${row('Sex', p.sex)}
+        ${row('Birthday', p.birthday)}
+        ${row('Email', p.email)}
+        ${row('Phone number', p.phone)}
+        ${row('Civil status', p.civil_status)}
+    </table>
+ 
+    <h2>Medical Information</h2>
+    <table class="info">
+        ${row('Pre-existing conditions', conditions)}
+        ${row('Pregnancy status', p.pregnancy_status)}
+        ${row('Current prescriptions', prescriptions)}
+        ${row('Allergies', allergies)}
+    </table>
+ 
+    ${todayNote ? `<h2>Today's Session</h2><div class="note">${escHtml(todayNote)}</div>` : ''}
+ 
+    <h2>Past Visits</h2>
+    ${visits}
+</body>
+</html>`;
+}
+ 
+document.getElementById('printPdfBtn').addEventListener('click', () => {
+    const p = patients.find(p => p.patient_id == currentPatientId);
+    if (!p) return;
+ 
+    // Remove the frame from any previous print
+    document.getElementById('printFrame')?.remove();
+ 
+    const frame = document.createElement('iframe');
+    frame.id = 'printFrame';
+    frame.style.cssText = 'position:fixed; right:0; bottom:0; width:0; height:0; border:0;';
+    frame.onload = () => {
+        frame.contentWindow.focus();
+        frame.contentWindow.print();
+    };
+    frame.srcdoc = buildPrintableRecord(p);
+    document.body.appendChild(frame);
+});
 </script>
 
 </body>
