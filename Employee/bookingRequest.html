@@ -8,7 +8,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://kit.fontawesome.com/fc8c3f4103.js" crossorigin="anonymous"></script>
     <script src="/Taskbar/Employee_Sidebar.js"></script>
-    <script src="Messages.js"></script>
+<!--    <script src="Messages.js"></script>-->
 </head>
 
 <body class="min-h-screen bg-[#F3EFE4] relative flex flex-col md:flex-row text-[#2A1001]">
@@ -606,11 +606,12 @@
 */
 
     // Card button delegation
-    document.getElementById('booking-container').addEventListener('click', async function (e) { //===========================TEMP!!!! REPLACE
+    document.getElementById('booking-container').addEventListener('click', async function (e) {
         const btn = e.target.closest('button');
         if (!btn) return;
         const id = btn.dataset.id;
         if (!id) return;
+        const token = localStorage.getItem('userToken');
 
         if (btn.classList.contains('rescheduleDirectBtn')) {
             openRescheduleModal(id);
@@ -618,13 +619,27 @@
         }
 
         if (btn.classList.contains('acceptBtn')) {
-            try {
-
-                bookings = bookings.filter(b => b.appointment_id != id);
-                renderBookings();
-            } catch (error) {
-                console.error(error);
-                alert("Could not accept booking on the server.");
+            if (confirm('Approve this booking request?')) {
+                try {
+                    const response = await fetch(`/api/appointments/${id}/status`, {
+                        method: 'PATCH',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify({ appointment_status: 'approved' })
+                    });
+                    if (!response.ok) {
+                        const err = await response.json();
+                        throw new Error(err.message || 'Failed to approve appointment');
+                    }
+                    alert('Appointment approved successfully!');
+                    await loadBookingsFromDatabase();
+                    await loadOccupiedSlotsFromDatabase();
+                } catch (error) {
+                    console.error("Accept error:", error);
+                    alert("Could not accept booking: " + error.message);
+                }
             }
         }
 
@@ -651,63 +666,6 @@
         }
     });
 
-    /*
-
-    document.getElementById('booking-container').addEventListener('click', async function (e) {
-    const btn = e.target.closest('button');
-    if (!btn) return;
-    const id = btn.dataset.id; // Exactly appointments.appointment_id
-    if (!id) return;
-    const token = localStorage.getItem('userToken');
-    // Direct Reschedule
-    if (btn.classList.contains('rescheduleDirectBtn')) {
-        openRescheduleModal(id);
-        return;
-    }
-    // ACCEPT
-    if (btn.classList.contains('acceptBtn')) {
-        if (confirm('Approve this booking request?')) {
-            try {
-                const response = await fetch(`/api/appointments/${id}/status`, {
-                    method: 'PATCH',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify({ appointment_status: 'approved' })
-                });
-                if (!response.ok) throw new Error('Failed to approve appointment');
-                alert('Appointment approved successfully!');
-                await loadBookingsFromDatabase();
-                await loadOccupiedSlotsFromDatabase();
-            } catch (error) {
-                console.error("Accept error:", error);
-                alert("Could not accept booking: " + error.message);
-            }
-        }
-    }
-    // DECLINE
-    if (btn.classList.contains('declineBtn')) {
-        pendingDeclineId = id;
-        const booking = bookings.find(b => b.appointment_id == id);
-        if (!booking) return;
-        document.getElementById('declineModalText').textContent =
-            `Are you sure you want to decline the booking request from ${booking.first_name} ${booking.last_name}? This cannot be undone.`;
-        const paidWarning = document.getElementById('paidWarning');
-        const rescheduleBtn = document.getElementById('rescheduleBtn');
-        if (booking.payment_status === 'paid') {
-            paidWarning.classList.remove('hidden');
-            rescheduleBtn.classList.remove('hidden');
-        } else {
-            paidWarning.classList.add('hidden');
-            rescheduleBtn.classList.add('hidden');
-        }
-        document.getElementById('declineModal').classList.remove('hidden');
-    }
-});
-
-*/
-
     document.getElementById('cancelDeclineBtn').addEventListener('click', () => {
         pendingDeclineId = null;
         document.getElementById('declineModal').classList.add('hidden');
@@ -715,9 +673,26 @@
 
     document.getElementById('confirmDeclineBtn').addEventListener('click', async () => {
         if (pendingDeclineId) {
-
-            bookings = bookings.filter(b => b.appointment_id != pendingDeclineId);
-            renderBookings();
+            try {
+                const token = localStorage.getItem('userToken');
+                const response = await fetch(`/api/appointments/${pendingDeclineId}/status`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ appointment_status: 'cancelled' })
+                });
+                if (!response.ok) {
+                    const err = await response.json();
+                    throw new Error(err.message || 'Failed to decline appointment');
+                }
+                await loadBookingsFromDatabase();
+                await loadOccupiedSlotsFromDatabase();
+            } catch (error) {
+                console.error("Decline error:", error);
+                alert("Could not decline booking: " + error.message);
+            }
         }
         pendingDeclineId = null;
         document.getElementById('declineModal').classList.add('hidden');

@@ -4,62 +4,62 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Queue</title>
-     <link href="/output.css" rel="stylesheet">
+    <link href="/output.css" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://kit.fontawesome.com/fc8c3f4103.js" crossorigin="anonymous"></script>
     <script src="/Taskbar/Employee_Sidebar.js"></script>
-    <script src="Messages.js"></script>
+<!--    <script src="Messages.js"></script>-->
 </head>
 <body class="min-h-screen bg-[#F3EFE4] relative">
-   
-<div id="sidebar-placeholder"></div>
-    <script>
-      (async () => {
-        try {
-          const response = await fetch('/Taskbar/Employee_Task.html');
-          if (response.ok) {
-            const data = await response.text();
-            document.getElementById('sidebar-placeholder').innerHTML = data;
-            const currentPage = window.location.pathname.split("/").pop();
-            document.querySelectorAll('.nav-link').forEach(link => {
-              if (link.getAttribute('data-page') === currentPage) {
-                link.classList.add('bg-[#FDFCE9]');
-              }
-            });
-            if (typeof initSidebar === 'function') {
-              initSidebar();
-            }
-          }
-        } catch (error) {
-          console.log('Sidebar fallback:', error);
-        }
-      })();
-    </script>
 
-    <!--Header with logo-->
+<div id="sidebar-placeholder"></div>
+<script>
+    (async () => {
+        try {
+            const response = await fetch('/Taskbar/Employee_Task.html');
+            if (response.ok) {
+                const data = await response.text();
+                document.getElementById('sidebar-placeholder').innerHTML = data;
+                const currentPage = window.location.pathname.split("/").pop();
+                document.querySelectorAll('.nav-link').forEach(link => {
+                    if (link.getAttribute('data-page') === currentPage) {
+                        link.classList.add('bg-[#FDFCE9]');
+                    }
+                });
+                if (typeof initSidebar === 'function') {
+                    initSidebar();
+                }
+            }
+        } catch (error) {
+            console.log('Sidebar fallback:', error);
+        }
+    })();
+</script>
+
+<!--Header with logo-->
 <div class="flex justify-between items-start pt-5 pl-6 pr-4 md:pl-24 md:pr-8">
-        
-        <h1 class="text-2xl sm:text-3xl md:text-5xl 2xl:text-[73px] pt-5 font-bold text-[#2A1001] font-['Poppins']">
-            Queue Appointments
-        </h1>
-        <img
+
+    <h1 class="text-2xl sm:text-3xl md:text-5xl 2xl:text-[73px] pt-5 font-bold text-[#2A1001] font-['Poppins']">
+        Queue Appointments
+    </h1>
+    <img
             src="../assets/logowithtitle.png"
             class="w-20 sm:w-24 md:w-28 h-auto object-contain shrink-0"
             alt="Logo"/>
-    </div>
-   <hr class="border-t border-[#2A1001] mt-2 mb-6" />
+</div>
+<hr class="border-t border-[#2A1001] mt-2 mb-6" />
 
-    <!--Search Bar-->
-  <div class="flex w-full justify-center">
-  <input
-    type="text"
-    id="searchInput"
-    placeholder="Search by name..."
-    class="h-10 w-full max-w-md rounded-full border border-[#2A1001]/20 bg-white px-4 mb-6 outline-none"
-  />
+<!--Search Bar-->
+<div class="flex w-full justify-center">
+    <input
+            type="text"
+            id="searchInput"
+            placeholder="Search by name..."
+            class="h-10 w-full max-w-md rounded-full border border-[#2A1001]/20 bg-white px-4 mb-6 outline-none"
+    />
 </div>
 
-    <!--Filter Cards-->
+<!--Filter Cards-->
 <div class="flex flex-wrap gap-4 mb-8 justify-center">
     <button data-filter="pending" class="filter-btn bg-[#F1B770] text-center px-6 py-3 rounded-2xl font-bold text-[#2A1001] min-w-[110px] shadow-lg
        transition-all duration-200 ease-in-out 
@@ -93,126 +93,82 @@
     </button>
 </div>
 
-    <!--Queue Table-->
-    <div class="overflow-x-auto rounded-3xl w-full md:w-[80%] mx-auto shadow-xl">
-         <table class="w-full border-collapse">
-                <thead>
-                    <tr class="bg-[#667733] text-white">
-                        <th class="text-center py-3 px-4 rounded-tl-2xl">Name</th>
-                        <th class="text-center py-3 px-4">Phone Number</th>
-                        <th class="text-center py-3 px-4">Service</th>
-                        <th class="text-center py-3 px-4 rounded-tr-2xl">Status</th>
-                    </tr>
-                </thead>
-                <tbody id="tableBody" class="bg-[#ECF5E2]">
-                    <!-- rows injected by JS -->
-                </tbody>
-            </table>
-        </div>
+<!--Queue Table-->
+<div class="overflow-x-auto rounded-3xl w-full md:w-[80%] mx-auto shadow-xl">
+    <table class="w-full border-collapse">
+        <thead>
+        <tr class="bg-[#667733] text-white">
+            <th class="text-center py-3 px-4 rounded-tl-2xl">Name</th>
+            <th class="text-center py-3 px-4">Phone Number</th>
+            <th class="text-center py-3 px-4">Service</th>
+            <th class="text-center py-3 px-4 rounded-tr-2xl">Status</th>
+        </tr>
+        </thead>
+        <tbody id="tableBody" class="bg-[#ECF5E2]">
+        <!-- rows injected by JS -->
+        </tbody>
+    </table>
+</div>
 
-        <!-- PAGINATION -->
-        <div class="flex justify-center gap-2 my-8" id="pagination">
-            
-        </div>
+<!-- PAGINATION -->
+<div class="flex justify-center gap-2 my-8" id="pagination">
 
-    </div>
+</div>
+
+</div>
 
 <script>
 
-//connection to database and fetch data from the database TEMP MUNA==================================================================================================LOOKKKKK REPLACE THIS KAY
+    // For getting the data from the backend and booking request
+    let appointments = [];
 
     async function getAppointments() {
-        return appointments;
-  
+        try {
+            const token = localStorage.getItem('userToken');
+
+            const response = await fetch('/api/appointments/queue', {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`Server error: ${response.status}`);
+            }
+
+            return await response.json();
+
+        } catch (error) {
+            console.error("Failed to load appointments:", error);
+            return [];
+        }
     }
 
     async function updateAppointmentStatus(appointmentId, newStatus) {
-        const appt = appointments.find(a => a.appointment_id === appointmentId);
-        if (appt) appt.queue_status = newStatus;
-    
-    }
+        try {
+            const token = localStorage.getItem('userToken');
 
+            const response = await fetch(`/api/appointments/${appointmentId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ queue_status: newStatus })
+            });
 
-    //patry lng baka di gumana==================================================================================================================================================LOOKKKKKKK USE THIS
-/*
-// For getting the data from the backend and booking request
-let appointments = [];
-
-async function getAppointments() {
-    try {
-        // Retrieve the token 
-        const token = localStorage.getItem('userToken');
-
-        // Call the backend API endpoint with the Authorization header
-        const response = await fetch('/api/appointments', {
-            method: 'GET',
-            headers: {
-                'Authorization': `Bearer ${token}` 
+            if (!response.ok) {
+                throw new Error(`Server error: ${response.status}`);
             }
-        });
-        
-        // Check if the response is ok (will fail if token is missing or expired)
-        if (!response.ok) {
-            throw new Error(`Server error: ${response.status}`);
+
+            return true;
+
+        } catch (error) {
+            console.error("Failed to update appointment status:", error);
+            return false;
         }
-        
-        // Parse the JSON data from the response
-        const realAppointments = await response.json();
-        
-        // Return the real appointments data to be used in the UI
-        return realAppointments;
-        
-    } catch (error) {
-        // Log the error to the console for debugging purposes
-        console.error("Failed to load appointments:", error);
-        return []; 
     }
-}
-
-async function updateAppointmentStatus(appointmentId, newStatus) {
-    try {
-        // Retrieve the JWT token from local storage for authentication
-        const token = localStorage.getItem('userToken'); 
-
-        // Call the backend API endpoint to update the appointment status
-        const response = await fetch(`/api/appointments/${appointmentId}`, {
-            method: 'PUT', 
-            headers: { 
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}` // The required JWT security header
-            },
-            body: JSON.stringify({ queue_status: newStatus }) 
-        });
-        
-        if (!response.ok) {
-            // This will catch 401 Unauthorized or 403 Forbidden errors if the token is invalid
-            throw new Error(`Server error: ${response.status}`);
-        }
-        
-        return true; // Return true if the update was successful
-        
-    } catch (error) {
-        // Log the error to the console for debugging purposes
-        console.error("Failed to update appointment status:", error);
-        return false; // Return false if the update failed
-    }
-}
-*/
-
-
- //temp to be replaced by backend later, tried my best to match the id's from the database.======================================================================================LOOKIEEEEEEEEEEEEEEEEEEEEEEEE
-    let appointments = [
-        { appointment_id: 1, first_name: "Juan", last_name: "Dela Cruz", phone: "0917 123 4567", label: "Cleaning", queue_status: "pending" },
-        { appointment_id: 2, first_name: "Maria", last_name: "Santos", phone: "0918 234 5678", label: "Pasta", queue_status: "ongoing" },
-        { appointment_id: 3, first_name: "Pedro", last_name: "Reyes", phone: "0919 345 6789", label: "Checkup", queue_status: "ongoing" },
-        { appointment_id: 4, first_name: "Ana", last_name: "Cruz", phone: "0920 456 7890", label: "Cleaning", queue_status: "pending" },
-        { appointment_id: 5, first_name: "Jose", last_name: "Garcia", phone: "0921 567 8901", label: "Whitening", queue_status: "waiting" },
-        { appointment_id: 6, first_name: "Liza", last_name: "Torres", phone: "0922 678 9012", label: "Cleaning", queue_status: "waiting" },
-        { appointment_id: 7, first_name: "Mark", last_name: "Ramos", phone: "0923 789 0123", label: "Checkup", queue_status: "pending" },
-        { appointment_id: 8, first_name: "Carla", last_name: "Mendoza", phone: "0924 890 1234", label: "Cleaning", queue_status: "ongoing" },
-        { appointment_id: 9, first_name: "Paolo", last_name: "Villanueva", phone: "0925 901 2345", label: "Whitening", queue_status: "completed" },
-        { appointment_id: 10, first_name: "Grace", last_name: "Lim", phone: "0926 012 3456", label: "Checkup", queue_status: "completed" }
-    ];
 
     const statusColors = { //for the dropdown background colors
         "pending": "bg-[#E8A55C]",
@@ -244,15 +200,15 @@ async function updateAppointmentStatus(appointmentId, newStatus) {
         });
     }
 
-    
-//renders the counts of each status in the filter buttons
+
+    //renders the counts of each status in the filter buttons
     function renderCounts() {
         document.getElementById('countPending').textContent = appointments.filter(a => a.queue_status === "pending").length;
         document.getElementById('countWaiting').textContent = appointments.filter(a => a.queue_status === "waiting").length;
         document.getElementById('countOngoing').textContent = appointments.filter(a => a.queue_status === "ongoing").length;
         document.getElementById('countCompleted').textContent = appointments.filter(a => a.queue_status === "completed").length;
     }
-//renders the table based on the current filter and search term, also handles pagination
+    //renders the table based on the current filter and search term, also handles pagination
     function renderTable() {
         const filtered = getFiltered();
         const start = (currentPage - 1) * rowsPerPage;
@@ -284,16 +240,24 @@ async function updateAppointmentStatus(appointmentId, newStatus) {
         renderPagination(filtered.length);
     }
 
-//event listener for the status dropdown change, updates the appointment status and re-renders the counts and table
+    //event listener for the status dropdown change, updates the appointment status and re-renders the counts and table
     document.getElementById('tableBody').addEventListener('change', async function (e) {
         if (e.target.classList.contains('statusSelect')) {
             const id = Number(e.target.dataset.id);
-            await updateAppointmentStatus(id, e.target.value);
-            renderCounts();
-            renderTable();
+            const newStatus = e.target.value;
+
+            const success = await updateAppointmentStatus(id, newStatus);
+            if (success) {
+                // Update local array directly for faster/cleaner UI refresh
+                const appt = appointments.find(a => a.appointment_id === id);
+                if (appt) appt.queue_status = newStatus;
+
+                renderCounts();
+                renderTable();
+            }
         }
     });
-//renders the pagination buttons based on the current page and total items
+    //renders the pagination buttons based on the current page and total items
     function renderPagination(totalItems) {
         const totalPages = Math.max(1, Math.ceil(totalItems / rowsPerPage));
         const pagination = document.getElementById('pagination');
@@ -329,25 +293,28 @@ async function updateAppointmentStatus(appointmentId, newStatus) {
         }
     }
 
-//filter buttons
+    //filter buttons
     document.querySelectorAll('.filter-btn').forEach(btn => {
         btn.addEventListener('click', function () {
-            currentFilter = this.dataset.filter; 
+            currentFilter = this.dataset.filter;
             currentPage = 1;
             renderTable();
         });
     });
-//search input
+    //search input
     document.getElementById('searchInput').addEventListener('input', function () {
         currentSearch = this.value;
         currentPage = 1;
         renderTable();
     });
 
-//initial render of counts and table
+    //initial render of counts and table
 
-    renderCounts();
-    renderTable();
+    (async function init() {
+        appointments = await getAppointments();
+        renderCounts();
+        renderTable();
+    })();
 </script>
 </body>
 </html>

@@ -8,6 +8,7 @@ const registerPatientProfileRoute = require("./Customer/CustomerProfile");
 const registerBookingRoute = require("./Customer/BookingRoutes");
 const registerEmployeeProfileRoute = require("./Employee/EmployeeProfile");
 const registerBookingRequestRoutes = require("./Employee/BookingRequest");
+const registerQueueRoutes = require("./Employee/QueueRoutes");
 
 const app = express();
 app.use(express.json());
@@ -18,6 +19,7 @@ registerPatientProfileRoute(app, db);
 registerBookingRoute(app, db);
 registerEmployeeProfileRoute(app, db);
 registerBookingRequestRoutes(app, db);
+registerQueueRoutes(app, db);
 
 app.use(express.static(path.join(__dirname)));
 app.use(express.static(path.join(__dirname, "images")));

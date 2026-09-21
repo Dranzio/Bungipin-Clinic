@@ -7,7 +7,8 @@ const mysqlPool = mysql.createPool({
     database: 'dental_appointments',
     waitForConnections: true,
     connectionLimit: 10,
-    queueLimit: 0
+    queueLimit: 0,
+    dateStrings: true
 })
 
 const promisePool = mysqlPool.promise();
