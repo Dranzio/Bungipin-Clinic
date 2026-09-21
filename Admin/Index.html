@@ -78,7 +78,7 @@
                     <div class="bg-white border-2 border-[#1A1008] rounded-2xl p-5 h-[310px]">
 
                         <h2 class="font-bold text-[#2A1001] mb-2">
-                            Patients showing up in appointments
+                            Appointment Status
                         </h2>
 
                         <div class="w-full h-[200px]">
@@ -139,73 +139,10 @@
     </div>
 
     <script>
-        //WAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-        //Num Patients Data
-        const weeklyData = {
-            labels: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Staurday", "Sunday"],
-            
-            //WAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-            //Insert Weekly Data here
-            data: [25, 30, 54, 67, 44, 23, 10]
-        }
-        
-        const monthlyData = {
-            labels: ["Week 1", "Week 2", "Week 3", "Week 4", "Week 5"],
-
-            //WAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-            //Insert MonthlyData here
-            data: [250, 300, 450, 120, 90]
-        }
-
-        const yearlyData = {
-            labels: ["2022", "2023", "2024", "2025", "2026",],
-            
-            //WAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-            //Insert Yearly Data Here
-            data: [500, 600, 250, 350, 2030]
-        }
-
-
-        //WAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-        //Transaction Data
-        const weektransData = {
-            labels: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
-
-            data: [55000, 45000, 36000, 120000, 10, 2000, 3000]
-        }
-        const monthtransData = {
-            labels: ["Week-1", "Week-2", "Week-3", "Week-4", "Week-5"],
-
-            data: [550000, 4500, 3600, 9000, 1000]
-        }
-        const yeartransData = {
-            labels: ["2022", "2023", "2024", "2025", "2026"],
-
-            data: [55000, 45000, 36000, 120000, 10]
-        }
-
-        const appointmentData = {
-            labels: [
-                'Patients showed up',
-                'Patients did not attend'
-            ],
-            data: [65.6, 34.5]
-        }
-
-        const serviceData = {
-            labels: [
-                'Cleaning',
-                'Pasta',
-                'Whitening',
-                'Checkup'
-            ],
-            data: [32, 28, 15, 5]
-        }
-
-        const NumPatients = document.getElementById('NumPatRev'); //Number of patients chart
-        const appointChart = document.getElementById('appointmentChart'); //Appointment chart
-        const servChart = document.getElementById('servChart'); //Most Requested Service chart
-        const TransactionRep = document.getElementById('TransactionRep'); //Transaction Report chart
+        const NumPatients = document.getElementById('NumPatRev');
+        const appointChart = document.getElementById('appointmentChart');
+        const servChart = document.getElementById('servChart');
+        const TransactionRep = document.getElementById('TransactionRep');
 
         const numweeklyBtn = document.getElementById('numweeklyBtn');
         const nummonthlyBtn = document.getElementById('nummonthlyBtn');
@@ -215,201 +152,218 @@
         const transmonthlyBtn = document.getElementById('transmonthlyBtn');
         const transyearlyBtn = document.getElementById('transyearlyBtn');
 
+        let NumPatRev;
+        let appointmentChart;
+        let serviceChart;
+        let TransactionChart;
 
-        let NumPaColoRate = weeklyData.data.map(value => {
-            if (value <= 10) {
-                return '#FA8D8D';
-            } else if (value <= 20) {
-                return '#D5C04D';
-            } else if (value <= 40) {
-                return '#D3D078';
-            } else {
-                return '#88925F';
-            }
-        });
+        function setPatientButton(activeButton) {
+            [numweeklyBtn, nummonthlyBtn, numyearlyBtn].forEach(btn => {
+                btn.classList.remove('bg-[#88925F]', 'text-white');
+                btn.classList.add('bg-gray-200', 'text-[#2A1001]');
+            });
 
-        const NumPatRev = new Chart(NumPatients, {
-            type: 'bar',
-            data: {
-                labels: weeklyData.labels,
-                datasets: [{
-                    label: 'Number of users',
-                    data: weeklyData.data,
-                    backgroundColor: NumPaColoRate,
-                    borderRadius: 8
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false
-            }
-        });
+            activeButton.classList.remove('bg-gray-200', 'text-[#2A1001]');
+            activeButton.classList.add('bg-[#88925F]', 'text-white');
+        }
 
-        const appointmentChart = new Chart(appointChart, {
-            type: 'pie',
-            data: {
-                labels: appointmentData.labels,
+        function setTransactionButton(activeButton) {
+            [transweeklyBtn, transmonthlyBtn, transyearlyBtn].forEach(btn => {
+                btn.classList.remove('bg-[#88925F]', 'text-white');
+                btn.classList.add('bg-gray-200', 'text-[#2A1001]');
+            });
 
-                datasets: [{
-                    data: appointmentData.data,
-                    backgroundColor: [
-                        '#D7E3A5',
-                        '#FA8D8D'
-                    ],
-                    borderColor: '#2A1001',
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugin: {
-                    legend: {
-                        position: 'right'
+            activeButton.classList.remove('bg-gray-200', 'text-[#2A1001]');
+            activeButton.classList.add('bg-[#88925F]', 'text-white');
+        }
+
+        function buildPatientColors(data) {
+            return data.map(value => {
+                if (value <= 10) {
+                    return '#FA8D8D';
+                } else if (value <= 20) {
+                    return '#D5C04D';
+                } else if (value <= 40) {
+                    return '#D3D078';
+                } else {
+                    return '#88925F';
+                }
+            });
+        }
+
+        function createCharts(data) {
+            NumPatRev = new Chart(NumPatients, {
+                type: 'bar',
+                data: {
+                    labels: data.patients.labels,
+                    datasets: [{
+                        label: 'Number of patients',
+                        data: data.patients.data,
+                        backgroundColor: buildPatientColors(data.patients.data),
+                        borderRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false
+                }
+            });
+
+            appointmentChart = new Chart(appointChart, {
+                type: 'pie',
+                data: {
+                    labels: data.appointments.labels,
+                    datasets: [{
+                        data: data.appointments.data,
+                        backgroundColor: [
+                            '#D5C04D',
+                            '#A2AC89',
+                            '#D7E3A5',
+                            '#FA8D8D'
+                        ],
+                        borderColor: '#2A1001',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right'
+                        }
                     }
                 }
-            }
-        })
+            });
 
-        const serviceChart = new Chart(servChart, {
-            type: 'pie',
-            data: {
-                labels: serviceData.labels,
-
-                datasets: [{
-                    data: serviceData.data,
-                    backgroundColor: [
-                        '#D7E3A5',
-                        '#FA8D8D',
-                        '#D5C04D',
-                        '#A2AC89'
-                    ],
-                    borderColor: '#2A1001',
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugin: {
-                    legend: {
-                        position: 'right'
+            serviceChart = new Chart(servChart, {
+                type: 'pie',
+                data: {
+                    labels: data.services.labels,
+                    datasets: [{
+                        data: data.services.data,
+                        backgroundColor: [
+                            '#D7E3A5',
+                            '#FA8D8D',
+                            '#D5C04D',
+                            '#A2AC89',
+                            '#88925F',
+                            '#C7B9A0'
+                        ],
+                        borderColor: '#2A1001',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right'
+                        }
                     }
                 }
+            });
+
+            TransactionChart = new Chart(TransactionRep, {
+                type: 'line',
+                data: {
+                    labels: data.transactions.labels,
+                    datasets: [{
+                        label: 'Money',
+                        data: data.transactions.data,
+                        borderColor: '#88925F'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false
+                }
+            });
+        }
+
+        async function loadDashboard(period) {
+            const token = localStorage.getItem('userToken');
+
+            if (!token) {
+                alert('Please log in as an admin.');
+                return;
             }
-        })
 
-        const TransactionChart = new Chart(TransactionRep, {
-            type: 'line',
-            data:  {
-                labels: weektransData.labels,
-                datasets: [{
-                    label: 'Money',
-                    data: weektransData.data,
-                    borderColor: '#88925F'
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false
+            try {
+                const response = await fetch(`/api/admin/dashboard?period=${period}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.message || `Server error: ${response.status}`);
+                }
+
+                const data = await response.json();
+
+                if (!NumPatRev) {
+                    createCharts(data);
+                    return;
+                }
+
+                NumPatRev.data.labels = data.patients.labels;
+                NumPatRev.data.datasets[0].data = data.patients.data;
+                NumPatRev.data.datasets[0].backgroundColor = buildPatientColors(data.patients.data);
+                NumPatRev.update();
+
+                appointmentChart.data.labels = data.appointments.labels;
+                appointmentChart.data.datasets[0].data = data.appointments.data;
+                appointmentChart.update();
+
+                serviceChart.data.labels = data.services.labels;
+                serviceChart.data.datasets[0].data = data.services.data;
+                serviceChart.update();
+
+                TransactionChart.data.labels = data.transactions.labels;
+                TransactionChart.data.datasets[0].data = data.transactions.data;
+                TransactionChart.update();
+
+            } catch (error) {
+                console.error('Failed to load dashboard:', error);
+                alert('Could not load dashboard data: ' + error.message);
             }
-        })
+        }
 
-        numweeklyBtn.addEventListener('click', function () {
-            NumPatRev.data.labels = weeklyData.labels;
-            NumPatRev.data.datasets[0].data = weeklyData.data;
+        numweeklyBtn.addEventListener('click', async function () {
+            setPatientButton(numweeklyBtn);
+            await loadDashboard('weekly');
+        });
 
-            NumPatRev.update();
+        nummonthlyBtn.addEventListener('click', async function () {
+            setPatientButton(nummonthlyBtn);
+            await loadDashboard('monthly');
+        });
 
-            numweeklyBtn.classList.remove('bg-gray-200', 'text-[#2A1001]');
-            numweeklyBtn.classList.add('bg-[#88925F]', 'text-white');
+        numyearlyBtn.addEventListener('click', async function () {
+            setPatientButton(numyearlyBtn);
+            await loadDashboard('yearly');
+        });
 
-            nummonthlyBtn.classList.remove('bg-[#88925F]', 'text-white');
-            nummonthlyBtn.classList.add('bg-gray-200', 'text-[#2A1001]');
+        transweeklyBtn.addEventListener('click', async function () {
+            setTransactionButton(transweeklyBtn);
+            await loadDashboard('weekly');
+        });
 
-            numyearlyBtn.classList.remove('bg-[#88925F]', 'text-white');
-            numyearlyBtn.classList.add('bg-gray-200', 'text-[#2A1001]');
-        })
+        transmonthlyBtn.addEventListener('click', async function () {
+            setTransactionButton(transmonthlyBtn);
+            await loadDashboard('monthly');
+        });
 
-        nummonthlyBtn.addEventListener('click', function () {
-            NumPatRev.data.labels = monthlyData.labels;
-            NumPatRev.data.datasets[0].data = monthlyData.data;
-            NumPatRev.update();
+        transyearlyBtn.addEventListener('click', async function () {
+            setTransactionButton(transyearlyBtn);
+            await loadDashboard('yearly');
+        });
 
-            numweeklyBtn.classList.remove('bg-[#88925F]', 'text-white');
-            numweeklyBtn.classList.add('bg-gray-200', 'text-[#2A1001]');
+        loadDashboard('weekly');
 
-            nummonthlyBtn.classList.remove('bg-gray-200', 'text-[#2A1001]');
-            nummonthlyBtn.classList.add('bg-[#88925F]', 'text-white');
-
-            numyearlyBtn.classList.remove('bg-[#88925F]', 'text-white');
-            numyearlyBtn.classList.add('bg-gray-200', 'text-[#2A1001]');
-        })
-
-        numyearlyBtn.addEventListener('click', function () {
-            NumPatRev.data.labels = yearlyData.labels;
-            NumPatRev.data.datasets[0].data = yearlyData.data;
-            NumPatRev.update();
-
-            numweeklyBtn.classList.remove('bg-[#88925F]', 'text-white');
-            numweeklyBtn.classList.add('bg-gray-200', 'text-[#2A1001]');
-
-            nummonthlyBtn.classList.remove('bg-[#88925F]', 'text-white');
-            nummonthlyBtn.classList.add('bg-gray-200', 'text-[#2A1001]');
-
-            numyearlyBtn.classList.remove('bg-gray-200', 'text-[#2A1001]');
-            numyearlyBtn.classList.add('bg-[#88925F]', 'text-white');
-        })
-
-
-
-        
-
-        transweeklyBtn.addEventListener('click', function () {
-            TransactionChart.data.labels = weektransData.labels;
-            TransactionChart.data.datasets[0].data = weektransData.data;
-            TransactionChart.update();
-
-            transweeklyBtn.classList.remove('bg-gray-200', 'text-[#2A1001]');
-            transweeklyBtn.classList.add('bg-[#88925F]', 'text-white');
-
-            transmonthlyBtn.classList.remove('bg-[#88925F]', 'text-white');
-            transmonthlyBtn.classList.add('bg-gray-200', 'text-[#2A1001]');
-
-            transyearlyBtn.classList.remove('bg-[#88925F]', 'text-white');
-            transyearlyBtn.classList.add('bg-gray-200', 'text-[#2A1001]');
-        })
-
-        transmonthlyBtn.addEventListener('click', function () {
-            TransactionChart.data.labels = monthtransData.labels;
-            TransactionChart.data.datasets[0].data = monthtransData.data;
-            TransactionChart.update();
-
-            transweeklyBtn.classList.remove('bg-[#88925F]', 'text-white');
-            transweeklyBtn.classList.add('bg-gray-200', 'text-[#2A1001]');
-
-            transmonthlyBtn.classList.remove('bg-gray-200', 'text-[#2A1001]');
-            transmonthlyBtn.classList.add('bg-[#88925F]', 'text-white');
-
-            transyearlyBtn.classList.remove('bg-[#88925F]', 'text-white');
-            transyearlyBtn.classList.add('bg-gray-200', 'text-[#2A1001]');
-        })
-
-        transyearlyBtn.addEventListener('click', function () {
-            TransactionChart.data.labels = yeartransData.labels;
-            TransactionChart.data.datasets[0].data = yeartransData.data;
-            TransactionChart.update();
-
-            transweeklyBtn.classList.remove('bg-[#88925F]', 'text-white');
-            transweeklyBtn.classList.add('bg-gray-200', 'text-[#2A1001]');
-
-            transmonthlyBtn.classList.remove('bg-[#88925F]', 'text-white');
-            transmonthlyBtn.classList.add('bg-gray-200', 'text-[#2A1001]');
-
-            transyearlyBtn.classList.remove('bg-gray-200', 'text-[#2A1001]');
-            transyearlyBtn.classList.add('bg-[#88925F]', 'text-white');
-        })
-        
         function GenPDF() {
             const { jsPDF } = window.jspdf;
             const pdf = new jsPDF('p', 'mm', 'a4');
@@ -492,24 +446,17 @@
             drawCard(margin, pieY, pieW, pieH);
             pdf.setFont('helvetica', 'bold');
             pdf.setFontSize(9);
-            pdf.setTextColor(titleColor[0], titleColor[1], titleColor[2]);
-            pdf.text('Patients showing up in appointments', margin + 5, pieY + 8);
+            pdf.text('Appointment Status', margin + 5, pieY + 8);
             addChartImage(appointmentChart, margin + 4, pieY + 11, pieW - 8, pieH - 16);
 
             const servicesX = margin + pieW + pieGap;
             drawCard(servicesX, pieY, pieW, pieH);
-            pdf.setFont('helvetica', 'bold');
-            pdf.setFontSize(9);
-            pdf.setTextColor(titleColor[0], titleColor[1], titleColor[2]);
             pdf.text('Most Requested Services', servicesX + 5, pieY + 8);
             addChartImage(serviceChart, servicesX + 4, pieY + 11, pieW - 8, pieH - 16);
 
             const transY = 188;
             const transH = 82;
             drawCard(margin, transY, contentWidth, transH);
-            pdf.setFont('helvetica', 'bold');
-            pdf.setFontSize(9);
-            pdf.setTextColor(titleColor[0], titleColor[1], titleColor[2]);
             pdf.text('Total Number of Transaction', margin + 6, transY + 9);
             drawPills(margin + contentWidth - 6, transY + 4.2, transweeklyBtn, transmonthlyBtn, transyearlyBtn);
             addChartImage(TransactionChart, margin + 5, transY + 14, contentWidth - 10, transH - 18);
