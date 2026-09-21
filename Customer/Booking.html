@@ -182,31 +182,68 @@
 <body class="bg-[#F3EFE4] min-h-screen font-poppins text-[#2c3e2b] antialiased">
     <div class="min-h-screen flex flex-col md:flex-row w-full"> <!--Div for whole body-->
                 <div id="sidebar-placeholder"></div>
-                <script>
-                    (async () => {
-                        try {
-                            const response = await fetch('../Taskbar/Customer_Task.html');
-                            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-                            
-                            const data = await response.text();
-                            document.getElementById('sidebar-placeholder').innerHTML = data;
-                            
-                            const currentPage = window.location.pathname.split("/").pop();
-                            document.querySelectorAll('.nav-link').forEach(link => {
-                                if (link.getAttribute('data-page') === currentPage) {
-                                    link.classList.add('bg-[#FDFCE9]');
-                                }
-                            });
+               <script>
+function syncContentOffset() {
+  const placeholder = document.getElementById('sidebar-placeholder');
+  const sidebar = Array.from(placeholder.children)
+    .find(el => !['SCRIPT', 'STYLE', 'LINK'].includes(el.tagName));
+  if (!sidebar) return;
 
-                            initSidebar();
-                        } catch (error) {
-                            console.error('Failed to load the sidebar taskbar:', error);
-                        }
-                    })();
-                </script>
+  const set = (el, prop, value) => { if (el.style[prop] !== value) el.style[prop] = value; };
 
+  const apply = () => {
+    const desktop = window.innerWidth >= 768;
+    set(placeholder, 'flexShrink', '0');
+    set(sidebar, 'position', desktop ? 'sticky' : 'relative');  
+    set(sidebar, 'top', desktop ? '0px' : 'auto');
+    set(sidebar, 'height', desktop ? '100vh' : '');
+    set(sidebar, 'overflowY', desktop ? 'auto' : '');           
+  };
+
+  window.addEventListener('resize', apply);
+  apply();
+}
+  (async () => {
+    try {
+      const response = await fetch('/Taskbar/Customer_Task.html');
+      if (response.ok) {
+        const data = await response.text();
+        document.getElementById('sidebar-placeholder').innerHTML = data;
+        const currentPage = window.location.pathname.split("/").pop();
+        document.querySelectorAll('.nav-link').forEach(link => {
+          if (link.getAttribute('data-page') === currentPage) {
+            link.classList.add('bg-[#FDFCE9]');
+          }
+        });
+        if (typeof initSidebar === 'function') {
+          initSidebar();
+        }
+        syncContentOffset();
+      }
+    } catch (error) {
+      console.log('Sidebar fallback:', error);
+    }
+  })();
+  
+</script>
         <!-- Main Content Area Wrapper -->
-        <div class="flex-1 p-4 sm:p-6 md:p-10 flex justify-center items-start">
+      <!-- Right column: header on top, form below -->
+<div id="main-content" class="flex-1 min-w-0 flex flex-col">
+
+    <!-- Header (same as the Profile page) -->
+    <div class="flex justify-between items-start pt-5 pl-12 pr-4 md:pl-24 md:pr-8">
+        <h1 class="text-2xl sm:text-3xl md:text-5xl 2xl:text-[73px] pt-5 font-bold text-[#2A1001] font-['Poppins']">
+            Booking
+        </h1>
+        <img
+            src="../assets/logowithtitle.png"
+            class="w-20 sm:w-24 md:w-28 h-auto object-contain shrink-0"
+            alt="Logo"/>
+    </div>
+    <hr class="border-t border-[#2A1001] mt-2 mb-6" />
+
+
+    <div class="p-4 sm:p-6 md:p-10 flex justify-center items-start">
             <form id="booking-form" method="post" class="w-full max-w-4xl flex flex-col items-center gap-8">
                 
                 <!-- Hidden Database Fields -->
@@ -216,50 +253,12 @@
                 <input type="hidden" id="selected-service-id" name="service_id" required>
                 <input type="hidden" id="selected-price" name="service_price" required>
 
-                <div class="w-full flex flex-row gap-5 justify-center items-center">
-                    <!--AM Time slot-->
-                    <div class="flex flex-col w-[180px] gap-3">
-                        <h1 class="font-extrabold text-[#2c3e2b]">AM-Time</h1>
-                        <div data-time="07:00:00" class="flex w-full h-[60px] bg-white rounded-3xl border-[3.5px] border-black items-center justify-center text-center hover:bg-[#D7E3A5] transition-all duration-250 hover:scale-[1.035] cursor-pointer">
-                            <h2>7AM - 8AM</h2>
-                        </div>
-                        <div data-time="08:00:00" class="flex w-full h-[60px] bg-white rounded-3xl border-[3.5px] border-black items-center justify-center text-center hover:bg-[#D7E3A5] transition-all duration-250 hover:scale-[1.035] cursor-pointer">
-                            <h2>8AM - 9AM</h2>
-                        </div>
-                        <div data-time="09:00:00" class="flex w-full h-[60px] bg-white rounded-3xl border-[3.5px] border-black items-center justify-center text-center hover:bg-[#D7E3A5] transition-all duration-250 hover:scale-[1.035] cursor-pointer">
-                            <h2>9AM - 10AM</h2>
-                        </div>
-                        <div data-time="10:00:00" class="flex w-full h-[60px] bg-white rounded-3xl border-[3.5px] border-black items-center justify-center text-center hover:bg-[#D7E3A5] transition-all duration-250 hover:scale-[1.035] cursor-pointer">
-                            <h2>10AM - 11AM</h2>
-                        </div>
-                        <div data-time="11:00:00" class="flex w-full h-[60px] bg-white rounded-3xl border-[3.5px] border-black items-center justify-center text-center hover:bg-[#D7E3A5] transition-all duration-250 hover:scale-[1.035] cursor-pointer">
-                            <h2>11AM - 12PM</h2>
-                        </div>
-                    </div>
-
-                    <!--PM Time slot-->
-                    <div class="flex flex-col w-[180px] gap-3">
-                        <h1 class="font-extrabold text-[#2c3e2b]">PM-Time</h1>
-                        <div data-time="12:00:00" class="flex w-full h-[60px] bg-white rounded-3xl border-[3.5px] border-black items-center justify-center text-center hover:bg-[#D7E3A5] transition-all duration-250 hover:scale-[1.035] cursor-pointer">
-                            <h2>12PM - 1PM</h2>
-                        </div>
-                        <div data-time="13:00:00" class="flex w-full h-[60px] bg-white rounded-3xl border-[3.5px] border-black items-center justify-center text-center hover:bg-[#D7E3A5] transition-all duration-250 hover:scale-[1.035] cursor-pointer">
-                            <h2>1PM - 2PM</h2>
-                        </div>
-                        <div data-time="14:00:00" class="flex w-full h-[60px] bg-white rounded-3xl border-[3.5px] border-black items-center justify-center text-center hover:bg-[#D7E3A5] transition-all duration-250 hover:scale-[1.035] cursor-pointer">
-                            <h2>2PM - 3PM</h2>
-                        </div>
-                        <div data-time="15:00:00" class="flex w-full h-[60px] bg-white rounded-3xl border-[3.5px] border-black items-center justify-center text-center hover:bg-[#D7E3A5] transition-all duration-250 hover:scale-[1.035] cursor-pointer">
-                            <h2>3PM - 4PM</h2>
-                        </div>
-                        <div data-time="16:00:00" class="flex w-full h-[60px] bg-white rounded-3xl border-[3.5px] border-black items-center justify-center text-center hover:bg-[#D7E3A5] transition-all duration-250 hover:scale-[1.035] cursor-pointer">
-                            <h2>4PM - 5PM</h2>
-                        </div>
-                    </div>
-
+                <div class="w-full flex flex-wrap justify-center items-start gap-12">
+             
                     <div>
                         <!--Calendar-->
-                        <div class="flex flex-col w-[410px] h-[360px] rounded-3xl border-[3.5px] border-black bg-white overflow-hidden">
+                        <div class="w-full max-w-[410px]">
+                        <div class="flex flex-col w-full min-h-[360px] rounded-3xl border-[3.5px] border-black bg-white overflow-hidden">
                             
                             <!--Header-->
                             <div class="flex justify-between items-center p-[10px] w-full h-15 bg-[#667733]">
@@ -286,14 +285,57 @@
                             </div>
                             <div class="grid grid-cols-7 gap-3 px-4 py-1" id="days"></div>
                         </div>
+                        </div>
                     </div>
-                </div>
+                           <!--AM and PM Time slot side by side-->
+                     <div class="w-full sm:w-auto flex flex-row gap-3 sm:gap-5">
+                    <!--AM Time slot-->
+                    <div class="flex flex-col flex-1 min-w-0 sm:flex-none sm:w-[180px] gap-3">
+                        <h1 class="font-extrabold text-[#2c3e2b]">AM-Time</h1>
+                        <div data-time="07:00:00" class="flex w-full h-[60px] bg-white rounded-3xl border-[3.5px] border-black items-center justify-center text-center hover:bg-[#D7E3A5] transition-all duration-250 hover:scale-[1.035] cursor-pointer">
+                            <h2>7AM - 8AM</h2>
+                        </div>
+                        <div data-time="08:00:00" class="flex w-full h-[60px] bg-white rounded-3xl border-[3.5px] border-black items-center justify-center text-center hover:bg-[#D7E3A5] transition-all duration-250 hover:scale-[1.035] cursor-pointer">
+                            <h2>8AM - 9AM</h2>
+                        </div>
+                        <div data-time="09:00:00" class="flex w-full h-[60px] bg-white rounded-3xl border-[3.5px] border-black items-center justify-center text-center hover:bg-[#D7E3A5] transition-all duration-250 hover:scale-[1.035] cursor-pointer">
+                            <h2>9AM - 10AM</h2>
+                        </div>
+                        <div data-time="10:00:00" class="flex w-full h-[60px] bg-white rounded-3xl border-[3.5px] border-black items-center justify-center text-center hover:bg-[#D7E3A5] transition-all duration-250 hover:scale-[1.035] cursor-pointer">
+                            <h2>10AM - 11AM</h2>
+                        </div>
+                        <div data-time="11:00:00" class="flex w-full h-[60px] bg-white rounded-3xl border-[3.5px] border-black items-center justify-center text-center hover:bg-[#D7E3A5] transition-all duration-250 hover:scale-[1.035] cursor-pointer">
+                            <h2>11AM - 12PM</h2>
+                        </div>
+                    </div>
+
+                    <!--PM Time slot-->
+                    <div class="flex flex-col flex-1 min-w-0 sm:flex-none sm:w-[180px] gap-3">
+                        <h1 class="font-extrabold text-[#2c3e2b]">PM-Time</h1>
+                        <div data-time="12:00:00" class="flex w-full h-[60px] bg-white rounded-3xl border-[3.5px] border-black items-center justify-center text-center hover:bg-[#D7E3A5] transition-all duration-250 hover:scale-[1.035] cursor-pointer">
+                            <h2>12PM - 1PM</h2>
+                        </div>
+                        <div data-time="13:00:00" class="flex w-full h-[60px] bg-white rounded-3xl border-[3.5px] border-black items-center justify-center text-center hover:bg-[#D7E3A5] transition-all duration-250 hover:scale-[1.035] cursor-pointer">
+                            <h2>1PM - 2PM</h2>
+                        </div>
+                        <div data-time="14:00:00" class="flex w-full h-[60px] bg-white rounded-3xl border-[3.5px] border-black items-center justify-center text-center hover:bg-[#D7E3A5] transition-all duration-250 hover:scale-[1.035] cursor-pointer">
+                            <h2>2PM - 3PM</h2>
+                        </div>
+                        <div data-time="15:00:00" class="flex w-full h-[60px] bg-white rounded-3xl border-[3.5px] border-black items-center justify-center text-center hover:bg-[#D7E3A5] transition-all duration-250 hover:scale-[1.035] cursor-pointer">
+                            <h2>3PM - 4PM</h2>
+                        </div>
+                        <div data-time="16:00:00" class="flex w-full h-[60px] bg-white rounded-3xl border-[3.5px] border-black items-center justify-center text-center hover:bg-[#D7E3A5] transition-all duration-250 hover:scale-[1.035] cursor-pointer">
+                            <h2>4PM - 5PM</h2>
+                        </div>
+                    </div>
+                    </div>
+                </div> <!---->
 
                 <div class="w-full flex flex-col items-start">
                     <h1 class="font-extrabold text-xl text-[#2c3e2b]">What do you need?</h1>
                 </div>
 
-                <div class="flex flex-row gap-5 w-full justify-center"> <!--Div for services-->
+                <div class="grid grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-5 w-full justify-items-center"> <!--Div for services-->
                     <!--Div for cleaning-->
                     <div data-service="Dental Cleaning" data-service-id="1" data-price="1,500" class="flex flex-col w-[200px] h-[250px] justify-between items-center text-center bg-[#FFFFFF] rounded-[8px] border-4 border-black hover:bg-[#D7E3A5] transition-all duration-250 hover:scale-[1.035] cursor-pointer p-3">
                         <h1 class="font-bold text-[20px]">Cleaning</h1>
@@ -363,9 +405,9 @@
                     </div>
                 </div>
 
-            </form>
-        </div>
-
-    </div>
+           </form>
+    </div>   
+</div>       
+</div>       
 </body>
 </html>
