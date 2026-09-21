@@ -15,22 +15,20 @@
     <div id="sidebar-placeholder"></div>
 <script>
 function syncContentOffset() {
-  const content = document.getElementById('main-content');
   const placeholder = document.getElementById('sidebar-placeholder');
   const sidebar = Array.from(placeholder.children)
     .find(el => !['SCRIPT', 'STYLE', 'LINK'].includes(el.tagName));
   if (!sidebar) return;
 
- 
   const set = (el, prop, value) => { if (el.style[prop] !== value) el.style[prop] = value; };
 
   const apply = () => {
     const desktop = window.innerWidth >= 768;
-    set(placeholder, 'flexShrink', '0');          
-    set(sidebar, 'position', 'relative');         
-    set(sidebar, 'inset', 'auto');                
-    set(sidebar, 'height', desktop ? '100vh' : ''); 
-    set(content, 'marginLeft', '0px');            
+    set(placeholder, 'flexShrink', '0');
+    set(sidebar, 'position', desktop ? 'sticky' : 'relative');  
+    set(sidebar, 'top', desktop ? '0px' : 'auto');
+    set(sidebar, 'height', desktop ? '100vh' : '');
+    set(sidebar, 'overflowY', desktop ? 'auto' : '');           
   };
 
   window.addEventListener('resize', apply);
