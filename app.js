@@ -5,7 +5,7 @@ const cors = require("cors");
 const authRoutes = require("./auth");
 const path = require("path");
 const registerPatientProfileRoute = require("./Customer/CustomerProfile");
-const registerEmployeeProfileRoute = require("./Employee/EmployeeProfile");
+const registerBookingRoute = require("./Customer/BookingRoutes");
 
 const app = express();
 app.use(express.json());
@@ -13,7 +13,7 @@ app.use(cors());
 
 app.use('/api/auth', authRoutes);
 registerPatientProfileRoute(app, db);
-registerEmployeeProfileRoute(app, db);
+registerBookingRoute(app, db);
 
 app.use(express.static(path.join(__dirname)));
 app.use(express.static(path.join(__dirname, "images")));
@@ -22,7 +22,16 @@ app.get("/", (req, res) => {
     res.sendFile(path.join(__dirname, "LogInRegister", "login.html"));
 });
 
-// API to get data from db. check by doing https://localhost:3000/api/{x}
+app.get('/api/users', async (req, res) => {
+    try {
+        const [rows] = await db.query('SELECT * FROM users');
+        res.json(rows);
+    } catch (err) {
+        console.error('Databse Error', err);
+        res.status(500).json({error: "Internal Server Error"});
+    }
+});
+
 app.get('/api/patients', async (req, res) => {
     try {
         const [rows] = await db.query('CALL sp_get_all_patient_records()', ['patient']);
@@ -50,8 +59,6 @@ app.get('/api/patients/:id', async (req, res) => {
         res.status(500).json({error: "Internal Server Error"});
     }
 });
-
-
 
 const PORT = 3000;
 app.listen(PORT, () => {
