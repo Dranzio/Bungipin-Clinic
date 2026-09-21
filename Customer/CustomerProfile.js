@@ -1,7 +1,31 @@
 const bcrypt = require('bcrypt');
 const authenticateToken = require('../authMiddleware');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
 
 const SALT_ROUNDS = 10;
+
+const uploadDir = path.join(__dirname, '..', 'uploads', 'medical-pdfs');
+fs.mkdirSync(uploadDir, { recursive: true });
+
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => cb(null, uploadDir),
+    filename: (req, file, cb) => {
+        cb(null, `${req.user.user_id}-${Date.now()}${path.extname(file.originalname)}`);
+    }
+});
+
+const upload = multer({
+    storage,
+    limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
+    fileFilter: (req, file, cb) => {
+        if (file.mimetype !== 'application/pdf') {
+            return cb(new Error('Only PDF files are allowed'));
+        }
+        cb(null, true);
+    }
+});
 
 function registerPatientProfileRoute(app, db) {
 
@@ -20,6 +44,29 @@ function registerPatientProfileRoute(app, db) {
             res.json(typeof record === 'string' ? JSON.parse(record) : record);
         } catch (err) {
             console.error('Profile load error:', err);
+            res.status(500).json({ message: 'Internal Server Error' });
+        }
+    });
+
+    // POST /api/patient-profile/medical-pdf
+    app.post('/api/patient-profile/medical-pdf', authenticateToken, upload.single('medical_pdf'), async (req, res) => {
+        if (req.user.role !== 'patient') {
+            return res.status(403).json({ message: 'Only patients can upload medical documents' });
+        }
+        if (!req.file) {
+            return res.status(400).json({ message: 'No PDF file was uploaded' });
+        }
+
+        const fileUrl = `/uploads/medical-pdfs/${req.file.filename}`;
+
+        try {
+            await db.query(
+                'INSERT INTO patient_documents (patient_id, file_url) VALUES (?, ?)',
+                [req.user.user_id, fileUrl]
+            );
+            res.status(201).json({ message: 'PDF uploaded successfully', file_url: fileUrl });
+        } catch (err) {
+            console.error('Medical PDF upload error:', err);
             res.status(500).json({ message: 'Internal Server Error' });
         }
     });

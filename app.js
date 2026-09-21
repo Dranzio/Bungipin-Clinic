@@ -9,6 +9,8 @@ const registerBookingRoute = require("./Customer/BookingRoutes");
 const registerEmployeeProfileRoute = require("./Employee/EmployeeProfile");
 const registerBookingRequestRoutes = require("./Employee/BookingRequest");
 const registerQueueRoutes = require("./Employee/QueueRoutes");
+const registerPatientRecordsRoutes = require("./Employee/PatientRecords");
+const authenticateToken = require("./authMiddleware");
 
 const app = express();
 app.use(express.json());
@@ -20,7 +22,9 @@ registerBookingRoute(app, db);
 registerEmployeeProfileRoute(app, db);
 registerBookingRequestRoutes(app, db);
 registerQueueRoutes(app, db);
+registerPatientRecordsRoutes(app, db);
 
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use(express.static(path.join(__dirname)));
 app.use(express.static(path.join(__dirname, "images")));
 app.use(express.static(path.join(__dirname, "LogInRegister")));
@@ -28,9 +32,14 @@ app.get("/", (req, res) => {
     res.sendFile(path.join(__dirname, "LogInRegister", "login.html"));
 });
 
-app.get('/api/users', async (req, res) => {
+app.get('/api/users', authenticateToken, async (req, res) => {
+    if (req.user.role !== 'admin') {
+        return res.status(403).json({ error: 'Admins only' });
+    }
     try {
-        const [rows] = await db.query('SELECT * FROM users');
+        const [rows] = await db.query(
+            'SELECT user_id, public_id, first_name, last_name, email, phone, sex, role, account_status, created_at FROM users'
+        );
         res.json(rows);
     } catch (err) {
         console.error('Databse Error', err);

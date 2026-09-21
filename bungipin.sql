@@ -9,6 +9,7 @@ DROP PROCEDURE IF EXISTS sp_register_user;
 DROP TABLE IF EXISTS notifications;
 DROP TABLE IF EXISTS messages;
 DROP TABLE IF EXISTS xrays;
+DROP TABLE IF EXISTS patient_documents;
 DROP TABLE IF EXISTS payments;
 DROP TABLE IF EXISTS appointments;
 DROP TABLE IF EXISTS services;
@@ -216,6 +217,14 @@ CREATE TABLE notifications (
     )
 );
 
+CREATE TABLE patient_documents (
+    document_id   INT AUTO_INCREMENT PRIMARY KEY,
+    patient_id    INT NOT NULL,
+    file_url      VARCHAR(255) NOT NULL,
+    uploaded_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (patient_id) REFERENCES patient_profiles(patient_id) ON DELETE CASCADE
+);
+
 DELIMITER $$
 CREATE PROCEDURE sp_get_patient_record(IN p_patient_id INT)
 BEGIN
@@ -243,7 +252,7 @@ BEGIN
             FROM prescriptions WHERE patient_id = pp.patient_id
         ),
         'xrays', (
-            SELECT COALESCE(JSON_ARRAYAGG(JSON_OBJECT('appointment_id', appointment_id, 'file_url', file_url)), JSON_ARRAY())
+            SELECT COALESCE(JSON_ARRAYAGG(JSON_OBJECT('xray_id', xray_id, 'appointment_id', appointment_id, 'file_url', file_url)), JSON_ARRAY())
             FROM xrays WHERE patient_id = pp.patient_id
         ),
         'last_visit', (
@@ -252,13 +261,19 @@ BEGIN
         ),
         'ongoing_appointment', (
             SELECT JSON_OBJECT(
-                'appointment_id', appointment_id,
-                'dentist_note', COALESCE(dentist_note, ''),
-                'patient_note', COALESCE(patient_note, '')
+                'appointment_id', a.appointment_id,
+                'appointment_date', a.appointment_date,
+                'service_label', s.label,
+                'dentist_note', COALESCE(a.dentist_note, ''),
+                'patient_note', COALESCE(a.patient_note, '')
             )
-            FROM appointments
-            WHERE patient_id = pp.patient_id AND appointment_status IN ('pending', 'approved')
-            ORDER BY appointment_date DESC, time_slot DESC
+            FROM appointments a
+            JOIN services s ON a.service_id = s.service_id
+            WHERE a.patient_id = pp.patient_id
+              AND a.appointment_status = 'approved'
+              AND a.queue_status = 'ongoing'
+              AND a.appointment_date = CURDATE()
+            ORDER BY a.time_slot DESC
             LIMIT 1
         ),
         'past_appointments', (
@@ -307,7 +322,7 @@ BEGIN
             FROM prescriptions WHERE patient_id = pp.patient_id
         ),
         'xrays', (
-            SELECT COALESCE(JSON_ARRAYAGG(JSON_OBJECT('appointment_id', appointment_id, 'file_url', file_url)), JSON_ARRAY())
+            SELECT COALESCE(JSON_ARRAYAGG(JSON_OBJECT('xray_id', xray_id, 'appointment_id', appointment_id, 'file_url', file_url)), JSON_ARRAY())
             FROM xrays WHERE patient_id = pp.patient_id
         ),
         'last_visit', (
@@ -316,13 +331,19 @@ BEGIN
         ),
         'ongoing_appointment', (
             SELECT JSON_OBJECT(
-                'appointment_id', appointment_id,
-                'dentist_note', COALESCE(dentist_note, ''),
-                'patient_note', COALESCE(patient_note, '')
+                'appointment_id', a.appointment_id,
+                'appointment_date', a.appointment_date,
+                'service_label', s.label,
+                'dentist_note', COALESCE(a.dentist_note, ''),
+                'patient_note', COALESCE(a.patient_note, '')
             )
-            FROM appointments
-            WHERE patient_id = pp.patient_id AND appointment_status IN ('pending', 'approved')
-            ORDER BY appointment_date DESC, time_slot DESC
+            FROM appointments a
+            JOIN services s ON a.service_id = s.service_id
+            WHERE a.patient_id = pp.patient_id
+              AND a.appointment_status = 'approved'
+              AND a.queue_status = 'ongoing'
+              AND a.appointment_date = CURDATE()
+            ORDER BY a.time_slot DESC
             LIMIT 1
         ),
         'past_appointments', (
@@ -393,7 +414,7 @@ INSERT INTO appointments (patient_id, employee_id, service_id, appointment_date,
 (2, NULL, 2, '2026-09-12', '11:00:00', 'pending', NULL);
 
 INSERT INTO payments (appointment_id, amount, payment_date, method, status) VALUES
-(1, 800.00, '2026-09-10', 'card', 'paid');
+(1, 1500.00, '2026-09-10', 'card', 'paid');
 
 INSERT INTO xrays (patient_id, appointment_id, uploaded_by, file_url) VALUES
 (1, 1, 3, '/xrays/patient1_visit1.png');
@@ -408,5 +429,8 @@ INSERT INTO notifications (user_id, type, title, message, message_id) VALUES
 (1, 'new_message', 'New Message', 'You have a new message from Dr. Ramon Cruz.', 1);
 
 CALL sp_get_all_patient_records();
-
-select * from services;
+select * from users;
+select * from appointments;
+select a.first_name, b.civil_status  from users a INNER JOIN  employee_profiles b on a.user_id = b.employee_id;
+select * from payments;
+select a.appointment_id, s.label AS service_offered from appointments a INNER JOIN services s on a.service_id = s.service_id;
