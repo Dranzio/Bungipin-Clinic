@@ -42,7 +42,7 @@ function registerBookingRoute(app, db) {
             // reviewing the request, matching the earlier design decision.
             const [result] = await connection.query(
                 `INSERT INTO appointments
-                    (patient_id, employee_id, service_id, appointment_date, time_slot, appointment_status, patient_note)
+                 (patient_id, employee_id, service_id, appointment_date, time_slot, appointment_status, patient_note)
                  VALUES (?, NULL, ?, ?, ?, 'pending', ?)`,
                 [patientId, service_id, appointment_date, time_slot, patient_note || null]
             );
