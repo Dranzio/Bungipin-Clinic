@@ -383,9 +383,10 @@ UPDATE employee_profiles SET staff_code = 'STF-2026-002', position = 'Dentist', 
 UPDATE admin_profiles SET permission_level = 'full_access' WHERE admin_id = 5;
 
 INSERT INTO services (label, price, icon, is_available) VALUES
-('Dental Cleaning', 800.00, 'cleaning-icon', TRUE),
-('Tooth Extraction', 1500.00, 'extraction-icon', TRUE),
-('Braces Consultation', 500.00, 'braces-icon', FALSE);
+('Dental Cleaning', 1500.00, 'cleaning-icon', TRUE),
+('Pasta', 2500.00, 'pasta-icon', TRUE),
+('Checkup', 500.00, 'checkup-icon', TRUE),
+('Whitening', 3000.00, 'whitening-icon', TRUE);
 
 INSERT INTO appointments (patient_id, employee_id, service_id, appointment_date, time_slot, appointment_status, patient_note) VALUES
 (1, 3, 1, '2026-09-10', '10:00:00', 'approved', 'First-time patient'),
@@ -408,4 +409,4 @@ INSERT INTO notifications (user_id, type, title, message, message_id) VALUES
 
 CALL sp_get_all_patient_records();
 
-select * from users;
+select * from services;
