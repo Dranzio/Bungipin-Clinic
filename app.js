@@ -4,12 +4,14 @@ const db = require("./db");
 const cors = require("cors");
 const authRoutes = require("./auth");
 const path = require("path");
+const registerPatientProfileRoute = require("./Customer/CustomerProfile");
 
 const app = express();
 app.use(express.json());
 app.use(cors());
 
 app.use('/api/auth', authRoutes);
+registerPatientProfileRoute(app, db);
 
 app.use(express.static(path.join(__dirname)));
 app.use(express.static(path.join(__dirname, "images")));

@@ -63,6 +63,11 @@ BEGIN
         '-', LPAD(p_new_user_id, 4, '0')
     )
     WHERE user_id = p_new_user_id;
+
+    -- Every user gets their matching profile row created immediately,
+    -- not left for some later step to create — patient_profiles etc.
+    -- all have nullable fields, so an empty row here is valid and
+    -- expected to be filled in later by the user.
     IF p_role = 'patient' THEN
         INSERT INTO patient_profiles (patient_id) VALUES (p_new_user_id);
     ELSEIF p_role = 'employee' THEN
@@ -88,7 +93,6 @@ CREATE TABLE employee_profiles (
     staff_code    VARCHAR(30) UNIQUE,
     birthday      DATE,
     civil_status  VARCHAR(30),
-    position      VARCHAR(30),
     FOREIGN KEY (employee_id) REFERENCES users(user_id) ON DELETE CASCADE
 );
 
@@ -142,7 +146,7 @@ CREATE TABLE services (
 CREATE TABLE appointments (
     appointment_id      INT AUTO_INCREMENT PRIMARY KEY,
     patient_id          INT NOT NULL,
-    employee_id         INT NULL,           -- assigned by staff after booking, not at booking time
+    employee_id         INT NULL,
     service_id          INT NOT NULL,
     appointment_date    DATE NOT NULL,
     time_slot           TIME NOT NULL,
@@ -205,11 +209,74 @@ CREATE TABLE notifications (
     FOREIGN KEY (user_id)        REFERENCES users(user_id) ON DELETE CASCADE,
     FOREIGN KEY (appointment_id) REFERENCES appointments(appointment_id) ON DELETE CASCADE,
     FOREIGN KEY (message_id)     REFERENCES messages(message_id) ON DELETE CASCADE,
-    -- ensures a notification references at most one source, never both
     CONSTRAINT chk_single_source CHECK (
         NOT (appointment_id IS NOT NULL AND message_id IS NOT NULL)
     )
 );
+
+DELIMITER $$
+CREATE PROCEDURE sp_get_patient_record(IN p_patient_id INT)
+BEGIN
+    SELECT JSON_OBJECT(
+        'patient_id', pp.patient_id,
+        'public_id', u.public_id,
+        'first_name', u.first_name,
+        'last_name', u.last_name,
+        'sex', u.sex,
+        'birthday', pp.birthday,
+        'email', u.email,
+        'phone', u.phone,
+        'civil_status', pp.civil_status,
+        'pregnancy_status', pp.pregnancy_status,
+        'health_conditions', (
+            SELECT COALESCE(JSON_ARRAYAGG(JSON_OBJECT('description', description)), JSON_ARRAY())
+            FROM health_conditions WHERE patient_id = pp.patient_id
+        ),
+        'allergies', (
+            SELECT COALESCE(JSON_ARRAYAGG(JSON_OBJECT('allergen', allergen)), JSON_ARRAY())
+            FROM allergies WHERE patient_id = pp.patient_id
+        ),
+        'prescriptions', (
+            SELECT COALESCE(JSON_ARRAYAGG(JSON_OBJECT('medication_name', medication_name, 'dosage', dosage)), JSON_ARRAY())
+            FROM prescriptions WHERE patient_id = pp.patient_id
+        ),
+        'xrays', (
+            SELECT COALESCE(JSON_ARRAYAGG(JSON_OBJECT('appointment_id', appointment_id, 'file_url', file_url)), JSON_ARRAY())
+            FROM xrays WHERE patient_id = pp.patient_id
+        ),
+        'last_visit', (
+            SELECT MAX(appointment_date) FROM appointments
+            WHERE patient_id = pp.patient_id AND appointment_status = 'completed'
+        ),
+        'ongoing_appointment', (
+            SELECT JSON_OBJECT(
+                'appointment_id', appointment_id,
+                'dentist_note', COALESCE(dentist_note, ''),
+                'patient_note', COALESCE(patient_note, '')
+            )
+            FROM appointments
+            WHERE patient_id = pp.patient_id AND appointment_status IN ('pending', 'approved')
+            ORDER BY appointment_date DESC, time_slot DESC
+            LIMIT 1
+        ),
+        'past_appointments', (
+            SELECT COALESCE(JSON_ARRAYAGG(JSON_OBJECT(
+                'appointment_id', a.appointment_id,
+                'appointment_date', a.appointment_date,
+                'service_label', s.label,
+                'dentist_note', COALESCE(a.dentist_note, ''),
+                'patient_note', COALESCE(a.patient_note, '')
+            )), JSON_ARRAY())
+            FROM appointments a
+            JOIN services s ON a.service_id = s.service_id
+            WHERE a.patient_id = pp.patient_id AND a.appointment_status = 'completed'
+        )
+    ) AS patient_record
+    FROM patient_profiles pp
+    JOIN users u ON pp.patient_id = u.user_id
+    WHERE pp.patient_id = p_patient_id;
+END$$
+DELIMITER ;
 
 DELIMITER $$
 CREATE PROCEDURE sp_get_all_patient_records()
@@ -225,32 +292,26 @@ BEGIN
         'phone', u.phone,
         'civil_status', pp.civil_status,
         'pregnancy_status', pp.pregnancy_status,
- 
         'health_conditions', (
             SELECT COALESCE(JSON_ARRAYAGG(JSON_OBJECT('description', description)), JSON_ARRAY())
             FROM health_conditions WHERE patient_id = pp.patient_id
         ),
- 
         'allergies', (
             SELECT COALESCE(JSON_ARRAYAGG(JSON_OBJECT('allergen', allergen)), JSON_ARRAY())
             FROM allergies WHERE patient_id = pp.patient_id
         ),
- 
         'prescriptions', (
             SELECT COALESCE(JSON_ARRAYAGG(JSON_OBJECT('medication_name', medication_name, 'dosage', dosage)), JSON_ARRAY())
             FROM prescriptions WHERE patient_id = pp.patient_id
         ),
- 
         'xrays', (
             SELECT COALESCE(JSON_ARRAYAGG(JSON_OBJECT('appointment_id', appointment_id, 'file_url', file_url)), JSON_ARRAY())
             FROM xrays WHERE patient_id = pp.patient_id
         ),
- 
         'last_visit', (
             SELECT MAX(appointment_date) FROM appointments
             WHERE patient_id = pp.patient_id AND appointment_status = 'completed'
         ),
- 
         'ongoing_appointment', (
             SELECT JSON_OBJECT(
                 'appointment_id', appointment_id,
@@ -262,7 +323,6 @@ BEGIN
             ORDER BY appointment_date DESC, time_slot DESC
             LIMIT 1
         ),
- 
         'past_appointments', (
             SELECT COALESCE(JSON_ARRAYAGG(JSON_OBJECT(
                 'appointment_id', a.appointment_id,
@@ -283,41 +343,43 @@ END$$
 DELIMITER ;
 
 -- Double Check
-CALL sp_register_user('Juan', 'Dela Cruz', 'juan.delacruz@email.com', '0917 123 4567', '$2b$10$AF8/uQfAuDsfedwPRjBftu6pS2P9k1PCpTmeOgVuFDqGMAqa9340C', 'M', 'patient', @uid1);
-CALL sp_register_user('Maria', 'Santos', 'maria.santos@email.com', '0918 987 6543', '<hashed_pw>', 'F', 'patient', @uid2);
+CALL sp_register_user('Maria', 'Santos', 'maria.santos@example.com', '09171234567', '<hashed_pw>', 'F', 'patient', @uid1);
+CALL sp_register_user('Juan', 'Dela Cruz', 'juan.delacruz@example.com', '09179876543', '<hashed_pw>', 'M', 'patient', @uid2);
+CALL sp_register_user('Ramon', 'Cruz', 'ramon.cruz@example.com', '09201112222', '<hashed_pw>', 'M', 'employee', @uid3);
+CALL sp_register_user('Liza', 'Tan', 'liza.tan@example.com', '09203334444', '<hashed_pw>', 'F', 'employee', @uid4);
+CALL sp_register_user('Carla', 'Reyes', 'carla.reyes@example.com', '09051119999', '<hashed_pw>', 'F', 'admin', @uid5);
 
-CALL sp_register_user('Ramon', 'Cruz', 'ramon.cruz@example.com', '09201112222', '$2b$10$AF8/uQfAuDsfedwPRjBftu6pS2P9k1PCpTmeOgVuFDqGMAqa9340C', 'M', 'employee', @uid3);
 
-INSERT INTO patient_profiles (patient_id, birthday, civil_status, pregnancy_status) VALUES
-(1, '1990-05-14', 'Single', NULL),
-(2, '1995-08-22', 'Married', '2nd Trimester');
+UPDATE patient_profiles SET birthday = '1990-04-12', civil_status = 'Single', address = '123 Mabini St, Quezon City' WHERE patient_id = 1;
+UPDATE patient_profiles SET birthday = '1985-11-02', civil_status = 'Married', address = '45 Rizal Ave, Manila' WHERE patient_id = 2;
 
-INSERT INTO employee_profiles (employee_id, staff_code, birthday, civil_status, position) VALUES
-(3, 'STF-2026-001', '1985-06-10', 'Married', 'receptionist');
+UPDATE employee_profiles SET staff_code = 'STF-2026-001', birthday = '1985-06-10', civil_status = 'Married' WHERE employee_id = 3;
+UPDATE employee_profiles SET staff_code = 'STF-2026-002', birthday = '1990-02-20', civil_status = 'Single' WHERE employee_id = 4;
 
-INSERT INTO health_conditions (patient_id, description) VALUES
-(2, 'Asthma');
+UPDATE admin_profiles SET permission_level = 'full_access' WHERE admin_id = 5;
 
-INSERT INTO allergies (patient_id, allergen) VALUES
-(1, 'Penicillin');
+INSERT INTO services (label, price, icon, is_available) VALUES
+('Dental Cleaning', 800.00, 'cleaning-icon', TRUE),
+('Tooth Extraction', 1500.00, 'extraction-icon', TRUE),
+('Braces Consultation', 500.00, 'braces-icon', FALSE);
 
-INSERT INTO prescriptions (patient_id, medication_name, dosage) VALUES
-(2, 'Albuterol inhaler', 'As needed');
+INSERT INTO appointments (patient_id, employee_id, service_id, appointment_date, time_slot, appointment_status, patient_note) VALUES
+(1, 3, 1, '2026-09-10', '10:00:00', 'approved', 'First-time patient'),
+(2, NULL, 2, '2026-09-12', '11:00:00', 'pending', NULL);
 
-INSERT INTO services (service_id, label, price, icon, is_available) VALUES
-(1, 'Checkup', 300.00, 'checkup-icon', TRUE),
-(2, 'Cleaning', 800.00, 'cleaning-icon', TRUE);
-
-INSERT INTO appointments (appointment_id, patient_id, employee_id, service_id, appointment_date, time_slot, appointment_status, dentist_note, patient_note) VALUES
-(150, 1, 3, 1, '2025-06-02', '09:00:00', 'completed', 'No issues found.', 'Routine checkup'),
-(140, 2, 3, 2, '2025-10-15', '11:00:00', 'completed', 'Mild plaque buildup.', 'Regular cleaning');
-
-INSERT INTO appointments (appointment_id, patient_id, employee_id, service_id, appointment_date, time_slot, appointment_status, dentist_note, patient_note) VALUES
-(201, 1, 3, 1, CURDATE(), '10:00:00', 'approved', '', 'Tooth pain, upper left molar'),
-(202, 2, 3, 2, CURDATE(), '11:30:00', 'approved', '', 'Reporting gum sensitivity during brushing');
+INSERT INTO payments (appointment_id, amount, payment_date, method, status) VALUES
+(1, 800.00, '2026-09-10', 'card', 'paid');
 
 INSERT INTO xrays (patient_id, appointment_id, uploaded_by, file_url) VALUES
-(1, 150, 3, 'https://images.unsplash.com/photo-1516549655169-df83a0774514?w=300'),
-(2, 140, 3, 'https://images.unsplash.com/photo-1588776814546-1ffcf47267a5?w=300');
+(1, 1, 3, '/xrays/patient1_visit1.png');
 
-	select * from users;
+INSERT INTO messages (sender_id, receiver_id, content, is_read) VALUES
+(3, 1, 'Please arrive 10 minutes early for your cleaning.', FALSE);
+
+INSERT INTO notifications (user_id, type, title, message, appointment_id) VALUES
+(1, 'appointment_status', 'Appointment Approved', 'Your appointment on 2026-09-10 has been approved.', 1);
+
+INSERT INTO notifications (user_id, type, title, message, message_id) VALUES
+(1, 'new_message', 'New Message', 'You have a new message from Dr. Ramon Cruz.', 1);
+
+CALL sp_get_all_patient_records();
