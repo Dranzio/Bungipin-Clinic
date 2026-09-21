@@ -1,0 +1,68 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+@import "tailwindcss";
+
+
+/*Animation Key frames */
+@theme {
+  --animate-fadeIn: fadeIn 0.6s ease-out forwards;
+  --animate-fadeOut: fadeOut 0.6s ease-out forwards;
+  --animate-slideInLeft: slideInLeft 0.7s ease-out forwards;
+  --animate-slideInRight: slideInRight 0.7s ease-out forwards
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes slideInLeft{
+    from {
+        transform: translateX(-50%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+
+    
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(50%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+body {
+    font-family: 'Poppins', sans-serif;
+}
+.bold {
+    font-weight: 700;
+}
+.h-15 {
+    height: 60px;
+}
+.today {
+    font-weight: 700;
+    border-bottom: 2.5px solid #2A1001;
+}
