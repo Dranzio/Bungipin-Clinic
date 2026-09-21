@@ -181,31 +181,29 @@
 </head>
 <body class="bg-[#F3EFE4] min-h-screen font-poppins text-[#2c3e2b] antialiased">
     <div class="min-h-screen flex flex-col md:flex-row w-full"> <!--Div for whole body-->
-        <aside id="sidebar-aside" class="w-full md:w-auto shrink-0 bg-[#9ea988]"> <!--Div for sidebar-->
-        <div id="sidebar-placeholder"></div>
-<script>
-    (async () => {
-        try {
-            const response = await fetch('../Taskbar/Customer_Task.html');
-            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-            
-            const data = await response.text();
-            document.getElementById('sidebar-placeholder').innerHTML = data;
-            
-            const currentPage = window.location.pathname.split("/").pop();
-            document.querySelectorAll('.nav-link').forEach(link => {
-                if (link.getAttribute('data-page') === currentPage) {
-                    link.classList.add('bg-[#FDFCE9]');
-                }
-            });
+                <div id="sidebar-placeholder"></div>
+                <script>
+                    (async () => {
+                        try {
+                            const response = await fetch('../Taskbar/Customer_Task.html');
+                            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                            
+                            const data = await response.text();
+                            document.getElementById('sidebar-placeholder').innerHTML = data;
+                            
+                            const currentPage = window.location.pathname.split("/").pop();
+                            document.querySelectorAll('.nav-link').forEach(link => {
+                                if (link.getAttribute('data-page') === currentPage) {
+                                    link.classList.add('bg-[#FDFCE9]');
+                                }
+                            });
 
-            initSidebar();
-        } catch (error) {
-            console.error('Failed to load the sidebar taskbar:', error);
-        }
-    })();
-</script>
-        </aside>
+                            initSidebar();
+                        } catch (error) {
+                            console.error('Failed to load the sidebar taskbar:', error);
+                        }
+                    })();
+                </script>
 
         <!-- Main Content Area Wrapper -->
         <div class="flex-1 p-4 sm:p-6 md:p-10 flex justify-center items-start">
