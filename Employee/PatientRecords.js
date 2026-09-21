@@ -184,6 +184,60 @@ function registerPatientRecordsRoutes(app, db) {
             res.status(500).json({ message: 'Internal Server Error' });
         }
     });
+
+    // PATCH /api/appointments/:id/complete — complete the currently ongoing
+    // appointment and move it to the patient's past visit history.
+    app.patch('/api/appointments/:id/complete', authenticateToken, async (req, res) => {
+        if (!['employee', 'admin'].includes(req.user.role)) {
+            return res.status(403).json({ message: 'Not authorized' });
+        }
+
+        const { dentist_note } = req.body;
+        const appointmentId = req.params.id;
+
+        try {
+            const [apptRows] = await db.query(
+                `SELECT appointment_status, queue_status
+                 FROM appointments
+                 WHERE appointment_id = ?`,
+                [appointmentId]
+            );
+
+            if (apptRows.length === 0) {
+                return res.status(404).json({ message: 'Appointment not found' });
+            }
+
+            if (
+                apptRows[0].appointment_status !== 'approved' ||
+                apptRows[0].queue_status !== 'ongoing'
+            ) {
+                return res.status(409).json({
+                    message: 'This appointment does not have an active session'
+                });
+            }
+
+            await db.query(
+                `UPDATE appointments
+                 SET appointment_status = 'completed',
+                     queue_status = 'completed',
+                     dentist_note = ?
+                 WHERE appointment_id = ?`,
+                [dentist_note || null, appointmentId]
+            );
+
+            res.json({
+                message: 'Appointment completed successfully'
+            });
+
+        } catch (err) {
+            console.error('Complete appointment error:', err);
+            res.status(500).json({
+                message: 'Internal Server Error'
+            });
+        }
+    });
 }
+
+
 
 module.exports = registerPatientRecordsRoutes;

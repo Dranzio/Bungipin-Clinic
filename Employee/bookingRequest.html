@@ -307,7 +307,7 @@
                         <div class="flex items-center gap-2 mb-1">
                             <span class="text-xs font-semibold text-[#2A1001]/60 uppercase tracking-wide">Patient ID: ${b.public_id}</span>
                             ${isNew(b.created_at) ? '<span class="text-xs bg-green-100 text-green-700 font-semibold px-2 py-0.5 rounded-full">New</span>' : ''} 
-                            ${b.payment_status === 'paid' ? '<span class="text-xs bg-blue-100 text-blue-700 font-semibold px-2 py-0.5 rounded-full">Paid Online</span>' : '<span class="text-xs bg-gray-100 text-[#2A1001]/70 font-semibold px-2 py-0.5 rounded-full">Cash</span>'}
+                            ${b.payment_method === 'online' ? '<span class="text-xs bg-blue-100 text-blue-700 font-semibold px-2 py-0.5 rounded-full">Paid Online</span>' : '<span class="text-xs bg-gray-100 text-[#2A1001]/70 font-semibold px-2 py-0.5 rounded-full">Cash</span>'}
                         </div>
                         <h3 class="text-lg font-bold text-[#2A1001] font-['Poppins']">${b.first_name} ${b.last_name}</h3>
                         <p class="text-sm text-[#2A1001]/80 mt-0.5">

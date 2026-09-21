@@ -14,7 +14,8 @@ function registerBookingRequestRoutes(app, db) {
             let query = `
                 SELECT a.appointment_id, u.public_id, u.first_name, u.last_name,
                        s.label AS service_label, a.appointment_date, a.time_slot,
-                       a.created_at, p.status AS payment_status
+                       a.created_at, p.status AS payment_status,
+                       p.method AS payment_method
                 FROM appointments a
                          JOIN patient_profiles pp ON a.patient_id = pp.patient_id
                          JOIN users u ON pp.patient_id = u.user_id
