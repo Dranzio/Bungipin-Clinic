@@ -11,7 +11,8 @@ const registerEmployeeProfileRoute = require("./Employee/EmployeeProfile");
 const registerBookingRequestRoutes = require("./Employee/BookingRequest");
 const registerQueueRoutes = require("./Employee/QueueRoutes");
 const registerPatientRecordsRoutes = require("./Employee/PatientRecords");
-const authenticateToken = require("./authMiddleware");
+const registerMessagesRoutes = require("./MessagesRoutes");
+const authenticateToken = require("./authmiddleware");
 
 const app = express();
 app.use(express.json());
@@ -25,6 +26,7 @@ registerEmployeeProfileRoute(app, db);
 registerBookingRequestRoutes(app, db);
 registerQueueRoutes(app, db);
 registerPatientRecordsRoutes(app, db);
+registerMessagesRoutes(app, db);
 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use(express.static(path.join(__dirname)));

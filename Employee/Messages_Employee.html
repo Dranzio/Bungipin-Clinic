@@ -4,8 +4,122 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Messages</title>
+    <link rel="stylesheet" href="/output.css">
+    <!-- Tailwind CDN Fallback for missing builds -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://kit.fontawesome.com/fc8c3f4103.js" crossorigin="anonymous"></script>
+    <script src="/Taskbar/Employee_Sidebar.js"></script>
+    <script src="Messages_Employee.js"></script>
 </head>
-<body>
-    
+<body class="bg-[#F3EFE4] min-h-screen font-sans text-[#2c3e2b] antialiased">
+<div class="min-h-screen flex flex-col md:flex-row w-full"> <!--Div for whole body-->
+    <div id="sidebar-placeholder"></div>
+    <script>
+        fetch('/Taskbar/Employee_Task.html')
+            .then(response => response.text())
+            .then(data => {
+                document.getElementById('sidebar-placeholder').innerHTML = data;
+
+                const currentPage = window.location.pathname.split("/").pop();
+                document.querySelectorAll('.nav-link').forEach(link => {
+                    if (link.getAttribute('data-page') === currentPage) {
+                        link.classList.add('bg-[#FDFCE9]');
+                    }
+                });
+
+                initSidebar();
+            })
+    </script>
+
+    <!-- Main Content Area Wrapper -->
+    <div class="flex-1 p-4 sm:p-6 md:p-10 flex justify-center items-start">
+        <main class="w-full max-w-4xl flex flex-col items-center gap-8">
+
+            <div class="flex flex-col w-full max-w-4xl">
+
+                <!--Div for header and logo-->
+                <div class="w-full">
+                    <h1 class="text-2xl sm:text-3xl font-extrabold text-[#1a281b]">Messages</h1>
+
+                </div>
+
+                <!--Div for searchbar and filter-->
+                <div class="flex w-full items-center justify-between gap-4 mb-6">
+
+                    <!--Search Bar-->
+                    <div class="flex-1">
+                        <input id="searchInput" type="text" placeholder="Search..." class="w-full h-[45px] bg-white border-1 border-black rounded-full px-5 outline-none shadow-sm">
+                    </div>
+
+                    <!--Filter Buttons-->
+                    <div class="relative shrink-0">
+                        <span class="font-extrabold text-sm text-[#2c3e2b]">Sort:</span>
+                        <select id="filterSelect" class="appearance-none bg-[#D1C363] text-black font-extrabold px-6 py-2.5 pr-10 rounded-full border-black text-sm cursor-pointer shadow-sm outline-none">
+                            <option value="all"> All </option>
+                            <option value="unread"> Unread </option>
+                            <option value="read"> Read </option>
+                        </select>
+
+                        <!-- Custom dropdown arrow icon -->
+                        <div class="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none text-black">
+                            <i class="fa-solid fa-chevron-down text-xs font-bold"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!--Div for Messages Tabs-->
+                <div id="messagesList" class="flex flex-col w-full gap-5.5">
+                    <!-- Dynamic messages will be injected here by Messages_Employee.js -->
+                </div>
+
+
+            </div>
+
+        </main>
+
+        <!-- RIGHT-SIDE CHAT PANEL DRAWER -->
+        <div id="chatModal" class="hidden fixed inset-0 bg-black/40 flex justify-end z-50">
+            <div class="relative w-full max-w-3xl h-full bg-[#F4F1EA] border-1 border-black flex flex-col shadow-2xl overflow-hidden">
+
+                <!-- Floating Yellow Close Button (Top-Left of the drawer) -->
+                <button onclick="closeChat()" class="absolute top-4 left-4 w-10 h-10 bg-[#D1C363] border-1 border-black rounded-lg flex items-center justify-center font-extrabold text-black cursor-pointer shadow-md hover:bg-[#c5b757] transition-all z-10">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+
+                <!-- Panel Header -->
+                <div class="border-1 border-black px-16 py-5 flex items-center bg-[#F4F1EA]">
+                    <h2 id="chatDocName" class="font-extrabold text-2xl text-[#2c3e2b]">Select a patient</h2>
+                </div>
+
+                <!-- Chat Messages Area (Scrollable) -->
+                <div id="chatMessagesArea" class="flex-1 p-6 overflow-y-auto flex flex-col gap-6 bg-[#F9F7F1]">
+                    <!-- Dynamic chat messages will be injected here -->
+                </div>
+
+                <!-- Chat Input & Attachment Area -->
+                <div class="border-t-4 border-black bg-white flex flex-col">
+                    <!-- Attachment Icons Toolbar -->
+                    <div class="px-4 py-2 border-b-2 border-black flex gap-4 text-gray-700 bg-[#F4F1EA]">
+                        <button class="hover:text-black cursor-pointer"><i class="fa-solid fa-paperclip"></i></button>
+                        <button class="hover:text-black cursor-pointer"><i class="fa-solid fa-image"></i></button>
+                    </div>
+
+                    <!-- Textarea Box -->
+                    <textarea id="chatInput" placeholder="Type a message..." class="w-full h-28 p-4 outline-none resize-none text-sm bg-white"></textarea>
+
+                    <!-- Send Button Row -->
+                    <div class="px-4 py-2 bg-[#F4F1EA] border-t-2 border-black flex justify-end">
+                        <button id="sendBtn" onclick="sendMessage()" class="font-extrabold text-black hover:underline cursor-pointer text-sm">
+                            Send
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+
+</div>
 </body>
 </html>
