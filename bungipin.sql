@@ -343,11 +343,11 @@ END$$
 DELIMITER ;
 
 -- Double Check
-CALL sp_register_user('Maria', 'Santos', 'maria.santos@example.com', '09171234567', '<hashed_pw>', 'F', 'patient', @uid1);
-CALL sp_register_user('Juan', 'Dela Cruz', 'juan.delacruz@example.com', '09179876543', '<hashed_pw>', 'M', 'patient', @uid2);
-CALL sp_register_user('Ramon', 'Cruz', 'ramon.cruz@example.com', '09201112222', '<hashed_pw>', 'M', 'employee', @uid3);
-CALL sp_register_user('Liza', 'Tan', 'liza.tan@example.com', '09203334444', '<hashed_pw>', 'F', 'employee', @uid4);
-CALL sp_register_user('Carla', 'Reyes', 'carla.reyes@example.com', '09051119999', '<hashed_pw>', 'F', 'admin', @uid5);
+CALL sp_register_user('Maria', 'Santos', 'maria.santos@example.com', '09171234567', '$2b$10$PFUiFjV7FngVMIZ2u/chOOV3l.cVQ84nz4Os8DipZlw72yiqAKKJi', 'F', 'patient', @uid1);
+CALL sp_register_user('Juan', 'Dela Cruz', 'juan.delacruz@example.com', '09179876543', '$2b$10$PFUiFjV7FngVMIZ2u/chOOV3l.cVQ84nz4Os8DipZlw72yiqAKKJi', 'M', 'patient', @uid2);
+CALL sp_register_user('Ramon', 'Cruz', 'ramon.cruz@example.com', '09201112222', '$2b$10$PFUiFjV7FngVMIZ2u/chOOV3l.cVQ84nz4Os8DipZlw72yiqAKKJi', 'M', 'employee', @uid3);
+CALL sp_register_user('Liza', 'Tan', 'liza.tan@example.com', '09203334444', '$2b$10$PFUiFjV7FngVMIZ2u/chOOV3l.cVQ84nz4Os8DipZlw72yiqAKKJi', 'F', 'employee', @uid4);
+CALL sp_register_user('Carla', 'Reyes', 'carla.reyes@example.com', '09051119999', '$2b$10$PFUiFjV7FngVMIZ2u/chOOV3l.cVQ84nz4Os8DipZlw72yiqAKKJi', 'F', 'admin', @uid5);
 
 
 UPDATE patient_profiles SET birthday = '1990-04-12', civil_status = 'Single', address = '123 Mabini St, Quezon City' WHERE patient_id = 1;
@@ -383,3 +383,7 @@ INSERT INTO notifications (user_id, type, title, message, message_id) VALUES
 (1, 'new_message', 'New Message', 'You have a new message from Dr. Ramon Cruz.', 1);
 
 CALL sp_get_all_patient_records();
+
+select * from users;
+select * from patient_profiles;
+select * from health_conditions;
