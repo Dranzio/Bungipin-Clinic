@@ -13,7 +13,7 @@
 
         <!-- Mobile register design format-->
         <div class="flex flex-col items-center lg:block">
-            <img src="../images/logowithtitle.png"
+            <img src="../assets/logowithtitle.png"
                 class="lg:hidden w-[45%] max-w-[220px] mt-4 mb-2 animate-slideInLeft" />
             <a href="login.html"
                 class="lg:hidden bg-[#D5C04D] text-sm font-bold text-[#2A1001] px-6 py-2 rounded-full hover:bg-[#FDFCE9] transition duration-300 mb-4 animate-slideInLeft">
@@ -22,7 +22,7 @@
         <!-- Desktop register design format-->
         <div
             class="hidden lg:flex absolute right-0 top-0 h-full w-[40%] flex-col items-center justify-center z-20 gap-8">
-            <img src="../images/logowithtitle.png"
+            <img src="../assets/logowithtitle.png"
                 class="w-[70%] max-w-[500px] pointer-events-none select-none drop-shadow-xl animate-slideInLeft" />
             <a href="login.html" class="z-30 bg-[#D5C04D] text-sm md:text-base font-bold text-[#2A1001] px-6 py-2 rounded-full animate-slideInLeft
                 transition-all duration-200 ease-in-out 
@@ -53,7 +53,7 @@
                     <div class="flex-1">
                         <label class="text-sm md:text-[20px] block font-semibold text-[#2A1001] font-poppins mb-2">First
                             Name:</label>
-                        <input type="text" id="first_name" required
+                        <input type="text" id="first_name" name ="first_name" required
                             class="w-full h-8 md:h-11 px-4 bg-white outline-none rounded-[30px] border border-gray-200 mb-4 md:mb-12"
                             placeholder="Coleen" />
                     </div>
@@ -61,7 +61,7 @@
                     <div class="flex-1">
                         <label class="text-sm md:text-[20px] block font-semibold text-[#2A1001] font-poppins mb-2">Last
                             Name:</label>
-                        <input type="text" id="last_name" required
+                        <input type="text" id="last_name" name="last_name" required
                             class="w-full h-8 md:h-11 px-4 bg-white outline-none rounded-[30px] border border-gray-200 mb-4 md:mb-12"
                             placeholder="Silvestre" />
                     </div>
@@ -71,7 +71,7 @@
                     <div class="flex-1">
                         <label
                             class="text-sm md:text-[20px] block font-semibold text-[#2A1001] font-poppins mb-2">Email:</label>
-                        <input type="email" id="email" required
+                        <input type="email" id="email" name ="email" required
                             class="w-full h-8 md:h-11 px-4 bg-white outline-none rounded-[30px] border border-gray-200 mb-4 md:mb-12"
                             placeholder="bungipin123@gmail.com" />
                     </div>
@@ -79,7 +79,7 @@
                     <div class="flex-1">
                         <label class="text-sm md:text-[20px] block font-semibold text-[#2A1001] font-poppins mb-2">Phone
                             Number:</label>
-                        <input type="tel" id="phone" pattern="^09\d{9}$" maxlength="11"
+                        <input type="tel" id="phone" name="phone" pattern="^09\d{9}$" maxlength="11"
                             oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 11);" required
                             class="w-full h-8 md:h-11 px-4 bg-white outline-none rounded-[30px] border border-gray-200 mb-4 md:mb-12"
                             placeholder="09171234567" />
@@ -90,7 +90,7 @@
                     <div class="flex-1">
                         <label
                             class="text-sm md:text-[20px] block font-semibold text-[#2A1001] font-poppins mb-2">Password:</label>
-                        <input type="password" id="password_hash" required minlength="8"
+                        <input type="password" id="password_hash" name="password_hash" required minlength="8"
                             class="w-full h-8 md:h-11 px-4 bg-white outline-none rounded-[30px] border border-gray-200 mb-4 md:mb-12"
                             placeholder="12345678" />
                     </div>
@@ -99,7 +99,7 @@
                         <label
                             class="text-sm md:text-[20px] block font-semibold text-[#2A1001] font-poppins mb-2">Confirm
                             Password:</label>
-                        <input type="password" id="confirm_password" required minlength="8"
+                        <input type="password" id="confirm_password"  name="confirm_password" required minlength="8"
                             class="w-full h-8 md:h-11 px-4 bg-white outline-none rounded-[30px] border border-gray-200 mb-4 md:mb-12"
                             placeholder="Confirm Password"
                             oninput="this.setCustomValidity(this.value !== document.getElementById('password_hash').value ? 'Passwords do not match.' : '')" />
@@ -164,7 +164,7 @@
                 <button id="closeServiceModal"
                     class="absolute top-5 right-6 text-3xl font-extrabold text-[#382414] hover:opacity-60 transition leading-none">&times;</button>
 
-                <img src="../images/logowithtitle.png" class="absolute top-4 right-16 w-20 h-20 object-contain z-10"
+                <img src="../assets/logowithtitle.png" class="absolute top-4 right-16 w-20 h-20 object-contain z-10"
                     alt="Logo" />
 
                 <h2 id="modalTitle"
@@ -202,120 +202,125 @@
             const modalTitle = document.getElementById('modalTitle');
             const modalContent = document.getElementById('modalContent');
 
-            const termsText = `
-        <p><strong>1. The Use of Our Website: </strong> You may use our website and online tools to request appointments, 
-            complete forms, and communicate with our dentists. By using this website, you agree to use these services only 
-            for lawful purposes and in a way that does not interfere with operation, security, or integrity of our systems.</p>
-
-        <p><strong>2. Accuracy of Information: </strong> You agree to provide accurate, current, and complete information when 
-            submitting forms, requesting appointments, or communicating with our dentists. You are responsible for updating 
-            your contact information so we can reach you about appointments, treatment coordination, billing, and other 
-            patient support matters.</p>
-
-        <p><strong>3. Appointment Requests and Scheduling:</strong> Submitting an appointment request through our website does 
-            not guarantee appointment availability or confirmation. All appointments are subject to review, provider 
-            availability, and practice policies.</p>
-
-        <p><strong>4. Consent to Email and Text Communications:</strong> By providing your email address or mobile phone number 
-            to Bungipin, you consent to receive service-related communications from us. These communications may include 
-            appointment reminders, rescheduling notices, and treatment coordination. Patients opt in to receive messages by 
-            providing consent. Consent is not a condition of receiving dental treatment.</p>
-
-        <p><strong>5. Intellectual Property:</strong> All content on this website, including text, graphics, logos, and other 
-            materials, is owned or used with permission by Bungipin. You may not copy, reproduce, distribute, or exploit website 
-            content.</p>
-
-        <p><strong>6. Website Availability:</strong> We work to keep our website and related services accurate and available, but 
-            we do not guarantee uninterrupted access, error-free performance, or that all information is always current.</p>
-
-        <p><strong>7. Limitation of Liability:</strong> Bungipin is not liable for indirect, incidental, consequential, special, 
-            or punitive damages arising out of or related to your use of our website, scheduling tools, or communication terms.</p>
-
-        <div>
-            <strong>8. Prohibited Use:</strong> 
-                <ul class="pl-5 mt-2">
-                    <li>You agree not to:
-                        <ul class="list-disc pl-5 mt-2 space-y-2">
-                            <li>Use the website or related services for unlawful, fraudulent, abusive, or disruptive purposes;</li>
-                            <li>Attempt to gain unauthorized access to systems, accounts, or data;</li>
-                            <li>Upload or transmit harmful code or malicious content; or</li>
-                            <li>Misuse our communication tools in a way that interferes with patient care or office operations.</li>
-                        </ul>
-                    </li>
-                </ul>
-        </div>
-
-        <p><strong>9. Changes to These Terms:</strong> We may update these Terms from time to time by posting a revised version 
-            of this page. Your continued use of the website or related digital services after updated Terms are posted means you 
-            accept the revised Terms.</p>
-
-        <p><strong>10. Bungipin Dentist Support Messages:</strong> The Bungipin Dentist Support Messages allows direct dentists 
-            and patients to send direct messages to each other. Messages may include appointment reminders, appointment 
-            confirmations, scheduling updates, treatment coordination, and other office support communications.</p>
-
-
-    `;
+ const termsText = `
+<div class="font-poppins text-[#2A1001] text-sm md:text-base pl-4 md:pl-6">
+    <ol class="list-decimal space-y-4">
+        <li>
+            <strong>The Use of Our Website:</strong> You may use our website and online tools to request appointments, complete forms, and communicate with our dentists. By using this website, you agree to use these services only for lawful purposes and in a way that does not interfere with operation, security, or integrity of our systems.
+        </li>
+        <li>
+            <strong>Accuracy of Information:</strong> You agree to provide accurate, current, and complete information when submitting forms, requesting appointments, or communicating with our dentists. You are responsible for updating your contact information so we can reach you about appointments, treatment coordination, billing, and other patient support matters.
+        </li>
+        <li>
+            <strong>Appointment Requests and Scheduling:</strong> Submitting an appointment request through our website does not guarantee appointment availability or confirmation. All appointments are subject to review, provider availability, and practice policies.
+        </li>
+        <li>
+            <strong>Consent to Email and Text Communications:</strong> By providing your email address or mobile phone number to Bungipin, you consent to receive service-related communications from us. These communications may include appointment reminders, rescheduling notices, and treatment coordination. Patients opt in to receive messages by providing consent. Consent is not a condition of receiving dental treatment.
+        </li>
+        <li>
+            <strong>Intellectual Property:</strong> All content on this website, including text, graphics, logos, and other materials, is owned or used with permission by Bungipin. You may not copy, reproduce, distribute, or exploit website content.
+        </li>
+        <li>
+            <strong>Website Availability:</strong> We work to keep our website and related services accurate and available, but we do not guarantee uninterrupted access, error-free performance, or that all information is always current.
+        </li>
+        <li>
+            <strong>Limitation of Liability:</strong> Bungipin is not liable for indirect, incidental, consequential, special, or punitive damages arising out of or related to your use of our website, scheduling tools, or communication terms.
+        </li>
+        <li>
+            <strong>Prohibited Use:</strong> You agree not to:
+            <ul class="list-disc pl-5 mt-2 space-y-2">
+                <li>Use the website or related services for unlawful, fraudulent, abusive, or disruptive purposes;</li>
+                <li>Attempt to gain unauthorized access to systems, accounts, or data;</li>
+                <li>Upload or transmit harmful code or malicious content; or</li>
+                <li>Misuse our communication tools in a way that interferes with patient care or office operations.</li>
+            </ul>
+        </li>
+        <li>
+            <strong>Changes to These Terms:</strong> We may update these Terms from time to time by posting a revised version of this page. Your continued use of the website or related digital services after updated Terms are posted means you accept the revised Terms.
+        </li>
+        <li>
+            <strong>Bungipin Dentist Support Messages:</strong> The Bungipin Dentist Support Messages allows direct dentists and patients to send direct messages to each other. Messages may include appointment reminders, appointment confirmations, scheduling updates, treatment coordination, and other office support communications.
+        </li>
+    </ol>
+</div>
+`;
             // test
 
-            const privacyText = `
-        <p>Bungipin respects your privacy. This Privacy Policy explains how we collect, use, disclose, and protect 
-            information when you visit our website, request or manage appointments, and communicate with our dentists.</p>
-                <div>
-                  <ol>
-                    <li>
-                        1. Scope of This Privacy Policy<br>
-                        This Privacy Policy applies to information collected through:
-                        <ul>
-                            <li>Our website and online forms;</li>
-                            <li>Appointment requests and scheduling tools;</li>
-                            <li>Email, phone, and text communications with our dentists</li>
-                        </ul>
-                    </li>
-                <li>
-                        2. Information We Collect<br>
-                        Depending on how you interact with us, we may collect:
-                        <ul>
-                            <li>Your name, phone number, and email address;</li>
-                            <li>Appointment-related information such as requested dates, appointment history, reminders, confirmations, and scheduling notes;</li>
-                            <li>Information you submit through forms, messages, or patient communications;</li>
-                            <li>Records of communications with our dentists.</li>
-                        </ul>
-                    </li>
-                <li>
-                        3. How We Collect Information<br>
-                        We collect information:
-                        <ul>
-                            <li>Directly from you when you contact us, submit a form, request an appointment, or communicate with our dentists.</li>
-                        </ul>
-                    </li>
-                <li>
-                        4. How We Use Information<br>
-                        We may use information we collect to:
-                    <ul>
-                            <li>Operate, maintain, and improve our website and patient communication processes;</li>
-                            <li>Schedule, confirm, remind, reschedule, and manage appointments;</li>
-                            <li>Respond to your inquiries;</li>
-                            <li>Send service-related text messages about appointments, patient support, treatment coordination;</li>
-                            <li>Document communications sent;</li>
-                            <li>Protect the safety, security, and integrity of our systems and services.</li>
-                        </ul>
-                    </li>
-                <li>
-                        5. Your Choices<br>
-                        You may contact us to:
-                        <ul>
-                            <li>Update or correct your contact information;</li>
-                            <li>Ask questions about our privacy practices;</li>
-                        </ul>
-                    </li>
-                <li>
-                    6. Changes To This Privacy Policy<br>
-                    We may update this Privacy Policy from time to time. If we do, we will post the revised version on this page.
-                </li>
-            </ol>
-               </div>
-    `;
+ const privacyText = `
+<div class="font-poppins text-[#2A1001]">
+    <p class="mb-4 text-sm md:text-base">
+        Bungipin respects your privacy. This Privacy Policy explains how we collect, use, disclose, and protect 
+        information when you visit our website, request or manage appointments, and communicate with our dentists.
+    </p>
 
+    <div class="pl-4 md:pl-6 text-sm md:text-base">
+        <ol class="list-decimal space-y-4">
+            <li>
+                <strong>Scope of This Privacy Policy</strong>
+                <div class="ml-4 md:ml-8 mt-1">
+                    This Privacy Policy applies to information collected through:
+                    <ul class="list-none ml-4 mt-1 space-y-1">
+                        <li>- &nbsp; Our website and online forms;</li>
+                        <li>- &nbsp; Appointment requests and scheduling tools;</li>
+                        <li>- &nbsp; Email, phone, and text communications with our dentists</li>
+                    </ul>
+                </div>
+            </li>
+            <li>
+                <strong>Information We Collect</strong>
+                <div class="ml-4 md:ml-8 mt-1">
+                    Depending on how you interact with us, we may collect:
+                    <ul class="list-none ml-4 mt-1 space-y-1">
+                        <li>- &nbsp; Your name, phone number, and email address;</li>
+                        <li>- &nbsp; Appointment-related information such as requested dates, appointment history, reminders, confirmations, and scheduling notes;</li>
+                        <li>- &nbsp; Information you submit through forms, messages, or patient communications;</li>
+                        <li>- &nbsp; Records of communications with our dentists.</li>
+                    </ul>
+                </div>
+            </li>
+            <li>
+                <strong>How We Collect Information</strong>
+                <div class="ml-4 md:ml-8 mt-1">
+                    We collect information:
+                    <ul class="list-none ml-4 mt-1 space-y-1">
+                        <li>- &nbsp; Directly from you when you contact us, submit a form, request an appointment, or communicate with our dentists.</li>
+                    </ul>
+                </div>
+            </li>
+            <li>
+                <strong>How We Use Information</strong>
+                <div class="ml-4 md:ml-8 mt-1">
+                    We may use information we collect to:
+                    <ul class="list-none ml-4 mt-1 space-y-1">
+                        <li>- &nbsp; Operate, maintain, and improve our website and patient communication processes;</li>
+                        <li>- &nbsp; Schedule, confirm, remind, reschedule, and manage appointments;</li>
+                        <li>- &nbsp; Respond to your inquiries;</li>
+                        <li>- &nbsp; Send service-related text messages about appointments, patient support, treatment coordination;</li>
+                        <li>- &nbsp; Document communications sent;</li>
+                        <li>- &nbsp; Protect the safety, security, and integrity of our systems and services.</li>
+                    </ul>
+                </div>
+            </li>
+            <li>
+                <strong>Your Choices</strong>
+                <div class="ml-4 md:ml-8 mt-1">
+                    You may contact us to:
+                    <ul class="list-none ml-4 mt-1 space-y-1">
+                        <li>- &nbsp; Update or correct your contact information;</li>
+                        <li>- &nbsp; Ask questions about our privacy practices;</li>
+                    </ul>
+                </div>
+            </li>
+            <li>
+                <strong>Changes To This Privacy Policy</strong>
+                <div class="ml-4 md:ml-8 mt-1">
+                    We may update this Privacy Policy from time to time. If we do, we will post the revised version on this page.
+                </div>
+            </li>
+        </ol>
+    </div>
+</div>
+`;
             function openModal(title, content) {//for modal to show up
                 modalTitle.innerText = title;
                 modalContent.innerHTML = content;
