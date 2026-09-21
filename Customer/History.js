@@ -74,7 +74,7 @@ async function fetchAppointments() {
     }
 
     try {
-        const response = await fetch('/api/appointments', {
+        const response = await fetch('/api/appointments/mine', {
             method: 'GET',
             headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -154,9 +154,9 @@ function openDetailModal(appt) {
     const amount      = appt.amount ? `${Number(appt.amount).toLocaleString()}php` : 'N/A';
     const method      = appt.method ? appt.method.charAt(0).toUpperCase() + appt.method.slice(1) : 'N/A';
     const service     = appt.label || 'General Appointment';
-    const dentistName = (appt.dentist_first_name || appt.dentist_last_name) 
-                        ? `Dr. ${appt.dentist_first_name || ''} ${appt.dentist_last_name || ''}`.trim() 
-                        : 'To be assigned';
+    const dentistName = (appt.dentist_first_name || appt.dentist_last_name)
+        ? `Dr. ${appt.dentist_first_name || ''} ${appt.dentist_last_name || ''}`.trim()
+        : 'To be assigned';
     const dentistNote = appt.dentist_note || null;
 
     // Patient receipt fields — joined from users + patient_profiles on backend
