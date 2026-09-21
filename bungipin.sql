@@ -310,7 +310,7 @@ INSERT INTO appointments (appointment_id, patient_id, employee_id, service_id, a
 (202, 2, 3, 2, CURDATE(), '11:30:00', 'approved', '', 'Reporting gum sensitivity during brushing');
 
 INSERT INTO xrays (patient_id, appointment_id, uploaded_by, file_url) VALUES
-(1, 150, 3, 'https://assets.unsplash.com/photo-1516549655169-df83a0774514?w=300'),
-(2, 140, 3, 'https://assets.unsplash.com/photo-1588776814546-1ffcf47267a5?w=300');
+(1, 150, 3, 'https://images.unsplash.com/photo-1516549655169-df83a0774514?w=300'),
+(2, 140, 3, 'https://images.unsplash.com/photo-1588776814546-1ffcf47267a5?w=300');
 
-select * from users;
+	select * from users;
