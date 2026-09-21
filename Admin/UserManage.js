@@ -4,25 +4,34 @@ const authenticateToken = require('../authMiddleware');
 
 const SALT_ROUNDS = 10;
 
+function requireAdmin(req, res, next) {
+    if (req.user.role !== 'admin') {
+        return res.status(403).json({ message: 'Admins only' });
+    }
+    next();
+}
+
+// One shape for every user the frontend receives (list, edit response).
+const USER_SELECT = `
+    SELECT u.user_id, u.public_id, u.first_name, u.last_name, u.email, u.phone,
+           u.sex, u.role, u.account_status,
+           ep.position, ep.staff_code,
+           ap.permission_level
+    FROM users u
+    LEFT JOIN employee_profiles ep ON ep.employee_id = u.user_id
+    LEFT JOIN admin_profiles ap ON ap.admin_id = u.user_id`;
+
+async function fetchUser(conn, userId) {
+    const [rows] = await conn.query(`${USER_SELECT} WHERE u.user_id = ?`, [userId]);
+    return rows[0] || null;
+}
+
 function registerUserManagementRoutes(app, db) {
 
-    // GET /api/users — admin only, powers the User Management list
-    app.get('/api/users', authenticateToken, async (req, res) => {
-        if (req.user.role !== 'admin') {
-            return res.status(403).json({ message: 'Only admins can view the user list' });
-        }
-
+    // GET /api/users — powers the User Management list
+    app.get('/api/users', authenticateToken, requireAdmin, async (req, res) => {
         try {
-            const [rows] = await db.query(
-                `SELECT u.user_id, u.public_id, u.first_name, u.last_name, u.email, u.phone,
-                        u.sex, u.role, u.account_status,
-                        ep.position, ep.staff_code,
-                        ap.permission_level
-                 FROM users u
-                 LEFT JOIN employee_profiles ep ON ep.employee_id = u.user_id
-                 LEFT JOIN admin_profiles ap ON ap.admin_id = u.user_id
-                 ORDER BY u.user_id`
-            );
+            const [rows] = await db.query(`${USER_SELECT} ORDER BY u.user_id`);
             res.json(rows);
         } catch (err) {
             console.error('User list error:', err);
@@ -30,14 +39,9 @@ function registerUserManagementRoutes(app, db) {
         }
     });
 
-    // POST /api/users — admin only, creates an employee or admin account.
-    // Patients still self-register through /api/auth/register — this route
-    // deliberately refuses role: 'patient'.
-    app.post('/api/users', authenticateToken, async (req, res) => {
-        if (req.user.role !== 'admin') {
-            return res.status(403).json({ message: 'Only admins can create accounts' });
-        }
-
+    // POST /api/users — creates an employee or admin account.
+    // Patients still self-register through /api/auth/register.
+    app.post('/api/users', authenticateToken, requireAdmin, async (req, res) => {
         const { first_name, last_name, email, phone, sex, role, position, permission_level } = req.body;
 
         if (!first_name || !last_name || !email || !phone || !sex || !role) {
@@ -58,37 +62,29 @@ function registerUserManagementRoutes(app, db) {
         try {
             await connection.beginTransaction();
 
-            // We don't know the public_id (and therefore the temp password)
-            // until after the insert, so the row is created with a random,
-            // unguessable placeholder hash first and then re-hashed below.
-            const placeholder_hash = await bcrypt.hash(crypto.randomBytes(20).toString('hex'), SALT_ROUNDS);
+            // Random temporary password (shown once to the admin). It used to be the
+            // public ID (e.g. EMP-0007), which is guessable and nothing forced a change.
+            const tempPassword = crypto.randomBytes(9).toString('base64url');
+            const passwordHash = await bcrypt.hash(tempPassword, SALT_ROUNDS);
 
             await connection.query(
                 'CALL sp_register_user(?, ?, ?, ?, ?, ?, ?, @new_id)',
-                [first_name, last_name, email, phone, placeholder_hash, sex, role]
+                [first_name, last_name, email, phone, passwordHash, sex, role]
             );
             const [[{ '@new_id': newUserId }]] = await connection.query('SELECT @new_id AS `@new_id`');
 
-            const [[createdUser]] = await connection.query(
+            const [[created]] = await connection.query(
                 'SELECT public_id FROM users WHERE user_id = ?',
                 [newUserId]
             );
-            const publicId = createdUser.public_id;
 
-            // Temp password matches the generated system ID (e.g. EMP-0007) —
-            // the account owner must change it on first login.
-            const temp_password_hash = await bcrypt.hash(publicId, SALT_ROUNDS);
-            await connection.query(
-                'UPDATE users SET password_hash = ? WHERE user_id = ?',
-                [temp_password_hash, newUserId]
-            );
-
+            // sp_register_user already created the empty profile row.
             if (role === 'employee') {
                 await connection.query(
                     'UPDATE employee_profiles SET position = ?, staff_code = ? WHERE employee_id = ?',
-                    [position, publicId, newUserId]
+                    [position, created.public_id, newUserId]
                 );
-            } else if (role === 'admin') {
+            } else {
                 await connection.query(
                     'UPDATE admin_profiles SET permission_level = ? WHERE admin_id = ?',
                     [permission_level, newUserId]
@@ -97,20 +93,8 @@ function registerUserManagementRoutes(app, db) {
 
             await connection.commit();
 
-            res.status(201).json({
-                user_id: newUserId,
-                public_id: publicId,
-                first_name,
-                last_name,
-                email,
-                phone,
-                sex,
-                role,
-                position: role === 'employee' ? position : null,
-                permission_level: role === 'admin' ? permission_level : null,
-                account_status: 'active',
-                temp_password: publicId
-            });
+            const user = await fetchUser(db, newUserId);
+            res.status(201).json({ ...user, temp_password: tempPassword });
 
         } catch (err) {
             await connection.rollback();
@@ -121,6 +105,123 @@ function registerUserManagementRoutes(app, db) {
             res.status(500).json({ message: 'Internal Server Error' });
         } finally {
             connection.release();
+        }
+    });
+
+    // PATCH /api/users/:id — edit modal. Returns the full updated user row.
+    app.patch('/api/users/:id', authenticateToken, requireAdmin, async (req, res) => {
+        const userId = Number(req.params.id);
+        if (!Number.isInteger(userId)) {
+            return res.status(400).json({ message: 'Invalid user id' });
+        }
+
+        const { first_name, last_name, email, phone, position, permission_level } = req.body;
+        if (!first_name || !last_name || !email) {
+            return res.status(400).json({ message: 'First name, last name and email are required' });
+        }
+
+        const connection = await db.getConnection();
+
+        try {
+            await connection.beginTransaction();
+
+            const [[existing]] = await connection.query(
+                'SELECT role FROM users WHERE user_id = ? FOR UPDATE',
+                [userId]
+            );
+            if (!existing) {
+                await connection.rollback();
+                return res.status(404).json({ message: 'User not found' });
+            }
+
+            await connection.query(
+                'UPDATE users SET first_name = ?, last_name = ?, email = ?, phone = ? WHERE user_id = ?',
+                [first_name, last_name, email, phone || null, userId]
+            );
+
+            if (existing.role === 'employee' && position) {
+                await connection.query(
+                    'UPDATE employee_profiles SET position = ? WHERE employee_id = ?',
+                    [position, userId]
+                );
+            } else if (existing.role === 'admin' && permission_level) {
+                await connection.query(
+                    'UPDATE admin_profiles SET permission_level = ? WHERE admin_id = ?',
+                    [permission_level, userId]
+                );
+            }
+
+            await connection.commit();
+            res.json(await fetchUser(db, userId));
+
+        } catch (err) {
+            await connection.rollback();
+            if (err.code === 'ER_DUP_ENTRY') {
+                return res.status(409).json({ message: 'An account with this email already exists.' });
+            }
+            console.error('User update error:', err);
+            res.status(500).json({ message: 'Internal Server Error' });
+        } finally {
+            connection.release();
+        }
+    });
+
+    // PATCH /api/users/:id/status — disable / re-enable
+    app.patch('/api/users/:id/status', authenticateToken, requireAdmin, async (req, res) => {
+        const userId = Number(req.params.id);
+        const { account_status } = req.body;
+
+        if (!Number.isInteger(userId)) {
+            return res.status(400).json({ message: 'Invalid user id' });
+        }
+        if (!['active', 'suspended'].includes(account_status)) {
+            return res.status(400).json({ message: "account_status must be 'active' or 'suspended'" });
+        }
+        if (userId === req.user.user_id) {
+            return res.status(400).json({ message: 'You cannot change your own account status' });
+        }
+
+        try {
+            const [result] = await db.query(
+                'UPDATE users SET account_status = ? WHERE user_id = ?',
+                [account_status, userId]
+            );
+            if (result.affectedRows === 0) {
+                return res.status(404).json({ message: 'User not found' });
+            }
+            res.json({ user_id: userId, account_status });
+        } catch (err) {
+            console.error('Status update error:', err);
+            res.status(500).json({ message: 'Internal Server Error' });
+        }
+    });
+
+    // DELETE /api/users/:id
+    app.delete('/api/users/:id', authenticateToken, requireAdmin, async (req, res) => {
+        const userId = Number(req.params.id);
+
+        if (!Number.isInteger(userId)) {
+            return res.status(400).json({ message: 'Invalid user id' });
+        }
+        if (userId === req.user.user_id) {
+            return res.status(400).json({ message: 'You cannot delete your own account' });
+        }
+
+        try {
+            const [result] = await db.query('DELETE FROM users WHERE user_id = ?', [userId]);
+            if (result.affectedRows === 0) {
+                return res.status(404).json({ message: 'User not found' });
+            }
+            res.json({ message: 'User deleted' });
+        } catch (err) {
+            // e.g. an employee who uploaded X-rays (xrays.uploaded_by is ON DELETE RESTRICT)
+            if (err.code === 'ER_ROW_IS_REFERENCED_2') {
+                return res.status(409).json({
+                    message: 'This user still has records linked to them (e.g. uploaded X-rays). Disable the account instead.'
+                });
+            }
+            console.error('User delete error:', err);
+            res.status(500).json({ message: 'Internal Server Error' });
         }
     });
 }

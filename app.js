@@ -6,29 +6,28 @@ const authRoutes = require("./auth");
 const path = require("path");
 const registerPatientProfileRoute = require("./Customer/CustomerProfile");
 const registerBookingRoute = require("./Customer/BookingRoutes");
-const registerHistoryRoutes = require("./Customer/HistoryRoutes");
 const registerEmployeeProfileRoute = require("./Employee/EmployeeProfile");
 const registerBookingRequestRoutes = require("./Employee/BookingRequest");
 const registerQueueRoutes = require("./Employee/QueueRoutes");
 const registerPatientRecordsRoutes = require("./Employee/PatientRecords");
-const registerMessagesRoutes = require("./MessagesRoutes");
-const authenticateToken = require("./authmiddleware");
 const registerDashboardRoutes = require("./Admin/DashboardRoutes");
+const registerUserManagementRoutes = require("./Admin/UserManage");
+const registerServiceRoutes = require("./Admin/ServiceRoutes");
 
 const app = express();
-app.use(express.json());
+app.use(express.json({ limit: "5mb" })); // service icons arrive as base64
 app.use(cors());
 
 app.use('/api/auth', authRoutes);
 registerPatientProfileRoute(app, db);
 registerBookingRoute(app, db);
-registerHistoryRoutes(app, db);
 registerEmployeeProfileRoute(app, db);
 registerBookingRequestRoutes(app, db);
 registerQueueRoutes(app, db);
 registerPatientRecordsRoutes(app, db);
-registerMessagesRoutes(app, db);
 registerDashboardRoutes(app, db);
+registerUserManagementRoutes(app, db);
+registerServiceRoutes(app, db);
 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use(express.static(path.join(__dirname)));
@@ -38,20 +37,8 @@ app.get("/", (req, res) => {
     res.sendFile(path.join(__dirname, "LogInRegister", "login.html"));
 });
 
-app.get('/api/users', authenticateToken, async (req, res) => {
-    if (req.user.role !== 'admin') {
-        return res.status(403).json({ error: 'Admins only' });
-    }
-    try {
-        const [rows] = await db.query(
-            'SELECT user_id, public_id, first_name, last_name, email, phone, sex, role, account_status, created_at FROM users'
-        );
-        res.json(rows);
-    } catch (err) {
-        console.error('Databse Error', err);
-        res.status(500).json({error: "Internal Server Error"});
-    }
-});
+// NOTE: the old inline GET /api/users was removed; Admin/UserManage.js owns it now
+// (it also returns position / staff_code / permission_level, which the page needs).
 
 app.get('/api/patients', async (req, res) => {
     try {
