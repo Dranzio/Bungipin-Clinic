@@ -14,28 +14,28 @@
   <!-- SIDEBAR -->
     <div id="sidebar-placeholder"></div>
 <script>
-  function syncContentOffset() {
-    const content = document.getElementById('main-content');
-    const placeholder = document.getElementById('sidebar-placeholder');
-    // first real element, skipping any <script>/<style> in the loaded HTML
-    const sidebar = Array.from(placeholder.children)
-      .find(el => !['SCRIPT', 'STYLE', 'LINK'].includes(el.tagName));
-    if (!sidebar) return;
+function syncContentOffset() {
+  const content = document.getElementById('main-content');
+  const placeholder = document.getElementById('sidebar-placeholder');
+  const sidebar = Array.from(placeholder.children)
+    .find(el => !['SCRIPT', 'STYLE', 'LINK'].includes(el.tagName));
+  if (!sidebar) return;
 
-    const apply = () => {
-      if (window.innerWidth < 768) { content.style.marginLeft = '0px'; return; }
-      const current = parseFloat(content.style.marginLeft) || 0;
-      const naturalLeft = content.getBoundingClientRect().left - current;
-      content.style.marginLeft =
-        Math.max(0, sidebar.getBoundingClientRect().right - naturalLeft) + 'px';
-    };
+ 
+  const set = (el, prop, value) => { if (el.style[prop] !== value) el.style[prop] = value; };
 
-    new ResizeObserver(apply).observe(sidebar);
-    new MutationObserver(apply).observe(sidebar, { attributes: true, subtree: true });
-    sidebar.addEventListener('transitionend', apply);
-    window.addEventListener('resize', apply);
-    apply();
-  }
+  const apply = () => {
+    const desktop = window.innerWidth >= 768;
+    set(placeholder, 'flexShrink', '0');          
+    set(sidebar, 'position', 'relative');         
+    set(sidebar, 'inset', 'auto');                
+    set(sidebar, 'height', desktop ? '100vh' : ''); 
+    set(content, 'marginLeft', '0px');            
+  };
+
+  window.addEventListener('resize', apply);
+  apply();
+}
 
   (async () => {
     try {
@@ -77,8 +77,8 @@
     <hr class="border-t border-[#2A1001] mt-2 mb-6" />
 
   <!-- MAIN CONTENT -->
- 
-    <main class="w-full max-w-4xl mx-auto py-8 px-6 md:px-12">
+   
+    <main class="w-full max-w-5xl mx-auto py-8 px-6 md:px-12">
 
 
       <!-- PROFILE FORM -->
