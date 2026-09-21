@@ -7,6 +7,31 @@
     <title>Patient Records</title>
 </head>
 <body class="min-h-screen bg-[#F3EFE4] relative">
+
+    <div id="sidebar-placeholder"></div>
+    <script>
+      (async () => {
+        try {
+          const response = await fetch('/Taskbar/Customer_Task.html');
+          if (response.ok) {
+            const data = await response.text();
+            document.getElementById('sidebar-placeholder').innerHTML = data;
+            const currentPage = window.location.pathname.split("/").pop();
+            document.querySelectorAll('.nav-link').forEach(link => {
+              if (link.getAttribute('data-page') === currentPage) {
+                link.classList.add('bg-[#FDFCE9]');
+              }
+            });
+            if (typeof initSidebar === 'function') {
+              initSidebar();
+            }
+          }
+        } catch (error) {
+          console.log('Sidebar fallback:', error);
+        }
+      })();
+    </script>
+
 <!--Header title with logo image-->
 <div class="flex justify-between items-start pt-5 pl-6 pr-4 md:pl-24 md:pr-8">
         
