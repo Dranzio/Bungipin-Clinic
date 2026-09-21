@@ -63,6 +63,13 @@ BEGIN
         '-', LPAD(p_new_user_id, 4, '0')
     )
     WHERE user_id = p_new_user_id;
+    IF p_role = 'patient' THEN
+        INSERT INTO patient_profiles (patient_id) VALUES (p_new_user_id);
+    ELSEIF p_role = 'employee' THEN
+        INSERT INTO employee_profiles (employee_id) VALUES (p_new_user_id);
+    ELSEIF p_role = 'admin' THEN
+        INSERT INTO admin_profiles (admin_id) VALUES (p_new_user_id);
+    END IF;
 END$$
 DELIMITER ;
 
