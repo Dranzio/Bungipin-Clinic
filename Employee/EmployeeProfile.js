@@ -5,7 +5,7 @@ const SALT_ROUNDS = 10;
 
 function registerEmployeeProfileRoute(app, db) {
 
-    // GET /api/employee-profile
+    // GET /api/employee/profile
     app.get('/api/employee-profile', authenticateToken, async (req, res) => {
         if (req.user.role !== 'employee') {
             return res.status(403).json({ message: 'Only employees can access this profile' });
@@ -24,7 +24,7 @@ function registerEmployeeProfileRoute(app, db) {
         }
     });
 
-// PATCH /api/employee-profile
+    // PATCH /api/employee/profile
     app.patch('/api/employee-profile', authenticateToken, async (req, res) => {
         if (req.user.role !== 'employee') {
             return res.status(403).json({ message: 'Only employees can update this profile' });
