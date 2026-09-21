@@ -43,7 +43,7 @@
                 Booking Request
             </h1>
             <img
-                src="../images/logowithtitle.png"
+                src="../assets/logowithtitle.png"
                 onerror="this.style.display='none'"
                 class="w-20 sm:w-24 md:w-28 h-auto object-contain shrink-0"
                 alt="Logo"/>
@@ -82,7 +82,7 @@
                 Cancel
             </button>
             <button id="rescheduleBtn" class="hidden px-4 py-2.5 text-sm font-semibold text-white bg-[#667733] rounded-full hover:bg-[#556022] transition flex flex-row items-center justify-center gap-2 whitespace-nowrap">
-                <img src="../images/calendarIcon.png" alt="resched" class="w-4 h-4 object-contain shrink-0 pointer-events-none" onerror="this.style.display='none'"> 
+                <img src="../assets/calendarIcon.png" alt="resched" class="w-4 h-4 object-contain shrink-0 pointer-events-none" onerror="this.style.display='none'">
                 <span>Reschedule Instead</span>
             </button>
             <button id="confirmDeclineBtn" class="px-4 py-2.5 text-sm font-semibold text-white bg-[#D9534F] rounded-full hover:bg-[#c9302c] transition whitespace-nowrap">
@@ -323,15 +323,15 @@
                     </div>
                     <div class="flex items-center gap-2 flex-wrap sm:flex-nowrap">
                             <button class="declineBtn flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-[#D9534F] rounded-full hover:bg-[#c9302c] transition shadow-sm" data-id="${b.appointment_id}">
-                                <img src="../images/closeIcon.png" alt="Decline" class="w-3.5 h-3.5 object-contain pointer-events-none" onerror="this.style.display='none'">
+                                <img src="../assets/closeIcon.png" alt="Decline" class="w-3.5 h-3.5 object-contain pointer-events-none" onerror="this.style.display='none'">
                                 <span>Decline</span>
                             </button>
                         <button class="rescheduleDirectBtn px-4 py-2 text-sm font-semibold text-[#2A1001] bg-[#D5C04D] rounded-full hover:bg-[#E1D282] transition flex items-center justify-center gap-1.5" data-id="${b.appointment_id}">
-                            <img src="../images/calendarIcon.png" alt="resched" class="w-3.5 h-3.5 object-contain pointer-events-none" onerror="this.style.display='none'"> 
+                            <img src="../assets/calendarIcon.png" alt="resched" class="w-3.5 h-3.5 object-contain pointer-events-none" onerror="this.style.display='none'">
                             <span>Reschedule</span>
                         </button>
                          <button class="acceptBtn flex items-center justify-center gap-2 px-5 py-2 text-sm font-semibold text-white bg-[#667733] rounded-full hover:bg-[#556022] transition shadow-sm" data-id="${b.appointment_id}">
-                            <img src="../images/checkIcon.png" alt="Accept" class="w-3.5 h-3.5 object-contain pointer-events-none" onerror="this.style.display='none'">
+                            <img src="../assets/checkIcon.png" alt="Accept" class="w-3.5 h-3.5 object-contain pointer-events-none" onerror="this.style.display='none'">
                             <span>Accept</span>
                         </button>
                     </div>

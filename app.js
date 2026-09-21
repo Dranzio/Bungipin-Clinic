@@ -3,12 +3,20 @@ const express = require("express");
 const db = require("./db");
 const cors = require("cors");
 const authRoutes = require("./auth");
+const path = require("path");
 
 const app = express();
 app.use(express.json());
 app.use(cors());
 
 app.use('/api/auth', authRoutes);
+
+app.use(express.static(path.join(__dirname)));
+app.use(express.static(path.join(__dirname, "images")));
+app.use(express.static(path.join(__dirname, "LogInRegister")));
+app.get("/", (req, res) => {
+    res.sendFile(path.join(__dirname, "LogInRegister", "login.html"));
+});
 
 // API to get data from db. check by doing https://localhost:3000/api/{x}
 app.get('/api/users', async (req, res) => {

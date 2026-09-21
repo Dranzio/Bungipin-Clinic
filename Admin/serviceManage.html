@@ -14,7 +14,7 @@
             Service Management
         </h1>
         <img
-            src="../images/logowithtitle.png"
+            src="../assets/logowithtitle.png"
             class="w-20 sm:w-24 md:w-28 h-auto object-contain shrink-0"
             alt="Logo"/>
     </div>
@@ -46,7 +46,7 @@
                 <input id="serviceNameInput" type="text" readonly class="text-2xl font-extrabold text-[#382414] font-['Poppins'] text-center bg-transparent outline-none w-full border-b border-transparent focus:border-gray-300 transition cursor-default focus:cursor-text" placeholder="Service Name" />
                 <!-- Circular Edit Button -->
                 <button id="editNameBtn" type="button" class="w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-md border border-gray-100 shrink-0 hover:bg-gray-50 transition cursor-pointer">
-                    <img src="../images/editIcon.png" class="w-4 h-4 object-contain opacity-80" alt="Edit">
+                    <img src="../assets/editIcon.png" class="w-4 h-4 object-contain opacity-80" alt="Edit">
                 </button>
             </div>
 
@@ -60,7 +60,7 @@
 
                 <!-- pencil edit overlay -->
                 <button id="editIconBtn" type="button" class="absolute -bottom-2 -right-2 w-9 h-9 bg-white rounded-full flex items-center justify-center shadow-md border border-gray-100 hover:bg-gray-50 transition z-10 cursor-pointer">
-                    <img src="../images/editIcon.png" class="w-4 h-4 object-contain opacity-80" alt="Edit">
+                    <img src="../assets/editIcon.png" class="w-4 h-4 object-contain opacity-80" alt="Edit">
                 </button>
                 <input type="file" id="serviceIconInput" accept="image/*" class="hidden" />
             </div>
@@ -72,7 +72,7 @@
                 <span class="text-lg font-bold text-[#382414]">Php</span>
                 <!-- Circular Edit Button -->
                 <button id="editPriceBtn" type="button" class="w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-md border border-gray-100 shrink-0 ml-2 hover:bg-gray-50 transition cursor-pointer">
-                    <img src="../images/editIcon.png" class="w-4 h-4 object-contain opacity-80" alt="Edit">
+                    <img src="../assets/editIcon.png" class="w-4 h-4 object-contain opacity-80" alt="Edit">
                 </button>
             </div>
 
@@ -245,10 +245,10 @@ async function renderServices() {
                     </button>
                     <div class="menuDropdown hidden absolute right-0 top-10 bg-white border border-[#2A1001]/10 rounded-xl shadow-lg z-10 w-36 overflow-hidden" data-menu-for="${s.service_id}">
                         <button class="editOption w-full flex items-center gap-3 px-4 py-2.5 text-xs font-bold text-[#2A1001] hover:bg-[#F3EFE4]" data-id="${s.service_id}">
-                            <img src="../images/editIcon.png" class="w-4 h-4 object-contain" alt="Edit"> Edit Log
+                            <img src="../assets/editIcon.png" class="w-4 h-4 object-contain" alt="Edit"> Edit Log
                         </button>
                         <button class="deleteOption w-full flex items-center gap-3 px-4 py-2.5 text-xs font-bold text-[#2A1001] hover:bg-[#F3EFE4]" data-id="${s.service_id}">
-                            <img src="../images/trashIcon.png" class="w-4 h-4 object-contain" alt="Delete"> Delete Log
+                            <img src="../assets/trashIcon.png" class="w-4 h-4 object-contain" alt="Delete"> Delete Log
                         </button>
                     </div>
                 </div>

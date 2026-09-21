@@ -41,7 +41,7 @@
             <h1 class="text-2xl sm:text-3xl md:text-5xl pt-5 font-bold text-[#2A1001] font-['Poppins']">
                 User Management
             </h1>
-            <img src="../images/logowithtitle.png" class="w-20 sm:w-24 md:w-28 h-auto object-contain shrink-0" alt="Logo"/>
+            <img src="../assets/logowithtitle.png" class="w-20 sm:w-24 md:w-28 h-auto object-contain shrink-0" alt="Logo"/>
         </div>
         <hr class="border-t border-[#2A1001] mt-2 mb-6" />
 
@@ -96,7 +96,7 @@
                         <div class="relative">
                             <input type="text" id="editFirstName" readonly required class="w-full h-10 pl-4 pr-10 rounded-full border border-[#2A1001]/20 outline-none cursor-default focus:cursor-text text-[#2A1001]" />
                             <button type="button" class="unlockBtn absolute right-1.5 top-1/2 -translate-y-1/2 w-7 h-7 bg-white rounded-full flex items-center justify-center shadow-[0_1px_4px_rgba(0,0,0,0.15)] border border-gray-100 hover:bg-gray-50 transition" data-target="editFirstName">
-                                <img src="../images/editIcon.png" class="w-3.5 h-3.5 object-contain opacity-80" alt="Edit">
+                                <img src="../assets/editIcon.png" class="w-3.5 h-3.5 object-contain opacity-80" alt="Edit">
                             </button>
                         </div>
                     </div>
@@ -105,7 +105,7 @@
                         <div class="relative">
                             <input type="text" id="editLastName" readonly required class="w-full h-10 pl-4 pr-10 rounded-full border border-[#2A1001]/20 outline-none cursor-default focus:cursor-text text-[#2A1001]" />
                             <button type="button" class="unlockBtn absolute right-1.5 top-1/2 -translate-y-1/2 w-7 h-7 bg-white rounded-full flex items-center justify-center shadow-[0_1px_4px_rgba(0,0,0,0.15)] border border-gray-100 hover:bg-gray-50 transition" data-target="editLastName">
-                                <img src="../images/editIcon.png" class="w-3.5 h-3.5 object-contain opacity-80" alt="Edit">
+                                <img src="../assets/editIcon.png" class="w-3.5 h-3.5 object-contain opacity-80" alt="Edit">
                             </button>
                         </div>
                     </div>
@@ -116,7 +116,7 @@
                     <div class="relative">
                         <input type="email" id="editEmail" readonly required class="w-full h-10 pl-4 pr-10 rounded-full border border-[#2A1001]/20 outline-none cursor-default focus:cursor-text text-[#2A1001]" />
                         <button type="button" class="unlockBtn absolute right-1.5 top-1/2 -translate-y-1/2 w-7 h-7 bg-white rounded-full flex items-center justify-center shadow-[0_1px_4px_rgba(0,0,0,0.15)] border border-gray-100 hover:bg-gray-50 transition" data-target="editEmail">
-                            <img src="../images/editIcon.png" class="w-3.5 h-3.5 object-contain opacity-80" alt="Edit">
+                            <img src="../assets/editIcon.png" class="w-3.5 h-3.5 object-contain opacity-80" alt="Edit">
                         </button>
                     </div>
                 </div>
@@ -128,7 +128,7 @@
                          oninvalid="this.setCustomValidity('Phone number must be exactly 11 digits and start with 09.')"
                          oninput="this.setCustomValidity(''); this.value = this.value.replace(/\D/g, '').slice(0, 11);" />
                         <button type="button" class="unlockBtn absolute right-1.5 top-1/2 -translate-y-1/2 w-7 h-7 bg-white rounded-full flex items-center justify-center shadow-[0_1px_4px_rgba(0,0,0,0.15)] border border-gray-100 hover:bg-gray-50 transition" data-target="editPhone">
-                            <img src="../images/editIcon.png" class="w-3.5 h-3.5 object-contain opacity-80" alt="Edit">
+                            <img src="../assets/editIcon.png" class="w-3.5 h-3.5 object-contain opacity-80" alt="Edit">
                         </button>
                     </div>
                 </div>
@@ -146,7 +146,7 @@
                             <option value="Receptionist">Receptionist</option>
                         </select>
                         <button type="button" class="unlockBtn absolute right-1.5 top-1/2 -translate-y-1/2 w-7 h-7 bg-white rounded-full flex items-center justify-center shadow-[0_1px_4px_rgba(0,0,0,0.15)] border border-gray-100 hover:bg-gray-50 transition z-10" data-target="editPosition">
-                            <img src="../images/editIcon.png" class="w-3.5 h-3.5 object-contain opacity-80" alt="Edit">
+                            <img src="../assets/editIcon.png" class="w-3.5 h-3.5 object-contain opacity-80" alt="Edit">
                         </button>
                     </div>
                 </div>
@@ -159,7 +159,7 @@
                             <option value="Regular Admin">Regular Admin</option>
                         </select>
                     <button type="button" class="unlockBtn absolute right-1.5 top-1/2 -translate-y-1/2 w-7 h-7 bg-white rounded-full flex items-center justify-center shadow-[0_1px_4px_rgba(0,0,0,0.15)] border border-gray-100 hover:bg-gray-50 transition z-10" data-target="editPermission">
-                    <img src="../images/editIcon.png" class="w-3.5 h-3.5 object-contain opacity-80" alt="Edit">
+                    <img src="../assets/editIcon.png" class="w-3.5 h-3.5 object-contain opacity-80" alt="Edit">
                     </button>
                 </div>
                 </div>
@@ -512,7 +512,7 @@ container.innerHTML = filtered.map(u => `
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between bg-white rounded-2xl p-5 shadow-sm hover:shadow-md transition-all duration-300 gap-4">
         <div class="flex items-center gap-4">
           
-            <img src="../images/userIcon.png" alt="User" class="w-12 h-12 object-contain" />
+            <img src="../assets/userIcon.png" alt="User" class="w-12 h-12 object-contain" />
 
             <div>
                 <h3 class="font-bold text-[#2A1001] text-lg">${displayName(u)}</h3>
@@ -528,19 +528,19 @@ container.innerHTML = filtered.map(u => `
 
         <div class="flex items-center gap-2">
             <button class="editBtn w-9 h-9 flex items-center justify-center rounded-lg bg-[#D5C04D] hover:bg-[#c2ad3c] transition" data-id="${u.user_id}" title="Edit">
-                <img src="../images/editIcon.png" alt="Edit" class="w-5 h-5 object-contain" />
+                <img src="../assets/editIcon.png" alt="Edit" class="w-5 h-5 object-contain" />
             </button>
             
             <button class="statusBtn w-9 h-9 flex items-center justify-center rounded-lg bg-[#D9534F] hover:bg-[#c9302c] transition" data-id="${u.user_id}" title="${u.account_status === 'active' ? 'Disable' : 'Enable'}">
                 ${
-                    u.account_status === 'active' 
-                        ? '<img src="../images/closeIcon.png" alt="Disable" class="w-5 h-5 object-contain" />' 
-                        : '<img src="../images/checkIcon.png" alt="Enable" class="w-5 h-5 object-contain" />'
-                }
+    u.account_status === 'active'
+        ? '<img src="../assets/closeIcon.png" alt="Disable" class="w-5 h-5 object-contain" />'
+        : '<img src="../assets/checkIcon.png" alt="Enable" class="w-5 h-5 object-contain" />'
+}
             </button>
 
             <button class="deleteBtn w-9 h-9 flex items-center justify-center rounded-lg bg-[#D9534F] hover:bg-[#c9302c] transition" data-id="${u.user_id}" title="Delete">
-                <img src="../images/trashIcon.png" alt="Delete" class="w-5 h-5 object-contain" />
+                <img src="../assets/trashIcon.png" alt="Delete" class="w-5 h-5 object-contain" />
             </button>
         </div>
     </div>

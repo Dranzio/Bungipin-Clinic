@@ -279,13 +279,13 @@ DELIMITER ;
 CALL sp_register_user('Juan', 'Dela Cruz', 'juan.delacruz@email.com', '0917 123 4567', '$2b$10$AF8/uQfAuDsfedwPRjBftu6pS2P9k1PCpTmeOgVuFDqGMAqa9340C', 'M', 'patient', @uid1);
 CALL sp_register_user('Maria', 'Santos', 'maria.santos@email.com', '0918 987 6543', '<hashed_pw>', 'F', 'patient', @uid2);
 
-CALL sp_register_user('Ramon', 'Cruz', 'ramon.cruz@example.com', '09201112222', '<hashed_pw>', 'M', 'employee', @uid3);
+CALL sp_register_user('Ramon', 'Cruz', 'ramon.cruz@example.com', '09201112222', '$2b$10$AF8/uQfAuDsfedwPRjBftu6pS2P9k1PCpTmeOgVuFDqGMAqa9340C', 'M', 'employee', @uid3);
 
 INSERT INTO patient_profiles (patient_id, birthday, civil_status, pregnancy_status) VALUES
 (1, '1990-05-14', 'Single', NULL),
 (2, '1995-08-22', 'Married', '2nd Trimester');
 
-INSERT INTO employee_profiles (employee_id, staff_code, birthday, civil_status) VALUES
+INSERT INTO employee_profiles (employee_id, staff_code, birthday, civil_status, position) VALUES
 (3, 'STF-2026-001', '1985-06-10', 'Married', 'receptionist');
 
 INSERT INTO health_conditions (patient_id, description) VALUES
@@ -310,7 +310,7 @@ INSERT INTO appointments (appointment_id, patient_id, employee_id, service_id, a
 (202, 2, 3, 2, CURDATE(), '11:30:00', 'approved', '', 'Reporting gum sensitivity during brushing');
 
 INSERT INTO xrays (patient_id, appointment_id, uploaded_by, file_url) VALUES
-(1, 150, 3, 'https://images.unsplash.com/photo-1516549655169-df83a0774514?w=300'),
-(2, 140, 3, 'https://images.unsplash.com/photo-1588776814546-1ffcf47267a5?w=300');
+(1, 150, 3, 'https://assets.unsplash.com/photo-1516549655169-df83a0774514?w=300'),
+(2, 140, 3, 'https://assets.unsplash.com/photo-1588776814546-1ffcf47267a5?w=300');
 
 select * from users;

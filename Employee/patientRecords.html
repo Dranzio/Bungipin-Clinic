@@ -14,7 +14,7 @@
             Patient Records
         </h1>
         <img
-            src="../images/logowithtitle.png"
+            src="../assets/logowithtitle.png"
             class="w-20 sm:w-24 md:w-28 h-auto object-contain shrink-0"
             alt="Logo"/>
     </div>
@@ -31,7 +31,7 @@
     class="h-10 w-full max-w-md rounded-full border border-[#2A1001]/20 bg-white px-4 mb-6 outline-none"/>
 
             <button id="qrBtn" class="h-11 w-11 shrink-0 sflex items-center justify-center rounded-xl bg-[#8A9A6B] hover:bg-[#79885C] transition p-2 mx-5" title="Scan QR (coming soon)"><!---add QR Scanning funtion soon?--->
-                <img src="../images/scan.png" alt="Scan QR" class="w-full h-full object-contain" />
+                <img src="../assets/scan.png" alt="Scan QR" class="w-full h-full object-contain" />
             </button>
 
      
@@ -415,7 +415,7 @@ function renderVisitHistory(appointmentsList, allXrays) {
 
 
   // "View X-Rays" button and filters the X-rays for last visit's specific date, populates the modal gallery
-    // it also displays the pop-up window so the dentist can see the previous xray images
+    // it also displays the pop-up window so the dentist can see the previous xray assets
     document.querySelectorAll('.viewVisitXraysBtn').forEach(btn => {
         btn.addEventListener('click', function () {
             const xraysForVisit = allXrays.filter(x => x.appointment_id == this.dataset.appointmentId);
@@ -483,7 +483,7 @@ function openModal(id) {
     document.getElementById('patientModal').classList.remove('hidden');
 }
 
-//This function displays a patient's X-ray images as small thumbnails and lets the user delete them.
+//This function displays a patient's X-ray assets as small thumbnails and lets the user delete them.
 function renderXrayPreviews(p) {
     const sessionPreview = document.getElementById('sessionXrayPreview');
     sessionPreview.innerHTML = '';
@@ -493,7 +493,7 @@ function renderXrayPreviews(p) {
     const todayXrays = p.xrays.filter(x => x.appointment_id === ongoingId);
 
     
-//If no images have been uploaded today, show a default placeholder message
+//If no assets have been uploaded today, show a default placeholder message
     if (todayXrays.length === 0) {
         sessionPreview.innerHTML = `<p class="text-sm text-[#2A1001]/50 w-full text-center py-2">No X-rays uploaded for today's session yet.</p>`;
         return;
@@ -837,7 +837,7 @@ function populateSortDropdown() {
                     <td class="text-center py-3 px-6">${p.last_visit}</td>
                     <td class="text-center py-3 px-6">
                     <button class="viewFullBtn inline-flex flex-row items-center justify-center gap-2 bg-[#667733] hover:bg-[#556022] transition text-white text-sm font-semibold px-5 py-2 rounded-full" data-id="${p.patient_id}">
-                        <img src="../images/view.png" alt="View" class="w-5 h-5 object-contain shrink-0" />
+                        <img src="../assets/view.png" alt="View" class="w-5 h-5 object-contain shrink-0" />
                         <span class="whitespace-nowrap">View Full</span>
                     </button>
                 </td>
