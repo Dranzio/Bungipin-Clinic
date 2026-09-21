@@ -15,7 +15,7 @@
         <script>
             (async () => {
                 try {
-                    const response = await fetch('/Taskbar/Admin_Task.html');
+                    const response = await fetch('../Taskbar/Admin_Task.html');
                     if (response.ok) {
                         const data = await response.text();
                         document.getElementById('sidebar-placeholder').innerHTML = data;
