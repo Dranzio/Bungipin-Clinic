@@ -4,6 +4,7 @@ USE dental_appointments;
 -- Drop Instances *
 DROP PROCEDURE IF EXISTS sp_get_all_patient_records;
 DROP PROCEDURE IF EXISTS sp_get_patient_record;
+DROP PROCEDURE IF EXISTS sp_get_employee_record;
 DROP PROCEDURE IF EXISTS sp_register_user;
 DROP TABLE IF EXISTS notifications;
 DROP TABLE IF EXISTS messages;
@@ -91,6 +92,7 @@ CREATE TABLE patient_profiles (
 CREATE TABLE employee_profiles (
     employee_id   INT PRIMARY KEY,
     staff_code    VARCHAR(30) UNIQUE,
+    position      VARCHAR(30),
     birthday      DATE,
     civil_status  VARCHAR(30),
     FOREIGN KEY (employee_id) REFERENCES users(user_id) ON DELETE CASCADE
@@ -342,26 +344,49 @@ BEGIN
 END$$
 DELIMITER ;
 
+DELIMITER $$
+CREATE PROCEDURE sp_get_employee_record(IN p_employee_id INT)
+BEGIN
+    SELECT JSON_OBJECT(
+        'employee_id', ep.employee_id,
+        'public_id', u.public_id,
+        'staff_code', ep.staff_code,
+        'position', ep.position,
+        'first_name', u.first_name,
+        'last_name', u.last_name,
+        'sex', u.sex,
+        'birthday', ep.birthday,
+        'email', u.email,
+        'phone', u.phone,
+        'civil_status', ep.civil_status
+    ) AS employee_record
+    FROM employee_profiles ep
+    JOIN users u ON ep.employee_id = u.user_id
+    WHERE ep.employee_id = p_employee_id;
+END$$
+DELIMITER ;
+
 -- Double Check
-CALL sp_register_user('Maria', 'Santos', 'maria.santos@example.com', '09171234567', '<hashed_pw>', 'F', 'patient', @uid1);
-CALL sp_register_user('Juan', 'Dela Cruz', 'juan.delacruz@example.com', '09179876543', '<hashed_pw>', 'M', 'patient', @uid2);
-CALL sp_register_user('Ramon', 'Cruz', 'ramon.cruz@example.com', '09201112222', '<hashed_pw>', 'M', 'employee', @uid3);
-CALL sp_register_user('Liza', 'Tan', 'liza.tan@example.com', '09203334444', '<hashed_pw>', 'F', 'employee', @uid4);
-CALL sp_register_user('Carla', 'Reyes', 'carla.reyes@example.com', '09051119999', '<hashed_pw>', 'F', 'admin', @uid5);
+CALL sp_register_user('Maria', 'Santos', 'maria.santos@example.com', '09171234567', '$2b$10$PFUiFjV7FngVMIZ2u/chOOV3l.cVQ84nz4Os8DipZlw72yiqAKKJi', 'F', 'patient', @uid1);
+CALL sp_register_user('Juan', 'Dela Cruz', 'juan.delacruz@example.com', '09179876543', '$2b$10$PFUiFjV7FngVMIZ2u/chOOV3l.cVQ84nz4Os8DipZlw72yiqAKKJi', 'M', 'patient', @uid2);
+CALL sp_register_user('Ramon', 'Cruz', 'ramon.cruz@example.com', '09201112222', '$2b$10$PFUiFjV7FngVMIZ2u/chOOV3l.cVQ84nz4Os8DipZlw72yiqAKKJi', 'M', 'employee', @uid3);
+CALL sp_register_user('Liza', 'Tan', 'liza.tan@example.com', '09203334444', '$2b$10$PFUiFjV7FngVMIZ2u/chOOV3l.cVQ84nz4Os8DipZlw72yiqAKKJi', 'F', 'employee', @uid4);
+CALL sp_register_user('Carla', 'Reyes', 'carla.reyes@example.com', '09051119999', '$2b$10$PFUiFjV7FngVMIZ2u/chOOV3l.cVQ84nz4Os8DipZlw72yiqAKKJi', 'F', 'admin', @uid5);
 
 
 UPDATE patient_profiles SET birthday = '1990-04-12', civil_status = 'Single', address = '123 Mabini St, Quezon City' WHERE patient_id = 1;
 UPDATE patient_profiles SET birthday = '1985-11-02', civil_status = 'Married', address = '45 Rizal Ave, Manila' WHERE patient_id = 2;
 
-UPDATE employee_profiles SET staff_code = 'STF-2026-001', birthday = '1985-06-10', civil_status = 'Married' WHERE employee_id = 3;
-UPDATE employee_profiles SET staff_code = 'STF-2026-002', birthday = '1990-02-20', civil_status = 'Single' WHERE employee_id = 4;
+UPDATE employee_profiles SET staff_code = 'STF-2026-001', position = 'Dentist', birthday = '1985-06-10', civil_status = 'Married' WHERE employee_id = 3;
+UPDATE employee_profiles SET staff_code = 'STF-2026-002', position = 'Dentist', birthday = '1990-02-20', civil_status = 'Single' WHERE employee_id = 4;
 
 UPDATE admin_profiles SET permission_level = 'full_access' WHERE admin_id = 5;
 
 INSERT INTO services (label, price, icon, is_available) VALUES
-('Dental Cleaning', 800.00, 'cleaning-icon', TRUE),
-('Tooth Extraction', 1500.00, 'extraction-icon', TRUE),
-('Braces Consultation', 500.00, 'braces-icon', FALSE);
+('Dental Cleaning', 1500.00, 'cleaning-icon', TRUE),
+('Pasta', 2500.00, 'pasta-icon', TRUE),
+('Checkup', 500.00, 'checkup-icon', TRUE),
+('Whitening', 3000.00, 'whitening-icon', TRUE);
 
 INSERT INTO appointments (patient_id, employee_id, service_id, appointment_date, time_slot, appointment_status, patient_note) VALUES
 (1, 3, 1, '2026-09-10', '10:00:00', 'approved', 'First-time patient'),
@@ -383,3 +408,5 @@ INSERT INTO notifications (user_id, type, title, message, message_id) VALUES
 (1, 'new_message', 'New Message', 'You have a new message from Dr. Ramon Cruz.', 1);
 
 CALL sp_get_all_patient_records();
+
+select * from services;
