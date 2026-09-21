@@ -527,6 +527,12 @@ document.getElementById('visitXrayModal').addEventListener('click', function (e)
     if (e.target === this) this.classList.add('hidden');
 });
 
+// Close X-ray history modal when the "X" button is clicked
+document.getElementById('closeVisitXrayModal').addEventListener('click', function () {
+    document.getElementById('visitXrayModal').classList.add('hidden');
+});
+
+
 document.getElementById('visitXrayModalGrid').addEventListener('click', function(e) {
     // Check if the user clicked on an image
     if (e.target.tagName === 'IMG') {
