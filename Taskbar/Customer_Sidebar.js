@@ -23,6 +23,25 @@ function _initCollapseToggle() {
     });
 }
 
+function _clearCollapseStyles(sidebar, aside, nameBadge, profileCircle, labels, navLinks) {
+    sidebar.style.width = '';
+    if (aside) aside.style.width = '';
+
+    labels.forEach(el => { el.style.display = ''; });
+    if (nameBadge) nameBadge.style.display = '';
+
+    if (profileCircle) {
+        profileCircle.style.width  = '';
+        profileCircle.style.height = '';
+    }
+
+    navLinks.forEach(link => {
+        link.style.paddingLeft    = '';
+        link.style.paddingRight   = '';
+        link.style.justifyContent = '';
+    });
+}
+
 function _applySidebarState(collapse) {
     const sidebar      = document.getElementById('sidebar');
     const aside        = document.getElementById('sidebar-aside');
@@ -33,56 +52,33 @@ function _applySidebarState(collapse) {
 
     if (!sidebar) return;
 
+    // Keep the user's desktop preference even when the window is small.
     sidebar.dataset.collapsed = collapse ? 'true' : 'false';
     const isDesktop = window.innerWidth >= 768;
 
-    if (collapse) {
-        // ── Collapsed state ─────────────────────────────────────────────────
-        if (isDesktop) {
-            sidebar.style.width = '72px';
-            if (aside) aside.style.width = '72px';
-        }
-
-        // Hide text labels + name badge
-        labels.forEach(el => { el.style.display = 'none'; });
-        if (nameBadge)     nameBadge.style.display = 'none';
-
-        // Shrink profile circle
-        if (profileCircle) {
-            profileCircle.style.width  = '44px';
-            profileCircle.style.height = '44px';
-        }
-
-        // Center icons in nav links
-        navLinks.forEach(link => {
-            link.style.paddingLeft  = '0';
-            link.style.paddingRight = '0';
-            link.style.justifyContent = 'center';
-        });
-
-    } else {
-        // ── Expanded state ──────────────────────────────────────────────────
-        // Remove inline width so Tailwind w-full md:w-[268px] kicks in
-        sidebar.style.width = '';
-        if (aside) aside.style.width = '';
-
-        // Show text labels + name badge
-        labels.forEach(el => { el.style.display = ''; });
-        if (nameBadge)     nameBadge.style.display = '';
-
-        // Restore profile circle size
-        if (profileCircle) {
-            profileCircle.style.width  = '';
-            profileCircle.style.height = '';
-        }
-
-        // Restore nav link padding
-        navLinks.forEach(link => {
-            link.style.paddingLeft    = '';
-            link.style.paddingRight   = '';
-            link.style.justifyContent = '';
-        });
+    // Collapse is desktop-only. After minimize / < md, drop every inline
+    // collapse style (especially width: 72px) so the full mobile bar returns.
+    if (!isDesktop || !collapse) {
+        _clearCollapseStyles(sidebar, aside, nameBadge, profileCircle, labels, navLinks);
+        return;
     }
+
+    sidebar.style.width = '72px';
+    if (aside) aside.style.width = '72px';
+
+    labels.forEach(el => { el.style.display = 'none'; });
+    if (nameBadge) nameBadge.style.display = 'none';
+
+    if (profileCircle) {
+        profileCircle.style.width  = '44px';
+        profileCircle.style.height = '44px';
+    }
+
+    navLinks.forEach(link => {
+        link.style.paddingLeft    = '0';
+        link.style.paddingRight   = '0';
+        link.style.justifyContent = 'center';
+    });
 }
 
 // Ensure responsive behavior if window is resized
