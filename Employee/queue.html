@@ -10,31 +10,58 @@
     <script src="/Taskbar/Employee_Sidebar.js"></script>
 <!--    <script src="Messages.js"></script>-->
 </head>
-<body class="min-h-screen bg-[#F3EFE4] relative">
+<body class="min-h-screen md:h-screen md:overflow-hidden bg-[#F3EFE4] relative flex flex-col md:flex-row antialiased">
 
-<div id="sidebar-placeholder"></div>
-<script>
-    (async () => {
-        try {
+<!-- SIDEBAR -->
+  <div id="sidebar-placeholder"></div>
+    <script>
+      function syncContentOffset() {
+        const placeholder = document.getElementById('sidebar-placeholder');
+        const sidebar = Array.from(placeholder.children)
+          .find(el => !['SCRIPT', 'STYLE', 'LINK'].includes(el.tagName));
+        if (!sidebar) return;
+
+        const set = (el, prop, value) => { if (el.style[prop] !== value) el.style[prop] = value; };
+
+        const apply = () => {
+          const desktop = window.innerWidth >= 768;
+          set(placeholder, 'flexShrink', '0');
+          set(sidebar, 'position', desktop ? 'sticky' : 'relative');  
+          set(sidebar, 'top', desktop ? '0px' : 'auto');
+          set(sidebar, 'height', desktop ? '100vh' : '');
+          set(sidebar, 'overflowY', desktop ? 'auto' : '');           
+        };
+
+        window.addEventListener('resize', apply);
+        apply();
+      }
+
+        (async () => {
+          try {
             const response = await fetch('/Taskbar/Employee_Task.html');
             if (response.ok) {
-                const data = await response.text();
-                document.getElementById('sidebar-placeholder').innerHTML = data;
-                const currentPage = window.location.pathname.split("/").pop();
-                document.querySelectorAll('.nav-link').forEach(link => {
-                    if (link.getAttribute('data-page') === currentPage) {
-                        link.classList.add('bg-[#FDFCE9]');
-                    }
-                });
-                if (typeof initSidebar === 'function') {
-                    initSidebar();
+              const data = await response.text();
+              document.getElementById('sidebar-placeholder').innerHTML = data;
+              const currentPage = window.location.pathname.split("/").pop();
+              document.querySelectorAll('.nav-link').forEach(link => {
+                if (link.getAttribute('data-page') === currentPage) {
+                  link.classList.add('bg-[#FDFCE9]');
                 }
+              });
+              if (typeof initSidebar === 'function') {
+                initSidebar();
+              }
+              syncContentOffset();
             }
-        } catch (error) {
+          } catch (error) {
             console.log('Sidebar fallback:', error);
-        }
-    })();
-</script>
+          }
+        })();
+      </script>
+
+<div id="main-content" class="flex-1 min-w-0 md:min-h-0 md:overflow-y-auto">
+    
+    
 
 <!--Header with logo-->
 <div class="flex justify-between items-start pt-5 pl-6 pr-4 md:pl-24 md:pr-8">
@@ -112,6 +139,8 @@
 
 <!-- PAGINATION -->
 <div class="flex justify-center gap-2 my-8" id="pagination">
+
+</div>
 
 </div>
 
