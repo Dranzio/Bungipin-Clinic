@@ -11,31 +11,58 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="../Taskbar/Admin_Sidebar.js"></script>
 </head>
-<body class="bg-[#F3EFE4] min-h-screen font-sans text-[#2c3e2b] antialiased">
-
-    <div class="min-h-screen flex flex-col md:flex-row w-full">
+<body class="h-screen overflow-hidden bg-[#F3EFE4] relative flex flex-col md:flex-row antialiased">
 
         <!-- Sidebar Container -->
-        <aside id="sidebar-aside" class="w-full md:w-auto shrink-0 bg-[#A2AC89]">
             <div id="sidebar-placeholder"></div>
+    <script>
+      function syncContentOffset() {
+        const placeholder = document.getElementById('sidebar-placeholder');
+        const sidebar = Array.from(placeholder.children)
+          .find(el => !['SCRIPT', 'STYLE', 'LINK'].includes(el.tagName));
+        if (!sidebar) return;
 
-            <script>
-                fetch('../Taskbar/Admin_Task.html')
-                    .then(response => response.text())
-                    .then(data => {
-                        document.getElementById('sidebar-placeholder').innerHTML = data;
+        const set = (el, prop, value) => { if (el.style[prop] !== value) el.style[prop] = value; };
 
-                        const currentPage = window.location.pathname.split("/").pop();
-                        document.querySelectorAll('.nav-link').forEach(link => {
-                            if (link.getAttribute('data-page') === currentPage) {
-                                link.classList.add('bg-[#FDFCE9]');
-                            }
-                        });
+        const apply = () => {
+          const desktop = window.innerWidth >= 768;
+          set(placeholder, 'flexShrink', '0');
+          set(sidebar, 'position', desktop ? 'sticky' : 'relative');  
+          set(sidebar, 'top', desktop ? '0px' : 'auto');
+          set(sidebar, 'height', desktop ? '100vh' : '');
+          set(sidebar, 'overflowY', desktop ? 'auto' : '');           
+        };
 
-                        initSidebar();
-                    });
-            </script>
-        </aside>
+        window.addEventListener('resize', apply);
+        apply();
+      }
+
+        (async () => {
+          try {
+            const response = await fetch('/Taskbar/Admin_Task.html');
+            if (response.ok) {
+              const data = await response.text();
+              document.getElementById('sidebar-placeholder').innerHTML = data;
+              const currentPage = window.location.pathname.split("/").pop();
+              document.querySelectorAll('.nav-link').forEach(link => {
+                if (link.getAttribute('data-page') === currentPage) {
+                  link.classList.add('bg-[#FDFCE9]');
+                }
+              });
+              if (typeof initSidebar === 'function') {
+                initSidebar();
+              }
+              syncContentOffset();
+            }
+          } catch (error) {
+            console.log('Sidebar fallback:', error);
+          }
+        })();
+      </script>
+
+            <div id="main-content" class="flex-1 min-w-0 min-h-0 overflow-y-auto">
+
+                
 
         <!-- Main Content Area -->
         <main class="flex-1 p-6 md:p-10 flex flex-col items-center">
@@ -136,7 +163,7 @@
             </div>
         </main>
 
-    </div>
+            </div>
 
     <script>
         //WAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA

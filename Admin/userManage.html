@@ -5,35 +5,63 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="/output.css" rel="stylesheet">
     <title>User Management</title>
+    <script src="../Taskbar/Admin_Sidebar.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://kit.fontawesome.com/fc8c3f4103.js" crossorigin="anonymous"></script>
 </head>
 
 <body class="min-h-screen bg-[#F3EFE4] relative flex flex-col md:flex-row antialiased">
 
     <!-- SIDEBAR -->
-    <aside class="w-full md:w-64 min-h-screen shrink-0 bg-[#9ea988]">
-        <div id="sidebar-placeholder"></div>
-        <script>
-            (async () => {
-                try {
-                    const response = await fetch('../Taskbar/Admin_Task.html');
-                    if (response.ok) {
-                        const data = await response.text();
-                        document.getElementById('sidebar-placeholder').innerHTML = data;
-                        const currentPage = window.location.pathname.split("/").pop();
-                        document.querySelectorAll('.nav-link').forEach(link => {
-                            if (link.getAttribute('data-page') === currentPage) {
-                                link.classList.add('bg-[#FDFCE9]');
-                            }
-                        });
-                    }
-                } catch (error) {
-                    console.log('Sidebar fallback:', error);
-                }
-            })();
-        </script>
-    </aside>
+    <div id="sidebar-placeholder"></div>
+    <script>
+      function syncContentOffset() {
+        const placeholder = document.getElementById('sidebar-placeholder');
+        const sidebar = Array.from(placeholder.children)
+          .find(el => !['SCRIPT', 'STYLE', 'LINK'].includes(el.tagName));
+        if (!sidebar) return;
 
-    <!-- CONTENT WRAPPER -->
+        const set = (el, prop, value) => { if (el.style[prop] !== value) el.style[prop] = value; };
+
+        const apply = () => {
+          const desktop = window.innerWidth >= 768;
+          set(placeholder, 'flexShrink', '0');
+          set(sidebar, 'position', desktop ? 'sticky' : 'relative');  
+          set(sidebar, 'top', desktop ? '0px' : 'auto');
+          set(sidebar, 'height', desktop ? '100vh' : '');
+          set(sidebar, 'overflowY', desktop ? 'auto' : '');           
+        };
+
+        window.addEventListener('resize', apply);
+        apply();
+      }
+
+        (async () => {
+          try {
+            const response = await fetch('/Taskbar/Admin_Task.html');
+            if (response.ok) {
+              const data = await response.text();
+              document.getElementById('sidebar-placeholder').innerHTML = data;
+              const currentPage = window.location.pathname.split("/").pop();
+              document.querySelectorAll('.nav-link').forEach(link => {
+                if (link.getAttribute('data-page') === currentPage) {
+                  link.classList.add('bg-[#FDFCE9]');
+                }
+              });
+              if (typeof initSidebar === 'function') {
+                initSidebar();
+              }
+              syncContentOffset();
+            }
+          } catch (error) {
+            console.log('Sidebar fallback:', error);
+          }
+        })();
+      </script>
+
+            <div id="main-content" class="flex-1 min-w-0 min-h-0 overflow-y-auto">
+
+                <!-- CONTENT WRAPPER -->
     <div class="flex-1 flex flex-col w-full max-h-screen overflow-y-auto">
 
         <!-- Header -->
@@ -290,6 +318,8 @@
             </form>
         </div>
     </div>
+
+            </div>
 
         
 <script>
