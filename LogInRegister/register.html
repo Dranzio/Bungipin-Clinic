@@ -55,7 +55,7 @@
                             Name:</label>
                         <input type="text" id="first_name" name ="first_name" required
                             class="w-full h-8 md:h-11 px-4 bg-white outline-none rounded-[30px] border border-gray-200 mb-4 md:mb-12"
-                            placeholder="Coleen" />
+                            placeholder="Bungie" />
                     </div>
 
                     <div class="flex-1">
@@ -63,7 +63,7 @@
                             Name:</label>
                         <input type="text" id="last_name" name="last_name" required
                             class="w-full h-8 md:h-11 px-4 bg-white outline-none rounded-[30px] border border-gray-200 mb-4 md:mb-12"
-                            placeholder="Silvestre" />
+                            placeholder="Holmes" />
                     </div>
                 </div>
 
@@ -125,8 +125,8 @@
 
                 <div class="flex justify-center">
                     <button type="submit"
-                        class="w-1/4 mx-4 bg-[#D5C04D] text-sm md:text-[20px] font-bold text-[#2A1001] py-2 rounded-full shadow-lg transition-all duration-200 ease-in-out hover:scale-105 hover:bg-[#FDFCE9] hover:shadow-xl active:scale-95 active:bg-[#c2ae3b]">
-                        Create Account
+                        class="w-auto min-w-[160px] px-8 whitespace-nowrap md:w-1/4 md:mx-4 bg-[#D5C04D] text-sm md:text-[20px] font-bold text-[#2A1001] py-2 rounded-full shadow-lg transition-all duration-200 ease-in-out hover:scale-105 hover:bg-[#FDFCE9] hover:shadow-xl active:scale-95 active:bg-[#c2ae3b]">
+                            Create Account
                     </button>
                 </div>
 
@@ -164,13 +164,12 @@
                 <button id="closeServiceModal"
                     class="absolute top-5 right-6 text-3xl font-extrabold text-[#382414] hover:opacity-60 transition leading-none">&times;</button>
 
-                <img src="../assets/logowithtitle.png" class="absolute top-4 right-16 w-20 h-20 object-contain z-10"
-                    alt="Logo" />
-
-                <h2 id="modalTitle"
-                    class="text-2xl md:text-3xl font-extrabold text-[#2A1001] font-poppins text-center mt-2 mb-6 border-b border-gray-100 pb-4">
-                    Terms & Conditions
-                </h2>
+                <div class="flex items-center justify-center gap-3 mt-2 mb-6 border-b border-gray-100 pb-4">
+                    <img src="../assets/logowithtitle.png" class="w-10 h-10 object-contain shrink-0" alt="Logo" />
+                    <h2 id="modalTitle" class="text-2xl md:text-3xl font-extrabold text-[#2A1001] font-poppins text-center">
+                        Terms & Conditions
+                    </h2>
+                    </div>
 
                 <!-- Content Area -->
                 <div id="modalContent"
@@ -204,7 +203,7 @@
 
  const termsText = `
 <div class="font-poppins text-[#2A1001] text-sm md:text-base pl-4 md:pl-6">
-    <ol class="list-decimal space-y-4">
+    <ol class="list-decimal list-outside pl-6 space-y-4">
         <li>
             <strong>The Use of Our Website:</strong> You may use our website and online tools to request appointments, complete forms, and communicate with our dentists. By using this website, you agree to use these services only for lawful purposes and in a way that does not interfere with operation, security, or integrity of our systems.
         </li>
