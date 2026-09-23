@@ -23,6 +23,25 @@ function _initCollapseToggle() {
     });
 }
 
+function _clearCollapseStyles(sidebar, aside, nameBadge, profileCircle, labels, navLinks) {
+    sidebar.style.width = '';
+    if (aside) aside.style.width = '';
+
+    labels.forEach(el => { el.style.display = ''; });
+    if (nameBadge) nameBadge.style.display = '';
+
+    if (profileCircle) {
+        profileCircle.style.width  = '';
+        profileCircle.style.height = '';
+    }
+
+    navLinks.forEach(link => {
+        link.style.paddingLeft    = '';
+        link.style.paddingRight   = '';
+        link.style.justifyContent = '';
+    });
+}
+
 function _applySidebarState(collapse) {
     const sidebar      = document.getElementById('sidebar');
     const aside        = document.getElementById('sidebar-aside');
@@ -42,6 +61,14 @@ function _applySidebarState(collapse) {
             sidebar.style.width = '72px';
             if (aside) aside.style.width = '72px';
         }
+
+        if (!isDesktop || !collapse) {
+            _clearCollapseStyles(sidebar, aside, nameBadge, profileCircle, labels, navLinks);
+            return;
+        }
+
+        sidebar.style.width = '72px';
+        if (aside) aside.style.width = '72px';
 
         // Hide text labels + name badge
         labels.forEach(el => { el.style.display = 'none'; });
