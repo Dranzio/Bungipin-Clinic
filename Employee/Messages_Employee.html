@@ -12,7 +12,7 @@
     <script src="Messages_Employee.js"></script>
 </head>
 <body class="bg-[#F3EFE4] min-h-screen font-sans text-[#2c3e2b] antialiased">
-<div class="min-h-screen flex flex-col md:flex-row w-full"> <!--Div for whole body-->
+<div class="min-h-[100dvh] flex flex-col md:flex-row w-full"> <!--Div for whole body-->
     <!-- SIDEBAR -->
     <div id="sidebar-placeholder"></div>
     <script>
@@ -60,7 +60,7 @@
         })();
       </script>
 
-      <div id="main-content" class="flex-1 min-w-0 min-h-0 overflow-y-auto">
+      <div id="main-content" class="flex flex-col flex-1 w-full min-w-0 md:overflow-y-auto">
         <div class="shrink-0 flex justify-between items-start pt-5 pl-6 pr-4 md:pl-24 md:pr-8">
             <h1 class="text-2xl sm:text-3xl md:text-5xl 2xl:text-[73px] pt-5 font-bold text-[#2A1001] font-['Poppins']">
                 Messages
@@ -117,7 +117,7 @@
 
         <!-- RIGHT-SIDE CHAT PANEL DRAWER -->
         <div id="chatModal" class="hidden fixed inset-0 bg-black/40 flex justify-end z-50">
-            <div class="relative w-full max-w-3xl h-full bg-[#F4F1EA] border-1 border-black flex flex-col shadow-2xl overflow-hidden">
+           <div class="relative w-full max-w-3xl h-[100dvh] bg-[#F4F1EA] border-1 border-black flex flex-col shadow-2xl overflow-hidden">
 
                 <!-- Floating Yellow Close Button (Top-Left of the drawer) -->
                 <button onclick="closeChat()" class="absolute top-4 left-4 w-10 h-10 bg-[#D1C363] border-1 border-black rounded-lg flex items-center justify-center font-extrabold text-black cursor-pointer shadow-md hover:bg-[#c5b757] transition-all z-10">
