@@ -14,6 +14,7 @@ const registerDashboardRoutes = require("./Admin/DashboardRoutes");
 const registerUserManagementRoutes = require("./Admin/UserManage");
 const registerServiceRoutes = require("./Admin/ServiceRoutes");
 const registerHistoryRoutes = require("./Customer/HistoryRoutes");
+const registerMessagesRoutes = require("./MessagesRoutes");
 
 const app = express();
 app.use(express.json({ limit: "5mb" })); // service icons arrive as base64
@@ -30,6 +31,7 @@ registerDashboardRoutes(app, db);
 registerUserManagementRoutes(app, db);
 registerServiceRoutes(app, db);
 registerHistoryRoutes(app, db);
+registerMessagesRoutes(app, db);
 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use(express.static(path.join(__dirname)));
