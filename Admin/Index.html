@@ -11,11 +11,18 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="../Taskbar/Admin_Sidebar.js"></script>
 </head>
+<<<<<<< HEAD
 <body class="min-h-screen md:h-screen md:overflow-hidden bg-[#F3EFE4] relative flex flex-col md:flex-row antialiased">
     <div class="min-h-screen flex flex-col md:flex-row w-full">
 
 <!-- SIDEBAR -->
   <div id="sidebar-placeholder"></div>
+=======
+<body class="h-screen overflow-hidden bg-[#F3EFE4] relative flex flex-col md:flex-row antialiased">
+
+        <!-- Sidebar Container -->
+            <div id="sidebar-placeholder"></div>
+>>>>>>> bda39ef64adfbb054b44ba0a3b8782e5a9478e61
     <script>
       function syncContentOffset() {
         const placeholder = document.getElementById('sidebar-placeholder');
@@ -60,6 +67,7 @@
           }
         })();
       </script>
+<<<<<<< HEAD
         
         <div id="main-content" class="flex-1 min-w-0 md:min-h-0 md:overflow-y-auto">
 
@@ -78,6 +86,12 @@
             <hr class="border-t border-[#2A1001] mt-2 mb-6" />
 
             
+=======
+
+            <div id="main-content" class="flex-1 min-w-0 min-h-0 overflow-y-auto">
+
+                
+>>>>>>> bda39ef64adfbb054b44ba0a3b8782e5a9478e61
 
         <!-- Main Content Area -->
         <main class="flex-1 p-6 md:p-10 flex flex-col items-center">
@@ -175,9 +189,13 @@
             </div>
         </main>
 
+<<<<<<< HEAD
 
         </div>
     </div>
+=======
+            </div>
+>>>>>>> bda39ef64adfbb054b44ba0a3b8782e5a9478e61
 
     <script>
         const NumPatients = document.getElementById('NumPatRev');

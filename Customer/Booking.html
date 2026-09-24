@@ -253,10 +253,17 @@
     <script src="../Taskbar/Customer_Sidebar.js"></script>
 </head>
 <body class="bg-[#F3EFE4] min-h-screen font-poppins text-[#2c3e2b] antialiased">
+<<<<<<< HEAD
 <div class="min-h-screen flex flex-col md:flex-row w-full"> <!--Div for whole body-->
     <div id="sidebar-placeholder"></div>
     <script>
         function syncContentOffset() {
+=======
+    <div class="min-h-screen flex flex-col md:flex-row w-full"> <!--Div for whole body-->
+        <div id="sidebar-placeholder"></div>
+        <script>
+            function syncContentOffset() {
+>>>>>>> bda39ef64adfbb054b44ba0a3b8782e5a9478e61
             const placeholder = document.getElementById('sidebar-placeholder');
             const sidebar = Array.from(placeholder.children)
                 .find(el => !['SCRIPT', 'STYLE', 'LINK'].includes(el.tagName));
@@ -267,23 +274,37 @@
             const apply = () => {
                 const desktop = window.innerWidth >= 768;
                 set(placeholder, 'flexShrink', '0');
+<<<<<<< HEAD
                 set(sidebar, 'position', desktop ? 'sticky' : 'relative');
                 set(sidebar, 'top', desktop ? '0px' : 'auto');
                 set(sidebar, 'height', desktop ? '100vh' : '');
                 set(sidebar, 'overflowY', desktop ? 'auto' : '');
+=======
+                set(sidebar, 'position', desktop ? 'sticky' : 'relative');  
+                set(sidebar, 'top', desktop ? '0px' : 'auto');
+                set(sidebar, 'height', desktop ? '100vh' : '');
+                set(sidebar, 'overflowY', desktop ? 'auto' : '');           
+>>>>>>> bda39ef64adfbb054b44ba0a3b8782e5a9478e61
             };
 
             window.addEventListener('resize', apply);
             apply();
+<<<<<<< HEAD
         }
         (async () => {
             try {
+=======
+            }
+            (async () => {
+                try {
+>>>>>>> bda39ef64adfbb054b44ba0a3b8782e5a9478e61
                 const response = await fetch('/Taskbar/Customer_Task.html');
                 if (response.ok) {
                     const data = await response.text();
                     document.getElementById('sidebar-placeholder').innerHTML = data;
                     const currentPage = window.location.pathname.split("/").pop();
                     document.querySelectorAll('.nav-link').forEach(link => {
+<<<<<<< HEAD
                         if (link.getAttribute('data-page') === currentPage) {
                             link.classList.add('bg-[#FDFCE9]');
                         }
@@ -297,6 +318,25 @@
                 console.log('Sidebar fallback:', error);
             }
         })();
+=======
+                    if (link.getAttribute('data-page') === currentPage) {
+                        link.classList.add('bg-[#FDFCE9]');
+                    }
+                    });
+                    if (typeof initSidebar === 'function') {
+                    initSidebar();
+                    }
+                    syncContentOffset();
+                }
+                } catch (error) {
+                console.log('Sidebar fallback:', error);
+                }
+            })();
+        </script>
+        <!-- Main Content Area Wrapper -->
+      <!-- Right column: header on top, form below -->
+<div id="main-content" class="flex-1 min-w-0 flex flex-col">
+>>>>>>> bda39ef64adfbb054b44ba0a3b8782e5a9478e61
 
     </script>
     <!-- Main Content Area Wrapper -->
@@ -331,6 +371,7 @@
                     <div>
                         <!--Calendar-->
                         <div class="w-full max-w-[410px]">
+<<<<<<< HEAD
                             <div class="flex flex-col w-full min-h-[360px] rounded-3xl border-[3.5px] border-black bg-white overflow-hidden">
 
                                 <!--Header-->
@@ -379,8 +420,35 @@
                             </div>
                             <div data-time="11:00:00" class="flex w-full h-[60px] bg-white rounded-3xl border-[3.5px] border-black items-center justify-center text-center hover:bg-[#D7E3A5] transition-all duration-250 hover:scale-[1.035] cursor-pointer">
                                 <h2>11AM - 12PM</h2>
+=======
+                        <div class="flex flex-col w-full min-h-[360px] rounded-3xl border-[1px] border-black bg-white overflow-hidden">
+                            
+                            <!--Header-->
+                            <div class="flex justify-between items-center p-[10px] w-full h-15 bg-[#667733]">
+
+                                <!--Left Button-->
+                                <div class="cursor-pointer text-[25px] bold text-[#FDFCE9]" id="prev"><i class="fa-solid fa-arrow-left"></i></div>
+
+                                <!--Month-Year-->
+                                <div id="month-year" class="text-[25px] bold text-[#FDFCE9]"></div>
+
+                                <!--Right Button-->
+                                <div class="cursor-pointer text-[25px] bold text-[#FDFCE9]" id="next"><i class="fa-solid fa-arrow-right"></i></div>
+                            </div>
+                           
+                            <!--Days-->
+                            <div class="grid grid-cols-7 gap-3 px-4 py-2 text-[#2A1001]">
+                                <div>Sun</div>
+                                <div>Mon</div>
+                                <div>Tue</div>
+                                <div>Wed</div>
+                                <div>Thu</div>
+                                <div>Fri</div>
+                                <div>Sat</div>
+>>>>>>> bda39ef64adfbb054b44ba0a3b8782e5a9478e61
                             </div>
                         </div>
+<<<<<<< HEAD
 
                         <!--PM Time slot-->
                         <div class="flex flex-col flex-1 min-w-0 sm:flex-none sm:w-[180px] gap-3">
@@ -401,41 +469,117 @@
                                 <h2>4PM - 5PM</h2>
                             </div>
                         </div>
+=======
+                        </div>
+                    </div>
+                           <!--AM and PM Time slot side by side-->
+                     <div class="w-full sm:w-auto flex flex-row gap-3 sm:gap-5">
+                    <!--AM Time slot-->
+                    <div class="flex flex-col flex-1 min-w-0 sm:flex-none sm:w-[180px] gap-3 font-['Poppins']">
+                        <h1 class="font-extrabold text-[#2A1001]">AM-Time</h1>
+                        <div data-time="07:00:00" class="flex w-full h-[60px] text-[#2A1001] bg-white rounded-3xl border-[1px] border-black items-center justify-center text-center hover:bg-[#D7E3A5] transition-all duration-250 hover:scale-[1.035] cursor-pointer">
+                            <h2>7AM - 8AM</h2>
+                        </div>
+                        <div data-time="08:00:00" class="flex w-full h-[60px] text-[#2A1001] bg-white rounded-3xl border-[1px] border-black items-center justify-center text-center hover:bg-[#D7E3A5] transition-all duration-250 hover:scale-[1.035] cursor-pointer">
+                            <h2>8AM - 9AM</h2>
+                        </div>
+                        <div data-time="09:00:00" class="flex w-full h-[60px] text-[#2A1001] bg-white rounded-3xl border-[1px] border-black items-center justify-center text-center hover:bg-[#D7E3A5] transition-all duration-250 hover:scale-[1.035] cursor-pointer">
+                            <h2>9AM - 10AM</h2>
+                        </div>
+                        <div data-time="10:00:00" class="flex w-full h-[60px] text-[#2A1001] bg-white rounded-3xl border-[1px] border-black items-center justify-center text-center hover:bg-[#D7E3A5] transition-all duration-250 hover:scale-[1.035] cursor-pointer">
+                            <h2>10AM - 11AM</h2>
+                        </div>
+                        <div data-time="11:00:00" class="flex w-full h-[60px] text-[#2A1001] bg-white rounded-3xl border-[1px] border-black items-center justify-center text-center hover:bg-[#D7E3A5] transition-all duration-250 hover:scale-[1.035] cursor-pointer">
+                            <h2>11AM - 12PM</h2>
+                        </div>
+                    </div>
+
+                    <!--PM Time slot-->
+                    <div class="flex flex-col flex-1 min-w-0 sm:flex-none sm:w-[180px] gap-3">
+                        <h1 class="font-extrabold text-[#2c3e2b]">PM-Time</h1>
+                        <div data-time="12:00:00" class="flex w-full h-[60px] bg-white text-[#2A1001] rounded-3xl border-[1px] border-black items-center justify-center text-center hover:bg-[#D7E3A5] transition-all duration-250 hover:scale-[1.035] cursor-pointer">
+                            <h2>12PM - 1PM</h2>
+                        </div>
+                        <div data-time="13:00:00" class="flex w-full h-[60px] bg-white text-[#2A1001] rounded-3xl border-[1px] border-black items-center justify-center text-center hover:bg-[#D7E3A5] transition-all duration-250 hover:scale-[1.035] cursor-pointer">
+                            <h2>1PM - 2PM</h2>
+                        </div>
+                        <div data-time="14:00:00" class="flex w-full h-[60px] bg-white text-[#2A1001] rounded-3xl border-[1px] border-black items-center justify-center text-center hover:bg-[#D7E3A5] transition-all duration-250 hover:scale-[1.035] cursor-pointer">
+                            <h2>2PM - 3PM</h2>
+                        </div>
+                        <div data-time="15:00:00" class="flex w-full h-[60px] bg-white text-[#2A1001] rounded-3xl border-[1px] border-black items-center justify-center text-center hover:bg-[#D7E3A5] transition-all duration-250 hover:scale-[1.035] cursor-pointer">
+                            <h2>3PM - 4PM</h2>
+                        </div>
+                        <div data-time="16:00:00" class="flex w-full h-[60px] bg-white text-[#2A1001] rounded-3xl border-[1px] border-black items-center justify-center text-center hover:bg-[#D7E3A5] transition-all duration-250 hover:scale-[1.035] cursor-pointer">
+                            <h2>4PM - 5PM</h2>
+                        </div>
+                    </div>
+>>>>>>> bda39ef64adfbb054b44ba0a3b8782e5a9478e61
                     </div>
                 </div> <!---->
 
                 <div class="w-full flex flex-col items-start">
-                    <h1 class="font-extrabold text-xl text-[#2c3e2b]">What do you need?</h1>
+                    <h1 class="font-extrabold text-xl text-[#2A1001]">What do you need?</h1>
                 </div>
 
+<<<<<<< HEAD
                 <div id="service-grid" class="grid grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-5 w-full justify-items-center"> <!--Services are rendered here from /api/services-->
+=======
+                <div class="grid grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-5 w-full justify-items-center"> <!--Div for services-->
+                    <!--Div for cleaning-->
+                    <div data-service="Dental Cleaning" data-service-id="1" data-price="1,500" class="flex flex-col w-[200px] h-[250px] justify-between items-center text-center bg-[#FFFFFF] rounded-[8px] border-2 border-black hover:bg-[#D7E3A5] transition-all duration-250 hover:scale-[1.035] cursor-pointer p-3">
+                        <h1 class="font-bold text-[20px] text-[#2A1001]">Cleaning</h1>
+                        <img src="../assets/Cleaning.png" class="w-28 h-28 object-contain">
+                        <h2 class="font-bold text-[18px] text-[#2A1001]">Price: 1,500</h2>
+                    </div>
+
+                    <!--Div for pasta-->
+                    <div data-service="Dental Filling" data-service-id="2" data-price="2,500" class="flex flex-col w-[200px] h-[250px] justify-between items-center text-center bg-[#FFFFFF] rounded-[8px] border-2 border-black hover:bg-[#D7E3A5] transition-all duration-250 hover:scale-[1.035] cursor-pointer p-3">
+                        <h1 class="font-bold text-[20px] text-[#2A1001]">Pasta</h1>
+                        <img src="../assets/Pasta.png" class="w-28 h-28 object-contain">
+                        <h2 class="font-bold text-[18px] text-[#2A1001]">Price: 2,500</h2>
+                    </div>
+
+                    <!--Div for checkup-->
+                    <div data-service="Dental Checkup" data-service-id="3" data-price="500" class="flex flex-col w-[200px] h-[250px] justify-between items-center text-center bg-[#FFFFFF] rounded-[8px] border-2 border-black hover:bg-[#D7E3A5] transition-all duration-250 hover:scale-[1.035] cursor-pointer p-3">
+                        <h1 class="font-bold text-[20px] text-[#2A1001]">Checkup</h1>
+                        <img src="../assets/Checkup.png" class="w-28 h-28 object-contain">
+                        <h2 class="font-bold text-[18px] text-[#2A1001]">Price: 500</h2>
+                    </div>
+
+                    <!--Div for whitening-->
+                    <div data-service="Teeth Whitening" data-service-id="4" data-price="3,000" class="flex flex-col w-[200px] h-[250px] justify-between items-center text-center bg-[#FFFFFF] rounded-[8px] border-2 border-black hover:bg-[#D7E3A5] transition-all duration-250 hover:scale-[1.035] cursor-pointer p-3">
+                        <h1 class="font-bold text-[20px] text-[#2A1001]">Whitening</h1>
+                        <img src="../assets/Whitening.png" class="w-28 h-28 object-contain">
+                        <h2 class="font-bold text-[18px] text-[#2A1001]">Price: 3,000</h2>
+                    </div>
+>>>>>>> bda39ef64adfbb054b44ba0a3b8782e5a9478e61
                 </div>
                 <!--Note For Users-->
-                <textarea id="PNote" name="PNote" class="w-full h-[225px] rounded bg-[#FFFFFF] text-[#2c3e2b] font-medium text-lg outline-none resize-none shadow-inner border-4 border-[#000000] p-4"></textarea>
+                <textarea id="PNote" name="PNote" class="w-full h-[225px] rounded bg-[#FFFFFF] text-[#2c3e2b] font-medium text-lg outline-none resize-none shadow-inner border-3 border-[#000000] p-4"></textarea>
 
-                <button type="submit" id="submit-btn" class="w-full py-4 bg-[#667733] text-[#D7E3A5] font-extrabold text-xl rounded-xl border-4 border-black hover:opacity-90 transition-all cursor-pointer shadow-md">
+                <button type="submit" id="submit-btn" class="w-full py-4 bg-[#667733] text-[#FDFCE9] font-extrabold text-xl rounded-xl border-2 border-black hover:opacity-90 transition-all cursor-pointer shadow-md">
                     Submit Booking
                 </button>
 
                 <!-- Receipt Modal -->
                 <div id="receipt-modal" class="fixed inset-0 bg-black/50 flex items-center justify-center hidden z-50 p-4">
-                    <div class="bg-white rounded-3xl border-4 border-black w-full max-w-md p-6 flex flex-col gap-4 relative shadow-2xl">
+                    <div class="bg-white rounded-3xl border-2 border-black w-full max-w-md p-6 flex flex-col gap-4 relative shadow-2xl">
                         <!-- Close Button -->
                         <button type="button" id="close-modal" class="absolute top-4 right-4 w-8 h-8 flex items-center justify-center font-bold text-lg bg-gray-100 rounded-full border-2 border-black cursor-pointer hover:bg-gray-200">
                             <i class="fa-solid fa-xmark"></i>
                         </button>
-                        <h1 class="font-extrabold text-2xl text-[#2c3e2b]">Booking Receipt</h1>
+                        <h1 class="font-extrabold text-2xl text-[#2A1001]">Booking Receipt</h1>
 
                         <!-- Receipt Content -->
-                        <div id="receipt-content" class="text-[#2c3e2b] flex flex-col gap-2 border-2 border-black p-4 rounded-xl bg-[#FDFCE9]">
+                        <div id="receipt-content" class="text-[#2A1001] flex flex-col gap-2 border-2 border-black p-4 rounded-xl bg-[#FDFCE9]">
                         </div>
 
                         <!-- Pay Options -->
                         <div class="flex gap-3 mt-2">
-                            <button type="button" id="pay-online-btn" class="flex-1 py-3 bg-[#667733] text-[#D7E3A5] font-bold rounded-xl border-2 border-black cursor-pointer hover:opacity-90 transition-all">
+                            <button type="button" id="pay-online-btn" class="flex-1 py-3 bg-white text-[#2A1001] font-bold rounded-xl border-2 border-black cursor-pointer hover:bg-gray-100 transition-all">
                                 Pay Online
                             </button>
-                            <button type="button" id="pay-cash-btn" class="flex-1 py-3 bg-white text-[#2c3e2b] font-bold rounded-xl border-2 border-black cursor-pointer hover:bg-gray-100 transition-all">
+                            <button type="button" id="pay-cash-btn" class="flex-1 py-3 bg-white text-[#2A1001] font-bold rounded-xl border-2 border-black cursor-pointer hover:bg-gray-100 transition-all">
                                 Pay Cash
                             </button>
                         </div>
