@@ -284,6 +284,11 @@ function syncContentOffset() {
     const phoneInput = document.getElementById('phone');
     const successMessage = document.getElementById('successMessage');
 
+    const birthdayInput = document.getElementById('birthday');
+    const today = new Date();
+    const todayString = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    birthdayInput.max = todayString;
+
 
     // Show/hide Pregnancy Status and move Current Prescriptions
     // depending on the patient's sex. M = male, F = female.
@@ -537,6 +542,18 @@ function syncContentOffset() {
     // Update profile to database
     form.addEventListener('submit', async function (e) {
       e.preventDefault();
+
+      const birthdayValue = document.getElementById('birthday').value;
+      if (birthdayValue) {
+        const selectedBirthday = new Date(`${birthdayValue}T00:00:00`);
+        const currentDate = new Date();
+        currentDate.setHours(0, 0, 0, 0);
+
+        if (selectedBirthday > currentDate) {
+          alert('Birthday cannot be a future date.');
+          return;
+        }
+      }
 
       // Password check — was missing entirely before
       if (newPassword.value && newPassword.value !== confirmPassword.value) {
