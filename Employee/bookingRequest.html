@@ -84,7 +84,26 @@
                 class="h-10 w-full max-w-md rounded-full border border-[#2A1001]/20 bg-white px-4 mb-6 outline-none"
         />
     </div>
-
+        <div id="statusFilters" class="flex flex-wrap gap-4 mb-8 justify-center">
+        <button data-status="pending" class="filterBtn bg-[#F1B770] text-center px-6 py-3 rounded-2xl font-bold text-[#2A1001] min-w-[110px] shadow-lg
+        transition-all duration-200 ease-in-out 
+        hover:scale-105 hover:bg-[#FDFCE9] hover:shadow-xl
+        active:scale-95 active:bg-[#FF9F2A]">
+            Pending
+        </button>
+        <button data-status="approved" class="filterBtn bg-[#BEF835] text-center px-6 py-3 rounded-2xl font-bold text-[#2A1001] min-w-[110px] shadow-lg
+        transition-all duration-200 ease-in-out 
+        hover:scale-105 hover:bg-[#FDFCE9] hover:shadow-xl
+        active:scale-95 active:bg-[#A6ED00]">
+            Approved
+        </button>
+        <button data-status="all" class="filterBtn bg-white border border-[#2A1001]/30 text-left px-6 py-3 rounded-2xl font-bold text-[#2A1001] min-w-[110px] shadow-lg
+        transition-all duration-200 ease-in-out 
+        hover:scale-105 hover:bg-[#FDFCE9] hover:shadow-xl
+        active:scale-95 active:bg-[#F9F9F9]">
+            Show All
+        </button>
+    </div>
     <!-- booking cards -->
     <div id="booking-container" class="space-y-4 mb-10 w-full md:w-[90%] mx-auto">
         <!-- cards injected by JS -->
@@ -226,6 +245,8 @@
     let currentSearch = "";
     let pendingDeclineId = null;
     let pendingRescheduleId = null;
+    let approvedBookings = [];
+    let currentStatusFilter = "pending"; 
 
     // Standard clinic slots schedule (AM and PM)
     const clinicSlots = [
@@ -279,6 +300,21 @@
         }
     }
 
+    async function loadApprovedBookings() {
+    try {
+        const token = localStorage.getItem('userToken');
+        const response = await fetch('/api/appointments?status=approved', {
+            method: 'GET',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!response.ok) throw new Error(`Server error: ${response.status}`);
+        approvedBookings = await response.json();
+        console.log('Approved bookings loaded:', approvedBookings); // temporary check
+    } catch (error) {
+        console.error("Failed to load approved bookings:", error);
+    }
+}
+
 
     //load all occupied time slots !!
     async function loadOccupiedSlotsFromDatabase() {
@@ -312,59 +348,72 @@
         return hoursSince <= 24;
     }
 
-    function getFiltered() { // Filter bookings based on the current search
-        return bookings.filter(b =>
-            `${b.first_name} ${b.last_name}`.toLowerCase().includes(currentSearch.toLowerCase())
-        );
-        // Sort by created_at descending (newest submissions first)
-        return filtered.sort((a, b) => {
-            const dateA = new Date(a.created_at || 0);
-            const dateB = new Date(b.created_at || 0);
-            return dateB - dateA;
+        document.getElementById('statusFilters').addEventListener('click', function (e) {
+            const btn = e.target.closest('.filterBtn');
+            if (!btn) return;
+            currentStatusFilter = btn.dataset.status;
+            renderBookings();
         });
+
+
+ function getFiltered() {
+    const source = currentStatusFilter === "approved" ? approvedBookings
+                 : currentStatusFilter === "all" ? [...bookings, ...approvedBookings]
+                 : bookings; // pending
+
+    let filtered = source.filter(b =>
+        `${b.first_name} ${b.last_name}`.toLowerCase().includes(currentSearch.toLowerCase())
+    );
+
+    return filtered.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+}
+
+//Render the booking cards
+function renderBookings() {
+    const container = document.getElementById('booking-container');
+    const filtered = getFiltered();
+
+    if (filtered.length === 0) { //if the system has no bookings it will display text
+        container.innerHTML = `<p class="text-center text-[#2A1001]/60 py-10">No booking requests found.</p>`;
+        return;
     }
 
-    //Render the booking cards
-    function renderBookings() {
-        const container = document.getElementById('booking-container');
-        const filtered = getFiltered();
-
-        if (filtered.length === 0) { //if the system has no bookings it will display text
-            container.innerHTML = `<p class="text-center text-[#2A1001]/60 py-10">No booking requests found.</p>`;
-            return;
-        }
-
-        container.innerHTML = filtered.map(b => `
-                <div class="flex flex-col md:flex-row md:items-center md:justify-between bg-white border border-[#2A1001]/10 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all duration-300 gap-4">
-                    <div>
-                        <div class="flex items-center gap-2 mb-1">
-                            <span class="text-xs font-semibold text-[#2A1001]/60 uppercase tracking-wide">Patient ID: ${b.public_id}</span>
-                            ${isNew(b.created_at) ? '<span class="text-xs bg-green-100 text-green-700 font-semibold px-2 py-0.5 rounded-full">New</span>' : ''} 
-                            ${b.payment_method === 'online' ? '<span class="text-xs bg-blue-100 text-blue-700 font-semibold px-2 py-0.5 rounded-full">Paid Online</span>' : '<span class="text-xs bg-gray-100 text-[#2A1001]/70 font-semibold px-2 py-0.5 rounded-full">Cash</span>'}
-                        </div>
-                        <h3 class="text-lg font-bold text-[#2A1001] font-['Poppins']">${b.first_name} ${b.last_name}</h3>
-                        <p class="text-sm text-[#2A1001]/80 mt-0.5">
-                            <span class="font-medium text-[#667733]">${b.service_label}</span> • Requested for <strong>${b.appointment_date}</strong> at <strong>${formatTime12h(b.time_slot)}</strong>
-                        </p>
+    container.innerHTML = filtered.map(b => `
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between bg-white border border-[#2A1001]/10 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all duration-300 gap-4">
+                <div>
+                    <div class="flex items-center gap-2 mb-1">
+                        <span class="text-xs font-semibold text-[#2A1001]/60 uppercase tracking-wide">Patient ID: ${b.public_id}</span>
+                        ${isNew(b.created_at) ? '<span class="text-xs bg-green-100 text-green-700 font-semibold px-2 py-0.5 rounded-full">New</span>' : ''} 
+                        ${b.payment_method === 'online' ? '<span class="text-xs bg-blue-100 text-blue-700 font-semibold px-2 py-0.5 rounded-full">Paid Online</span>' : '<span class="text-xs bg-gray-100 text-[#2A1001]/70 font-semibold px-2 py-0.5 rounded-full">Cash</span>'}
                     </div>
-                    <div class="flex items-center gap-2 flex-wrap sm:flex-nowrap">
-                            <button class="declineBtn flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-[#D9534F] rounded-full hover:bg-[#c9302c] transition shadow-sm" data-id="${b.appointment_id}">
-                                <img src="../assets/closeIcon.png" alt="Decline" class="w-3.5 h-3.5 object-contain pointer-events-none" onerror="this.style.display='none'">
-                                <span>Decline</span>
-                            </button>
+                    <h3 class="text-lg font-bold text-[#2A1001] font-['Poppins']">${b.first_name} ${b.last_name}</h3>
+                    <p class="text-sm text-[#2A1001]/80 mt-0.5">
+                        <span class="font-medium text-[#667733]">${b.service_label}</span> • Requested for <strong>${b.appointment_date}</strong> at <strong>${formatTime12h(b.time_slot)}</strong>
+                    </p>
+                </div>
+                <div class="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+                    ${b.appointment_status === 'approved' ? `
+                        <span class="px-4 py-2 text-sm font-bold text-[#667733]">
+                            Approved
+                        </span>
+                    ` : `
+                        <button class="declineBtn flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-[#D9534F] rounded-full hover:bg-[#c9302c] transition shadow-sm" data-id="${b.appointment_id}">
+                            <img src="../assets/closeIcon.png" alt="Decline" class="w-3.5 h-3.5 object-contain pointer-events-none" onerror="this.style.display='none'">
+                            <span>Decline</span>
+                        </button>
                         <button class="rescheduleDirectBtn px-4 py-2 text-sm font-semibold text-[#2A1001] bg-[#D5C04D] rounded-full hover:bg-[#E1D282] transition flex items-center justify-center gap-1.5" data-id="${b.appointment_id}">
                             <img src="../assets/calendarIcon.png" alt="resched" class="w-3.5 h-3.5 object-contain pointer-events-none" onerror="this.style.display='none'">
                             <span>Reschedule</span>
                         </button>
-                         <button class="acceptBtn flex items-center justify-center gap-2 px-5 py-2 text-sm font-semibold text-white bg-[#667733] rounded-full hover:bg-[#556022] transition shadow-sm" data-id="${b.appointment_id}">
+                        <button class="acceptBtn flex items-center justify-center gap-2 px-5 py-2 text-sm font-semibold text-white bg-[#667733] rounded-full hover:bg-[#556022] transition shadow-sm" data-id="${b.appointment_id}">
                             <img src="../assets/checkIcon.png" alt="Accept" class="w-3.5 h-3.5 object-contain pointer-events-none" onerror="this.style.display='none'">
                             <span>Accept</span>
                         </button>
-                    </div>
+                    `}
                 </div>
-            `).join('');
-    }
-
+            </div>
+        `).join('');
+}
 
     function renderCalendar(date) {
         const year = date.getFullYear();
@@ -755,6 +804,7 @@
 
     loadBookingsFromDatabase();
     loadOccupiedSlotsFromDatabase();
+    loadApprovedBookings();
 </script>
 </body>
 </html>
