@@ -208,12 +208,16 @@
 
                     <!-- Shown when patient DOES have an ongoing session -->
                     <div id="sessionActiveContent">
-                        <div class="grid grid-cols-1 gap-4 mb-6">
-                            <div>
-                                <label class="block font-semibold text-[#2A1001] text-sm mb-1">Dentist Notes:</label>
-                                <textarea id="mNotes" rows="4" class="w-full p-4 rounded-2xl bg-white text-[#2A1001] outline-none resize-none"></textarea>
+                            <div class="grid grid-cols-1 gap-4 mb-6">
+                                <div>
+                                    <label class="block font-semibold text-[#2A1001] text-sm mb-1">Patient's Concern (from booking):</label>
+                                    <div id="mPatientNote" class="w-full p-4 rounded-2xl bg-white/70 text-[#2A1001] min-h-[2.5rem]"></div>
+                                </div>
+                                <div>
+                                    <label class="block font-semibold text-[#2A1001] text-sm mb-1">Dentist Notes:</label>
+                                    <textarea id="mNotes" rows="4" class="w-full p-4 rounded-2xl bg-white text-[#2A1001] outline-none resize-none"></textarea>
+                                </div>
                             </div>
-                        </div>
 
 
 
@@ -516,6 +520,7 @@
 
 // Today's Session notes
         const ongoing = p.ongoing_appointment;
+        document.getElementById('mPatientNote').textContent = ongoing ? (ongoing.patient_note || 'No concern noted.') : '';
         document.getElementById('mNotes').value = ongoing ? (ongoing.dentist_note || '') : (p.dentist_note || ''); //DELETE THIS AND REPLACE=================================================================LOOOKKK
         //document.getElementById('mNotes').value = ongoing ? (ongoing.dentist_note || '') : ''; use this
 
