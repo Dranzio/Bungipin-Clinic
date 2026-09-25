@@ -422,7 +422,7 @@
 
                 <!-- Receipt Modal -->
                 <div id="receipt-modal" class="fixed inset-0 bg-black/50 flex items-center justify-center hidden z-50 p-4">
-                    <div class="bg-white rounded-3xl border-4 border-black w-full max-w-md p-6 flex flex-col gap-4 relative shadow-2xl">
+                    <div class="bg-white rounded-3xl border-2 border-black w-full max-w-md p-6 flex flex-col gap-4 relative shadow-2xl">
                         <!-- Close Button -->
                         <button type="button" id="close-modal" class="absolute top-4 right-4 w-8 h-8 flex items-center justify-center font-bold text-lg bg-gray-100 rounded-full border-2 border-black cursor-pointer hover:bg-gray-200">
                             <i class="fa-solid fa-xmark"></i>
@@ -430,15 +430,15 @@
                         <h1 class="font-extrabold text-2xl text-[#2c3e2b]">Booking Receipt</h1>
 
                         <!-- Receipt Content -->
-                        <div id="receipt-content" class="text-[#2c3e2b] flex flex-col gap-2 border-2 border-black p-4 rounded-xl bg-[#FDFCE9]">
+                        <div id="receipt-content" class="text-[#2c3e2b] flex flex-col gap-2 border-2 border-black p-4 rounded-xl bg-[#FDFCE9] max-h-85 overflow-y-auto break-words [overflow-wrap:anywhere]">
                         </div>
 
                         <!-- Pay Options -->
                         <div class="flex gap-3 mt-2">
-                            <button type="button" id="pay-online-btn" class="flex-1 py-3 bg-[#667733] text-[#D7E3A5] font-bold rounded-xl border-2 border-black cursor-pointer hover:opacity-90 transition-all">
+                            <button type="button" id="pay-online-btn" class="flex-1 py-3 bg-[#D3DCBE] text-[#2A1001] font-bold rounded-xl border-2 border-black cursor-pointer hover:bg-[#667733] hover:text-[#FDFCE9] transition-all">
                                 Pay Online
                             </button>
-                            <button type="button" id="pay-cash-btn" class="flex-1 py-3 bg-white text-[#2c3e2b] font-bold rounded-xl border-2 border-black cursor-pointer hover:bg-gray-100 transition-all">
+                            <button type="button" id="pay-cash-btn" class="flex-1 py-3 bg-[#D3DCBE] text-[#2A1001] font-bold rounded-xl border-2 border-black cursor-pointer hover:bg-[#667733] hover:text-[#FDFCE9] transition-all">
                                 Pay Cash
                             </button>
                         </div>
