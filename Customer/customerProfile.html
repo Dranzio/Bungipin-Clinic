@@ -206,7 +206,7 @@ function syncContentOffset() {
               </div>
             </div>
 
-            <div class="flex flex-col gap-1.5">
+            <div id="pregnancyStatusWrapper" class="flex flex-col gap-1.5">
               <label for="pregnancy-status" class="text-[11px] font-extrabold tracking-wider text-[#2c3e2b] uppercase">Pregnancy Status:</label>
               <select id="pregnancy-status" name="pregnancy_status"
                 class="w-full px-4 py-2.5 rounded-full bg-white text-[#2c3e2b] font-medium text-sm outline-none shadow-inner border border-[#c1ccab] focus:ring-2 focus:ring-[#4a5e3b]/50 cursor-pointer">
@@ -217,7 +217,7 @@ function syncContentOffset() {
               </select>
             </div>
 
-               <div class="flex flex-col gap-1.5 md:col-span-2">
+               <div id="prescriptionsWrapper" class="flex flex-col gap-1.5 md:col-span-2">
               <label class="text-[11px] font-extrabold tracking-wider text-[#2c3e2b] uppercase">Current Prescriptions:</label>
               <div id="prescriptionsList" class="flex flex-wrap items-start gap-2 mb-1"></div>
               <div class="flex flex-col sm:flex-row gap-2">
@@ -284,6 +284,24 @@ function syncContentOffset() {
     const phoneInput = document.getElementById('phone');
     const successMessage = document.getElementById('successMessage');
 
+
+    // Show/hide Pregnancy Status and move Current Prescriptions
+    // depending on the patient's sex. M = male, F = female.
+    function updateMedicalLayout() {
+      const sex = document.getElementById('sex').value;
+      const pregnancyWrapper = document.getElementById('pregnancyStatusWrapper');
+      const prescriptionsWrapper = document.getElementById('prescriptionsWrapper');
+
+      if (!pregnancyWrapper || !prescriptionsWrapper) return;
+
+      if (sex === 'M') {
+        pregnancyWrapper.classList.add('hidden');
+        prescriptionsWrapper.classList.remove('md:col-span-2');
+      } else if (sex === 'F') {
+        pregnancyWrapper.classList.remove('hidden');
+        prescriptionsWrapper.classList.add('md:col-span-2');
+      }
+    }
 
     // EXPANDABLE LISTS — health conditions, prescriptions, allergies
     // Each patient can have MULTIPLE of these 
@@ -475,6 +493,7 @@ function syncContentOffset() {
         document.getElementById('first-name').value = data.first_name || '';
         document.getElementById('last-name').value  = data.last_name || '';
         document.getElementById('sex').value         = data.sex || '';
+        updateMedicalLayout();
         document.getElementById('email').value       = data.email || '';
 
         // Editable fields 
@@ -486,6 +505,7 @@ function syncContentOffset() {
         document.getElementById('address').value          = data.address || '';
         document.getElementById('phone').value             = data.phone || '';
         document.getElementById('pregnancy-status').value = data.pregnancy_status || 'N/A';
+        updateMedicalLayout();
 
       
         healthConditions = normalizeToStringArray(data.health_conditions, 'description');
