@@ -36,7 +36,7 @@ document.addEventListener('DOMContentLoaded', function () {
         function handleDayClick(dayDiv, sqlDateStr) {
             dayDiv.addEventListener('click', function () {
                 document.querySelectorAll('#days > div').forEach(d => {
-                    d.classList.remove('bg-[#D7E3A5]', 'border-2', 'border-[#2A1001]');
+                    d.classList.remove('bg-[#D7E3A5]', 'border-1', 'border-[#2A1001]');
                 });
                 dayDiv.classList.add('bg-[#D7E3A5]', 'border-2', 'border-[#2A1001]');
 
@@ -60,7 +60,7 @@ document.addEventListener('DOMContentLoaded', function () {
             dayDiv.classList.add(
                 'w-8', 'h-8', 'rounded-full', 'flex', 'items-center', 'justify-center',
                 'font-medium', 'text-[#2A1001]', 'cursor-pointer', 'transition-colors',
-                'hover:bg-[#D7E3A5]', 'hover:rounded-full', 'hover:border-2',
+                'hover:bg-[#D7E3A5]', 'hover:rounded-full', 'hover:border-1',
                 'hover:border-[#2A1001]', 'hover:scale-[1.25]'
             );
 

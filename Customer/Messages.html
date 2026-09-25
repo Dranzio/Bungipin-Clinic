@@ -14,97 +14,61 @@
 <body class="bg-[#F3EFE4] min-h-screen font-sans text-[#2c3e2b] antialiased">
     <div class="min-h-[100dvh] flex flex-col md:flex-row w-full"> <!--Div for whole body-->
         <div id="sidebar-placeholder"></div>
-      <script>
-        function syncContentOffset() {
-            const placeholder = document.getElementById('sidebar-placeholder');
-            const sidebar = Array.from(placeholder.children)
-                .find(el => !['SCRIPT', 'STYLE', 'LINK'].includes(el.tagName));
-            if (!sidebar) return;
-
-            const set = (el, prop, value) => { if (el.style[prop] !== value) el.style[prop] = value; };
-
-            const apply = () => {
-                const desktop = window.innerWidth >= 768;
-                set(placeholder, 'flexShrink', '0');
-                set(sidebar, 'position', desktop ? 'sticky' : 'relative');
-                set(sidebar, 'top', desktop ? '0px' : 'auto');
-                set(sidebar, 'height', desktop ? '100vh' : '');
-                set(sidebar, 'overflowY', desktop ? 'auto' : '');
-            };
-
-            window.addEventListener('resize', apply);
-            apply();
-        }
-        (async () => {
-            try {
-                const response = await fetch('/Taskbar/Customer_Task.html');
-                if (response.ok) {
-                    const data = await response.text();
+        <script>
+            fetch('/Taskbar/Customer_Task.html')
+                .then(response => response.text())
+                .then(data => {
                     document.getElementById('sidebar-placeholder').innerHTML = data;
+
                     const currentPage = window.location.pathname.split("/").pop();
                     document.querySelectorAll('.nav-link').forEach(link => {
                         if (link.getAttribute('data-page') === currentPage) {
                             link.classList.add('bg-[#FDFCE9]');
                         }
                     });
-                    if (typeof initSidebar === 'function') {
-                        initSidebar();
-                    }
-                    syncContentOffset();
-                }
-            } catch (error) {
-                console.log('Sidebar fallback:', error);
-            }
-        })();
 
-    </script>
+                    initSidebar();
+                })
+        </script>
         
-      <!-- Main Content Area Wrapper -->
-<div id="main-content" class="flex-1 min-w-0 flex flex-col md:overflow-y-auto">
+        <!-- Main Content Area Wrapper -->
+        <div class="flex-1 p-4 sm:p-6 md:p-10 flex justify-center items-start">
+            <main class="w-full max-w-4xl flex flex-col items-center gap-8">
+            
+                <div class="flex flex-col w-full max-w-4xl">
 
-    <!-- Header -->
-    <div class="flex justify-between items-start pt-5 pl-12 pr-4 md:pl-24 md:pr-8">
-        <h1 class="text-2xl sm:text-3xl md:text-5xl 2xl:text-[73px] pt-5 font-bold text-[#2A1001] font-['Poppins']">
-            Messages
-        </h1>
-        <img
-            src="../assets/logowithtitle.png"
-            class="w-20 sm:w-24 md:w-28 h-auto object-contain shrink-0"
-            alt="Logo"/>
-    </div>
-    <hr class="border-t border-[#2A1001] mt-2 mb-6" />
+                <!--Div for header and logo-->
+                <div class="w-full">
+                    <h1 class="text-2xl sm:text-3xl font-extrabold text-[#1a281b]">Messages</h1>
 
-    <div class="p-4 sm:p-6 md:p-10 flex justify-center items-start">
-        <main class="w-full max-w-4xl flex flex-col items-center gap-8">
+                </div>
 
-            <div class="flex flex-col w-full max-w-4xl">
-
-                <!--Div for searchbar and filter-->
-                <div class="flex w-full items-center justify-between gap-4 mb-6">
+                    <!--Div for searchbar and filter-->
+                    <div class="flex w-full items-center justify-between gap-4 mb-6">
 
                     <!--Search Bar-->
                     <div class="flex-1">
-                        <input id="searchInput" type="text" placeholder="Search..." class="w-full h-[45px] bg-white border border-black rounded-full px-5 outline-none shadow-sm">
+                        <input id="searchInput" type="text" placeholder="Search..." class="w-full h-[45px] bg-white border-1 border-black rounded-full px-5 outline-none shadow-sm">
                     </div>
 
-                    <!--Filter Buttons-->
-                    <div class="relative shrink-0">
-                        <span class="font-extrabold text-sm text-[#2c3e2b]">Sort:</span>
-                        <select id="filterSelect" class="appearance-none bg-[#D1C363] text-black font-extrabold px-6 py-2.5 pr-10 rounded-full border-black text-sm cursor-pointer shadow-sm outline-none">
-                            <option value="all"> All </option>
-                            <option value="unread"> Unread </option>
-                            <option value="read"> Read </option>
-                         </select>
-                        
-                         <!-- Custom dropdown arrow icon -->
-                        <div class="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none text-black">
-                            <i class="fa-solid fa-chevron-down text-xs font-bold"></i>
+                        <!--Filter Buttons-->
+                        <div class="relative shrink-0">
+                            <span class="font-extrabold text-sm text-[#2c3e2b]">Sort:</span>
+                            <select id="filterSelect" class="appearance-none bg-[#D1C363] text-black font-extrabold px-6 py-2.5 pr-10 rounded-full border-black text-sm cursor-pointer shadow-sm outline-none">
+                                <option value="all"> All </option>
+                                <option value="unread"> Unread </option>
+                                <option value="read"> Read </option>
+                            </select>
+                            
+                            <!-- Custom dropdown arrow icon -->
+                            <div class="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none text-black">
+                                <i class="fa-solid fa-chevron-down text-xs font-bold"></i>
+                            </div>
                         </div>
                     </div>
-                </div>
 
                 <!--Div for Messages Tabs-->
-                <div id="messagesList" class="flex flex-col w-full gap-[22px]">
+                <div id="messagesList" class="flex flex-col w-full gap-5.5">
                     <!-- Dynamic messages will be injected here by Messages.js -->
                 </div>
 
@@ -115,22 +79,22 @@
 
         <!-- RIGHT-SIDE CHAT PANEL DRAWER -->
         <div id="chatModal" class="hidden fixed inset-0 bg-black/40 flex justify-end z-50">
-            <div class="relative w-full max-w-3xl h-[100dvh] bg-[#F4F1EA] border border-black flex flex-col shadow-2xl overflow-hidden">
+            <div class="relative w-full max-w-3xl h-full bg-[#F4F1EA] border-1 border-black flex flex-col shadow-2xl overflow-hidden">
         
         <!-- Floating Yellow Close Button (Top-Left of the drawer) -->
-        <button onclick="closeChat()" class="absolute top-4 left-4 w-10 h-10 bg-[#D1C363] border border-black rounded-lg flex items-center justify-center font-extrabold text-black cursor-pointer shadow-md hover:bg-[#c5b757] transition-all z-10">
+        <button onclick="closeChat()" class="absolute top-4 left-4 w-10 h-10 bg-[#D1C363] border-1 border-black rounded-lg flex items-center justify-center font-extrabold text-black cursor-pointer shadow-md hover:bg-[#c5b757] transition-all z-10">
             <i class="fa-solid fa-xmark text-lg"></i>
         </button>
 
         <!-- Panel Header -->
-        <div class="border border-black px-16 py-5 flex items-center bg-[#F4F1EA]">
+        <div class="border-1 border-black px-16 py-5 flex items-center bg-[#F4F1EA]">
             <h2 id="chatDocName" class="font-extrabold text-2xl text-[#2c3e2b]">Dr. Pidlaoan</h2>
         </div>
 
-        <!-- Chat Messages Area (Scrollable) -->
-        <div id="chatMessagesArea" class="flex-1 p-6 overflow-y-auto flex flex-col gap-6 bg-[#F9F7F1]">
-            <!-- Dynamic chat messages will be injected here -->
-        </div>
+                    <!-- Chat Messages Area (Scrollable) -->
+                    <div id="chatMessagesArea" class="flex-1 p-6 overflow-y-auto flex flex-col gap-6 bg-[#F9F7F1]">
+                        <!-- Dynamic chat messages will be injected here -->
+                    </div>
 
         <!-- Chat Input & Attachment Area -->
         <div class="border-t-4 border-black bg-white flex flex-col">
@@ -148,14 +112,14 @@
                 <button id="sendBtn" onclick="sendMessage()" class="font-extrabold text-black hover:underline cursor-pointer text-sm">
                     Send
                 </button>
-                    </div>          
-        </div>              
+            </div>
+        </div>
 
-            </div>          
-        </div>              
+            </div>
+        </div>
 
-            </div>          
-        </div>              
-    </div>                  
+        </div>
+
+    </div>
 </body>
 </html>

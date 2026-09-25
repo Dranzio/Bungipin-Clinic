@@ -43,15 +43,16 @@ function _clearCollapseStyles(sidebar, aside, nameBadge, profileCircle, labels, 
 }
 
 function _applySidebarState(collapse) {
-    const sidebar       = document.getElementById('sidebar');
-    const aside         = document.getElementById('sidebar-aside');
-    const nameBadge     = document.getElementById('name-badge');
-    const profileCircle = document.getElementById('profile-circle');
-    const labels        = document.querySelectorAll('.sidebar-label');
-    const navLinks      = document.querySelectorAll('.nav-link, #sidebar a');
+    const sidebar      = document.getElementById('sidebar');
+    const aside        = document.getElementById('sidebar-aside');
+    const nameBadge    = document.getElementById('name-badge');
+    const profileCircle= document.getElementById('profile-circle');
+    const labels       = document.querySelectorAll('.sidebar-label');
+    const navLinks     = document.querySelectorAll('.nav-link, #sidebar a');
 
     if (!sidebar) return;
 
+    // Keep the user's desktop preference even when the window is small.
     sidebar.dataset.collapsed = collapse ? 'true' : 'false';
     const isDesktop = window.innerWidth >= 768;
 
@@ -60,15 +61,6 @@ function _applySidebarState(collapse) {
             sidebar.style.width = '72px';
             if (aside) aside.style.width = '72px';
         }
-
-        if (!isDesktop || !collapse) {
-            _clearCollapseStyles(sidebar, aside, nameBadge, profileCircle, labels, navLinks);
-            return;
-        }
-
-        sidebar.style.width = '72px';
-        if (aside) aside.style.width = '72px';
-        
         labels.forEach(el => { el.style.display = 'none'; });
         if (nameBadge) nameBadge.style.display = 'none';
         if (profileCircle) {
@@ -101,7 +93,8 @@ function _applySidebarState(collapse) {
 window.addEventListener('resize', () => {
     const sidebar = document.getElementById('sidebar');
     if (!sidebar) return;
-    _applySidebarState(sidebar.dataset.collapsed === 'true');
+    const isCollapsed = sidebar.dataset.collapsed === 'true';
+    _applySidebarState(isCollapsed);
 });
 
 // ── Load employee name + email from API ─────────────────────────────────────

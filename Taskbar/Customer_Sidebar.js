@@ -52,6 +52,7 @@ function _applySidebarState(collapse) {
 
     if (!sidebar) return;
 
+    // Keep the user's desktop preference even when the window is small.
     sidebar.dataset.collapsed = collapse ? 'true' : 'false';
     const isDesktop = window.innerWidth >= 768;
 
@@ -105,8 +106,8 @@ function _applySidebarState(collapse) {
 
         // Restore nav link padding
         navLinks.forEach(link => {
-            link.style.paddingLeft    = '';
-            link.style.paddingRight   = '';
+            link.style.paddingLeft  = '';
+            link.style.paddingRight = '';
             link.style.justifyContent = '';
         });
     }
@@ -149,7 +150,7 @@ async function _loadSidebarUser() {
             const avatarImg = document.getElementById('sidebar-user-avatar');
             const defaultAvatar = document.getElementById('sidebar-default-avatar');
             const picUrl = data.profile_picture || data.image_url; // adjust if your DB uses a different column name
-            
+
             if (avatarImg && defaultAvatar) {
                 if (picUrl) {
                     avatarImg.src = picUrl;
