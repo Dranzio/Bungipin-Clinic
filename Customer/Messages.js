@@ -2,6 +2,15 @@ let allThreads = [];
 let currentChatUserId = null;
 let currentChatUserName = '';
 
+// Chat content is typed by whichever user is on the other end of the
+// conversation — patient or employee — and rendered straight into this
+// user's page. Every value below must be escaped before going into innerHTML.
+function escapeHtml(value) {
+    const div = document.createElement('div');
+    div.textContent = value == null ? '' : String(value);
+    return div.innerHTML;
+}
+
 async function fetchThreads() {
     const token = localStorage.getItem('userToken');
     if (!token) {
@@ -15,7 +24,7 @@ async function fetchThreads() {
             method: 'GET',
             headers: { 'Authorization': `Bearer ${token}` }
         });
-        
+
         if (response.ok) {
             allThreads = await response.json();
             renderThreads();
@@ -31,7 +40,7 @@ function renderThreads() {
     const messagesList = document.getElementById('messagesList');
     const searchInput = document.getElementById('searchInput');
     const filterSelect = document.getElementById('filterSelect');
-    
+
     if(!messagesList) return;
 
     const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
@@ -54,10 +63,10 @@ function renderThreads() {
 
     filtered.forEach(thread => {
         const statusClass = thread.has_unread ? 'bg-[#009B77]' : 'bg-gray-300';
-        
+
         const dateObj = new Date(thread.sent_at || Date.now()); // matched to messages.sent_at
         const timeStr = dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        
+
         const contactId = thread.user_id || thread.contact_id; // matched to users.user_id
         const contactFullName = `${thread.first_name || ''} ${thread.last_name || ''}`.trim() || 'Unknown User';
 
@@ -74,8 +83,8 @@ function renderThreads() {
                     <i class="fa-solid fa-envelope"></i>
                 </div>
                 <div class="flex flex-col max-w-[200px] sm:max-w-[400px]">
-                    <h1 class="font-bold text-2xl text-[#2c3e2b]">${contactFullName}</h1>
-                    <p class="text-sm text-gray-600 truncate">${thread.content || 'No messages yet'}</p>
+                    <h1 class="font-bold text-2xl text-[#2c3e2b]">${escapeHtml(contactFullName)}</h1>
+                    <p class="text-sm text-gray-600 truncate">${escapeHtml(thread.content || 'No messages yet')}</p>
                 </div>
             </div>
             <div class="text-sm font-semibold text-gray-600">
@@ -91,7 +100,7 @@ async function openChat(contactId, contactName) {
     currentChatUserName = contactName;
     document.getElementById("chatDocName").innerText = contactName;
     document.getElementById("chatModal").classList.remove("hidden");
-    
+
     await loadChatMessages(contactId);
 }
 
@@ -111,7 +120,7 @@ async function loadChatMessages(contactId) {
         const response = await fetch(`/api/messages/${contactId}`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
-        
+
         if (response.ok) {
             const messages = await response.json();
             renderChatMessages(messages, contactId);
@@ -127,9 +136,9 @@ async function loadChatMessages(contactId) {
 function renderChatMessages(messages, contactId) {
     const chatArea = document.getElementById('chatMessagesArea');
     if (!chatArea) return;
-    
+
     chatArea.innerHTML = '';
-    
+
     if (messages.length === 0) {
         chatArea.innerHTML = '<p class="text-center text-gray-500 py-4 font-bold">No messages yet. Send a message to start the conversation.</p>';
         return;
@@ -138,16 +147,16 @@ function renderChatMessages(messages, contactId) {
     messages.forEach(msg => {
         const dateObj = new Date(msg.sent_at);
         const timeStr = dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        
+
         // If the sender is the contact, it's a received message
         const isReceived = (msg.sender_id === contactId);
 
         if (isReceived) {
             chatArea.innerHTML += `
                 <div class="flex flex-col items-start max-w-[80%]">
-                    <span class="text-xs text-gray-600 font-semibold mb-1">${currentChatUserName}</span>
+                    <span class="text-xs text-gray-600 font-semibold mb-1">${escapeHtml(currentChatUserName)}</span>
                     <div class="bg-white border-2 border-black px-4 py-3 rounded-lg text-sm shadow-sm w-full">
-                        ${msg.content}
+                        ${escapeHtml(msg.content)}
                     </div>
                     <span class="text-xs text-gray-600 font-semibold mt-1">${timeStr}</span>
                 </div>
@@ -157,7 +166,7 @@ function renderChatMessages(messages, contactId) {
             chatArea.innerHTML += `
                 <div class="flex flex-col items-end self-end max-w-[80%]">
                     <div class="bg-[#D7E3A5] border-2 border-black px-4 py-3 rounded-lg text-sm shadow-sm w-full">
-                        ${msg.content}
+                        ${escapeHtml(msg.content)}
                     </div>
                     <span class="text-xs text-gray-600 font-semibold mt-1">${timeStr}</span>
                 </div>
@@ -173,7 +182,7 @@ async function sendMessage() {
     const token = localStorage.getItem('userToken');
     const input = document.getElementById('chatInput');
     const content = input.value.trim();
-    
+
     if (!token || !content || !currentChatUserId) return;
 
     try {
@@ -211,7 +220,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (searchInput) {
         searchInput.addEventListener('input', renderThreads);
     }
-    
+
     if (filterSelect) {
         filterSelect.addEventListener('change', renderThreads);
     }

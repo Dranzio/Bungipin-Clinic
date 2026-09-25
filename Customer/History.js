@@ -1,6 +1,15 @@
 // ── SET TO false WHEN BACKEND IS READY ─────────────────────────────────────
 const TEST_MODE = false;
 
+// Prevent text from other users (dentist notes) and the patient's own
+// stored data (address, email, phone) from being interpreted as HTML
+// when injected via innerHTML below.
+function escapeHtml(value) {
+    const div = document.createElement('div');
+    div.textContent = value == null ? '' : String(value);
+    return div.innerHTML;
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     fetchAppointments();
 });
@@ -128,7 +137,7 @@ function buildCompactCard(appt) {
 
     card.innerHTML = `
         <div class="flex flex-col">
-            <h3 class="font-extrabold text-[#1a281b] text-lg sm:text-xl tracking-wide">${appt.label || 'General Appointment'}</h3>
+            <h3 class="font-extrabold text-[#1a281b] text-lg sm:text-xl tracking-wide">${escapeHtml(appt.label || 'General Appointment')}</h3>
             <p class="font-bold text-sm text-[#1a281b] mt-0.5">Date: ${scheduledDate}</p>
         </div>
         <div class="${style.bg} border-2 border-[#1a281b] rounded-[4px] px-6 py-1.5 flex justify-center items-center shadow-sm min-w-[120px]">
@@ -157,17 +166,19 @@ function openDetailModal(appt) {
     const paymentStatus = appt.payment_status
         ? appt.payment_status.charAt(0).toUpperCase() + appt.payment_status.slice(1)
         : 'N/A';
-    const service     = appt.label || 'General Appointment';
-    const dentistName = (appt.dentist_first_name || appt.dentist_last_name)
+    const service     = escapeHtml(appt.label || 'General Appointment');
+    const dentistName = escapeHtml((appt.dentist_first_name || appt.dentist_last_name)
         ? `Dr. ${appt.dentist_first_name || ''} ${appt.dentist_last_name || ''}`.trim()
-        : 'To be assigned';
-    const dentistNote = appt.dentist_note || null;
+        : 'To be assigned');
+    // dentist_note is written by the dentist, not the patient viewing this
+    // page — this is the one place another user's free text is rendered here.
+    const dentistNote = appt.dentist_note ? escapeHtml(appt.dentist_note) : null;
 
     // Patient receipt fields — joined from users + patient_profiles on backend
-    const patientId      = appt.public_id || 'N/A';  // users.public_id
-    const patientPhone   = appt.phone     || 'N/A';  // users.phone
-    const patientAddress = appt.address   || 'N/A';  // patient_profiles.address
-    const patientEmail   = appt.email     || 'N/A';  // users.email
+    const patientId      = escapeHtml(appt.public_id || 'N/A');  // users.public_id
+    const patientPhone   = escapeHtml(appt.phone     || 'N/A');  // users.phone
+    const patientAddress = escapeHtml(appt.address   || 'N/A');  // patient_profiles.address
+    const patientEmail   = escapeHtml(appt.email     || 'N/A');  // users.email
 
     // ── Status-specific bottom section ──────────────────────────────────────
     let bottomSection = '';

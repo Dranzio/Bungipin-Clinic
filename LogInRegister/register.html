@@ -9,288 +9,203 @@
 </head>
 
 <body class="min-h-screen bg-[#A2AC89]">
-    <div class="relative min-h-screen">
+<div class="relative min-h-screen">
 
-        <!-- Mobile register design format-->
-        <div class="flex flex-col items-center lg:block">
-            <img src="../assets/logowithtitle.png"
-                class="lg:hidden w-[45%] max-w-[220px] mt-4 mb-2 animate-slideInLeft" />
-            <a href="login.html"
-                class="lg:hidden bg-[#D5C04D] text-sm font-bold text-[#2A1001] px-6 py-2 rounded-full hover:bg-[#FDFCE9] transition duration-300 mb-4 animate-slideInLeft">
-                Back to Login</a>
-        </div>
-        <!-- Desktop register design format-->
-        <div
+    <!-- Mobile register design format-->
+    <div class="flex flex-col items-center lg:block">
+        <img src="../assets/logowithtitle.png"
+             class="lg:hidden w-[45%] max-w-[220px] mt-4 mb-2 animate-slideInLeft" />
+        <a href="login.html"
+           class="lg:hidden bg-[#D5C04D] text-sm font-bold text-[#2A1001] px-6 py-2 rounded-full hover:bg-[#FDFCE9] transition duration-300 mb-4 animate-slideInLeft">
+            Back to Login</a>
+    </div>
+    <!-- Desktop register design format-->
+    <div
             class="hidden lg:flex absolute right-0 top-0 h-full w-[40%] flex-col items-center justify-center z-20 gap-8">
-            <img src="../assets/logowithtitle.png"
-                class="w-[70%] max-w-[500px] pointer-events-none select-none drop-shadow-xl animate-slideInLeft" />
-            <a href="login.html" class="z-30 bg-[#D5C04D] text-sm md:text-base font-bold text-[#2A1001] px-6 py-2 rounded-full animate-slideInLeft
+        <img src="../assets/logowithtitle.png"
+             class="w-[70%] max-w-[500px] pointer-events-none select-none drop-shadow-xl animate-slideInLeft" />
+        <a href="login.html" class="z-30 bg-[#D5C04D] text-sm md:text-base font-bold text-[#2A1001] px-6 py-2 rounded-full animate-slideInLeft
                 transition-all duration-200 ease-in-out 
                hover:scale-105 hover:bg-[#FDFCE9] hover:shadow-xl
                active:scale-95 active:bg-[#c2ae3b]">
-                Back to Login
-            </a>
-        </div>
+            Back to Login
+        </a>
+    </div>
 
-        <!--Code to make the entire page responsive-->
-        <div class="mx-4 mt-4 mb-4 md:mx-0 md:mt-0 md:mb-0 md:w-[60%] md:min-h-screen bg-[#D3DCBE]
+    <!--Code to make the entire page responsive-->
+    <div class="mx-4 mt-4 mb-4 md:mx-0 md:mt-0 md:mb-0 md:w-[60%] md:min-h-screen bg-[#D3DCBE]
             rounded-[30px] md:rounded-none md:rounded-tr-[116px] md:rounded-br-[116px]
             pt-8 pb-12 px-6 md:pt-11 md:pb-20 md:px-16
             flex flex-col relative z-10 animate-slideInLeft">
 
-            <!--Form Registration-->
-            <form id="registerForm" action="#" method="POST">
+        <!--Form Registration-->
+        <form id="registerForm" action="#" method="POST">
 
-                <h1
+            <h1
                     class="text-2xl sm:text-3xl md:text-5xl 2xl:text-[73px] font-bold text-[#2A1001] font-['Poppins'] text-left">
-                    REGISTER</h1>
-                <p class="mt-3 text-sm text-left text-[#2A1001] font-['Poppins'] pb-6 md:pb-10">
-                    Let’s get you all set up to begin your journey with Bungipin Dental Clinic!
-                </p>
+                REGISTER</h1>
+            <p class="mt-3 text-sm text-left text-[#2A1001] font-['Poppins'] pb-6 md:pb-10">
+                Let’s get you all set up to begin your journey with Bungipin Dental Clinic!
+            </p>
 
-                <!--Input fields are in separate containers by twos to format them by twos-->
-                <div class="flex flex-col sm:flex-row gap-4">
-                    <div class="flex-1">
-                        <label class="text-sm md:text-[20px] block font-semibold text-[#2A1001] font-poppins mb-2">First
-                            Name: <span class="text-red-500">*</span></label>
-                        <input type="text" id="first_name" name ="first_name" required
-                            class="w-full h-8 md:h-11 px-4 bg-white outline-none rounded-[30px] border border-gray-200 mb-4 md:mb-12"
-                            placeholder="First Name" />
-                    </div>
-
-                    <div class="flex-1">
-                        <label class="text-sm md:text-[20px] block font-semibold text-[#2A1001] font-poppins mb-2">Last
-                            Name: <span class="text-red-500">*</span></label>
-                        <input type="text" id="last_name" name="last_name" required
-                            class="w-full h-8 md:h-11 px-4 bg-white outline-none rounded-[30px] border border-gray-200 mb-4 md:mb-12"
-                            placeholder="Last Name" />
-                    </div>
+            <!--Input fields are in separate containers by twos to format them by twos-->
+            <div class="flex flex-col sm:flex-row gap-4">
+                <div class="flex-1">
+                    <label class="text-sm md:text-[20px] block font-semibold text-[#2A1001] font-poppins mb-2">First
+                        Name:</label>
+                    <input type="text" id="first_name" name ="first_name" required
+                           pattern="[a-zA-Z\u00C0-\u017F\s'\-.]{1,50}"
+                           title="Letters, spaces, hyphens, apostrophes, and periods only"
+                           class="w-full h-8 md:h-11 px-4 bg-white outline-none rounded-[30px] border border-gray-200 mb-4 md:mb-12"
+                           placeholder="Bungie" />
                 </div>
 
-                <div class="flex flex-col sm:flex-row gap-4">
-                    <div class="flex-1">
-                        <label
-                            class="text-sm md:text-[20px] block font-semibold text-[#2A1001] font-poppins mb-2">Email: <span class="text-red-500">*</span></label>
-                        <input type="email" id="email" name ="email" required
-                            class="w-full h-8 md:h-11 px-4 bg-white outline-none rounded-[30px] border border-gray-200 mb-4 md:mb-12"
-                            placeholder="name@gmail.com" />
-                    </div>
-
-                    <div class="flex-1">
-                        <label class="text-sm md:text-[20px] block font-semibold text-[#2A1001] font-poppins mb-2">Phone
-                            Number: <span class="text-red-500">*</span></label>
-                        <input type="tel" id="phone" name="phone" pattern="^09\d{9}$" maxlength="11"
-                            oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 11);" required
-                            class="w-full h-8 md:h-11 px-4 bg-white outline-none rounded-[30px] border border-gray-200 mb-4 md:mb-12"
-                            placeholder="09171234567" />
-                    </div>
+                <div class="flex-1">
+                    <label class="text-sm md:text-[20px] block font-semibold text-[#2A1001] font-poppins mb-2">Last
+                        Name:</label>
+                    <input type="text" id="last_name" name="last_name" required
+                           pattern="[a-zA-Z\u00C0-\u017F\s'\-.]{1,50}"
+                           title="Letters, spaces, hyphens, apostrophes, and periods only"
+                           class="w-full h-8 md:h-11 px-4 bg-white outline-none rounded-[30px] border border-gray-200 mb-4 md:mb-12"
+                           placeholder="Holmes" />
                 </div>
-
-               <div class="flex flex-col sm:flex-row gap-4">
-                    <div class="flex-1">
-                        <label class="text-sm md:text-[20px] block font-semibold text-[#2A1001] font-poppins mb-2">Password:</label>
-                        <input type="password" id="password_hash" name="password_hash" required minlength="8"
-                            class="w-full h-8 md:h-11 px-4 bg-white outline-none rounded-[30px] border border-gray-200 mb-1"
-                            placeholder="Password" />
-                    </div>
-
-                    <div class="flex-1">
-                        <label class="text-sm md:text-[20px] block font-semibold text-[#2A1001] font-poppins mb-2">Confirm
-                            Password:</label>
-                        <input type="password" id="confirm_password"  name="confirm_password" required minlength="8"
-                            class="w-full h-8 md:h-11 px-4 bg-white outline-none rounded-[30px] border border-gray-200 mb-1"
-                            placeholder="Confirm Password" />
-                    </div>
-                </div>
-                <!-- Warning text container -->
-                <div id="passwordWarning" class="text-red-700 text-xs md:text-sm font-poppins font-semibold mb-6 md:mb-12 hidden">
-                </div>
-
-                <div class="flex items-center gap-6 mb-6 md:mb-12">
-                    <label
-                        class="text-sm md:text-[20px] font-semibold text-[#2A1001] font-poppins whitespace-nowrap">Sex: <span class="text-red-500">*</span></label>
-                    <div class="flex items-center gap-6">
-                        <label
-                            class="flex items-center gap-2 text-sm md:text-base text-[#2A1001] font-poppins cursor-pointer">
-                            <input type="radio" id="male" name="sex" value="M" required
-                                class="w-4 h-4 accent-[#2A1001]" /> Male
-                        </label>
-                        <label
-                            class="flex items-center gap-2 text-sm md:text-base text-[#2A1001] font-poppins cursor-pointer">
-                            <input type="radio" id="female" name="sex" value="F" class="w-4 h-4 accent-[#2A1001]" />
-                            Female
-                        </label>
-                    </div>
-                </div>
-
-                <div class="flex justify-center gap-5">
-                    <button type="submit" id="createAccountBtn" disabled
-                        class="w-1/2 sm:w-[220px] text-sm md:text-[20px] font-bold py-2 px-4 rounded-full transition-all duration-200 ease-in-out text-center
-                        disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed disabled:shadow-none disabled:hover:scale-100 disabled:active:scale-100
-                        bg-[#D5C04D] text-[#2A1001] shadow-lg hover:scale-105 hover:bg-[#FDFCE9] hover:shadow-xl active:scale-95 active:bg-[#c2ae3b]">
-                            Create Account
-                    </button>
-
-                    <button type="reset" id="clearBtn" disabled 
-                        class="w-1/2 sm:w-[220px] text-sm md:text-[20px] font-bold py-2 px-4 rounded-full transition-all duration-200 ease-in-out text-center
-                        disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed disabled:shadow-none disabled:hover:scale-100 disabled:active:scale-100
-                        bg-[#D5C04D] text-[#2A1001] shadow-lg hover:scale-105 hover:bg-[#FDFCE9] hover:shadow-xl active:scale-95 active:bg-[#c2ae3b]">
-                            Clear
-                    </button>
-                </div>
-
-                <!-- Checkbox HTML -->
-                <div class="flex items-center justify-center gap-2 mt-6 mb-6 md:mb-8">
-                    <input type="checkbox" id="terms" required class="w-4 h-4 accent-[#2A1001] cursor-pointer"
-                        oninvalid="this.setCustomValidity('Please agree to the Terms and Conditions before creating an account.')"
-                        oninput="this.setCustomValidity('')" />
-
-                    <div class="text-sm md:text-base text-[#2A1001] font-poppins">
-                        <label for="terms" class="cursor-pointer hover:text-gray-700">I agree to the</label>
-                        <span id="termsLink" class="text-blue-500 hover:underline cursor-pointer">Terms and
-                            Conditions</span>
-                        and
-                        <span id="privacyLink" class="text-blue-500 hover:underline cursor-pointer">Privacy
-                            Policy</span>
-                    </div>
-                </div>
-
-            </form>
-
-            <div id="successMessage"
-                class="hidden text-center mt-4 p-4 bg-green-100 border border-green-400 text-green-800 rounded-2xl font-poppins">
-                Account created successfully!
             </div>
-        </div>
 
-        <!--policy modal -->
-        <div id="policyModal"
-            class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4 transition-opacity duration-300">
-            <div
+            <div class="flex flex-col sm:flex-row gap-4">
+                <div class="flex-1">
+                    <label
+                            class="text-sm md:text-[20px] block font-semibold text-[#2A1001] font-poppins mb-2">Email:</label>
+                    <input type="email" id="email" name ="email" required
+                           class="w-full h-8 md:h-11 px-4 bg-white outline-none rounded-[30px] border border-gray-200 mb-4 md:mb-12"
+                           placeholder="bungipin123@gmail.com" />
+                </div>
+
+                <div class="flex-1">
+                    <label class="text-sm md:text-[20px] block font-semibold text-[#2A1001] font-poppins mb-2">Phone
+                        Number:</label>
+                    <input type="tel" id="phone" name="phone" pattern="^09\d{9}$" maxlength="11"
+                           oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 11);" required
+                           class="w-full h-8 md:h-11 px-4 bg-white outline-none rounded-[30px] border border-gray-200 mb-4 md:mb-12"
+                           placeholder="09171234567" />
+                </div>
+            </div>
+
+            <div class="flex flex-col sm:flex-row gap-4">
+                <div class="flex-1">
+                    <label
+                            class="text-sm md:text-[20px] block font-semibold text-[#2A1001] font-poppins mb-2">Password:</label>
+                    <input type="password" id="password_hash" name="password_hash" required minlength="8"
+                           class="w-full h-8 md:h-11 px-4 bg-white outline-none rounded-[30px] border border-gray-200 mb-4 md:mb-12"
+                           placeholder="12345678" />
+                </div>
+
+                <div class="flex-1">
+                    <label
+                            class="text-sm md:text-[20px] block font-semibold text-[#2A1001] font-poppins mb-2">Confirm
+                        Password:</label>
+                    <input type="password" id="confirm_password"  name="confirm_password" required minlength="8"
+                           class="w-full h-8 md:h-11 px-4 bg-white outline-none rounded-[30px] border border-gray-200 mb-4 md:mb-12"
+                           placeholder="Confirm Password"
+                           oninput="this.setCustomValidity(this.value !== document.getElementById('password_hash').value ? 'Passwords do not match.' : '')" />
+                </div>
+            </div>
+
+            <div class="flex items-center gap-6 mb-6 md:mb-12">
+                <label
+                        class="text-sm md:text-[20px] font-semibold text-[#2A1001] font-poppins whitespace-nowrap">Sex:</label>
+                <div class="flex items-center gap-6">
+                    <label
+                            class="flex items-center gap-2 text-sm md:text-base text-[#2A1001] font-poppins cursor-pointer">
+                        <input type="radio" id="male" name="sex" value="M" required
+                               class="w-4 h-4 accent-[#2A1001]" /> Male
+                    </label>
+                    <label
+                            class="flex items-center gap-2 text-sm md:text-base text-[#2A1001] font-poppins cursor-pointer">
+                        <input type="radio" id="female" name="sex" value="F" class="w-4 h-4 accent-[#2A1001]" />
+                        Female
+                    </label>
+                </div>
+            </div>
+
+            <div class="flex justify-center">
+                <button type="submit"
+                        class="w-auto min-w-[160px] px-8 whitespace-nowrap md:w-1/4 md:mx-4 bg-[#D5C04D] text-sm md:text-[20px] font-bold text-[#2A1001] py-2 rounded-full shadow-lg transition-all duration-200 ease-in-out hover:scale-105 hover:bg-[#FDFCE9] hover:shadow-xl active:scale-95 active:bg-[#c2ae3b]">
+                    Create Account
+                </button>
+            </div>
+
+            <!-- Checkbox HTML -->
+            <div class="flex items-center justify-center gap-2 mt-6 mb-6 md:mb-8">
+                <input type="checkbox" id="terms" required class="w-4 h-4 accent-[#2A1001] cursor-pointer"
+                       oninvalid="this.setCustomValidity('Please agree to the Terms and Conditions before creating an account.')"
+                       oninput="this.setCustomValidity('')" />
+
+                <div class="text-sm md:text-base text-[#2A1001] font-poppins">
+                    <label for="terms" class="cursor-pointer hover:text-gray-700">I agree to the</label>
+                    <span id="termsLink" class="text-blue-500 hover:underline cursor-pointer">Terms and
+                            Conditions</span>
+                    and
+                    <span id="privacyLink" class="text-blue-500 hover:underline cursor-pointer">Privacy
+                            Policy</span>
+                </div>
+            </div>
+
+        </form>
+
+        <div id="successMessage"
+             class="hidden text-center mt-4 p-4 bg-green-100 border border-green-400 text-green-800 rounded-2xl font-poppins">
+            Account created successfully!
+        </div>
+    </div>
+
+    <!--policy modal -->
+    <div id="policyModal"
+         class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4 transition-opacity duration-300">
+        <div
                 class="bg-[#F2F0EF] rounded-[30px] w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl relative p-6 md:p-8">
 
 
-                <button id="closeServiceModal"
+            <button id="closeServiceModal"
                     class="absolute top-5 right-6 text-3xl font-extrabold text-[#382414] hover:opacity-60 transition leading-none">&times;</button>
 
-                <div class="flex items-center justify-center gap-3 mt-2 mb-6 border-b border-gray-100 pb-4">
-                    <img src="../assets/logowithtitle.png" class="w-10 h-10 object-contain shrink-0" alt="Logo" />
-                    <h2 id="modalTitle" class="text-2xl md:text-3xl font-extrabold text-[#2A1001] font-poppins text-center">
-                        Terms & Conditions
-                    </h2>
-                    </div>
+            <div class="flex items-center justify-center gap-3 mt-2 mb-6 border-b border-gray-100 pb-4">
+                <img src="../assets/logowithtitle.png" class="w-10 h-10 object-contain shrink-0" alt="Logo" />
+                <h2 id="modalTitle" class="text-2xl md:text-3xl font-extrabold text-[#2A1001] font-poppins text-center">
+                    Terms & Conditions
+                </h2>
+            </div>
 
-                <!-- Content Area -->
-                <div id="modalContent"
-                    class="overflow-y-auto flex-1 text-sm md:text-base text-[#2A1001] font-poppins space-y-4 pr-3 mb-6">
-                    <!-- Content injected here via JS -->
-                </div>
+            <!-- Content Area -->
+            <div id="modalContent"
+                 class="overflow-y-auto flex-1 text-sm md:text-base text-[#2A1001] font-poppins space-y-4 pr-3 mb-6">
+                <!-- Content injected here via JS -->
+            </div>
 
-                <div class="flex justify-center pt-2">
-                    <button id="closeModalBtn"
+            <div class="flex justify-center pt-2">
+                <button id="closeModalBtn"
                         class="bg-[#D5C04D] text-[#2A1001] font-bold py-3 px-12 rounded-[20px] shadow-md hover:bg-[#e6d057] hover:scale-105 transition-all text-lg">
-                        Close
-                    </button>
-                </div>
+                    Close
+                </button>
             </div>
         </div>
+    </div>
 
 
-        <script>
-            const form = document.getElementById('registerForm');
-            const password = document.getElementById('password_hash');
-            const confirmPassword = document.getElementById('confirm_password');
-            const successMessage = document.getElementById('successMessage');
-            const clearBtn = document.getElementById('clearBtn');
-            const allInputs = form.querySelectorAll('input');
-            const termsCheckbox = document.getElementById('terms');
-            const createAccountBtn = document.getElementById('createAccountBtn');
-            const passwordWarning = document.getElementById('passwordWarning');
+    <script>
+        const form = document.getElementById('registerForm');
+        const password = document.getElementById('password_hash');
+        const confirmPassword = document.getElementById('confirm_password');
+        const successMessage = document.getElementById('successMessage');
 
-            const policyModal = document.getElementById('policyModal');
-            const termsLink = document.getElementById('termsLink');
-            const privacyLink = document.getElementById('privacyLink');
-            const closeModalBtn = document.getElementById('closeModalBtn');
-            const closeModalIcon = document.getElementById('closeModalIcon');
-            const modalTitle = document.getElementById('modalTitle');
-            const modalContent = document.getElementById('modalContent');
+        const policyModal = document.getElementById('policyModal');
+        const termsLink = document.getElementById('termsLink');
+        const privacyLink = document.getElementById('privacyLink');
+        const closeModalBtn = document.getElementById('closeModalBtn');
+        const closeModalIcon = document.getElementById('closeModalIcon');
+        const modalTitle = document.getElementById('modalTitle');
+        const modalContent = document.getElementById('modalContent');
 
-            // Function to check form completeness
-function checkForm() {
-    let hasAnyInput = false;
-    let allRequiredFilled = true;
-    let warningMessage = "";
-
-    allInputs.forEach(input => {
-        if ((input.type === 'checkbox' || input.type === 'radio') && input.checked) {
-            hasAnyInput = true;
-        } else if (input.type !== 'checkbox' && input.type !== 'radio' && input.value.trim() !== '') {
-            hasAnyInput = true;
-        }
-
-        if (input.hasAttribute('required')) {
-            if (input.type === 'checkbox' && !input.checked) {
-                allRequiredFilled = false;
-            } else if (input.type !== 'radio' && input.type !== 'checkbox' && input.value.trim() === '') {
-                allRequiredFilled = false;
-            }
-        }
-    });
-
-    const sexSelected = document.querySelector('input[name="sex"]:checked');
-    if (!sexSelected) {
-        allRequiredFilled = false;
-    }
-
-    // Password validations and custom warnings
-    const passwordValue = password.value;
-    const confirmValue = confirmPassword.value;
-    
-    const hasMinLength = passwordValue.length >= 8;
-    const hasNumber = /\d/.test(passwordValue);
-    const hasSpecialChar = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(passwordValue);
-    const passwordsMatch = (passwordValue === confirmValue) && passwordValue !== '';
-
-    if (passwordValue !== "" && !hasMinLength) {
-        warningMessage = "Password must be at least 8 characters long.";
-        allRequiredFilled = false;
-    } else if (passwordValue !== "" && (!hasNumber || !hasSpecialChar)) {
-        warningMessage = "Password must include at least one number and one special character.";
-        allRequiredFilled = false;
-    } else if (confirmValue !== "" && !passwordsMatch) {
-        warningMessage = "Passwords do not match.";
-        allRequiredFilled = false;
-    } else {
-        warningMessage = "";
-    }
-
-    // Show or hide the warning text
-    if (warningMessage !== "" && (passwordValue !== "" || confirmValue !== "")) {
-        passwordWarning.textContent = warningMessage;
-        passwordWarning.classList.remove('hidden');
-    } else {
-        passwordWarning.textContent = "";
-        passwordWarning.classList.add('hidden');
-    }
-
-    clearBtn.disabled = !hasAnyInput;
-    createAccountBtn.disabled = !allRequiredFilled;
-}
-
-allInputs.forEach(input => {
-    input.addEventListener('input', checkForm);
-    input.addEventListener('change', checkForm);
-});
-
-checkForm();
-
-form.addEventListener('reset', () => {
-    passwordWarning.textContent = "";
-    passwordWarning.classList.add('hidden');
-    setTimeout(checkForm, 10);
-});
-
- const termsText = `
+        const termsText = `
 <div class="font-poppins text-[#2A1001] text-sm md:text-base pl-4 md:pl-6">
     <ol class="list-decimal list-outside pl-6 space-y-4">
         <li>
@@ -332,9 +247,9 @@ form.addEventListener('reset', () => {
     </ol>
 </div>
 `;
-            // test
+        // test
 
- const privacyText = `
+        const privacyText = `
 <div class="font-poppins text-[#2A1001]">
     <p class="mb-4 text-sm md:text-base">
         Bungipin respects your privacy. This Privacy Policy explains how we collect, use, disclose, and protect 
@@ -409,98 +324,98 @@ form.addEventListener('reset', () => {
     </div>
 </div>
 `;
-            function openModal(title, content) {//for modal to show up
-                modalTitle.innerText = title;
-                modalContent.innerHTML = content;
-                policyModal.classList.remove('hidden');
-                document.body.style.overflow = 'hidden';
+        function openModal(title, content) {//for modal to show up
+            modalTitle.innerText = title;
+            modalContent.innerHTML = content;
+            policyModal.classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeModal() {//for modal to close
+            policyModal.classList.add('hidden');
+            document.body.style.overflow = '';
+        }
+
+        termsLink.addEventListener('click', () => {
+            openModal('Terms & Conditions', termsText);
+        });
+
+        privacyLink.addEventListener('click', () => {
+            openModal('Privacy Policy', privacyText);
+        });
+
+        closeModalBtn.addEventListener('click', closeModal);
+        closeServiceModal.addEventListener('click', closeModal);
+
+        policyModal.addEventListener('click', (e) => {
+            if (e.target === policyModal) {
+                closeModal();
+            }
+        });
+
+        form.addEventListener('submit', async function (e) {
+            e.preventDefault();
+
+            if (password.value !== confirmPassword.value) {
+                confirmPassword.setCustomValidity('Passwords do not match.');
+                confirmPassword.reportValidity();
+                return;
+            } else {
+                confirmPassword.setCustomValidity('');
             }
 
-            function closeModal() {//for modal to close
-                policyModal.classList.add('hidden');
-                document.body.style.overflow = '';
+            const sexValue = document.querySelector('input[name="sex"]:checked')?.value;
+
+            const payload = {
+                first_name: document.getElementById('first_name').value.trim(),
+                last_name: document.getElementById('last_name').value.trim(),
+                email: document.getElementById('email').value.trim(),
+                phone: document.getElementById('phone').value.trim(),
+                password: password.value,
+                sex: sexValue
+            };
+
+            try {
+                const response = await fetch('http://localhost:3000/api/auth/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Registration failed');
+                }
+
+                // Log the new patient straight in, same as login.html does
+                localStorage.setItem('userToken', data.token);
+
+                form.reset();
+                successMessage.classList.remove('hidden');
+                successMessage.style.display = 'block';
+
+                setTimeout(() => {
+                    window.location.href = 'login.html';
+                }, 2000);
+
+            } catch (error) {
+                console.error('Registration error:', error);
+                alert(error.message);
             }
+        });
 
-            termsLink.addEventListener('click', () => {
-                openModal('Terms & Conditions', termsText);
-            });
+        document.getElementById('phone').addEventListener('input', function (e) {//makes sure no letters and strictly numbers
+            this.value = this.value.replace(/\D/g, '').slice(0, 11);
+        });
 
-            privacyLink.addEventListener('click', () => {
-                openModal('Privacy Policy', privacyText);
-            });
-
-            closeModalBtn.addEventListener('click', closeModal);
-            closeServiceModal.addEventListener('click', closeModal);
-
-            policyModal.addEventListener('click', (e) => {
-                if (e.target === policyModal) {
-                    closeModal();
-                }
-            });
-
-            form.addEventListener('submit', async function (e) {
-                e.preventDefault();
-
-                if (password.value !== confirmPassword.value) {
-                    confirmPassword.setCustomValidity('Passwords do not match.');
-                    confirmPassword.reportValidity();
-                    return;
-                } else {
-                    confirmPassword.setCustomValidity('');
-                }
-
-                const sexValue = document.querySelector('input[name="sex"]:checked')?.value;
-
-                const payload = {
-                    first_name: document.getElementById('first_name').value.trim(),
-                    last_name: document.getElementById('last_name').value.trim(),
-                    email: document.getElementById('email').value.trim(),
-                    phone: document.getElementById('phone').value.trim(),
-                    password: password.value,
-                    sex: sexValue
-                };
-
-                try {
-                    const response = await fetch('http://localhost:3000/api/auth/register', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload)
-                    });
-
-                    const data = await response.json();
-
-                    if (!response.ok) {
-                        throw new Error(data.error || 'Registration failed');
-                    }
-
-                    // Log the new patient straight in, same as login.html does
-                    localStorage.setItem('userToken', data.token);
-
-                    form.reset();
-                    successMessage.classList.remove('hidden');
-                    successMessage.style.display = 'block';
-
-                    setTimeout(() => {
-                        window.location.href = 'login.html';
-                    }, 2000);
-
-                } catch (error) {
-                    console.error('Registration error:', error);
-                    alert(error.message);
-                }
-            });
-
-            document.getElementById('phone').addEventListener('input', function (e) {//makes sure no letters and strictly numbers
-                this.value = this.value.replace(/\D/g, '').slice(0, 11);
-            });
-
-            confirmPassword.addEventListener('input', function () {//validates password matches
-                if (password.value === confirmPassword.value) {
-                    confirmPassword.setCustomValidity('');
-                }
-            });
-        </script>
-    </div>
+        confirmPassword.addEventListener('input', function () {//validates password matches
+            if (password.value === confirmPassword.value) {
+                confirmPassword.setCustomValidity('');
+            }
+        });
+    </script>
+</div>
 </body>
 
 </html>

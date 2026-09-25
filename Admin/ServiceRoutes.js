@@ -18,7 +18,18 @@ function requireAdmin(req, res, next) {
 // Existing URLs (unchanged icon on edit) pass straight through.
 function resolveIcon(icon) {
     if (!icon) return null;
-    if (!icon.startsWith('data:')) return icon;
+
+    if (!icon.startsWith('data:')) {
+        // Unchanged icon on edit — must actually look like a path or URL we
+        // generated, not arbitrary text an admin (or a compromised admin
+        // session) could smuggle into an <img src> attribute on the client.
+        if (!/^(\/uploads\/services\/[\w.-]+|https?:\/\/[^\s"'<>]+)$/.test(icon)) {
+            const err = new Error('Invalid icon value');
+            err.status = 400;
+            throw err;
+        }
+        return icon;
+    }
 
     const match = /^data:image\/(png|jpeg|webp|gif);base64,([A-Za-z0-9+/=]+)$/.exec(icon);
     if (!match) {
