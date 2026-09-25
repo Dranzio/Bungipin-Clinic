@@ -213,6 +213,13 @@
   const phoneInput = document.getElementById('phone');
   const successMessage = document.getElementById('successMessage');
 
+    // Prevent users from selecting a future birthday
+    const birthdayInput = document.getElementById('birthday');
+    const today = new Date();
+    const todayString = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    birthdayInput.max = todayString;
+
+
 
   phoneInput.addEventListener('input', function () {
     this.value = this.value.replace(/\D/g, '').slice(0, 11);
@@ -220,6 +227,7 @@
 
   // Real-time password match validation
   confirmPassword.addEventListener('input', function () {
+
     if (newPassword.value && this.value && newPassword.value !== this.value) {
       this.setCustomValidity('Passwords do not match.');
     } else {
@@ -272,6 +280,19 @@
   //update profile to database
   form.addEventListener('submit', async function (e) {
     e.preventDefault();
+
+      // Prevent future birthdays even if date is manually entered
+      const birthdayValue = document.getElementById('birthday').value;
+      if (birthdayValue) {
+        const selectedBirthday = new Date(`${birthdayValue}T00:00:00`);
+        const currentDate = new Date();
+        currentDate.setHours(0, 0, 0, 0);
+
+        if (selectedBirthday > currentDate) {
+          alert('Birthday cannot be a future date.');
+          return;
+        }
+      }
 
     // Password check
     if (newPassword.value && newPassword.value !== confirmPassword.value) {
