@@ -52,33 +52,33 @@
                 <div class="flex flex-col sm:flex-row gap-4">
                     <div class="flex-1">
                         <label class="text-sm md:text-[20px] block font-semibold text-[#2A1001] font-poppins mb-2">First
-                            Name:</label>
+                            Name: <span class="text-red-500">*</span></label>
                         <input type="text" id="first_name" name ="first_name" required
                             class="w-full h-8 md:h-11 px-4 bg-white outline-none rounded-[30px] border border-gray-200 mb-4 md:mb-12"
-                            placeholder="Bungie" />
+                            placeholder="First Name" />
                     </div>
 
                     <div class="flex-1">
                         <label class="text-sm md:text-[20px] block font-semibold text-[#2A1001] font-poppins mb-2">Last
-                            Name:</label>
+                            Name: <span class="text-red-500">*</span></label>
                         <input type="text" id="last_name" name="last_name" required
                             class="w-full h-8 md:h-11 px-4 bg-white outline-none rounded-[30px] border border-gray-200 mb-4 md:mb-12"
-                            placeholder="Holmes" />
+                            placeholder="Last Name" />
                     </div>
                 </div>
 
                 <div class="flex flex-col sm:flex-row gap-4">
                     <div class="flex-1">
                         <label
-                            class="text-sm md:text-[20px] block font-semibold text-[#2A1001] font-poppins mb-2">Email:</label>
+                            class="text-sm md:text-[20px] block font-semibold text-[#2A1001] font-poppins mb-2">Email: <span class="text-red-500">*</span></label>
                         <input type="email" id="email" name ="email" required
                             class="w-full h-8 md:h-11 px-4 bg-white outline-none rounded-[30px] border border-gray-200 mb-4 md:mb-12"
-                            placeholder="bungipin123@gmail.com" />
+                            placeholder="name@gmail.com" />
                     </div>
 
                     <div class="flex-1">
                         <label class="text-sm md:text-[20px] block font-semibold text-[#2A1001] font-poppins mb-2">Phone
-                            Number:</label>
+                            Number: <span class="text-red-500">*</span></label>
                         <input type="tel" id="phone" name="phone" pattern="^09\d{9}$" maxlength="11"
                             oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 11);" required
                             class="w-full h-8 md:h-11 px-4 bg-white outline-none rounded-[30px] border border-gray-200 mb-4 md:mb-12"
@@ -86,29 +86,29 @@
                     </div>
                 </div>
 
-                <div class="flex flex-col sm:flex-row gap-4">
+               <div class="flex flex-col sm:flex-row gap-4">
                     <div class="flex-1">
-                        <label
-                            class="text-sm md:text-[20px] block font-semibold text-[#2A1001] font-poppins mb-2">Password:</label>
+                        <label class="text-sm md:text-[20px] block font-semibold text-[#2A1001] font-poppins mb-2">Password:</label>
                         <input type="password" id="password_hash" name="password_hash" required minlength="8"
-                            class="w-full h-8 md:h-11 px-4 bg-white outline-none rounded-[30px] border border-gray-200 mb-4 md:mb-12"
-                            placeholder="12345678" />
+                            class="w-full h-8 md:h-11 px-4 bg-white outline-none rounded-[30px] border border-gray-200 mb-1"
+                            placeholder="Password" />
                     </div>
 
                     <div class="flex-1">
-                        <label
-                            class="text-sm md:text-[20px] block font-semibold text-[#2A1001] font-poppins mb-2">Confirm
+                        <label class="text-sm md:text-[20px] block font-semibold text-[#2A1001] font-poppins mb-2">Confirm
                             Password:</label>
                         <input type="password" id="confirm_password"  name="confirm_password" required minlength="8"
-                            class="w-full h-8 md:h-11 px-4 bg-white outline-none rounded-[30px] border border-gray-200 mb-4 md:mb-12"
-                            placeholder="Confirm Password"
-                            oninput="this.setCustomValidity(this.value !== document.getElementById('password_hash').value ? 'Passwords do not match.' : '')" />
+                            class="w-full h-8 md:h-11 px-4 bg-white outline-none rounded-[30px] border border-gray-200 mb-1"
+                            placeholder="Confirm Password" />
                     </div>
+                </div>
+                <!-- Warning text container -->
+                <div id="passwordWarning" class="text-red-700 text-xs md:text-sm font-poppins font-semibold mb-6 md:mb-12 hidden">
                 </div>
 
                 <div class="flex items-center gap-6 mb-6 md:mb-12">
                     <label
-                        class="text-sm md:text-[20px] font-semibold text-[#2A1001] font-poppins whitespace-nowrap">Sex:</label>
+                        class="text-sm md:text-[20px] font-semibold text-[#2A1001] font-poppins whitespace-nowrap">Sex: <span class="text-red-500">*</span></label>
                     <div class="flex items-center gap-6">
                         <label
                             class="flex items-center gap-2 text-sm md:text-base text-[#2A1001] font-poppins cursor-pointer">
@@ -123,10 +123,19 @@
                     </div>
                 </div>
 
-                <div class="flex justify-center">
-                    <button type="submit"
-                        class="w-auto min-w-[160px] px-8 whitespace-nowrap md:w-1/4 md:mx-4 bg-[#D5C04D] text-sm md:text-[20px] font-bold text-[#2A1001] py-2 rounded-full shadow-lg transition-all duration-200 ease-in-out hover:scale-105 hover:bg-[#FDFCE9] hover:shadow-xl active:scale-95 active:bg-[#c2ae3b]">
+                <div class="flex justify-center gap-5">
+                    <button type="submit" id="createAccountBtn" disabled
+                        class="w-1/2 sm:w-[220px] text-sm md:text-[20px] font-bold py-2 px-4 rounded-full transition-all duration-200 ease-in-out text-center
+                        disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed disabled:shadow-none disabled:hover:scale-100 disabled:active:scale-100
+                        bg-[#D5C04D] text-[#2A1001] shadow-lg hover:scale-105 hover:bg-[#FDFCE9] hover:shadow-xl active:scale-95 active:bg-[#c2ae3b]">
                             Create Account
+                    </button>
+
+                    <button type="reset" id="clearBtn" disabled 
+                        class="w-1/2 sm:w-[220px] text-sm md:text-[20px] font-bold py-2 px-4 rounded-full transition-all duration-200 ease-in-out text-center
+                        disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed disabled:shadow-none disabled:hover:scale-100 disabled:active:scale-100
+                        bg-[#D5C04D] text-[#2A1001] shadow-lg hover:scale-105 hover:bg-[#FDFCE9] hover:shadow-xl active:scale-95 active:bg-[#c2ae3b]">
+                            Clear
                     </button>
                 </div>
 
@@ -192,6 +201,11 @@
             const password = document.getElementById('password_hash');
             const confirmPassword = document.getElementById('confirm_password');
             const successMessage = document.getElementById('successMessage');
+            const clearBtn = document.getElementById('clearBtn');
+            const allInputs = form.querySelectorAll('input');
+            const termsCheckbox = document.getElementById('terms');
+            const createAccountBtn = document.getElementById('createAccountBtn');
+            const passwordWarning = document.getElementById('passwordWarning');
 
             const policyModal = document.getElementById('policyModal');
             const termsLink = document.getElementById('termsLink');
@@ -200,6 +214,81 @@
             const closeModalIcon = document.getElementById('closeModalIcon');
             const modalTitle = document.getElementById('modalTitle');
             const modalContent = document.getElementById('modalContent');
+
+            // Function to check form completeness
+function checkForm() {
+    let hasAnyInput = false;
+    let allRequiredFilled = true;
+    let warningMessage = "";
+
+    allInputs.forEach(input => {
+        if ((input.type === 'checkbox' || input.type === 'radio') && input.checked) {
+            hasAnyInput = true;
+        } else if (input.type !== 'checkbox' && input.type !== 'radio' && input.value.trim() !== '') {
+            hasAnyInput = true;
+        }
+
+        if (input.hasAttribute('required')) {
+            if (input.type === 'checkbox' && !input.checked) {
+                allRequiredFilled = false;
+            } else if (input.type !== 'radio' && input.type !== 'checkbox' && input.value.trim() === '') {
+                allRequiredFilled = false;
+            }
+        }
+    });
+
+    const sexSelected = document.querySelector('input[name="sex"]:checked');
+    if (!sexSelected) {
+        allRequiredFilled = false;
+    }
+
+    // Password validations and custom warnings
+    const passwordValue = password.value;
+    const confirmValue = confirmPassword.value;
+    
+    const hasMinLength = passwordValue.length >= 8;
+    const hasNumber = /\d/.test(passwordValue);
+    const hasSpecialChar = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(passwordValue);
+    const passwordsMatch = (passwordValue === confirmValue) && passwordValue !== '';
+
+    if (passwordValue !== "" && !hasMinLength) {
+        warningMessage = "Password must be at least 8 characters long.";
+        allRequiredFilled = false;
+    } else if (passwordValue !== "" && (!hasNumber || !hasSpecialChar)) {
+        warningMessage = "Password must include at least one number and one special character.";
+        allRequiredFilled = false;
+    } else if (confirmValue !== "" && !passwordsMatch) {
+        warningMessage = "Passwords do not match.";
+        allRequiredFilled = false;
+    } else {
+        warningMessage = "";
+    }
+
+    // Show or hide the warning text
+    if (warningMessage !== "" && (passwordValue !== "" || confirmValue !== "")) {
+        passwordWarning.textContent = warningMessage;
+        passwordWarning.classList.remove('hidden');
+    } else {
+        passwordWarning.textContent = "";
+        passwordWarning.classList.add('hidden');
+    }
+
+    clearBtn.disabled = !hasAnyInput;
+    createAccountBtn.disabled = !allRequiredFilled;
+}
+
+allInputs.forEach(input => {
+    input.addEventListener('input', checkForm);
+    input.addEventListener('change', checkForm);
+});
+
+checkForm();
+
+form.addEventListener('reset', () => {
+    passwordWarning.textContent = "";
+    passwordWarning.classList.add('hidden');
+    setTimeout(checkForm, 10);
+});
 
  const termsText = `
 <div class="font-poppins text-[#2A1001] text-sm md:text-base pl-4 md:pl-6">

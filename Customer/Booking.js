@@ -8,6 +8,8 @@ document.addEventListener('DOMContentLoaded', function () {
     const daysContainer = document.getElementById('days');
     const prevButton = document.getElementById('prev');
     const nextButton = document.getElementById('next');
+    const PNote = document.getElementById('PNote');
+    const CurrentCount = document.getElementById('current-count');
 
     const months = [
         'January', 'February', 'March', 'April', 'May', 'June', 'July',
@@ -16,6 +18,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
     let currentDate = new Date();
     let today = new Date();
+
+    PNote.addEventListener('input', function () {
+        const currentLength = PNote.value.length;
+        CurrentCount.textContent = currentLength;
+    });
 
     function renderCalendar(date) {
         const year = date.getFullYear();

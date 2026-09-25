@@ -31,7 +31,7 @@
 
             // 2. Services — generated from the database
             const serviceGrid = document.getElementById('service-grid');
-            const CARD_CLASSES = 'flex flex-col w-[200px] h-[250px] justify-between items-center text-center bg-[#FFFFFF] rounded-[8px] border-4 border-black hover:bg-[#D7E3A5] transition-all duration-250 hover:scale-[1.035] cursor-pointer p-3';
+            const CARD_CLASSES = 'flex flex-col w-[200px] h-[250px] justify-between items-center text-center bg-[#FFFFFF] rounded-[8px] border-2 border-black hover:bg-[#D7E3A5] transition-all duration-250 hover:scale-[1.035] cursor-pointer p-3';
 
             // Used when a service has no uploaded icon (matched on the label).
             function fallbackIcon(label) {
@@ -331,19 +331,19 @@
                     <div>
                         <!--Calendar-->
                         <div class="w-full max-w-[410px]">
-                            <div class="flex flex-col w-full min-h-[360px] rounded-3xl border-[3.5px] border-black bg-white overflow-hidden">
+                            <div class="flex flex-col w-full min-h-[360px] rounded-3xl border-[2px] border-black bg-white overflow-hidden">
 
                                 <!--Header-->
                                 <div class="flex justify-between items-center p-[10px] w-full h-15 bg-[#667733]">
 
                                     <!--Left Button-->
-                                    <div class="cursor-pointer text-[25px] bold text-[#D7E3A5]" id="prev"><i class="fa-solid fa-arrow-left"></i></div>
+                                    <div class="cursor-pointer text-[25px] bold text-[#FDFCE9]" id="prev"><i class="fa-solid fa-arrow-left"></i></div>
 
                                     <!--Month-Year-->
-                                    <div id="month-year" class="text-[25px] bold text-[#D7E3A5]"></div>
+                                    <div id="month-year" class="text-[25px] bold text-[#FDFCE9]"></div>
 
                                     <!--Right Button-->
-                                    <div class="cursor-pointer text-[25px] bold text-[#D7E3A5]" id="next"><i class="fa-solid fa-arrow-right"></i></div>
+                                    <div class="cursor-pointer text-[25px] bold text-[#FDFCE9]" id="next"><i class="fa-solid fa-arrow-right"></i></div>
                                 </div>
 
                                 <!--Days-->
@@ -364,40 +364,40 @@
                     <div class="w-full sm:w-auto flex flex-row gap-3 sm:gap-5">
                         <!--AM Time slot-->
                         <div class="flex flex-col flex-1 min-w-0 sm:flex-none sm:w-[180px] gap-3">
-                            <h1 class="font-extrabold text-[#2c3e2b]">AM-Time</h1>
-                            <div data-time="07:00:00" class="flex w-full h-[60px] bg-white rounded-3xl border-[3.5px] border-black items-center justify-center text-center hover:bg-[#D7E3A5] transition-all duration-250 hover:scale-[1.035] cursor-pointer">
+                            <h1 class="font-extrabold text-[#2A1001]">AM-Time</h1>
+                            <div data-time="07:00:00" class="flex w-full h-[60px] bg-white rounded-3xl border-[2px] border-black items-center justify-center text-center hover:bg-[#D7E3A5] transition-all duration-250 hover:scale-[1.035] cursor-pointer">
                                 <h2>7AM - 8AM</h2>
                             </div>
-                            <div data-time="08:00:00" class="flex w-full h-[60px] bg-white rounded-3xl border-[3.5px] border-black items-center justify-center text-center hover:bg-[#D7E3A5] transition-all duration-250 hover:scale-[1.035] cursor-pointer">
+                            <div data-time="08:00:00" class="flex w-full h-[60px] bg-white rounded-3xl border-[2px] border-black items-center justify-center text-center hover:bg-[#D7E3A5] transition-all duration-250 hover:scale-[1.035] cursor-pointer">
                                 <h2>8AM - 9AM</h2>
                             </div>
-                            <div data-time="09:00:00" class="flex w-full h-[60px] bg-white rounded-3xl border-[3.5px] border-black items-center justify-center text-center hover:bg-[#D7E3A5] transition-all duration-250 hover:scale-[1.035] cursor-pointer">
+                            <div data-time="09:00:00" class="flex w-full h-[60px] bg-white rounded-3xl border-[2px] border-black items-center justify-center text-center hover:bg-[#D7E3A5] transition-all duration-250 hover:scale-[1.035] cursor-pointer">
                                 <h2>9AM - 10AM</h2>
                             </div>
-                            <div data-time="10:00:00" class="flex w-full h-[60px] bg-white rounded-3xl border-[3.5px] border-black items-center justify-center text-center hover:bg-[#D7E3A5] transition-all duration-250 hover:scale-[1.035] cursor-pointer">
+                            <div data-time="10:00:00" class="flex w-full h-[60px] bg-white rounded-3xl border-[2px] border-black items-center justify-center text-center hover:bg-[#D7E3A5] transition-all duration-250 hover:scale-[1.035] cursor-pointer">
                                 <h2>10AM - 11AM</h2>
                             </div>
-                            <div data-time="11:00:00" class="flex w-full h-[60px] bg-white rounded-3xl border-[3.5px] border-black items-center justify-center text-center hover:bg-[#D7E3A5] transition-all duration-250 hover:scale-[1.035] cursor-pointer">
+                            <div data-time="11:00:00" class="flex w-full h-[60px] bg-white rounded-3xl border-[2px] border-black items-center justify-center text-center hover:bg-[#D7E3A5] transition-all duration-250 hover:scale-[1.035] cursor-pointer">
                                 <h2>11AM - 12PM</h2>
                             </div>
                         </div>
 
                         <!--PM Time slot-->
                         <div class="flex flex-col flex-1 min-w-0 sm:flex-none sm:w-[180px] gap-3">
-                            <h1 class="font-extrabold text-[#2c3e2b]">PM-Time</h1>
-                            <div data-time="12:00:00" class="flex w-full h-[60px] bg-white rounded-3xl border-[3.5px] border-black items-center justify-center text-center hover:bg-[#D7E3A5] transition-all duration-250 hover:scale-[1.035] cursor-pointer">
+                            <h1 class="font-extrabold text-[#2A1001]">PM-Time</h1>
+                            <div data-time="12:00:00" class="flex w-full h-[60px] bg-white rounded-3xl border-[2px] border-black items-center justify-center text-center hover:bg-[#D7E3A5] transition-all duration-250 hover:scale-[1.035] cursor-pointer">
                                 <h2>12PM - 1PM</h2>
                             </div>
-                            <div data-time="13:00:00" class="flex w-full h-[60px] bg-white rounded-3xl border-[3.5px] border-black items-center justify-center text-center hover:bg-[#D7E3A5] transition-all duration-250 hover:scale-[1.035] cursor-pointer">
+                            <div data-time="13:00:00" class="flex w-full h-[60px] bg-white rounded-3xl border-[2px] border-black items-center justify-center text-center hover:bg-[#D7E3A5] transition-all duration-250 hover:scale-[1.035] cursor-pointer">
                                 <h2>1PM - 2PM</h2>
                             </div>
-                            <div data-time="14:00:00" class="flex w-full h-[60px] bg-white rounded-3xl border-[3.5px] border-black items-center justify-center text-center hover:bg-[#D7E3A5] transition-all duration-250 hover:scale-[1.035] cursor-pointer">
+                            <div data-time="14:00:00" class="flex w-full h-[60px] bg-white rounded-3xl border-[2px] border-black items-center justify-center text-center hover:bg-[#D7E3A5] transition-all duration-250 hover:scale-[1.035] cursor-pointer">
                                 <h2>2PM - 3PM</h2>
                             </div>
-                            <div data-time="15:00:00" class="flex w-full h-[60px] bg-white rounded-3xl border-[3.5px] border-black items-center justify-center text-center hover:bg-[#D7E3A5] transition-all duration-250 hover:scale-[1.035] cursor-pointer">
+                            <div data-time="15:00:00" class="flex w-full h-[60px] bg-white rounded-3xl border-[2px] border-black items-center justify-center text-center hover:bg-[#D7E3A5] transition-all duration-250 hover:scale-[1.035] cursor-pointer">
                                 <h2>3PM - 4PM</h2>
                             </div>
-                            <div data-time="16:00:00" class="flex w-full h-[60px] bg-white rounded-3xl border-[3.5px] border-black items-center justify-center text-center hover:bg-[#D7E3A5] transition-all duration-250 hover:scale-[1.035] cursor-pointer">
+                            <div data-time="16:00:00" class="flex w-full h-[60px] bg-white rounded-3xl border-[2px] border-black items-center justify-center text-center hover:bg-[#D7E3A5] transition-all duration-250 hover:scale-[1.035] cursor-pointer">
                                 <h2>4PM - 5PM</h2>
                             </div>
                         </div>
@@ -405,15 +405,18 @@
                 </div> <!---->
 
                 <div class="w-full flex flex-col items-start">
-                    <h1 class="font-extrabold text-xl text-[#2c3e2b]">What do you need?</h1>
+                    <h1 class="font-extrabold text-xl text-[#2A1001]">What do you need?</h1>
                 </div>
 
-                <div id="service-grid" class="grid grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-5 w-full justify-items-center"> <!--Services are rendered here from /api/services-->
+                <div id="service-grid" class="grid text-[#2A1001] grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-5 w-full justify-items-center"> <!--Services are rendered here from /api/services-->
                 </div>
                 <!--Note For Users-->
-                <textarea id="PNote" name="PNote" class="w-full h-[225px] rounded bg-[#FFFFFF] text-[#2c3e2b] font-medium text-lg outline-none resize-none shadow-inner border-4 border-[#000000] p-4"></textarea>
+                <textarea id="PNote" name="PNote" class="w-full h-[225px] rounded bg-[#FFFFFF] text-[#2c3e2b] font-medium text-lg outline-none resize-none shadow-inner border-2 border-[#000000] p-4" maxlength="1000"></textarea>
+                <div class="Counter-Cont">
+                    <span id="current-count">0</span>/<span id="max-count">1000</span> characters
+                </div>
 
-                <button type="submit" id="submit-btn" class="w-full py-4 bg-[#667733] text-[#D7E3A5] font-extrabold text-xl rounded-xl border-4 border-black hover:opacity-90 transition-all cursor-pointer shadow-md">
+                <button type="submit" id="submit-btn" class="z-10 bg-[#D5C04D] hover:bg-[#B8A957] text-[#2A1001] font-black text-xl px-12 py-3 rounded-full shadow-md active:scale-95 transition transform">
                     Submit Booking
                 </button>
 
