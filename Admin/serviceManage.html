@@ -5,180 +5,152 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="/output.css" rel="stylesheet">
     <title>Service Management</title>
-<<<<<<< HEAD
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://kit.fontawesome.com/fc8c3f4103.js" crossorigin="anonymous"></script>
     <script src="../Taskbar/Admin_Sidebar.js"></script>
 </head>
 <body class="min-h-screen md:h-screen md:overflow-hidden bg-[#F3EFE4] relative flex flex-col md:flex-row antialiased">
 
-    <!-- SIDEBAR -->
-  <div id="sidebar-placeholder"></div>
-=======
-    <script src="../Taskbar/Admin_Sidebar.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://kit.fontawesome.com/fc8c3f4103.js" crossorigin="anonymous"></script>
-</head>
-<body class="h-screen overflow-hidden bg-[#F3EFE4] relative flex flex-col md:flex-row antialiased">
-
-    <!-- SIDEBAR -->
-    <div id="sidebar-placeholder"></div>
->>>>>>> bda39ef64adfbb054b44ba0a3b8782e5a9478e61
-    <script>
-      function syncContentOffset() {
+<!-- SIDEBAR -->
+<div id="sidebar-placeholder"></div>
+<script>
+    function syncContentOffset() {
         const placeholder = document.getElementById('sidebar-placeholder');
         const sidebar = Array.from(placeholder.children)
-          .find(el => !['SCRIPT', 'STYLE', 'LINK'].includes(el.tagName));
+            .find(el => !['SCRIPT', 'STYLE', 'LINK'].includes(el.tagName));
         if (!sidebar) return;
 
         const set = (el, prop, value) => { if (el.style[prop] !== value) el.style[prop] = value; };
 
         const apply = () => {
-          const desktop = window.innerWidth >= 768;
-          set(placeholder, 'flexShrink', '0');
-          set(sidebar, 'position', desktop ? 'sticky' : 'relative');  
-          set(sidebar, 'top', desktop ? '0px' : 'auto');
-          set(sidebar, 'height', desktop ? '100vh' : '');
-          set(sidebar, 'overflowY', desktop ? 'auto' : '');           
+            const desktop = window.innerWidth >= 768;
+            set(placeholder, 'flexShrink', '0');
+            set(sidebar, 'position', desktop ? 'sticky' : 'relative');
+            set(sidebar, 'top', desktop ? '0px' : 'auto');
+            set(sidebar, 'height', desktop ? '100vh' : '');
+            set(sidebar, 'overflowY', desktop ? 'auto' : '');
         };
 
         window.addEventListener('resize', apply);
         apply();
-      }
+    }
 
-        (async () => {
-          try {
+    (async () => {
+        try {
             const response = await fetch('/Taskbar/Admin_Task.html');
             if (response.ok) {
-              const data = await response.text();
-              document.getElementById('sidebar-placeholder').innerHTML = data;
-              const currentPage = window.location.pathname.split("/").pop();
-              document.querySelectorAll('.nav-link').forEach(link => {
-                if (link.getAttribute('data-page') === currentPage) {
-                  link.classList.add('bg-[#FDFCE9]');
+                const data = await response.text();
+                document.getElementById('sidebar-placeholder').innerHTML = data;
+                const currentPage = window.location.pathname.split("/").pop();
+                document.querySelectorAll('.nav-link').forEach(link => {
+                    if (link.getAttribute('data-page') === currentPage) {
+                        link.classList.add('bg-[#FDFCE9]');
+                    }
+                });
+                if (typeof initSidebar === 'function') {
+                    initSidebar();
                 }
-              });
-              if (typeof initSidebar === 'function') {
-                initSidebar();
-              }
-              syncContentOffset();
+                syncContentOffset();
             }
-          } catch (error) {
+        } catch (error) {
             console.log('Sidebar fallback:', error);
-          }
-        })();
-      </script>
+        }
+    })();
+</script>
 
-<<<<<<< HEAD
 <div id="main-content" class="flex-1 min-w-0 md:min-h-0 md:overflow-y-auto">
 
-    
-<!--Header with logo-->
-<div class="flex justify-between items-start pt-5 pl-6 pr-4 md:pl-24 md:pr-8">
 
-    <h1 class="text-2xl sm:text-3xl md:text-5xl 2xl:text-[73px] pt-5 font-bold text-[#2A1001] font-['Poppins']">
-        Service Management
-    </h1>
-    <img
-            src="../assets/logowithtitle.png"
-            class="w-20 sm:w-24 md:w-28 h-auto object-contain shrink-0"
-            alt="Logo"/>
-</div>
-<hr class="border-t border-[#2A1001] mt-2 mb-6" />
-=======
-    <div id="main-content" class="flex-1 min-w-0 min-h-0 overflow-y-auto">
-
-        <!--Header with logo-->
+    <!--Header with logo-->
     <div class="flex justify-between items-start pt-5 pl-6 pr-4 md:pl-24 md:pr-8">
+
         <h1 class="text-2xl sm:text-3xl md:text-5xl 2xl:text-[73px] pt-5 font-bold text-[#2A1001] font-['Poppins']">
             Service Management
         </h1>
         <img
-            src="../assets/logowithtitle.png"
-            class="w-20 sm:w-24 md:w-28 h-auto object-contain shrink-0"
-            alt="Logo"/>
+                src="../assets/logowithtitle.png"
+                class="w-20 sm:w-24 md:w-28 h-auto object-contain shrink-0"
+                alt="Logo"/>
     </div>
-    
     <hr class="border-t border-[#2A1001] mt-2 mb-6" />
->>>>>>> bda39ef64adfbb054b44ba0a3b8782e5a9478e61
 
-<div class="px-6 md:px-16">
+    <div class="px-6 md:px-16">
 
-    <div class="flex justify-end mb-6">
-        <button id="addServiceBtn" class="bg-[#D5C04D] hover:bg-[#c2ad3c] transition text-[#2A1001] font-bold px-6 py-2 rounded-full">
-            + Add New Service
-        </button>
-    </div>
-
-    <div id="serviceGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 mb-10">
-        <!-- cards injected by JS -->
-    </div>
-
-</div>
-
-
-<div id="serviceModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 backdrop-blur-sm">
-    <div class="bg-white rounded-[30px] w-full max-w-sm p-8 relative flex flex-col items-center shadow-xl">
-
-        <!-- Close Button-->
-        <button id="closeServiceModal" class="absolute top-5 right-6 text-3xl font-extrabold text-[#382414] hover:opacity-60 transition leading-none">&times;</button>
-
-        <!-- Editable Title -->
-        <div class="flex items-center justify-center gap-3 mb-6 w-full px-4 mt-2">
-            <input id="serviceNameInput" type="text" readonly class="text-2xl font-extrabold text-[#382414] font-['Poppins'] text-center bg-transparent outline-none w-full border-b border-transparent focus:border-gray-300 transition cursor-default focus:cursor-text" placeholder="Service Name" />
-            <!-- Circular Edit Button -->
-            <button id="editNameBtn" type="button" class="w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-md border border-gray-100 shrink-0 hover:bg-gray-50 transition cursor-pointer">
-                <img src="../assets/editIcon.png" class="w-4 h-4 object-contain opacity-80" alt="Edit">
+        <div class="flex justify-end mb-6">
+            <button id="addServiceBtn" class="bg-[#D5C04D] hover:bg-[#c2ad3c] transition text-[#2A1001] font-bold px-6 py-2 rounded-full">
+                + Add New Service
             </button>
         </div>
 
-        <!-- Editable Icon -->
-        <div class="relative w-32 h-32 mb-8 group">
-            <img id="serviceIconPreview" src="" class="w-full h-full object-contain hidden transition-opacity group-hover:opacity-80" />
+        <div id="serviceGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 mb-10">
+            <!-- cards injected by JS -->
+        </div>
 
-            <div id="iconPlaceholder" class="w-full h-full flex items-center justify-center border-2 border-dashed border-[#2A1001]/30 rounded-2xl group-hover:bg-gray-50">
-                <span class="text-xs text-[#2A1001]/50 text-center px-2">Click edit to upload</span>
+    </div>
+
+
+    <div id="serviceModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-white rounded-[30px] w-full max-w-sm p-8 relative flex flex-col items-center shadow-xl">
+
+            <!-- Close Button-->
+            <button id="closeServiceModal" class="absolute top-5 right-6 text-3xl font-extrabold text-[#382414] hover:opacity-60 transition leading-none">&times;</button>
+
+            <!-- Editable Title -->
+            <div class="flex items-center justify-center gap-3 mb-6 w-full px-4 mt-2">
+                <input id="serviceNameInput" type="text" readonly class="text-2xl font-extrabold text-[#382414] font-['Poppins'] text-center bg-transparent outline-none w-full border-b border-transparent focus:border-gray-300 transition cursor-default focus:cursor-text" placeholder="Service Name" />
+                <!-- Circular Edit Button -->
+                <button id="editNameBtn" type="button" class="w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-md border border-gray-100 shrink-0 hover:bg-gray-50 transition cursor-pointer">
+                    <img src="../assets/editIcon.png" class="w-4 h-4 object-contain opacity-80" alt="Edit">
+                </button>
             </div>
 
-            <!-- pencil edit overlay -->
-            <button id="editIconBtn" type="button" class="absolute -bottom-2 -right-2 w-9 h-9 bg-white rounded-full flex items-center justify-center shadow-md border border-gray-100 hover:bg-gray-50 transition z-10 cursor-pointer">
-                <img src="../assets/editIcon.png" class="w-4 h-4 object-contain opacity-80" alt="Edit">
+            <!-- Editable Icon -->
+            <div class="relative w-32 h-32 mb-8 group">
+                <img id="serviceIconPreview" src="" class="w-full h-full object-contain hidden transition-opacity group-hover:opacity-80" />
+
+                <div id="iconPlaceholder" class="w-full h-full flex items-center justify-center border-2 border-dashed border-[#2A1001]/30 rounded-2xl group-hover:bg-gray-50">
+                    <span class="text-xs text-[#2A1001]/50 text-center px-2">Click edit to upload</span>
+                </div>
+
+                <!-- pencil edit overlay -->
+                <button id="editIconBtn" type="button" class="absolute -bottom-2 -right-2 w-9 h-9 bg-white rounded-full flex items-center justify-center shadow-md border border-gray-100 hover:bg-gray-50 transition z-10 cursor-pointer">
+                    <img src="../assets/editIcon.png" class="w-4 h-4 object-contain opacity-80" alt="Edit">
+                </button>
+                <input type="file" id="serviceIconInput" accept="image/*" class="hidden" />
+            </div>
+
+            <!-- Editable Price -->
+            <div class="flex items-center justify-center gap-1 mb-8 w-full">
+                <span class="text-lg font-bold text-[#382414]">Total:</span>
+                <input id="servicePriceInput" type="number" min="0" readonly class="text-lg font-bold text-[#382414] text-right bg-transparent outline-none w-20 border-b border-transparent focus:border-gray-300 transition appearance-none cursor-default focus:cursor-text" placeholder="1500" />
+                <span class="text-lg font-bold text-[#382414]">Php</span>
+                <!-- Circular Edit Button -->
+                <button id="editPriceBtn" type="button" class="w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-md border border-gray-100 shrink-0 ml-2 hover:bg-gray-50 transition cursor-pointer">
+                    <img src="../assets/editIcon.png" class="w-4 h-4 object-contain opacity-80" alt="Edit">
+                </button>
+            </div>
+
+            <!-- Save Button -->
+            <button id="saveServiceBtn" class="bg-[#d8be50] hover:bg-[#c9af43] transition text-[#382414] font-black px-10 py-2.5 rounded-full shadow-md w-32">
+                Save
             </button>
-            <input type="file" id="serviceIconInput" accept="image/*" class="hidden" />
-        </div>
-
-        <!-- Editable Price -->
-        <div class="flex items-center justify-center gap-1 mb-8 w-full">
-            <span class="text-lg font-bold text-[#382414]">Total:</span>
-            <input id="servicePriceInput" type="number" min="0" readonly class="text-lg font-bold text-[#382414] text-right bg-transparent outline-none w-20 border-b border-transparent focus:border-gray-300 transition appearance-none cursor-default focus:cursor-text" placeholder="1500" />
-            <span class="text-lg font-bold text-[#382414]">Php</span>
-            <!-- Circular Edit Button -->
-            <button id="editPriceBtn" type="button" class="w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-md border border-gray-100 shrink-0 ml-2 hover:bg-gray-50 transition cursor-pointer">
-                <img src="../assets/editIcon.png" class="w-4 h-4 object-contain opacity-80" alt="Edit">
-            </button>
-        </div>
-
-        <!-- Save Button -->
-        <button id="saveServiceBtn" class="bg-[#d8be50] hover:bg-[#c9af43] transition text-[#382414] font-black px-10 py-2.5 rounded-full shadow-md w-32">
-            Save
-        </button>
-    </div>
-</div>
-
-<div id="deleteModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-    <div class="bg-[#F2F0EF] rounded-3xl w-full max-w-sm p-8 text-center">
-        <h2 class="text-xl font-bold text-[#2A1001] font-['Poppins'] mb-2">Delete Service?</h2>
-        <p class="text-sm text-[#2A1001]/70 mb-6" id="deleteModalText"></p>
-        <div class="flex justify-center gap-3">
-            <button id="cancelDeleteBtn" class="px-6 py-2 rounded-full font-semibold text-[#2A1001] bg-white border border-[#2A1001]/20 hover:bg-[#e8e2d0] transition">Cancel</button>
-            <button id="confirmDeleteBtn" class="px-6 py-2 rounded-full font-semibold text-white bg-[#D9534F] hover:bg-[#c9302c] transition">Yes, Delete</button>
         </div>
     </div>
+
+    <div id="deleteModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-[#F2F0EF] rounded-3xl w-full max-w-sm p-8 text-center">
+            <h2 class="text-xl font-bold text-[#2A1001] font-['Poppins'] mb-2">Delete Service?</h2>
+            <p class="text-sm text-[#2A1001]/70 mb-6" id="deleteModalText"></p>
+            <div class="flex justify-center gap-3">
+                <button id="cancelDeleteBtn" class="px-6 py-2 rounded-full font-semibold text-[#2A1001] bg-white border border-[#2A1001]/20 hover:bg-[#e8e2d0] transition">Cancel</button>
+                <button id="confirmDeleteBtn" class="px-6 py-2 rounded-full font-semibold text-white bg-[#D9534F] hover:bg-[#c9302c] transition">Yes, Delete</button>
+            </div>
+        </div>
+    </div>
+
 </div>
 
 </div>
-
-    </div>
 
 
 <script>

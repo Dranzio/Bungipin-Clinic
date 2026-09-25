@@ -8,72 +8,61 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://kit.fontawesome.com/fc8c3f4103.js" crossorigin="anonymous"></script>
     <script src="/Taskbar/Employee_Sidebar.js"></script>
-<!--    <script src="Messages.js"></script>-->
+    <!--    <script src="Messages.js"></script>-->
 </head>
-<<<<<<< HEAD
+
 <body class="min-h-screen md:h-screen md:overflow-hidden bg-[#F3EFE4] relative flex flex-col md:flex-row antialiased">
 
 <!-- SIDEBAR -->
-  <div id="sidebar-placeholder"></div>
-=======
-<body class="h-screen overflow-hidden bg-[#F3EFE4] relative flex flex-col md:flex-row antialiased">
+<div id="sidebar-placeholder"></div>
 
-    <!-- SIDEBAR -->
-    <div id="sidebar-placeholder"></div>
->>>>>>> bda39ef64adfbb054b44ba0a3b8782e5a9478e61
-    <script>
-      function syncContentOffset() {
+<script>
+    function syncContentOffset() {
         const placeholder = document.getElementById('sidebar-placeholder');
         const sidebar = Array.from(placeholder.children)
-          .find(el => !['SCRIPT', 'STYLE', 'LINK'].includes(el.tagName));
+            .find(el => !['SCRIPT', 'STYLE', 'LINK'].includes(el.tagName));
         if (!sidebar) return;
 
         const set = (el, prop, value) => { if (el.style[prop] !== value) el.style[prop] = value; };
 
         const apply = () => {
-          const desktop = window.innerWidth >= 768;
-          set(placeholder, 'flexShrink', '0');
-          set(sidebar, 'position', desktop ? 'sticky' : 'relative');  
-          set(sidebar, 'top', desktop ? '0px' : 'auto');
-          set(sidebar, 'height', desktop ? '100vh' : '');
-          set(sidebar, 'overflowY', desktop ? 'auto' : '');           
+            const desktop = window.innerWidth >= 768;
+            set(placeholder, 'flexShrink', '0');
+            set(sidebar, 'position', desktop ? 'sticky' : 'relative');
+            set(sidebar, 'top', desktop ? '0px' : 'auto');
+            set(sidebar, 'height', desktop ? '100vh' : '');
+            set(sidebar, 'overflowY', desktop ? 'auto' : '');
         };
 
         window.addEventListener('resize', apply);
         apply();
-      }
+    }
 
-        (async () => {
-          try {
+    (async () => {
+        try {
             const response = await fetch('/Taskbar/Employee_Task.html');
             if (response.ok) {
-              const data = await response.text();
-              document.getElementById('sidebar-placeholder').innerHTML = data;
-              const currentPage = window.location.pathname.split("/").pop();
-              document.querySelectorAll('.nav-link').forEach(link => {
-                if (link.getAttribute('data-page') === currentPage) {
-                  link.classList.add('bg-[#FDFCE9]');
+                const data = await response.text();
+                document.getElementById('sidebar-placeholder').innerHTML = data;
+                const currentPage = window.location.pathname.split("/").pop();
+                document.querySelectorAll('.nav-link').forEach(link => {
+                    if (link.getAttribute('data-page') === currentPage) {
+                        link.classList.add('bg-[#FDFCE9]');
+                    }
+                });
+                if (typeof initSidebar === 'function') {
+                    initSidebar();
                 }
-              });
-              if (typeof initSidebar === 'function') {
-                initSidebar();
-              }
-              syncContentOffset();
+                syncContentOffset();
             }
-          } catch (error) {
+        } catch (error) {
             console.log('Sidebar fallback:', error);
-          }
-        })();
-      </script>
-<<<<<<< HEAD
+        }
+    })();
+</script>
 
 <div id="main-content" class="flex-1 min-w-0 md:min-h-0 md:overflow-y-auto">
-    
-    
-=======
->>>>>>> bda39ef64adfbb054b44ba0a3b8782e5a9478e61
 
-<div id="main-content" class="flex-1 min-w-0 min-h-0 overflow-y-auto">
     <!--Header with logo-->
     <div class="flex justify-between items-start pt-5 pl-6 pr-4 md:pl-24 md:pr-8">
 
@@ -85,75 +74,85 @@
                 class="w-20 sm:w-24 md:w-28 h-auto object-contain shrink-0"
                 alt="Logo"/>
     </div>
+
     <hr class="border-t border-[#2A1001] mt-2 mb-6" />
 
     <!--Search Bar-->
-<div class="flex w-full justify-center">
-    <input
-            type="text"
-            id="searchInput"
-            placeholder="Search by name..."
-            class="h-10 w-full max-w-md rounded-full border border-[#2A1001]/20 bg-white px-4 mb-6 outline-none"
-    />
-</div>
+    <div class="flex w-full justify-center">
+        <input
+                type="text"
+                id="searchInput"
+                placeholder="Search by name..."
+                class="h-10 w-full max-w-md rounded-full border border-[#2A1001]/20 bg-white px-4 mb-6 outline-none"
+        />
+    </div>
 
-<!--Filter Cards-->
-<div class="flex flex-wrap gap-4 mb-8 justify-center">
-    <button data-filter="pending" class="filter-btn bg-[#F1B770] text-center px-6 py-3 rounded-2xl font-bold text-[#2A1001] min-w-[110px] shadow-lg
-       transition-all duration-200 ease-in-out 
-       hover:scale-105 hover:bg-[#FDFCE9] hover:shadow-xl
-       active:scale-95 active:bg-[#FF9F2A]">
-        Pending <span class="block text-2xl" id="countPending">0</span>
-    </button>
-    <button data-filter="waiting" class="filter-btn bg-[#F4F18F] text-center px-6 py-3 rounded-2xl font-bold text-[#2A1001] min-w-[110px] shadow-lg
-       transition-all duration-200 ease-in-out 
-       hover:scale-105 hover:bg-[#FDFCE9] hover:shadow-xl
-       active:scale-95 active:bg-[#FFF835]">
-        Waiting <span class="block text-2xl" id="countWaiting">0</span>
-    </button>
-    <button data-filter="ongoing" class="filter-btn bg-[#8CE8FA] text-center px-6 py-3 rounded-2xl font-bold text-[#2A1001] min-w-[110px] shadow-lg
-       transition-all duration-200 ease-in-out 
-       hover:scale-105 hover:bg-[#FDFCE9] hover:shadow-xl
-       active:scale-95 active:bg-[#36DEFF]">
-        Ongoing <span class="block text-2xl" id="countOngoing">0</span>
-    </button>
-    <button data-filter="completed" class="filter-btn bg-[#BEF835] text-center px-6 py-3 rounded-2xl font-bold text-[#2A1001] min-w-[110px] shadow-lg
-       transition-all duration-200 ease-in-out 
-       hover:scale-105 hover:bg-[#FDFCE9] hover:shadow-xl
-       active:scale-95 active:bg-[#A6ED00]">
-        Completed <span class="block text-2xl" id="countCompleted">0</span>
-    </button>
-    <button data-filter="All" class="filter-btn bg-white border border-[#2A1001]/30 text-left px-6 py-3 rounded-2xl font-bold text-[#2A1001] min-w-[110px] shadow-lg
-       transition-all duration-200 ease-in-out 
-       hover:scale-105 hover:bg-[#FDFCE9] hover:shadow-xl
-       active:scale-95 active:bg-[#F9F9F9]">
-        Show All
-    </button>
-</div>
+    <!--Filter Cards-->
+    <div class="flex flex-wrap gap-4 mb-8 justify-center">
 
-<!--Queue Table-->
-<div class="overflow-x-auto rounded-3xl w-full md:w-[80%] mx-auto shadow-xl">
-    <table class="w-full border-collapse">
-        <thead>
-        <tr class="bg-[#667733] text-white">
-            <th class="text-center py-3 px-4 rounded-tl-2xl">Name</th>
-            <th class="text-center py-3 px-4">Phone Number</th>
-            <th class="text-center py-3 px-4">Service</th>
-            <th class="text-center py-3 px-4 rounded-tr-2xl">Status</th>
-        </tr>
-        </thead>
-        <tbody id="tableBody" class="bg-[#ECF5E2]">
-        <!-- rows injected by JS -->
-        </tbody>
-    </table>
-</div>
+        <button data-filter="pending" class="filter-btn bg-[#F1B770] text-center px-6 py-3 rounded-2xl font-bold text-[#2A1001] min-w-[110px] shadow-lg
+           transition-all duration-200 ease-in-out
+           hover:scale-105 hover:bg-[#FDFCE9] hover:shadow-xl
+           active:scale-95 active:bg-[#FF9F2A]">
+            Pending <span class="block text-2xl" id="countPending">0</span>
+        </button>
 
-<!-- PAGINATION -->
-<div class="flex justify-center gap-2 my-8" id="pagination">
+        <button data-filter="waiting" class="filter-btn bg-[#F4F18F] text-center px-6 py-3 rounded-2xl font-bold text-[#2A1001] min-w-[110px] shadow-lg
+           transition-all duration-200 ease-in-out
+           hover:scale-105 hover:bg-[#FDFCE9] hover:shadow-xl
+           active:scale-95 active:bg-[#FFF835]">
+            Waiting <span class="block text-2xl" id="countWaiting">0</span>
+        </button>
 
-</div>
+        <button data-filter="ongoing" class="filter-btn bg-[#8CE8FA] text-center px-6 py-3 rounded-2xl font-bold text-[#2A1001] min-w-[110px] shadow-lg
+           transition-all duration-200 ease-in-out
+           hover:scale-105 hover:bg-[#FDFCE9] hover:shadow-xl
+           active:scale-95 active:bg-[#36DEFF]">
+            Ongoing <span class="block text-2xl" id="countOngoing">0</span>
+        </button>
 
-</div>
+        <button data-filter="completed" class="filter-btn bg-[#BEF835] text-center px-6 py-3 rounded-2xl font-bold text-[#2A1001] min-w-[110px] shadow-lg
+           transition-all duration-200 ease-in-out
+           hover:scale-105 hover:bg-[#FDFCE9] hover:shadow-xl
+           active:scale-95 active:bg-[#A6ED00]">
+            Completed <span class="block text-2xl" id="countCompleted">0</span>
+        </button>
+
+        <button data-filter="All" class="filter-btn bg-white border border-[#2A1001]/30 text-left px-6 py-3 rounded-2xl font-bold text-[#2A1001] min-w-[110px] shadow-lg
+           transition-all duration-200 ease-in-out
+           hover:scale-105 hover:bg-[#FDFCE9] hover:shadow-xl
+           active:scale-95 active:bg-[#F9F9F9]">
+            Show All
+        </button>
+
+    </div>
+
+    <!--Queue Table-->
+    <div class="overflow-x-auto rounded-3xl w-full md:w-[80%] mx-auto shadow-xl">
+
+        <table class="w-full border-collapse">
+
+            <thead>
+            <tr class="bg-[#667733] text-white">
+                <th class="text-center py-3 px-4 rounded-tl-2xl">Name</th>
+                <th class="text-center py-3 px-4">Phone Number</th>
+                <th class="text-center py-3 px-4">Service</th>
+                <th class="text-center py-3 px-4 rounded-tr-2xl">Status</th>
+            </tr>
+            </thead>
+
+            <tbody id="tableBody" class="bg-[#ECF5E2]">
+            <!-- rows injected by JS -->
+            </tbody>
+
+        </table>
+
+    </div>
+
+    <!-- PAGINATION -->
+    <div class="flex justify-center gap-2 my-8" id="pagination">
+
+    </div>
 
 </div>
 
@@ -161,6 +160,15 @@
 
     // For getting the data from the backend and booking request
     let appointments = [];
+
+    // Patient name, phone, and service label all come from data the
+    // patient (or admin, via service management) entered — none of it
+    // should be trusted as safe HTML when injected via innerHTML below.
+    function escapeHtml(value) {
+        const div = document.createElement('div');
+        div.textContent = value == null ? '' : String(value);
+        return div.innerHTML;
+    }
 
     async function getAppointments() {
         try {
@@ -210,28 +218,25 @@
         }
     }
 
-    const statusColors = { //for the dropdown background colors
+    const statusColors = {
         "pending": "bg-[#E8A55C]",
         "waiting": "bg-[#E8DD5C]",
         "ongoing": "bg-[#7FD8E8]",
         "completed": "bg-[#B6E85C]"
     };
 
-    const statusLabels = {//for the dropdown text labels
+    const statusLabels = {
         "pending": "Pending",
         "waiting": "Waiting",
         "ongoing": "Ongoing",
         "completed": "Completed"
     };
 
-    const rowsPerPage = 8; // Number of rows to display per page
+    const rowsPerPage = 8;
     let currentPage = 1;
     let currentFilter = "All";
     let currentSearch = "";
 
-
-
-    //for filtering and searching the appointments, this is for the search bar and filter buttons
     function getFiltered() {
         return appointments.filter(a => {
             const matchesFilter = currentFilter === "All" || a.queue_status === currentFilter;
@@ -240,15 +245,20 @@
         });
     }
 
-
-    //renders the counts of each status in the filter buttons
     function renderCounts() {
-        document.getElementById('countPending').textContent = appointments.filter(a => a.queue_status === "pending").length;
-        document.getElementById('countWaiting').textContent = appointments.filter(a => a.queue_status === "waiting").length;
-        document.getElementById('countOngoing').textContent = appointments.filter(a => a.queue_status === "ongoing").length;
-        document.getElementById('countCompleted').textContent = appointments.filter(a => a.queue_status === "completed").length;
+        document.getElementById('countPending').textContent =
+            appointments.filter(a => a.queue_status === "pending").length;
+
+        document.getElementById('countWaiting').textContent =
+            appointments.filter(a => a.queue_status === "waiting").length;
+
+        document.getElementById('countOngoing').textContent =
+            appointments.filter(a => a.queue_status === "ongoing").length;
+
+        document.getElementById('countCompleted').textContent =
+            appointments.filter(a => a.queue_status === "completed").length;
     }
-    //renders the table based on the current filter and search term, also handles pagination
+
     function renderTable() {
         const filtered = getFiltered();
         const start = (currentPage - 1) * rowsPerPage;
@@ -258,12 +268,15 @@
         tbody.innerHTML = '';
 
         pageItems.forEach((item) => {
+
             const row = document.createElement('tr');
+
             row.className = "border-b border-[#2A1001]/10";
+
             row.innerHTML = `
-                <td class="py-3 px-4 text-center">${item.first_name} ${item.last_name}</td>
-                <td class="py-3 px-4 text-center">${item.phone}</td>
-                <td class="py-3 px-4 text-center">${item.label}</td>
+                <td class="py-3 px-4 text-center">${escapeHtml(item.first_name)} ${escapeHtml(item.last_name)}</td>
+                <td class="py-3 px-4 text-center">${escapeHtml(item.phone)}</td>
+                <td class="py-3 px-4 text-center">${escapeHtml(item.label)}</td>
                 <td class="py-3 px-4 text-center">
                     <select class="statusSelect ${statusColors[item.queue_status]} font-semibold text-[#2A1001] rounded-full px-3 py-1 outline-none cursor-pointer" data-id="${item.appointment_id}">
                         ${Object.keys(statusLabels).map(key => `
@@ -274,33 +287,41 @@
                     </select>
                 </td>
             `;
+
             tbody.appendChild(row);
         });
 
         renderPagination(filtered.length);
     }
 
-    //event listener for the status dropdown change, updates the appointment status and re-renders the counts and table
     document.getElementById('tableBody').addEventListener('change', async function (e) {
+
         if (e.target.classList.contains('statusSelect')) {
+
             const id = Number(e.target.dataset.id);
             const newStatus = e.target.value;
 
             const success = await updateAppointmentStatus(id, newStatus);
+
             if (success) {
-                // Update local array directly for faster/cleaner UI refresh
+
                 const appt = appointments.find(a => a.appointment_id === id);
-                if (appt) appt.queue_status = newStatus;
+
+                if (appt) {
+                    appt.queue_status = newStatus;
+                }
 
                 renderCounts();
                 renderTable();
             }
         }
     });
-    //renders the pagination buttons based on the current page and total items
+
     function renderPagination(totalItems) {
+
         const totalPages = Math.max(1, Math.ceil(totalItems / rowsPerPage));
         const pagination = document.getElementById('pagination');
+
         pagination.innerHTML = '';
 
         const maxVisible = 7;
@@ -309,52 +330,90 @@
         const batchEnd = Math.min(batchStart + maxVisible - 1, totalPages);
 
         if (batchStart > 1) {
+
             const prevBtn = document.createElement('button');
+
             prevBtn.textContent = '‹';
-            prevBtn.className = "w-9 h-9 rounded-full font-bold text-[#2A1001] bg-transparent border border-[#2A1001]/30 hover:bg-[#2A1001]/10 transition flex items-center justify-center";
-            prevBtn.addEventListener('click', () => { currentPage = batchStart - 1; renderTable(); });
+
+            prevBtn.className =
+                "w-9 h-9 rounded-full font-bold text-[#2A1001] bg-transparent border border-[#2A1001]/30 hover:bg-[#2A1001]/10 transition flex items-center justify-center";
+
+            prevBtn.addEventListener('click', () => {
+                currentPage = batchStart - 1;
+                renderTable();
+            });
+
             pagination.appendChild(prevBtn);
         }
 
         for (let i = batchStart; i <= batchEnd; i++) {
+
             const btn = document.createElement('button');
+
             btn.textContent = i;
-            btn.className = `w-9 h-9 rounded-full font-semibold ${i === currentPage ? 'bg-[#6B7A4C] text-white' : 'bg-white text-[#2A1001] border border-[#2A1001]/20'}`;
-            btn.addEventListener('click', () => { currentPage = i; renderTable(); });
+
+            btn.className =
+                `w-9 h-9 rounded-full font-semibold ${
+                    i === currentPage
+                        ? 'bg-[#6B7A4C] text-white'
+                        : 'bg-white text-[#2A1001] border border-[#2A1001]/20'
+                }`;
+
+            btn.addEventListener('click', () => {
+                currentPage = i;
+                renderTable();
+            });
+
             pagination.appendChild(btn);
         }
 
         if (batchEnd < totalPages) {
+
             const nextBtn = document.createElement('button');
+
             nextBtn.textContent = '›';
-            nextBtn.className = "w-9 h-9 rounded-full font-bold text-[#2A1001] bg-transparent border border-[#2A1001]/30 hover:bg-[#2A1001]/10 transition flex items-center justify-center";
-            nextBtn.addEventListener('click', () => { currentPage = batchEnd + 1; renderTable(); });
+
+            nextBtn.className =
+                "w-9 h-9 rounded-full font-bold text-[#2A1001] bg-transparent border border-[#2A1001]/30 hover:bg-[#2A1001]/10 transition flex items-center justify-center";
+
+            nextBtn.addEventListener('click', () => {
+                currentPage = batchEnd + 1;
+                renderTable();
+            });
+
             pagination.appendChild(nextBtn);
         }
     }
 
-    //filter buttons
     document.querySelectorAll('.filter-btn').forEach(btn => {
+
         btn.addEventListener('click', function () {
+
             currentFilter = this.dataset.filter;
             currentPage = 1;
+
             renderTable();
         });
     });
-    //search input
+
     document.getElementById('searchInput').addEventListener('input', function () {
+
         currentSearch = this.value;
         currentPage = 1;
+
         renderTable();
     });
 
-    //initial render of counts and table
-
     (async function init() {
+
         appointments = await getAppointments();
+
         renderCounts();
         renderTable();
+
     })();
+
 </script>
+
 </body>
 </html>

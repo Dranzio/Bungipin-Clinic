@@ -56,7 +56,6 @@ function _applySidebarState(collapse) {
     sidebar.dataset.collapsed = collapse ? 'true' : 'false';
     const isDesktop = window.innerWidth >= 768;
 
-<<<<<<< HEAD
     if (collapse) {
         if (isDesktop) {
             sidebar.style.width = '72px';
@@ -73,10 +72,12 @@ function _applySidebarState(collapse) {
 
         labels.forEach(el => { el.style.display = 'none'; });
         if (nameBadge) nameBadge.style.display = 'none';
+
         if (profileCircle) {
             profileCircle.style.width  = '44px';
             profileCircle.style.height = '44px';
         }
+
         navLinks.forEach(link => {
             link.style.paddingLeft    = '0';
             link.style.paddingRight   = '0';
@@ -87,40 +88,18 @@ function _applySidebarState(collapse) {
         if (aside) aside.style.width = '';
         labels.forEach(el => { el.style.display = ''; });
         if (nameBadge) nameBadge.style.display = '';
+
         if (profileCircle) {
             profileCircle.style.width  = '';
             profileCircle.style.height = '';
         }
+
         navLinks.forEach(link => {
             link.style.paddingLeft    = '';
             link.style.paddingRight   = '';
             link.style.justifyContent = '';
         });
-=======
-    // Collapse is desktop-only. After minimize / < md, drop every inline
-    // collapse style (especially width: 72px) so the full mobile bar returns.
-    if (!isDesktop || !collapse) {
-        _clearCollapseStyles(sidebar, aside, nameBadge, profileCircle, labels, navLinks);
-        return;
->>>>>>> bda39ef64adfbb054b44ba0a3b8782e5a9478e61
     }
-
-    sidebar.style.width = '72px';
-    if (aside) aside.style.width = '72px';
-
-    labels.forEach(el => { el.style.display = 'none'; });
-    if (nameBadge) nameBadge.style.display = 'none';
-
-    if (profileCircle) {
-        profileCircle.style.width  = '44px';
-        profileCircle.style.height = '44px';
-    }
-
-    navLinks.forEach(link => {
-        link.style.paddingLeft    = '0';
-        link.style.paddingRight   = '0';
-        link.style.justifyContent = 'center';
-    });
 }
 
 // Responsive behavior on window resize
