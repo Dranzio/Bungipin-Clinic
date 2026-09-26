@@ -90,7 +90,7 @@ app.get('/denied.html', (req, res) => {
     res.sendFile(path.join(__dirname, 'denied.html'));
 });
 app.get("/", (req, res) => {
-    res.sendFile(path.join(__dirname, "LogInRegister", "login.html"));
+    res.sendFile(path.join(__dirname, "WelcomePage", "home.html"));
 });
 
 app.get('/api/users', authenticateToken, async (req, res) => {
