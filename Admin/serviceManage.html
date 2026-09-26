@@ -152,10 +152,28 @@
 
 </div>
 
-</div>
-
 
 <script>
+
+    // Escapes service.label before it's dropped into innerHTML — labels are
+    // free-text set via this same admin page, so one admin's entry could
+    // otherwise run script in another admin's browser.
+    function escapeHtml(str) {
+        return String(str ?? '').replace(/[&<>"']/g, ch => ({
+            '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+        }[ch]));
+    }
+
+    // service.icon is stored as-is by the server unless it was a data: URL
+    // on upload, so it could in theory be an arbitrary string. Only accept
+    // things that actually look like a path or http(s) URL before ever
+    // using it as an <img src>; encode it either way.
+    function safeIconSrc(icon, fallback) {
+        if (typeof icon === 'string' && /^(\/|https?:\/\/)/.test(icon)) {
+            return encodeURI(icon);
+        }
+        return fallback;
+    }
 
     function authHeaders(json = false) {
         const headers = { 'Authorization': `Bearer ${localStorage.getItem('userToken')}` };
@@ -257,11 +275,11 @@
                 </div>
 
                 <!-- Title -->
-                <h3 class="font-extrabold text-[#382414] text-2xl mb-4 w-full text-center pr-8 pl-8 truncate">${s.label}</h3>
+                <h3 class="font-extrabold text-[#382414] text-2xl mb-4 w-full text-center pr-8 pl-8 truncate">${escapeHtml(s.label)}</h3>
 
                 <!-- Icon -->
                 <div class="flex-1 flex justify-center items-center mb-6 w-36 h-36">
-                    <img src="${s.icon || defaultIcons[s.label] || defaultIcons['default']}" onerror="this.src='../assets/logowithtitle.png'" class="w-full h-full object-contain" />
+                    <img src="${escapeHtml(safeIconSrc(s.icon, defaultIcons[s.label] || defaultIcons['default']))}" onerror="this.src='../assets/logowithtitle.png'" class="w-full h-full object-contain" />
                 </div>
 
                 <!-- Price -->

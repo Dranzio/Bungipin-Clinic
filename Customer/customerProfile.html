@@ -15,53 +15,55 @@
 
   <!-- SIDEBAR -->
     <div id="sidebar-placeholder"></div>
-    <script>
-      function syncContentOffset() {
-        const placeholder = document.getElementById('sidebar-placeholder');
-        const sidebar = Array.from(placeholder.children)
-          .find(el => !['SCRIPT', 'STYLE', 'LINK'].includes(el.tagName));
-        if (!sidebar) return;
+<script>
+function syncContentOffset() {
+  const placeholder = document.getElementById('sidebar-placeholder');
+  const sidebar = Array.from(placeholder.children)
+    .find(el => !['SCRIPT', 'STYLE', 'LINK'].includes(el.tagName));
+  if (!sidebar) return;
 
-        const set = (el, prop, value) => { if (el.style[prop] !== value) el.style[prop] = value; };
+  const set = (el, prop, value) => { if (el.style[prop] !== value) el.style[prop] = value; };
 
-        const apply = () => {
-          const desktop = window.innerWidth >= 768;
-          set(placeholder, 'flexShrink', '0');
-          set(sidebar, 'position', desktop ? 'sticky' : 'relative');  
-          set(sidebar, 'top', desktop ? '0px' : 'auto');
-          set(sidebar, 'height', desktop ? '100vh' : '');
-          set(sidebar, 'overflowY', desktop ? 'auto' : '');           
-        };
+  const apply = () => {
+    const desktop = window.innerWidth >= 768;
+    set(placeholder, 'flexShrink', '0');
+    set(sidebar, 'position', desktop ? 'sticky' : 'relative');  
+    set(sidebar, 'top', desktop ? '0px' : 'auto');
+    set(sidebar, 'height', desktop ? '100vh' : '');
+    set(sidebar, 'overflowY', desktop ? 'auto' : '');           
+  };
 
-        window.addEventListener('resize', apply);
-        apply();
-      }
+  window.addEventListener('resize', apply);
+  apply();
+}
 
-        (async () => {
-          try {
-            const response = await fetch('/Taskbar/Customer_Task.html');
-            if (response.ok) {
-              const data = await response.text();
-              document.getElementById('sidebar-placeholder').innerHTML = data;
-              const currentPage = window.location.pathname.split("/").pop();
-              document.querySelectorAll('.nav-link').forEach(link => {
-                if (link.getAttribute('data-page') === currentPage) {
-                  link.classList.add('bg-[#FDFCE9]');
-                }
-              });
-              if (typeof initSidebar === 'function') {
-                initSidebar();
-              }
-              syncContentOffset();
-            }
-          } catch (error) {
-            console.log('Sidebar fallback:', error);
+  (async () => {
+    try {
+      const response = await fetch('/Taskbar/Customer_Task.html');
+      if (response.ok) {
+        const data = await response.text();
+        document.getElementById('sidebar-placeholder').innerHTML = data;
+        const currentPage = window.location.pathname.split("/").pop();
+        document.querySelectorAll('.nav-link').forEach(link => {
+          if (link.getAttribute('data-page') === currentPage) {
+            link.classList.add('bg-[#FDFCE9]');
           }
-        })();
-      </script>
+        });
+        if (typeof initSidebar === 'function') {
+          initSidebar();
+        }
+        syncContentOffset();
+      }
+    } catch (error) {
+      console.log('Sidebar fallback:', error);
+    }
+  })();
+  
+</script>
 
   <!-- CONTENT WRAPPER -->
 <div id="main-content" class="flex-1 min-w-0 md:min-h-0 md:overflow-y-auto">
+
 
   <div class="shrink-0 flex justify-between items-start pt-5 pl-6 pr-4 md:pl-24 md:pr-8">
     <h1 class="text-2xl sm:text-3xl md:text-5xl 2xl:text-[73px] pt-5 font-bold text-[#2A1001] font-['Poppins']">
@@ -71,8 +73,8 @@
         src="../assets/logowithtitle.png"
         class="w-20 sm:w-24 md:w-28 h-auto object-contain shrink-0"
         alt="Logo"/>
-  </div>
-  <hr class="border-t border-[#2A1001] mt-2 mb-6" />
+</div>
+<hr class="border-t border-[#2A1001] mt-2 mb-6" />
 
   <!-- MAIN CONTENT -->
    
@@ -93,35 +95,35 @@
             <div class="flex flex-col gap-1.5">
               <label for="first-name" class="text-[11px] font-extrabold tracking-wider text-[#2A1001] uppercase">First Name:</label>
               <input type="text" id="first-name" name="first_name" readonly
-                class="w-full px-4 py-2.5 rounded-full bg-[#dedede] text-[#2A1001]/70 font-semibold text-sm outline-none shadow-inner cursor-not-allowed border border-black/10">
+                class="w-full px-4 py-2.5 rounded-full bg-[#dedede] text-[#2c3e2b]/70 font-semibold text-sm outline-none shadow-inner cursor-not-allowed border border-black/10">
             </div>
 
             <!-- Last Name (READONLY) -->
             <div class="flex flex-col gap-1.5">
               <label for="last-name" class="text-[11px] font-extrabold tracking-wider text-[#2A1001] uppercase">Last Name:</label>
               <input type="text" id="last-name" name="last_name" readonly
-                class="w-full px-4 py-2.5 rounded-full bg-[#dedede] text-[#2A1001]/70 font-semibold text-sm outline-none shadow-inner cursor-not-allowed border border-black/10">
+                class="w-full px-4 py-2.5 rounded-full bg-[#dedede] text-[#2c3e2b]/70 font-semibold text-sm outline-none shadow-inner cursor-not-allowed border border-black/10">
             </div>
 
             <!-- Sex (READONLY) -->
             <div class="flex flex-col gap-1.5">
               <label for="sex" class="text-[11px] font-extrabold tracking-wider text-[#2A1001] uppercase">Sex:</label>
               <input type="text" id="sex" name="sex" readonly
-                class="w-full px-4 py-2.5 rounded-full bg-[#dedede] text-[#2A1001]/70 font-semibold text-sm outline-none shadow-inner cursor-not-allowed border border-black/10">
+                class="w-full px-4 py-2.5 rounded-full bg-[#dedede] text-[#2c3e2b]/70 font-semibold text-sm outline-none shadow-inner cursor-not-allowed border border-black/10">
             </div>
 
             <!-- Birthday (EDITABLE) -->
             <div class="flex flex-col gap-1.5">
               <label for="birthday" class="text-[11px] font-extrabold tracking-wider text-[#2A1001] uppercase">Birthday:</label>
               <input type="date" id="birthday" name="birthday"
-                class="w-full px-4 py-2.5 rounded-full bg-white text-[#2A1001] font-medium text-sm outline-none shadow-inner border border-[#c1ccab] focus:ring-2 focus:ring-[#4a5e3b]/50">
+                class="w-full px-4 py-2.5 rounded-full bg-white text-[#2c3e2b] font-medium text-sm outline-none shadow-inner border border-[#c1ccab] focus:ring-2 focus:ring-[#4a5e3b]/50">
             </div>
 
             <!-- Civil Status (EDITABLE) -->
             <div class="flex flex-col gap-1.5">
               <label for="civil-status" class="text-[11px] font-extrabold tracking-wider text-[#2A1001] uppercase">Civil Status:</label>
               <select id="civil-status" name="civil_status" 
-                class="w-full px-4 py-2.5 rounded-full bg-white text-[#2A1001] font-medium text-sm outline-none shadow-inner border border-[#c1ccab] focus:ring-2 focus:ring-[#4a5e3b]/50 cursor-pointer">
+                class="w-full px-4 py-2.5 rounded-full bg-white text-[#2c3e2b] font-medium text-sm outline-none shadow-inner border border-[#c1ccab] focus:ring-2 focus:ring-[#4a5e3b]/50 cursor-pointer">
                 <option value="" disabled selected>Select civil status</option>
                 <option value="Single">Single</option>
                 <option value="Married">Married</option>
@@ -143,28 +145,30 @@
             <div class="flex flex-col gap-1.5">
               <label for="email" class="text-[11px] font-extrabold tracking-wider text-[#2A1001] uppercase">Primary Email:</label>
               <input type="email" id="email" name="email" readonly
-                class="w-full px-4 py-2.5 rounded-full bg-[#dedede] text-[#2A1001]/70 font-semibold text-sm outline-none shadow-inner cursor-not-allowed border border-black/10">
+                class="w-full px-4 py-2.5 rounded-full bg-[#dedede] text-[#2c3e2b]/70 font-semibold text-sm outline-none shadow-inner cursor-not-allowed border border-black/10">
             </div>
 
             <!-- Secondary Email (EDITABLE) -->
             <div class="flex flex-col gap-1.5">
               <label for="secondary-email" class="text-[11px] font-extrabold tracking-wider text-[#2A1001] uppercase">Secondary Email:</label>
               <input type="email" id="secondary-email" name="secondary_email"
-                class="w-full px-4 py-2.5 rounded-full bg-white text-[#2A1001] font-medium text-sm outline-none shadow-inner border border-[#c1ccab] focus:ring-2 focus:ring-[#4a5e3b]/50">
+                class="w-full px-4 py-2.5 rounded-full bg-white text-[#2c3e2b] font-medium text-sm outline-none shadow-inner border border-[#c1ccab] focus:ring-2 focus:ring-[#4a5e3b]/50">
             </div>
 
             <!-- Address (EDITABLE) -->
             <div class="flex flex-col gap-1.5">
               <label for="address" class="text-[11px] font-extrabold tracking-wider text-[#2A1001] uppercase">Address:</label>
-              <input type="text" id="address" name="address"
-                class="w-full px-4 py-2.5 rounded-full bg-white text-[#2A1001] font-medium text-sm outline-none shadow-inner border border-[#c1ccab] focus:ring-2 focus:ring-[#4a5e3b]/50">
+              <textarea id="address" name="address"
+                rows="1"
+                class="w-full px-4 py-2.5 rounded-[30px] bg-white text-[#2c3e2b] font-medium text-sm outline-none shadow-inner border border-[#c1ccab] focus:ring-2 focus:ring-[#4a5e3b]/50 resize-none break-words overflow-hidden"
+                oninput="this.style.height = 'auto'; this.style.height = this.scrollHeight + 'px';"></textarea>
             </div>
 
             <!-- Phone Number (EDITABLE with 11-digit mask) -->
             <div class="flex flex-col gap-1.5">
               <label for="phone" class="text-[11px] font-extrabold tracking-wider text-[#2A1001] uppercase">Phone Number:</label>
               <input type="tel" id="phone" name="phone" placeholder="09XXXXXXXXX" maxlength="11"
-                class="w-full px-4 py-2.5 rounded-full bg-white text-[#2A1001] font-medium text-sm outline-none shadow-inner border border-[#c1ccab] focus:ring-2 focus:ring-[#4a5e3b]/50">
+                class="w-full px-4 py-2.5 rounded-full bg-white text-[#2c3e2b] font-medium text-sm outline-none shadow-inner border border-[#c1ccab] focus:ring-2 focus:ring-[#4a5e3b]/50">
             </div>
           </div>
         </div>
@@ -178,13 +182,13 @@
             <div class="flex flex-col gap-1.5">
               <label for="new-password" class="text-[11px] font-extrabold tracking-wider text-[#2A1001] uppercase">New Account Password:</label>
               <input type="password" id="new-password" name="new_password" placeholder="Enter New Password"
-                class="w-full px-4 py-2.5 rounded-full bg-white text-[#2A1001] font-medium text-sm outline-none shadow-inner border border-[#c1ccab] focus:ring-2 focus:ring-[#4a5e3b]/50">
+                class="w-full px-4 py-2.5 rounded-full bg-white text-[#2c3e2b] font-medium text-sm outline-none shadow-inner border border-[#c1ccab] focus:ring-2 focus:ring-[#4a5e3b]/50">
             </div>
 
             <div class="flex flex-col gap-1.5">
               <label for="confirm-password" class="text-[11px] font-extrabold tracking-wider text-[#2A1001] uppercase">Confirm Account Password:</label>
               <input type="password" id="confirm-password" name="confirm_password" placeholder="Re-enter new password"
-                class="w-full px-4 py-2.5 rounded-full bg-white text-[#2A1001] font-medium text-sm outline-none shadow-inner border border-[#c1ccab] focus:ring-2 focus:ring-[#4a5e3b]/50">
+                class="w-full px-4 py-2.5 rounded-full bg-white text-[#2c3e2b] font-medium text-sm outline-none shadow-inner border border-[#c1ccab] focus:ring-2 focus:ring-[#4a5e3b]/50">
             </div>
           </div>
         </div>
@@ -200,16 +204,16 @@
               <div id="healthConditionsList" class="flex flex-wrap gap-2 mb-1"></div>
               <div class="flex gap-2">
                 <input type="text" id="healthConditionInput" placeholder="e.g. Asthma"
-                  class="flex-1 px-4 py-2.5 rounded-full bg-white text-[#2A1001] font-medium text-sm outline-none shadow-inner border border-[#c1ccab] focus:ring-2 focus:ring-[#4a5e3b]/50">
+                  class="flex-1 px-4 py-2.5 rounded-full bg-white text-[#2c3e2b] font-medium text-sm outline-none shadow-inner border border-[#c1ccab] focus:ring-2 focus:ring-[#4a5e3b]/50" maxlength="30">
                 <button type="button" id="addHealthConditionBtn"
                   class="shrink-0 px-4 rounded-full bg-[#667733] hover:bg-[#556022] text-white font-bold text-sm transition">+ Add</button>
               </div>
             </div>
 
-            <div class="flex flex-col gap-1.5">
+            <div id="pregnancyStatusWrapper" class="flex flex-col gap-1.5">
               <label for="pregnancy-status" class="text-[11px] font-extrabold tracking-wider text-[#2A1001] uppercase">Pregnancy Status:</label>
               <select id="pregnancy-status" name="pregnancy_status"
-                class="w-full px-4 py-2.5 rounded-full bg-white text-[#2A1001] font-medium text-sm outline-none shadow-inner border border-[#c1ccab] focus:ring-2 focus:ring-[#4a5e3b]/50 cursor-pointer">
+                class="w-full px-4 py-2.5 rounded-full bg-white text-[#2c3e2b] font-medium text-sm outline-none shadow-inner border border-[#c1ccab] focus:ring-2 focus:ring-[#4a5e3b]/50 cursor-pointer">
                 <option value="N/A">N/A / Male</option>
                 <option value="1-3 Months">1-3 Months</option>
                 <option value="4-6 Months">4-6 Months</option>
@@ -217,16 +221,19 @@
               </select>
             </div>
 
-               <div class="flex flex-col gap-1.5 md:col-span-2">
+               <div id="prescriptionsWrapper" class="flex flex-col gap-1.5 md:col-span-2">
               <label class="text-[11px] font-extrabold tracking-wider text-[#2A1001] uppercase">Current Prescriptions:</label>
-              <div id="prescriptionsList" class="flex flex-col gap-2 mb-1"></div>
+              <div id="prescriptionsList" class="flex flex-wrap items-start gap-2 mb-1"></div>
               <div class="flex flex-col sm:flex-row gap-2">
+            
             <input type="text" id="medicationNameInput" placeholder="Medication name"
-            class="min-w-0 flex-1 px-4 py-2.5 rounded-full bg-white text-[#2A1001] font-medium text-sm outline-none shadow-inner border border-[#c1ccab] focus:ring-2 focus:ring-[#4a5e3b]/50">
+            class="min-w-0 flex-1 px-4 py-2.5 rounded-full bg-white text-[#2c3e2b] font-medium text-sm outline-none shadow-inner border border-[#c1ccab] focus:ring-2 focus:ring-[#4a5e3b]/50" maxlength="30">
+           
             <input type="text" id="dosageInput" placeholder="Dosage (optional)"
-      class="min-w-0 sm:w-40 px-4 py-2.5 rounded-full bg-white text-[#2A1001] font-medium text-sm outline-none shadow-inner border border-[#c1ccab] focus:ring-2 focus:ring-[#4a5e3b]/50">
-    <button type="button" id="addPrescriptionBtn"
-      class="shrink-0 w-full sm:w-auto px-4 py-2.5 whitespace-nowrap rounded-full bg-[#667733] hover:bg-[#556022] text-white font-bold text-sm transition">+ Add</button>
+            class="min-w-0 sm:w-40 px-4 py-2.5 rounded-full bg-white text-[#78705a] font-medium text-sm outline-none shadow-inner border border-[#c1ccab] focus:ring-2 focus:ring-[#4a5e3b]/50" maxlength="15">
+    
+            <button type="button" id="addPrescriptionBtn"
+            class="shrink-0 w-full sm:w-auto px-4 py-2.5 whitespace-nowrap rounded-full bg-[#667733] hover:bg-[#556022] text-white font-bold text-sm transition">+ Add</button>
   </div>
 </div>
 
@@ -235,7 +242,7 @@
               <div id="allergiesList" class="flex flex-wrap gap-2 mb-1"></div>
               <div class="flex gap-2">
                 <input type="text" id="allergenInput" placeholder="e.g. Penicillin"
-                  class="flex-1 px-4 py-2.5 rounded-full bg-white text-[#2A1001] font-medium text-sm outline-none shadow-inner border border-[#c1ccab] focus:ring-2 focus:ring-[#4a5e3b]/50">
+                  class="flex-1 px-4 py-2.5 rounded-full bg-white text-[#2c3e2b] font-medium text-sm outline-none shadow-inner border border-[#c1ccab] focus:ring-2 focus:ring-[#4a5e3b]/50" maxlength="30">
                 <button type="button" id="addAllergyBtn"
                   class="shrink-0 px-4 rounded-full bg-[#667733] hover:bg-[#556022] text-white font-bold text-sm transition">+ Add</button>
               </div>
@@ -247,7 +254,7 @@
         <!-- Upload PDF Section -->
         <div id="pdfDropZone" class="w-full bg-[#e3e8d8] rounded-2xl p-5 sm:p-8 border-2 border-dashed border-[#4a5e3b]/50 flex flex-col items-center justify-center gap-4 min-h-[180px] sm:min-h-[220px] cursor-pointer hover:bg-[#dbe4cb] transition">
           <div class="flex flex-col sm:flex-row items-center gap-3 text-center sm:text-left">
-            <p class="text-[#2A1001] font-bold text-sm sm:text-base">
+            <p class="text-[#2c3e2b] font-bold text-sm sm:text-base">
               Click to upload a PDF of your medical conditions
             </p>
             <img src="../assets/logowithtitle.png" alt="Clinic Logo" class="w-8 h-8 sm:w-10 sm:h-10 object-contain">
@@ -281,6 +288,29 @@
     const phoneInput = document.getElementById('phone');
     const successMessage = document.getElementById('successMessage');
 
+    const birthdayInput = document.getElementById('birthday');
+    const today = new Date();
+    const todayString = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    birthdayInput.max = todayString;
+
+
+    // Show/hide Pregnancy Status and move Current Prescriptions
+    // depending on the patient's sex. M = male, F = female.
+    function updateMedicalLayout() {
+      const sex = document.getElementById('sex').value;
+      const pregnancyWrapper = document.getElementById('pregnancyStatusWrapper');
+      const prescriptionsWrapper = document.getElementById('prescriptionsWrapper');
+
+      if (!pregnancyWrapper || !prescriptionsWrapper) return;
+
+      if (sex === 'M') {
+        pregnancyWrapper.classList.add('hidden');
+        prescriptionsWrapper.classList.remove('md:col-span-2');
+      } else if (sex === 'F') {
+        pregnancyWrapper.classList.remove('hidden');
+        prescriptionsWrapper.classList.add('md:col-span-2');
+      }
+    }
 
     // EXPANDABLE LISTS — health conditions, prescriptions, allergies
     // Each patient can have MULTIPLE of these 
@@ -315,8 +345,8 @@
         return;
       }
       container.innerHTML = prescriptions.map((rx, i) => `
-        <div class="flex items-center justify-between bg-white border border-[#c1ccab] rounded-full px-4 py-2 shadow-inner">
-          <span class="text-sm text-[#2c3e2b] font-medium">
+        <div class="inline-flex items-center gap-3 bg-white border border-[#c1ccab] rounded-full px-3 py-1 shadow-inner w-fit">
+          <span class="text-sm text-[#ff00ff] font-medium">
             ${rx.medication_name}${rx.dosage ? ` — ${rx.dosage}` : ''}
           </span>
           <button type="button" class="removePrescriptionBtn text-[#2c3e2b]/50 hover:text-red-600 font-bold" data-index="${i}">&times;</button>
@@ -472,6 +502,7 @@
         document.getElementById('first-name').value = data.first_name || '';
         document.getElementById('last-name').value  = data.last_name || '';
         document.getElementById('sex').value         = data.sex || '';
+        updateMedicalLayout();
         document.getElementById('email').value       = data.email || '';
 
         // Editable fields 
@@ -483,6 +514,7 @@
         document.getElementById('address').value          = data.address || '';
         document.getElementById('phone').value             = data.phone || '';
         document.getElementById('pregnancy-status').value = data.pregnancy_status || 'N/A';
+        updateMedicalLayout();
 
       
         healthConditions = normalizeToStringArray(data.health_conditions, 'description');
@@ -514,6 +546,18 @@
     // Update profile to database
     form.addEventListener('submit', async function (e) {
       e.preventDefault();
+
+      const birthdayValue = document.getElementById('birthday').value;
+      if (birthdayValue) {
+        const selectedBirthday = new Date(`${birthdayValue}T00:00:00`);
+        const currentDate = new Date();
+        currentDate.setHours(0, 0, 0, 0);
+
+        if (selectedBirthday > currentDate) {
+          alert('Birthday cannot be a future date.');
+          return;
+        }
+      }
 
       // Password check — was missing entirely before
       if (newPassword.value && newPassword.value !== confirmPassword.value) {

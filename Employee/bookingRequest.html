@@ -10,56 +10,56 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://kit.fontawesome.com/fc8c3f4103.js" crossorigin="anonymous"></script>
     <script src="/Taskbar/Employee_Sidebar.js"></script>
-    <!--    <script src="Messages.js"></script>-->
+<!--    <script src="Messages.js"></script>-->
 </head>
 
 <body class="min-h-screen bg-[#F3EFE4] relative flex flex-col md:flex-row text-[#2A1001]">
 <!-- SIDEBAR -->
-<div id="sidebar-placeholder"></div>
-<script>
-    function syncContentOffset() {
+  <div id="sidebar-placeholder"></div>
+    <script>
+      function syncContentOffset() {
         const placeholder = document.getElementById('sidebar-placeholder');
         const sidebar = Array.from(placeholder.children)
-            .find(el => !['SCRIPT', 'STYLE', 'LINK'].includes(el.tagName));
+          .find(el => !['SCRIPT', 'STYLE', 'LINK'].includes(el.tagName));
         if (!sidebar) return;
 
         const set = (el, prop, value) => { if (el.style[prop] !== value) el.style[prop] = value; };
 
         const apply = () => {
-            const desktop = window.innerWidth >= 768;
-            set(placeholder, 'flexShrink', '0');
-            set(sidebar, 'position', desktop ? 'sticky' : 'relative');
-            set(sidebar, 'top', desktop ? '0px' : 'auto');
-            set(sidebar, 'height', desktop ? '100vh' : '');
-            set(sidebar, 'overflowY', desktop ? 'auto' : '');
+          const desktop = window.innerWidth >= 768;
+          set(placeholder, 'flexShrink', '0');
+          set(sidebar, 'position', desktop ? 'sticky' : 'relative');  
+          set(sidebar, 'top', desktop ? '0px' : 'auto');
+          set(sidebar, 'height', desktop ? '100vh' : '');
+          set(sidebar, 'overflowY', desktop ? 'auto' : '');           
         };
 
         window.addEventListener('resize', apply);
         apply();
-    }
+      }
 
-    (async () => {
-        try {
+        (async () => {
+          try {
             const response = await fetch('/Taskbar/Employee_Task.html');
             if (response.ok) {
-                const data = await response.text();
-                document.getElementById('sidebar-placeholder').innerHTML = data;
-                const currentPage = window.location.pathname.split("/").pop();
-                document.querySelectorAll('.nav-link').forEach(link => {
-                    if (link.getAttribute('data-page') === currentPage) {
-                        link.classList.add('bg-[#FDFCE9]');
-                    }
-                });
-                if (typeof initSidebar === 'function') {
-                    initSidebar();
+              const data = await response.text();
+              document.getElementById('sidebar-placeholder').innerHTML = data;
+              const currentPage = window.location.pathname.split("/").pop();
+              document.querySelectorAll('.nav-link').forEach(link => {
+                if (link.getAttribute('data-page') === currentPage) {
+                  link.classList.add('bg-[#FDFCE9]');
                 }
-                syncContentOffset();
+              });
+              if (typeof initSidebar === 'function') {
+                initSidebar();
+              }
+              syncContentOffset();
             }
-        } catch (error) {
+          } catch (error) {
             console.log('Sidebar fallback:', error);
-        }
-    })();
-</script>
+          }
+        })();
+      </script>
 
 <div id="main-content" class="flex-1 min-w-0 md:min-h-0 md:overflow-y-auto">
     <div class="flex justify-between items-start pt-5 pl-6 pr-4 md:pl-24 md:pr-8">
@@ -72,139 +72,158 @@
                 class="w-20 sm:w-24 md:w-28 h-auto object-contain shrink-0"
                 alt="Logo"/>
     </div>
-    <hr class="border-t border-[#2A1001] mt-2 mb-6" />
-
 
     <main class="flex-1 w-full relative">
 
-        <!-- Search input -->
-        <div class="flex w-full justify-center gap-3">
-            <input
-                    type="text"
-                    id="searchInput"
-                    placeholder="Search by name..."
-                    class="h-10 w-full max-w-md rounded-full border border-[#2A1001]/20 bg-white px-4 mb-6 outline-none"
-            />
-        </div>
+    <hr class="border-t border-[#2A1001] mt-2 mb-6" />
 
-        <!-- booking cards -->
-        <div id="booking-container" class="space-y-4 mb-10 w-full md:w-[90%] mx-auto">
-            <!-- cards injected by JS -->
-        </div>
+    <!-- Search input -->
+    <div class="flex w-full justify-center gap-3">
+        <input
+                type="text"
+                id="searchInput"
+                placeholder="Search by name..."
+                class="h-10 w-full max-w-md rounded-full border border-[#2A1001]/20 bg-white px-4 mb-6 outline-none"
+        />
+    </div>
+        <div id="statusFilters" class="flex flex-wrap gap-4 mb-8 justify-center">
+        <button data-status="pending" class="filterBtn bg-[#F1B770] text-center px-6 py-3 rounded-2xl font-bold text-[#2A1001] min-w-[110px] shadow-lg
+        transition-all duration-200 ease-in-out 
+        hover:scale-105 hover:bg-[#FDFCE9] hover:shadow-xl
+        active:scale-95 active:bg-[#FF9F2A]">
+            Pending
+        </button>
+        <button data-status="approved" class="filterBtn bg-[#BEF835] text-center px-6 py-3 rounded-2xl font-bold text-[#2A1001] min-w-[110px] shadow-lg
+        transition-all duration-200 ease-in-out 
+        hover:scale-105 hover:bg-[#FDFCE9] hover:shadow-xl
+        active:scale-95 active:bg-[#A6ED00]">
+            Approved
+        </button>
+        <button data-status="all" class="filterBtn bg-white border border-[#2A1001]/30 text-left px-6 py-3 rounded-2xl font-bold text-[#2A1001] min-w-[110px] shadow-lg
+        transition-all duration-200 ease-in-out 
+        hover:scale-105 hover:bg-[#FDFCE9] hover:shadow-xl
+        active:scale-95 active:bg-[#F9F9F9]">
+            Show All
+        </button>
+    </div>
+    <!-- booking cards -->
+    <div id="booking-container" class="space-y-4 mb-10 w-full md:w-[90%] mx-auto">
+        <!-- cards injected by JS -->
+    </div>
 
-        <!-- decline modal -->
-        <div id="declineModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div class="bg-[#F2F0EF] rounded-3xl p-6 sm:p-8 max-w-lg w-full border border-[#2A1001]/20 shadow-2xl relative">
-                <h3 class="text-xl font-bold text-[#2A1001] mb-2 font-['Poppins']">Decline Booking</h3>
-                <p id="declineModalText" class="text-sm text-[#2A1001]/80 mb-4">
-                    Are you sure you want to decline this booking request? This action cannot be undone.
-                </p>
-                <div id="paidWarning" class="hidden bg-amber-100 border-l-4 border-amber-500 text-amber-900 p-3 rounded-r-xl text-xs mb-4">
-                    <i class="fa-solid fa-circle-exclamation mr-1"></i>
-                    <strong>Notice:</strong> This patient has already paid online. Consider rescheduling instead of declining.
-                </div>
-                <div class="flex items-center justify-end gap-2 mt-6">
-                    <button id="cancelDeclineBtn" class="px-4 py-2.5 text-sm font-semibold text-[#2A1001] bg-white border border-[#2A1001]/20 rounded-full hover:bg-gray-100 transition whitespace-nowrap">
-                        Cancel
-                    </button>
-                    <button id="rescheduleBtn" class="hidden px-4 py-2.5 text-sm font-semibold text-white bg-[#667733] rounded-full hover:bg-[#556022] transition flex flex-row items-center justify-center gap-2 whitespace-nowrap">
-                        <img src="../assets/calendarIcon.png" alt="resched" class="w-4 h-4 object-contain shrink-0 pointer-events-none" onerror="this.style.display='none'">
-                        <span>Reschedule Instead</span>
-                    </button>
-                    <button id="confirmDeclineBtn" class="px-4 py-2.5 text-sm font-semibold text-white bg-[#D9534F] rounded-full hover:bg-[#c9302c] transition whitespace-nowrap">
-                        Confirm Decline
-                    </button>
-                </div>
+    <!-- decline modal -->
+    <div id="declineModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-[#F2F0EF] rounded-3xl p-6 sm:p-8 max-w-lg w-full border border-[#2A1001]/20 shadow-2xl relative">
+            <h3 class="text-xl font-bold text-[#2A1001] mb-2 font-['Poppins']">Decline Booking</h3>
+            <p id="declineModalText" class="text-sm text-[#2A1001]/80 mb-4">
+                Are you sure you want to decline this booking request? This action cannot be undone.
+            </p>
+            <div id="paidWarning" class="hidden bg-amber-100 border-l-4 border-amber-500 text-amber-900 p-3 rounded-r-xl text-xs mb-4">
+                <i class="fa-solid fa-circle-exclamation mr-1"></i>
+                <strong>Notice:</strong> This patient has already paid online. Consider rescheduling instead of declining.
             </div>
-        </div>
-        <!--reschedule modal-->
-        <div id="rescheduleModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
-            <div class="bg-[#F3EFE4] rounded-3xl p-6 sm:p-8 relative max-w-4xl w-full shadow-2xl border-[3px] border-[#2A1001]/20 my-auto">
-
-                <!-- Close Button -->
-                <button id="closeRescheduleModal" class="absolute top-5 right-6 text-3xl font-extrabold text-[#382414] hover:opacity-60 transition leading-none">
-                    &times;
+            <div class="flex items-center justify-end gap-2 mt-6">
+                <button id="cancelDeclineBtn" class="px-4 py-2.5 text-sm font-semibold text-[#2A1001] bg-white border border-[#2A1001]/20 rounded-full hover:bg-gray-100 transition whitespace-nowrap">
+                    Cancel
                 </button>
+                <button id="rescheduleBtn" class="hidden px-4 py-2.5 text-sm font-semibold text-white bg-[#667733] rounded-full hover:bg-[#556022] transition flex flex-row items-center justify-center gap-2 whitespace-nowrap">
+                    <img src="../assets/calendarIcon.png" alt="resched" class="w-4 h-4 object-contain shrink-0 pointer-events-none" onerror="this.style.display='none'">
+                    <span>Reschedule Instead</span>
+                </button>
+                <button id="confirmDeclineBtn" class="px-4 py-2.5 text-sm font-semibold text-white bg-[#D9534F] rounded-full hover:bg-[#c9302c] transition whitespace-nowrap">
+                    Confirm Decline
+                </button>
+            </div>
+        </div>
+    </div>
+    <!--reschedule modal-->
+    <div id="rescheduleModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
+        <div class="bg-[#F3EFE4] rounded-3xl p-6 sm:p-8 relative max-w-4xl w-full shadow-2xl border-[3px] border-[#2A1001]/20 my-auto">
+
+            <!-- Close Button -->
+            <button id="closeRescheduleModal" class="absolute top-5 right-6 text-3xl font-extrabold text-[#382414] hover:opacity-60 transition leading-none">
+                &times;
+            </button>
 
 
-                <div class="mb-5 text-center">
-                    <h2 class="text-2xl font-bold text-[#2A1001] font-['Poppins']" id="rescheduleModalTitle">
-                        Reschedule Appointment
-                    </h2>
-                    <p class="text-xs sm:text-sm text-[#2A1001]/70 mt-1" id="reschedulePatientSummary">
-                        Select a new date and available slot for the patient.
-                    </p>
-                </div>
-
-
-                <div class="flex flex-col-reverse lg:flex-row gap-8 items-center justify-center mt-4">
-
-                    <!-- Available slots panel-->
-                    <div class="flex justify-center gap-6 sm:gap-8 bg-white/70 p-5 rounded-3xl border-2 border-[#2A1001]/20 shadow-sm w-full lg:w-auto">
-                        <!-- AM time -->
-                        <div class="flex flex-col w-36">
-                            <h4 class="font-bold text-sm text-[#2A1001] mb-3 text-center border-b pb-1 border-[#2A1001]/10">AM - Time</h4>
-                            <div id="amSlotsContainer" class="space-y-3 w-full"></div>
-                        </div>
-                        <!-- PM time -->
-                        <div class="flex flex-col w-36">
-                            <h4 class="font-bold text-sm text-[#2A1001] mb-3 text-center border-b pb-1 border-[#2A1001]/10">PM - Time</h4>
-                            <div id="pmSlotsContainer" class="space-y-3 w-full"></div>
-                        </div>
-                    </div>
-
-                    <!--Dynamic calendar -->
-                    <div class="flex flex-col w-[410px] h-[360px] rounded-3xl border-[3.5px] border-black bg-white overflow-hidden shadow-lg shrink-0">
-
-                        <div class="flex justify-between items-center p-[10px] w-full h-15 bg-[#667733]">
-                            <div class="cursor-pointer text-[25px] bold text-[#D7E3A5] px-2 hover:text-white transition" id="prev">
-                                &lt;
-                            </div>
-
-                            <!-- Display Month-Year -->
-                            <div id="month-year" class="text-[25px] bold text-[#D7E3A5]"></div>
-
-                            <div class="cursor-pointer text-[25px] bold text-[#D7E3A5] px-2 hover:text-white transition" id="next">
-                                &gt;
-                            </div>
-                        </div>
-
-                        <!-- The days of the week -->
-                        <div class="grid grid-cols-7 gap-3 px-4 py-2 text-center text-[#2A1001] font-semibold text-sm">
-                            <div>Sun</div>
-                            <div>Mon</div>
-                            <div>Tue</div>
-                            <div>Wed</div>
-                            <div>Thu</div>
-                            <div>Fri</div>
-                            <div>Sat</div>
-                        </div>
-
-                        <!--days of the month grid -->
-                        <div class="grid grid-cols-7 gap-3 px-4 py-1 place-items-center" id="days"></div>
-                    </div>
-
-                </div>
-
-                <!-- selected date and time indicator -->
-                <p class="text-sm text-[#2A1001] text-center font-medium mt-6" id="selectedDateDisplay">
-                    No date selected yet.
+            <div class="mb-5 text-center">
+                <h2 class="text-2xl font-bold text-[#2A1001] font-['Poppins']" id="rescheduleModalTitle">
+                    Reschedule Appointment
+                </h2>
+                <p class="text-xs sm:text-sm text-[#2A1001]/70 mt-1" id="reschedulePatientSummary">
+                    Select a new date and available slot for the patient.
                 </p>
+            </div>
 
-                <!--Confirmation Buttons -->
-                <div class="mt-4 flex flex-col sm:flex-row items-center justify-center gap-3">
-                    <button id="cancelRescheduleModalBtn" class="w-full sm:w-auto px-6 py-2.5 text-sm font-semibold text-[#2A1001] bg-white border border-[#2A1001]/20 rounded-full hover:bg-gray-100 transition">
-                        Cancel
-                    </button>
-                    <button id="confirmRescheduleBtn" disabled class="w-full sm:w-auto bg-[#667733] hover:bg-[#556022] transition text-white font-bold px-8 py-2.5 rounded-full shadow disabled:opacity-40 disabled:cursor-not-allowed">
-                        Confirm Reschedule
-                    </button>
+
+            <div class="flex flex-col-reverse lg:flex-row gap-8 items-center justify-center mt-4">
+
+                <!-- Available slots panel-->
+                <div class="flex justify-center gap-6 sm:gap-8 bg-white/70 p-5 rounded-3xl border-2 border-[#2A1001]/20 shadow-sm w-full lg:w-auto">
+                    <!-- AM time -->
+                    <div class="flex flex-col w-36">
+                        <h4 class="font-bold text-sm text-[#2A1001] mb-3 text-center border-b pb-1 border-[#2A1001]/10">AM - Time</h4>
+                        <div id="amSlotsContainer" class="space-y-3 w-full"></div>
+                    </div>
+                    <!-- PM time -->
+                    <div class="flex flex-col w-36">
+                        <h4 class="font-bold text-sm text-[#2A1001] mb-3 text-center border-b pb-1 border-[#2A1001]/10">PM - Time</h4>
+                        <div id="pmSlotsContainer" class="space-y-3 w-full"></div>
+                    </div>
+                </div>
+
+                <!--Dynamic calendar -->
+                <div class="flex flex-col w-[410px] h-[360px] rounded-3xl border-[3.5px] border-black bg-white overflow-hidden shadow-lg shrink-0">
+
+                    <div class="flex justify-between items-center p-[10px] w-full h-15 bg-[#667733]">
+                        <div class="cursor-pointer text-[25px] bold text-[#D7E3A5] px-2 hover:text-white transition" id="prev">
+                            &lt;
+                        </div>
+
+                        <!-- Display Month-Year -->
+                        <div id="month-year" class="text-[25px] bold text-[#D7E3A5]"></div>
+
+                        <div class="cursor-pointer text-[25px] bold text-[#D7E3A5] px-2 hover:text-white transition" id="next">
+                            &gt;
+                        </div>
+                    </div>
+
+                    <!-- The days of the week -->
+                    <div class="grid grid-cols-7 gap-3 px-4 py-2 text-center text-[#2A1001] font-semibold text-sm">
+                        <div>Sun</div>
+                        <div>Mon</div>
+                        <div>Tue</div>
+                        <div>Wed</div>
+                        <div>Thu</div>
+                        <div>Fri</div>
+                        <div>Sat</div>
+                    </div>
+
+                    <!--days of the month grid -->
+                    <div class="grid grid-cols-7 gap-3 px-4 py-1 place-items-center" id="days"></div>
                 </div>
 
             </div>
-        </div>
 
-    </main>
+            <!-- selected date and time indicator -->
+            <p class="text-sm text-[#2A1001] text-center font-medium mt-6" id="selectedDateDisplay">
+                No date selected yet.
+            </p>
+
+            <!--Confirmation Buttons -->
+            <div class="mt-4 flex flex-col sm:flex-row items-center justify-center gap-3">
+                <button id="cancelRescheduleModalBtn" class="w-full sm:w-auto px-6 py-2.5 text-sm font-semibold text-[#2A1001] bg-white border border-[#2A1001]/20 rounded-full hover:bg-gray-100 transition">
+                    Cancel
+                </button>
+                <button id="confirmRescheduleBtn" disabled class="w-full sm:w-auto bg-[#667733] hover:bg-[#556022] transition text-white font-bold px-8 py-2.5 rounded-full shadow disabled:opacity-40 disabled:cursor-not-allowed">
+                    Confirm Reschedule
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+</main>
 
 </div>
 
@@ -228,6 +247,8 @@
     let currentSearch = "";
     let pendingDeclineId = null;
     let pendingRescheduleId = null;
+    let approvedBookings = [];
+    let currentStatusFilter = "pending"; 
 
     // Standard clinic slots schedule (AM and PM)
     const clinicSlots = [
@@ -281,6 +302,21 @@
         }
     }
 
+    async function loadApprovedBookings() {
+    try {
+        const token = localStorage.getItem('userToken');
+        const response = await fetch('/api/appointments?status=approved', {
+            method: 'GET',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!response.ok) throw new Error(`Server error: ${response.status}`);
+        approvedBookings = await response.json();
+        console.log('Approved bookings loaded:', approvedBookings); // temporary check
+    } catch (error) {
+        console.error("Failed to load approved bookings:", error);
+    }
+}
+
 
     //load all occupied time slots !!
     async function loadOccupiedSlotsFromDatabase() {
@@ -314,59 +350,72 @@
         return hoursSince <= 24;
     }
 
-    function getFiltered() { // Filter bookings based on the current search
-        return bookings.filter(b =>
-            `${b.first_name} ${b.last_name}`.toLowerCase().includes(currentSearch.toLowerCase())
-        );
-        // Sort by created_at descending (newest submissions first)
-        return filtered.sort((a, b) => {
-            const dateA = new Date(a.created_at || 0);
-            const dateB = new Date(b.created_at || 0);
-            return dateB - dateA;
+        document.getElementById('statusFilters').addEventListener('click', function (e) {
+            const btn = e.target.closest('.filterBtn');
+            if (!btn) return;
+            currentStatusFilter = btn.dataset.status;
+            renderBookings();
         });
+
+
+ function getFiltered() {
+    const source = currentStatusFilter === "approved" ? approvedBookings
+                 : currentStatusFilter === "all" ? [...bookings, ...approvedBookings]
+                 : bookings; // pending
+
+    let filtered = source.filter(b =>
+        `${b.first_name} ${b.last_name}`.toLowerCase().includes(currentSearch.toLowerCase())
+    );
+
+    return filtered.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+}
+
+//Render the booking cards
+function renderBookings() {
+    const container = document.getElementById('booking-container');
+    const filtered = getFiltered();
+
+    if (filtered.length === 0) { //if the system has no bookings it will display text
+        container.innerHTML = `<p class="text-center text-[#2A1001]/60 py-10">No booking requests found.</p>`;
+        return;
     }
 
-    //Render the booking cards
-    function renderBookings() {
-        const container = document.getElementById('booking-container');
-        const filtered = getFiltered();
-
-        if (filtered.length === 0) { //if the system has no bookings it will display text
-            container.innerHTML = `<p class="text-center text-[#2A1001]/60 py-10">No booking requests found.</p>`;
-            return;
-        }
-
-        container.innerHTML = filtered.map(b => `
-                <div class="flex flex-col md:flex-row md:items-center md:justify-between bg-white border border-[#2A1001]/10 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all duration-300 gap-4">
-                    <div>
-                        <div class="flex items-center gap-2 mb-1">
-                            <span class="text-xs font-semibold text-[#2A1001]/60 uppercase tracking-wide">Patient ID: ${b.public_id}</span>
-                            ${isNew(b.created_at) ? '<span class="text-xs bg-green-100 text-green-700 font-semibold px-2 py-0.5 rounded-full">New</span>' : ''} 
-                            ${b.payment_method === 'online' ? '<span class="text-xs bg-blue-100 text-blue-700 font-semibold px-2 py-0.5 rounded-full">Paid Online</span>' : '<span class="text-xs bg-gray-100 text-[#2A1001]/70 font-semibold px-2 py-0.5 rounded-full">Cash</span>'}
-                        </div>
-                        <h3 class="text-lg font-bold text-[#2A1001] font-['Poppins']">${b.first_name} ${b.last_name}</h3>
-                        <p class="text-sm text-[#2A1001]/80 mt-0.5">
-                            <span class="font-medium text-[#667733]">${b.service_label}</span> • Requested for <strong>${b.appointment_date}</strong> at <strong>${formatTime12h(b.time_slot)}</strong>
-                        </p>
+    container.innerHTML = filtered.map(b => `
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between bg-white border border-[#2A1001]/10 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all duration-300 gap-4">
+                <div>
+                    <div class="flex items-center gap-2 mb-1">
+                        <span class="text-xs font-semibold text-[#2A1001]/60 uppercase tracking-wide">Patient ID: ${b.public_id}</span>
+                        ${isNew(b.created_at) ? '<span class="text-xs bg-green-100 text-green-700 font-semibold px-2 py-0.5 rounded-full">New</span>' : ''} 
+                        ${b.payment_method === 'online' ? '<span class="text-xs bg-blue-100 text-blue-700 font-semibold px-2 py-0.5 rounded-full">Paid Online</span>' : '<span class="text-xs bg-gray-100 text-[#2A1001]/70 font-semibold px-2 py-0.5 rounded-full">Cash</span>'}
                     </div>
-                    <div class="flex items-center gap-2 flex-wrap sm:flex-nowrap">
-                            <button class="declineBtn flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-[#D9534F] rounded-full hover:bg-[#c9302c] transition shadow-sm" data-id="${b.appointment_id}">
-                                <img src="../assets/closeIcon.png" alt="Decline" class="w-3.5 h-3.5 object-contain pointer-events-none" onerror="this.style.display='none'">
-                                <span>Decline</span>
-                            </button>
+                    <h3 class="text-lg font-bold text-[#2A1001] font-['Poppins']">${b.first_name} ${b.last_name}</h3>
+                    <p class="text-sm text-[#2A1001]/80 mt-0.5">
+                        <span class="font-medium text-[#667733]">${b.service_label}</span> • Requested for <strong>${b.appointment_date}</strong> at <strong>${formatTime12h(b.time_slot)}</strong>
+                    </p>
+                </div>
+                <div class="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+                    ${b.appointment_status === 'approved' ? `
+                        <span class="px-4 py-2 text-sm font-bold text-[#667733]">
+                            Approved
+                        </span>
+                    ` : `
+                        <button class="declineBtn flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-[#D9534F] rounded-full hover:bg-[#c9302c] transition shadow-sm" data-id="${b.appointment_id}">
+                            <img src="../assets/closeIcon.png" alt="Decline" class="w-3.5 h-3.5 object-contain pointer-events-none" onerror="this.style.display='none'">
+                            <span>Decline</span>
+                        </button>
                         <button class="rescheduleDirectBtn px-4 py-2 text-sm font-semibold text-[#2A1001] bg-[#D5C04D] rounded-full hover:bg-[#E1D282] transition flex items-center justify-center gap-1.5" data-id="${b.appointment_id}">
                             <img src="../assets/calendarIcon.png" alt="resched" class="w-3.5 h-3.5 object-contain pointer-events-none" onerror="this.style.display='none'">
                             <span>Reschedule</span>
                         </button>
-                         <button class="acceptBtn flex items-center justify-center gap-2 px-5 py-2 text-sm font-semibold text-white bg-[#667733] rounded-full hover:bg-[#556022] transition shadow-sm" data-id="${b.appointment_id}">
+                        <button class="acceptBtn flex items-center justify-center gap-2 px-5 py-2 text-sm font-semibold text-white bg-[#667733] rounded-full hover:bg-[#556022] transition shadow-sm" data-id="${b.appointment_id}">
                             <img src="../assets/checkIcon.png" alt="Accept" class="w-3.5 h-3.5 object-contain pointer-events-none" onerror="this.style.display='none'">
                             <span>Accept</span>
                         </button>
-                    </div>
+                    `}
                 </div>
-            `).join('');
-    }
-
+            </div>
+        `).join('');
+}
 
     function renderCalendar(date) {
         const year = date.getFullYear();
@@ -757,6 +806,7 @@
 
     loadBookingsFromDatabase();
     loadOccupiedSlotsFromDatabase();
+    loadApprovedBookings();
 </script>
 </body>
 </html>

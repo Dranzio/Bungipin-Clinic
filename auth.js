@@ -12,12 +12,41 @@ const Joi = require('@hapi/joi');
 
 const SALT_ROUNDS = 10;
 
+// Letters (incl. accented), spaces, hyphens, apostrophes, periods — covers
+// real names ("O'Brien", "Anne-Marie", "José") while rejecting anything
+// that could carry HTML/script content, since angle brackets, quotes used
+// for attribute-breakout, and semicolons are never valid in a name anyway.
+const NAME_PATTERN = /^[a-zA-Z\u00C0-\u017F\s'\-.]{1,50}$/;
+const PHONE_PATTERN = /^[0-9]{7,15}$/;
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 // POST /api/auth/register — patient self-registration only
 router.post('/register', async (req, res) => {
-    const { first_name, last_name, email, phone, password, sex } = req.body;
+    let { first_name, last_name, email, phone, password, sex } = req.body;
 
     if (!first_name || !last_name || !email || !password || !sex) {
         return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    first_name = first_name.trim();
+    last_name = last_name.trim();
+    email = email.trim();
+    phone = (phone || '').trim();
+
+    if (!NAME_PATTERN.test(first_name) || !NAME_PATTERN.test(last_name)) {
+        return res.status(400).json({ error: 'Names may only contain letters, spaces, hyphens, apostrophes, and periods.' });
+    }
+    if (!EMAIL_PATTERN.test(email) || email.length > 150) {
+        return res.status(400).json({ error: 'Please enter a valid email address.' });
+    }
+    if (phone && !PHONE_PATTERN.test(phone)) {
+        return res.status(400).json({ error: 'Phone number may only contain digits.' });
+    }
+    if (!['M', 'F'].includes(sex)) {
+        return res.status(400).json({ error: 'Invalid value for sex.' });
+    }
+    if (password.length < 8) {
+        return res.status(400).json({ error: 'Password must be at least 8 characters.' });
     }
 
     try {

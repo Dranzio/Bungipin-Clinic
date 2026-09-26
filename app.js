@@ -16,6 +16,8 @@ const authenticateToken = require("./authmiddleware");
 
 // login limiter
 const errorHandler = require('./Utils/errorHandler');
+
+const registerServiceRoutes = require("./Admin/ServiceRoutes");
 const rateLimit = require("express-rate-limit");
 
 
@@ -52,6 +54,7 @@ registerBookingRequestRoutes(app, db);
 registerQueueRoutes(app, db);
 registerPatientRecordsRoutes(app, db);
 registerMessagesRoutes(app, db);
+registerServiceRoutes(app, db);
 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use(express.static(path.join(__dirname)));

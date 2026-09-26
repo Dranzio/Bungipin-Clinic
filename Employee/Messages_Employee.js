@@ -2,6 +2,13 @@ let allThreads = [];
 let currentChatUserId = null;
 let currentChatUserName = '';
 
+// Escapes HTML-significant characters before any DB-sourced string is dropped
+// into an innerHTML template. This matters most for msg.content — raw chat
+// text a patient or employee types — without this, a malicious message body
+// executes as script in whoever opens that conversation next.
+const escHtml = s => String(s ?? '').replace(/[&<>"']/g, c =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
 async function fetchThreads() {
     const token = localStorage.getItem('userToken');
     if (!token) {
@@ -74,8 +81,8 @@ function renderThreads() {
                     <i class="fa-solid fa-envelope"></i>
                 </div>
                 <div class="flex flex-col max-w-[200px] sm:max-w-[400px]">
-                    <h1 class="font-bold text-2xl text-[#2c3e2b]">${contactFullName}</h1>
-                    <p class="text-sm text-gray-600 truncate">${thread.content || 'No messages yet'}</p>
+                    <h1 class="font-bold text-2xl text-[#2c3e2b]">${escHtml(contactFullName)}</h1>
+                    <p class="text-sm text-gray-600 truncate">${escHtml(thread.content) || 'No messages yet'}</p>
                 </div>
             </div>
             <div class="text-sm font-semibold text-gray-600">
@@ -145,9 +152,9 @@ function renderChatMessages(messages, contactId) {
         if (isReceived) {
             chatArea.innerHTML += `
                 <div class="flex flex-col items-start max-w-[80%]">
-                    <span class="text-xs text-gray-600 font-semibold mb-1">${currentChatUserName}</span>
+                    <span class="text-xs text-gray-600 font-semibold mb-1">${escHtml(currentChatUserName)}</span>
                     <div class="bg-white border-2 border-black px-4 py-3 rounded-lg text-sm shadow-sm w-full">
-                        ${msg.content}
+                        ${escHtml(msg.content)}
                     </div>
                     <span class="text-xs text-gray-600 font-semibold mt-1">${timeStr}</span>
                 </div>
@@ -157,7 +164,7 @@ function renderChatMessages(messages, contactId) {
             chatArea.innerHTML += `
                 <div class="flex flex-col items-end self-end max-w-[80%]">
                     <div class="bg-[#D7E3A5] border-2 border-black px-4 py-3 rounded-lg text-sm shadow-sm w-full">
-                        ${msg.content}
+                        ${escHtml(msg.content)}
                     </div>
                     <span class="text-xs text-gray-600 font-semibold mt-1">${timeStr}</span>
                 </div>
@@ -207,13 +214,23 @@ async function sendMessage() {
 document.addEventListener('DOMContentLoaded', () => {
     const searchInput = document.getElementById('searchInput');
     const filterSelect = document.getElementById('filterSelect');
-
+    const chatInput = document.getElementById('chatInput');
+    
     if (searchInput) {
         searchInput.addEventListener('input', renderThreads);
     }
 
     if (filterSelect) {
         filterSelect.addEventListener('change', renderThreads);
+    }
+
+    if (chatInput) {
+        chatInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
     }
 
     // Automatically load messages when the page opens
