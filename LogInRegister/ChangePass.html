@@ -12,14 +12,18 @@
         <h1 class="text-2xl sm:text-3xl font-bold text-[#38220f] mb-2">Change Password</h1>
         <p class="text-[#38220f]/80 text-sm sm:text-base mb-6">Enter your new password</p>
         
-        <form action="/change-password" method="POST" class="space-y-5">
+        <form action="/api/user/resetPassword" method="POST" class="space-y-5">
+            <div>
+                <label for="otp" class="block text-xs sm:text-sm font-medium text-[#38220f] mb-2">OTP</label>
+                <input type="text" id="otp" name="otp" inputmode="numeric" maxlength="4" class="w-full px-4 py-3 bg-[#e8eddf] text-[#38220f] rounded-xl border border-transparent focus:outline-none focus:ring-2 focus:ring-[#586f42] text-sm" required>
+            </div>
             <div>
                 <label for="new_password" class="block text-xs sm:text-sm font-medium text-[#38220f] mb-2">New Password</label>
-                <input type="password" id="new_password" name="new_password" class="w-full px-4 py-3 bg-[#e8eddf] text-[#38220f] rounded-xl border border-transparent focus:outline-none focus:ring-2 focus:ring-[#586f42] placeholder-[#38220f]/40 text-sm" placeholder="" required>
+                <input type="password" id="new_password" name="password" class="w-full px-4 py-3 bg-[#e8eddf] text-[#38220f] rounded-xl border border-transparent focus:outline-none focus:ring-2 focus:ring-[#586f42] placeholder-[#38220f]/40 text-sm" placeholder="" required>
             </div>
             <div>
                 <label for="confirm_password" class="block text-xs sm:text-sm font-medium text-[#38220f] mb-2">Confirm Password</label>
-                <input type="password" id="confirm_password" name="confirm_password" class="w-full px-4 py-3 bg-[#e8eddf] text-[#38220f] rounded-xl border border-transparent focus:outline-none focus:ring-2 focus:ring-[#586f42] placeholder-[#38220f]/40 text-sm" placeholder="" required>
+                <input type="password" id="confirm_password" name="confirmPassword" class="w-full px-4 py-3 bg-[#e8eddf] text-[#38220f] rounded-xl border border-transparent focus:outline-none focus:ring-2 focus:ring-[#586f42] placeholder="" required>
             </div>
             <button type="submit" class="w-full py-3 px-4 bg-[#586f42] hover:bg-[#4a5e37] text-white font-medium rounded-xl transition-colors duration-200 text-sm shadow-sm">Change Password</button>
         </form>

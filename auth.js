@@ -4,6 +4,9 @@ const jwt = require('jsonwebtoken');
 const router = express.Router();
 const db = require('./db');
 
+//  DENIED DIRECT PAGE ACCESS VIA URL
+const authenticateToken = require('./authmiddleware');
+
 // forgot + reset password
 const Joi = require('@hapi/joi');
 
@@ -96,6 +99,10 @@ router.post('/login', async (req, res) => {
     }
 });
 
+// GET /api/auth/me - validate the current session token for protected pages
+router.get('/me', authenticateToken, (req, res) => {
+    res.json(req.user);
+});
 
 // forgot + reset password
 const FORGOT_PASSWORD_MODEL = Joi.object({
@@ -106,7 +113,19 @@ const RESET_PASSWORD_MODEL = Joi.object({
     password: Joi.string().min(8).max(100).required(),
     confirmPassword: Joi.string().min(8).max(100).required(),
     otp: Joi.number().required()
-})
+});
+
+
+// keep user from accessing page via url
+function requireAuth(req, res, next) {
+    // check sesh or JWT token
+    if(req.session && req.session.user) {
+        return next(); // user allowed to page
+    }
+
+    // user not allowed; redirect to login
+    return res.redirect('/login');
+}
 
 router.FORGOT_PASSWORD_MODEL = FORGOT_PASSWORD_MODEL;
 router.RESET_PASSWORD_MODEL = RESET_PASSWORD_MODEL;

@@ -3,7 +3,7 @@ const mysql = require('mysql2');
 const mysqlPool = mysql.createPool({
     host: 'localhost',
     user: 'root',
-    password: 'Sep2024101585*!',
+    password: 'root',
     database: 'dental_appointments',
     waitForConnections: true,
     connectionLimit: 10,
@@ -13,4 +13,4 @@ const mysqlPool = mysql.createPool({
 
 const promisePool = mysqlPool.promise();
 
-module.exports = promisePool;
+module.exports = promisePool;   

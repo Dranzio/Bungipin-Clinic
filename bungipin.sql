@@ -428,6 +428,11 @@ INSERT INTO notifications (user_id, type, title, message, appointment_id) VALUES
 INSERT INTO notifications (user_id, type, title, message, message_id) VALUES
 (1, 'new_message', 'New Message', 'You have a new message from Dr. Ramon Cruz.', 1);
 
+-- ALTER TABLE FOR OTP IN FORGOT + RESET PASSWORD
+ALTER TABLE users
+	ADD COLUMN otp			VARCHAR(10) NULL,
+    ADD COLUMN otpExpire	DATETIME	NULL;
+
 CALL sp_get_all_patient_records();
 select * from users;
 select * from appointments;
