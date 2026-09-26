@@ -13,6 +13,7 @@ const registerQueueRoutes = require("./Employee/QueueRoutes");
 const registerPatientRecordsRoutes = require("./Employee/PatientRecords");
 const registerMessagesRoutes = require("./MessagesRoutes");
 const authenticateToken = require("./authmiddleware");
+const registerServiceRoutes = require("./Admin/ServiceRoutes");
 const rateLimit = require("express-rate-limit");
 
 const app = express();
@@ -41,6 +42,7 @@ registerBookingRequestRoutes(app, db);
 registerQueueRoutes(app, db);
 registerPatientRecordsRoutes(app, db);
 registerMessagesRoutes(app, db);
+registerServiceRoutes(app, db);
 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use(express.static(path.join(__dirname)));
