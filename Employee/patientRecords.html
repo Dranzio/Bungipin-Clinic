@@ -13,201 +13,201 @@
 <body class="min-h-screen md:h-screen md:overflow-hidden bg-[#F3EFE4] relative flex flex-col md:flex-row antialiased">
 
 <!-- SIDEBAR -->
-  <div id="sidebar-placeholder"></div>
-    <script>
-      function syncContentOffset() {
+<div id="sidebar-placeholder"></div>
+<script>
+    function syncContentOffset() {
         const placeholder = document.getElementById('sidebar-placeholder');
         const sidebar = Array.from(placeholder.children)
-          .find(el => !['SCRIPT', 'STYLE', 'LINK'].includes(el.tagName));
+            .find(el => !['SCRIPT', 'STYLE', 'LINK'].includes(el.tagName));
         if (!sidebar) return;
 
         const set = (el, prop, value) => { if (el.style[prop] !== value) el.style[prop] = value; };
 
         const apply = () => {
-          const desktop = window.innerWidth >= 768;
-          set(placeholder, 'flexShrink', '0');
-          set(sidebar, 'position', desktop ? 'sticky' : 'relative');  
-          set(sidebar, 'top', desktop ? '0px' : 'auto');
-          set(sidebar, 'height', desktop ? '100vh' : '');
-          set(sidebar, 'overflowY', desktop ? 'auto' : '');           
+            const desktop = window.innerWidth >= 768;
+            set(placeholder, 'flexShrink', '0');
+            set(sidebar, 'position', desktop ? 'sticky' : 'relative');
+            set(sidebar, 'top', desktop ? '0px' : 'auto');
+            set(sidebar, 'height', desktop ? '100vh' : '');
+            set(sidebar, 'overflowY', desktop ? 'auto' : '');
         };
 
         window.addEventListener('resize', apply);
         apply();
-      }
+    }
 
-        (async () => {
-          try {
+    (async () => {
+        try {
             const response = await fetch('/Taskbar/Employee_Task.html');
             if (response.ok) {
-              const data = await response.text();
-              document.getElementById('sidebar-placeholder').innerHTML = data;
-              const currentPage = window.location.pathname.split("/").pop();
-              document.querySelectorAll('.nav-link').forEach(link => {
-                if (link.getAttribute('data-page') === currentPage) {
-                  link.classList.add('bg-[#FDFCE9]');
+                const data = await response.text();
+                document.getElementById('sidebar-placeholder').innerHTML = data;
+                const currentPage = window.location.pathname.split("/").pop();
+                document.querySelectorAll('.nav-link').forEach(link => {
+                    if (link.getAttribute('data-page') === currentPage) {
+                        link.classList.add('bg-[#FDFCE9]');
+                    }
+                });
+                if (typeof initSidebar === 'function') {
+                    initSidebar();
                 }
-              });
-              if (typeof initSidebar === 'function') {
-                initSidebar();
-              }
-              syncContentOffset();
+                syncContentOffset();
             }
-          } catch (error) {
+        } catch (error) {
             console.log('Sidebar fallback:', error);
-          }
-        })();
-      </script>
+        }
+    })();
+</script>
 
-      <div id="main-content" class="flex-1 min-w-0 md:min-h-0 md:overflow-y-auto">
+<div id="main-content" class="flex-1 min-w-0 md:min-h-0 md:overflow-y-auto">
 
-            <!--Header title with logo image-->
-            <div class="flex justify-between items-start pt-5 pl-6 pr-4 md:pl-24 md:pr-8">
+    <!--Header title with logo image-->
+    <div class="flex justify-between items-start pt-5 pl-6 pr-4 md:pl-24 md:pr-8">
 
-                <h1 class="text-2xl sm:text-3xl md:text-5xl 2xl:text-[73px] pt-5 font-bold text-[#2A1001] font-['Poppins']">
-                    Patient Records
-                </h1>
-                <img
-                        src="../assets/logowithtitle.png"
-                        class="w-20 sm:w-24 md:w-28 h-auto object-contain shrink-0"
-                        alt="Logo"/>
-            </div>
-            <hr class="border-t border-[#2A1001] mt-2 mb-6" />
+        <h1 class="text-2xl sm:text-3xl md:text-5xl 2xl:text-[73px] pt-5 font-bold text-[#2A1001] font-['Poppins']">
+            Patient Records
+        </h1>
+        <img
+                src="../assets/logowithtitle.png"
+                class="w-20 sm:w-24 md:w-28 h-auto object-contain shrink-0"
+                alt="Logo"/>
+    </div>
+    <hr class="border-t border-[#2A1001] mt-2 mb-6" />
 
-            <!--boxed so we could contain the search and sort options on top properly-->
-<div class="flex w-full justify-center gap-1">
+    <!--boxed so we could contain the search and sort options on top properly-->
+    <div class="flex w-full justify-center gap-1">
 
-    <!--search bar that can filter the table-->
-    <input
-            type="text"
-            id="searchInput"
-            placeholder="Search by name..."
-            class="h-10 w-full max-w-md rounded-full border border-[#2A1001]/20 bg-white px-4 mb-6 outline-none"/>
+        <!--search bar that can filter the table-->
+        <input
+                type="text"
+                id="searchInput"
+                placeholder="Search by name..."
+                class="h-10 w-full max-w-md rounded-full border border-[#2A1001]/20 bg-white px-4 mb-6 outline-none"/>
 
-    <button id="qrBtn" class="h-11 w-11 shrink-0 sflex items-center justify-center rounded-xl bg-[#8A9A6B] hover:bg-[#79885C] transition p-2 mx-5" title="Scan QR (coming soon)"><!---add QR Scanning funtion soon?--->
-        <img src="../assets/scan.png" alt="Scan QR" class="w-full h-full object-contain" />
-    </button>
+        <button id="qrBtn" class="h-11 w-11 shrink-0 sflex items-center justify-center rounded-xl bg-[#8A9A6B] hover:bg-[#79885C] transition p-2 mx-5" title="Scan QR (coming soon)"><!---add QR Scanning funtion soon?--->
+            <img src="../assets/scan.png" alt="Scan QR" class="w-full h-full object-contain" />
+        </button>
 
 
-    <!--sort dropdown that can sort the table by date, month, oldest, recent, year-->
-    <div class="relative">
-        <select id="sortSelect" class="h-11 pl-4 pr-8 shrink-0 flex items-center justify-center rounded-full bg-[#D5C04D] font-bold text-[#2A1001] outline-none cursor-pointer appearance-none">
-            <!-- options of sort now injected by JS via populateSortDropdown() -->
-        </select>
-        <div class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[#2A1001]">▾</div>
+        <!--sort dropdown that can sort the table by date, month, oldest, recent, year-->
+        <div class="relative">
+            <select id="sortSelect" class="h-11 pl-4 pr-8 shrink-0 flex items-center justify-center rounded-full bg-[#D5C04D] font-bold text-[#2A1001] outline-none cursor-pointer appearance-none">
+                <!-- options of sort now injected by JS via populateSortDropdown() -->
+            </select>
+            <div class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[#2A1001]">▾</div>
+        </div>
+
     </div>
 
-</div>
 
+    <!-- Patient Records Table -->
+    <div class="overflow-x-auto rounded-3xl w-full md:w-[80%] mx-auto shadow-xl">
+        <table class="w-full border-collapse">
+            <thead>
+            <tr class="bg-[#667733] text-white">
+                <th class="text-center py-3 px-6">Patient ID</th>
+                <th class="text-center py-3 px-6">Name</th>
+                <th class="text-center py-3 px-6">Last Visit</th>
+                <th class="text-center py-3 px-6"></th>
+            </tr>
+            </thead>
+            <tbody id="tableBody" class="bg-[#ECF5E2]">
+            <!-- record rows injected by JS -->
+            </tbody>
+        </table>
+    </div>
 
-<!-- Patient Records Table -->
-<div class="overflow-x-auto rounded-3xl w-full md:w-[80%] mx-auto shadow-xl">
-    <table class="w-full border-collapse">
-        <thead>
-        <tr class="bg-[#667733] text-white">
-            <th class="text-center py-3 px-6">Patient ID</th>
-            <th class="text-center py-3 px-6">Name</th>
-            <th class="text-center py-3 px-6">Last Visit</th>
-            <th class="text-center py-3 px-6"></th>
-        </tr>
-        </thead>
-        <tbody id="tableBody" class="bg-[#ECF5E2]">
-        <!-- record rows injected by JS -->
-        </tbody>
-    </table>
-</div>
+    <!-- pagination -->
+    <div class="flex justify-center gap-2 my-8" id="pagination">
 
-<!-- pagination -->
-<div class="flex justify-center gap-2 my-8" id="pagination">
+    </div>
 
-</div>
+    <div id="patientModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-[#F3EFE4] rounded-3xl w-full max-w-3xl max-h-[90vh] overflow-y-auto p-5 sm:p-8 border border-[#2A1001]/20 shadow-2xl relative">
 
-<div id="patientModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-    <div class="bg-[#F3EFE4] rounded-3xl w-full max-w-3xl max-h-[90vh] overflow-y-auto p-5 sm:p-8 border border-[#2A1001]/20 shadow-2xl relative">
+            <button id="closeModal" class="absolute top-4 right-4 text-3xl font-bold text-[#2A1001] hover:opacity-60 cursor-pointer z-50 p-2">
+                &times;
+            </button>
+            <h2 class="text-2xl md:text-3xl font-bold text-[#2A1001] font-['Poppins'] mb-6">Patient Records</h2>
 
-        <button id="closeModal" class="absolute top-4 right-4 text-3xl font-bold text-[#2A1001] hover:opacity-60 cursor-pointer z-50 p-2">
-            &times;
-        </button>
-        <h2 class="text-2xl md:text-3xl font-bold text-[#2A1001] font-['Poppins'] mb-6">Patient Records</h2>
+            <div class="bg-[#D3DCBE] rounded-3xl p-6 md:p-8">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 
-        <div class="bg-[#D3DCBE] rounded-3xl p-6 md:p-8">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- model of full patient record to be gathered from profile-->
 
-                <!-- model of full patient record to be gathered from profile-->
-
-                <div>
-                    <label class="block font-semibold text-[#2A1001] text-sm mb-1">First Name:</label>
-                    <div id="mFirstName" class="w-full h-10 px-4 rounded-full bg-white/70 flex items-center text-[#2A1001]"></div>
-                </div>
-                <div>
-                    <label class="block font-semibold text-[#2A1001] text-sm mb-1">Last Name:</label>
-                    <div id="mLastName" class="w-full h-10 px-4 rounded-full bg-white/70 flex items-center text-[#2A1001]"></div>
-                </div>
-                <div>
-                    <label class="block font-semibold text-[#2A1001] text-sm mb-1">Sex:</label>
-                    <div id="mSex" class="w-full h-10 px-4 rounded-full bg-white/70 flex items-center text-[#2A1001]"></div>
-                </div>
-                <div>
-                    <label class="block font-semibold text-[#2A1001] text-sm mb-1">Birthday:</label>
-                    <div id="mBirthday" class="w-full h-10 px-4 rounded-full bg-white/70 flex items-center text-[#2A1001]"></div>
-                </div>
-                <div>
-                    <label class="block font-semibold text-[#2A1001] text-sm mb-1">Email:</label>
-                    <div id="mEmail" class="w-full h-10 px-4 rounded-full bg-white/70 flex items-center text-[#2A1001]"></div>
-                </div>
-                <div>
-                    <label class="block font-semibold text-[#2A1001] text-sm mb-1">Phone Number:</label>
-                    <div id="mPhone" class="w-full h-10 px-4 rounded-full bg-white/70 flex items-center text-[#2A1001]"></div>
-                </div>
-                <div>
-                    <label class="block font-semibold text-[#2A1001] text-sm mb-1">Civil Status:</label>
-                    <div id="mCivilStatus" class="w-full h-10 px-4 rounded-full bg-white/70 flex items-center text-[#2A1001]"></div>
-                </div>
-                <div>
-                    <label class="block font-semibold text-[#2A1001] text-sm mb-1">Pre-existing Health Conditions:</label>
-                    <div id="mHealthConditions" class="w-full h-10 px-4 rounded-full bg-white/70 flex items-center text-[#2A1001]"></div>
-                </div>
-                <div>
-                    <label class="block font-semibold text-[#2A1001] text-sm mb-1">Pregnancy Status:</label>
-                    <div id="mPregnancy" class="w-full h-10 px-4 rounded-full bg-white/70 flex items-center text-[#2A1001]"></div>
-                </div>
-                <div>
-                    <label class="block font-semibold text-[#2A1001] text-sm mb-1">Current Prescriptions:</label>
-                    <div id="mPrescriptions" class="w-full h-10 px-4 rounded-full bg-white/70 flex items-center text-[#2A1001]"></div>
-                </div>
-                <div class="md:col-span-2">
-                    <label class="block font-semibold text-[#2A1001] text-sm mb-1">Allergies / Maternal Allergies:</label>
-                    <div id="mAllergies" class="w-full h-10 px-4 rounded-full bg-white/70 flex items-center text-[#2A1001]"></div>
-                </div>
-
-            </div>
-
-            <!--ongoing session content form -->
-            <div class="mt-8">
-
-                <!-- Tab buttons -->
-                <div class="flex gap-2 border-b-2 border-[#2A1001]/20 mb-6">
-                    <button id="tabSessionBtn" class="tabBtn px-6 py-2.5 font-bold text-[#2A1001] border-b-4 border-[#667733] -mb-0.5 transition">
-                        Today's Session
-                    </button>
-                    <button id="tabHistoryBtn" class="tabBtn px-6 py-2.5 font-bold text-[#2A1001]/50 border-b-4 border-transparent -mb-0.5 hover:text-[#2A1001] transition">
-                        Past Visits
-                    </button>
-                </div>
-
-                <!-- Today's Session Content -->
-                <div id="tabSessionContent" class="tabContent">
-
-                    <!-- Shown when patient has NO ongoing session right now — a session starts
-                         automatically once an employee sets queue_status to 'ongoing' on the
-                         Queue Appointments page; there is nothing for the dentist to click here. -->
-                    <div id="noSessionContent" class="hidden text-center py-12">
-                        <p class="text-[#2A1001]/60 font-semibold mb-4">No ongoing session for this patient right now.</p>
-                        <p class="text-[#2A1001]/40 text-sm">Please wait for the receptionist to update the queue status.</p>
+                    <div>
+                        <label class="block font-semibold text-[#2A1001] text-sm mb-1">First Name:</label>
+                        <div id="mFirstName" class="w-full h-10 px-4 rounded-full bg-white/70 flex items-center text-[#2A1001]"></div>
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-[#2A1001] text-sm mb-1">Last Name:</label>
+                        <div id="mLastName" class="w-full h-10 px-4 rounded-full bg-white/70 flex items-center text-[#2A1001]"></div>
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-[#2A1001] text-sm mb-1">Sex:</label>
+                        <div id="mSex" class="w-full h-10 px-4 rounded-full bg-white/70 flex items-center text-[#2A1001]"></div>
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-[#2A1001] text-sm mb-1">Birthday:</label>
+                        <div id="mBirthday" class="w-full h-10 px-4 rounded-full bg-white/70 flex items-center text-[#2A1001]"></div>
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-[#2A1001] text-sm mb-1">Email:</label>
+                        <div id="mEmail" class="w-full h-10 px-4 rounded-full bg-white/70 flex items-center text-[#2A1001]"></div>
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-[#2A1001] text-sm mb-1">Phone Number:</label>
+                        <div id="mPhone" class="w-full h-10 px-4 rounded-full bg-white/70 flex items-center text-[#2A1001]"></div>
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-[#2A1001] text-sm mb-1">Civil Status:</label>
+                        <div id="mCivilStatus" class="w-full h-10 px-4 rounded-full bg-white/70 flex items-center text-[#2A1001]"></div>
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-[#2A1001] text-sm mb-1">Pre-existing Health Conditions:</label>
+                        <div id="mHealthConditions" class="w-full h-10 px-4 rounded-full bg-white/70 flex items-center text-[#2A1001]"></div>
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-[#2A1001] text-sm mb-1">Pregnancy Status:</label>
+                        <div id="mPregnancy" class="w-full h-10 px-4 rounded-full bg-white/70 flex items-center text-[#2A1001]"></div>
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-[#2A1001] text-sm mb-1">Current Prescriptions:</label>
+                        <div id="mPrescriptions" class="w-full h-10 px-4 rounded-full bg-white/70 flex items-center text-[#2A1001]"></div>
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="block font-semibold text-[#2A1001] text-sm mb-1">Allergies / Maternal Allergies:</label>
+                        <div id="mAllergies" class="w-full h-10 px-4 rounded-full bg-white/70 flex items-center text-[#2A1001]"></div>
                     </div>
 
-                    <!-- Shown when patient DOES have an ongoing session -->
-                    <div id="sessionActiveContent">
+                </div>
+
+                <!--ongoing session content form -->
+                <div class="mt-8">
+
+                    <!-- Tab buttons -->
+                    <div class="flex gap-2 border-b-2 border-[#2A1001]/20 mb-6">
+                        <button id="tabSessionBtn" class="tabBtn px-6 py-2.5 font-bold text-[#2A1001] border-b-4 border-[#667733] -mb-0.5 transition">
+                            Today's Session
+                        </button>
+                        <button id="tabHistoryBtn" class="tabBtn px-6 py-2.5 font-bold text-[#2A1001]/50 border-b-4 border-transparent -mb-0.5 hover:text-[#2A1001] transition">
+                            Past Visits
+                        </button>
+                    </div>
+
+                    <!-- Today's Session Content -->
+                    <div id="tabSessionContent" class="tabContent">
+
+                        <!-- Shown when patient has NO ongoing session right now — a session starts
+                             automatically once an employee sets queue_status to 'ongoing' on the
+                             Queue Appointments page; there is nothing for the dentist to click here. -->
+                        <div id="noSessionContent" class="hidden text-center py-12">
+                            <p class="text-[#2A1001]/60 font-semibold mb-4">No ongoing session for this patient right now.</p>
+                            <p class="text-[#2A1001]/40 text-sm">Please wait for the receptionist to update the queue status.</p>
+                        </div>
+
+                        <!-- Shown when patient DOES have an ongoing session -->
+                        <div id="sessionActiveContent">
                             <div class="grid grid-cols-1 gap-4 mb-6">
                                 <div>
                                     <label class="block font-semibold text-[#2A1001] text-sm mb-1">Patient's Concern:</label>
@@ -221,94 +221,99 @@
 
 
 
-                        <!-- X-ray upload -->
-                        <div class="mb-6">
-                            <label class="block font-semibold text-[#2A1001] text-sm mb-2">Upload Today's X-Rays:</label>
-                            <div id="xrayDropZone" class="border-2 border-dashed border-[#2A1001]/40 rounded-2xl bg-white/60 py-10 flex flex-col items-center justify-center cursor-pointer hover:bg-white/80 transition">
-                                <span class="text-[#2A1001] font-semibold text-center px-4" id="xrayLabel">Click to upload X-ray images</span>
-                                <input type="file" id="xrayInput" accept="image/*" multiple class="hidden" />
+                            <!-- X-ray upload -->
+                            <div class="mb-6">
+                                <label class="block font-semibold text-[#2A1001] text-sm mb-2">Upload Today's X-Rays:</label>
+                                <div id="xrayDropZone" class="border-2 border-dashed border-[#2A1001]/40 rounded-2xl bg-white/60 py-10 flex flex-col items-center justify-center cursor-pointer hover:bg-white/80 transition">
+                                    <span class="text-[#2A1001] font-semibold text-center px-4" id="xrayLabel">Click to upload X-ray images</span>
+                                    <input type="file" id="xrayInput" accept="image/*" multiple class="hidden" />
+                                </div>
+
+                                <!-- LIVE PREVIEW: shows a thumbnail of every X-ray uploaded this session -->
+                                <div id="sessionXrayPreview" class="flex flex-wrap gap-3 mt-4"></div>
                             </div>
 
-                            <!-- LIVE PREVIEW: shows a thumbnail of every X-ray uploaded this session -->
-                            <div id="sessionXrayPreview" class="flex flex-wrap gap-3 mt-4"></div>
-                        </div>
+                            <div class="flex justify-center gap-3 flex-wrap">
+                                <button id="saveSessionBtn" class="bg-[#667733] hover:bg-[#556022] transition text-white font-bold px-8 py-3 rounded-full">
+                                    Save Appointment
+                                </button>
 
-                        <div class="flex justify-center gap-3 flex-wrap">
-                            <button id="saveSessionBtn" class="bg-[#667733] hover:bg-[#556022] transition text-white font-bold px-8 py-3 rounded-full">
-                                Save Appointment
-                            </button>
-
-                            <!--REMOVE THIS BUTTON WHEN IMPLEMENTED IN BACKEND! FOR MOCK UP ONLY RAHHHHH=======================================================================================look-->
-                            <button id="completeSessionBtn" class="bg-[#D5C04D] hover:bg-[#c2ad3c] transition text-[#2A1001] font-bold px-8 py-3 rounded-full">
-                                Complete Visit
-                            </button>
+                                <!--REMOVE THIS BUTTON WHEN IMPLEMENTED IN BACKEND! FOR MOCK UP ONLY RAHHHHH=======================================================================================look-->
+                                <button id="completeSessionBtn" class="bg-[#D5C04D] hover:bg-[#c2ad3c] transition text-[#2A1001] font-bold px-8 py-3 rounded-full">
+                                    Complete Visit
+                                </button>
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                <!--patient history visits -->
-                <div id="tabHistoryContent" class="tabContent hidden">
+                    <!--patient history visits -->
+                    <div id="tabHistoryContent" class="tabContent hidden">
 
 
-                    <!-- The existing visit history list -->
-                    <h3 class="font-bold text-[#2A1001] mb-3">Previous Appointments</h3>
-                    <div id="visitHistoryList" class="max-h-80 overflow-y-auto pr-2 space-y-3">
-                        <!-- past visit cards injected by JS -->
+                        <!-- The existing visit history list -->
+                        <h3 class="font-bold text-[#2A1001] mb-3">Previous Appointments</h3>
+                        <div id="visitHistoryList" class="max-h-80 overflow-y-auto pr-2 space-y-3">
+                            <!-- past visit cards injected by JS -->
+                        </div>
                     </div>
                 </div>
-            </div>
-            <!-- visit x-ray modal -->
-            <div id="visitXrayModal" class="hidden fixed inset-0 bg-black/60 z-[60] flex items-center justify-center p-4">
-                <div class="bg-[#F3EFE4] rounded-3xl w-full max-w-2xl max-h-[85vh] overflow-y-auto p-6 relative">
-                    <button id="closeVisitXrayModal" class="absolute top-4 right-4 text-2xl font-bold text-[#2A1001] hover:opacity-60">&times;</button>
-                    <h3 class="text-xl font-bold text-[#2A1001] mb-1" id="visitXrayModalDate"></h3>
-                    <p class="text-sm text-[#2A1001]/60 mb-4" id="visitXrayModalService"></p>
-                    <div id="visitXrayModalGrid" class="grid grid-cols-2 sm:grid-cols-3 gap-3"></div>
-                </div>
-            </div>
-
-            <!--Image viewer-->
-            <div id="fullImageViewer" class="hidden fixed inset-0 bg-black/95 z-[70] p-6 sm:p-12">
-                <!-- Changed to fixed positioning so the close button never disappears -->
-                <button id="closeFullImageBtn" class="fixed top-4 right-6 text-white text-5xl hover:text-gray-300 transition cursor-pointer z-[80]">&times;</button>
-
-                <!-- This wrapper forces the image to perfectly fit the screen size -->
-                <div class="w-full h-full flex items-center justify-center">
-                    <img id="fullImageSrc" src="" class="max-w-full max-h-full object-contain rounded-lg shadow-2xl" />
-                </div>
-            </div>
-
-
-            <div class="flex justify-center mt-8 gap-4 flex-wrap">
-                <button id="showQrCodeBtn" class="bg-[#D5C04D] hover:bg-[#c2ad3c] transition text-[#2A1001] font-bold px-8 py-3 rounded-full">
-                    Show QR Code
-                </button>
-
-                <div id="qrModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 1000;">
-                    <div style="background: white; padding: 20px; border-radius: 8px; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.3); max-width: 300px;">
-                        <h3 style="margin-top: 0; font-family: sans-serif;">Your QR Code</h3>
-                        <div id="qrCodeContainer"></div>
-                        <button id="closeQrBtn" style="margin-top: 15px; padding: 8px 16px; cursor: pointer;">Close</button>
+                <!-- visit x-ray modal -->
+                <div id="visitXrayModal" class="hidden fixed inset-0 bg-black/60 z-[60] flex items-center justify-center p-4">
+                    <div class="bg-[#F3EFE4] rounded-3xl w-full max-w-2xl max-h-[85vh] overflow-y-auto p-6 relative">
+                        <button id="closeVisitXrayModal" class="absolute top-4 right-4 text-2xl font-bold text-[#2A1001] hover:opacity-60">&times;</button>
+                        <h3 class="text-xl font-bold text-[#2A1001] mb-1" id="visitXrayModalDate"></h3>
+                        <p class="text-sm text-[#2A1001]/60 mb-4" id="visitXrayModalService"></p>
+                        <div id="visitXrayModalGrid" class="grid grid-cols-2 sm:grid-cols-3 gap-3"></div>
                     </div>
                 </div>
 
-                <button id="printPdfBtn" class="bg-[#D5C04D] hover:bg-[#c2ad3c] transition text-[#2A1001] font-bold px-8 py-3 rounded-full">
-                    Print PDF
-                </button>
+                <!--Image viewer-->
+                <div id="fullImageViewer" class="hidden fixed inset-0 bg-black/95 z-[70] p-6 sm:p-12">
+                    <!-- Changed to fixed positioning so the close button never disappears -->
+                    <button id="closeFullImageBtn" class="fixed top-4 right-6 text-white text-5xl hover:text-gray-300 transition cursor-pointer z-[80]">&times;</button>
+
+                    <!-- This wrapper forces the image to perfectly fit the screen size -->
+                    <div class="w-full h-full flex items-center justify-center">
+                        <img id="fullImageSrc" src="" class="max-w-full max-h-full object-contain rounded-lg shadow-2xl" />
+                    </div>
+                </div>
+
+
+                <div class="flex justify-center mt-8 gap-4 flex-wrap">
+                    <button id="showQrCodeBtn" class="bg-[#D5C04D] hover:bg-[#c2ad3c] transition text-[#2A1001] font-bold px-8 py-3 rounded-full">
+                        Show QR Code
+                    </button>
+
+                    <div id="qrModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 1000;">
+                        <div style="background: white; padding: 20px; border-radius: 8px; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.3); max-width: 300px;">
+                            <h3 style="margin-top: 0; font-family: sans-serif;">Your QR Code</h3>
+                            <div id="qrCodeContainer"></div>
+                            <button id="closeQrBtn" style="margin-top: 15px; padding: 8px 16px; cursor: pointer;">Close</button>
+                        </div>
+                    </div>
+
+                    <button id="printPdfBtn" class="bg-[#D5C04D] hover:bg-[#c2ad3c] transition text-[#2A1001] font-bold px-8 py-3 rounded-full">
+                        Print PDF
+                    </button>
+                </div>
+
+                <div id="saveConfirmation" class="hidden text-center mt-4 text-green-800 font-semibold">
+                    Changes saved!
+                </div>
             </div>
 
-            <div id="saveConfirmation" class="hidden text-center mt-4 text-green-800 font-semibold">
-                Changes saved!
-            </div>
         </div>
-
     </div>
-</div>
 
-      </div>
+</div>
 
 <script>
 
+    // Escapes HTML special characters so untrusted data (patient names, notes, labels, URLs)
+    // can never break out of HTML content or attribute context when interpolated into innerHTML.
+    // Used for every render path that builds HTML via template strings.
+    const escHtml = s => String(s ?? '').replace(/[&<>"']/g, c =>
+        ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
     //  Use this code when there is backend =============================================================================================================================================LOOK HEREEEE
     let patients = [];
@@ -450,14 +455,14 @@
             return `
         <div class="bg-white/70 rounded-2xl p-4">
             <div class="flex justify-between items-start mb-1">
-                <p class="font-bold text-[#2A1001]">${a.appointment_date}</p>
-                <span class="text-xs font-semibold text-[#667733] bg-[#667733]/10 px-3 py-1 rounded-full">${a.service_label}</span>
+                <p class="font-bold text-[#2A1001]">${escHtml(a.appointment_date)}</p>
+                <span class="text-xs font-semibold text-[#667733] bg-[#667733]/10 px-3 py-1 rounded-full">${escHtml(a.service_label)}</span>
             </div>
-            <p class="text-sm text-[#2A1001]/70 mb-1"><span class="font-semibold">Patient Concern:</span> ${a.patient_note || 'None noted'}</p>
-            <p class="text-sm text-[#2A1001]/70 mb-2"><span class="font-semibold">Dentist Note:</span> ${a.dentist_note || 'No notes recorded'}</p>
+            <p class="text-sm text-[#2A1001]/70 mb-1"><span class="font-semibold">Patient Concern:</span> ${escHtml(a.patient_note) || 'None noted'}</p>
+            <p class="text-sm text-[#2A1001]/70 mb-2"><span class="font-semibold">Dentist Note:</span> ${escHtml(a.dentist_note) || 'No notes recorded'}</p>
 
             ${xrayCount > 0
-                ? `<button class="viewVisitXraysBtn text-xs font-semibold text-white bg-[#667733] hover:bg-[#556022] transition px-3 py-1.5 rounded-full" data-appointment-id="${a.appointment_id}" data-date="${a.appointment_date}" data-service="${a.service_label}">
+                ? `<button class="viewVisitXraysBtn text-xs font-semibold text-white bg-[#667733] hover:bg-[#556022] transition px-3 py-1.5 rounded-full" data-appointment-id="${escHtml(a.appointment_id)}" data-date="${escHtml(a.appointment_date)}" data-service="${escHtml(a.service_label)}">
                        View X-Rays (${xrayCount})
                    </button>`
                 : `<p class="text-xs text-[#2A1001]/40 italic">No X-rays for this visit.</p>`
@@ -477,7 +482,7 @@
 
 
                 document.getElementById('visitXrayModalGrid').innerHTML = xraysForVisit
-                    .map(x => `<img src="${x.file_url}" class="w-full aspect-square rounded-xl object-cover cursor-pointer hover:opacity-90 transition" />`)
+                    .map(x => `<img src="${escHtml(x.file_url)}" class="w-full aspect-square rounded-xl object-cover cursor-pointer hover:opacity-90 transition" />`)
                     .join('');
 
                 document.getElementById('visitXrayModal').classList.remove('hidden');
@@ -556,8 +561,8 @@
             const thumb = document.createElement('div');
             thumb.className = "relative w-20 h-20 rounded-xl overflow-hidden border border-[#2A1001]/20";
             thumb.innerHTML = `
-            <img src="${xray.file_url}" class="w-full h-full object-cover" />
-            <button class="removeXrayBtn absolute top-0.5 right-0.5 bg-black/60 text-white text-xs w-5 h-5 rounded-full" data-xray-id="${xray.xray_id}">×</button>
+            <img src="${escHtml(xray.file_url)}" class="w-full h-full object-cover" />
+            <button class="removeXrayBtn absolute top-0.5 right-0.5 bg-black/60 text-white text-xs w-5 h-5 rounded-full" data-xray-id="${escHtml(xray.xray_id)}">×</button>
         `;
             sessionPreview.appendChild(thumb);
         });
@@ -896,11 +901,11 @@
             const row = document.createElement('tr');
             row.className = "border-b border-[#2A1001]/10";
             row.innerHTML = `
-                <td class="text-center py-3 px-6">${p.patient_id}</td>
-                    <td class="text-center py-3 px-6">${p.first_name} ${p.last_name}</td>
-                    <td class="text-center py-3 px-6">${p.last_visit || 'No visits yet'}</td>
+                <td class="text-center py-3 px-6">${escHtml(p.patient_id)}</td>
+                    <td class="text-center py-3 px-6">${escHtml(p.first_name)} ${escHtml(p.last_name)}</td>
+                    <td class="text-center py-3 px-6">${escHtml(p.last_visit) || 'No visits yet'}</td>
                     <td class="text-center py-3 px-6">
-                    <button class="viewFullBtn inline-flex flex-row items-center justify-center gap-2 bg-[#667733] hover:bg-[#556022] transition text-white text-sm font-semibold px-5 py-2 rounded-full" data-id="${p.patient_id}">
+                    <button class="viewFullBtn inline-flex flex-row items-center justify-center gap-2 bg-[#667733] hover:bg-[#556022] transition text-white text-sm font-semibold px-5 py-2 rounded-full" data-id="${escHtml(p.patient_id)}">
                         <img src="../assets/view.png" alt="View" class="w-5 h-5 object-contain shrink-0" />
                         <span class="whitespace-nowrap">View Full</span>
                     </button>
@@ -992,9 +997,6 @@
     renderTable();
     activateTab('session');
 
-
-    const escHtml = s => String(s ?? '').replace(/[&<>"']/g, c =>
-        ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
     function buildPrintableRecord(p) {
         const listText = (arr, fmt) => (arr && arr.length ? arr.map(fmt).join(', ') : 'None');
