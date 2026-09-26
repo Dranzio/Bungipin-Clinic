@@ -19,7 +19,7 @@
 
       <!-- Giant Red Lock Icon -->
       <img 
-            src="./images/lockImage.png" 
+            src="./assets/lockImage.png" 
             alt="Access Denied" 
             class="h-32 w-32 md:h-40 md:w-40 mb-6 drop-shadow-sm object-contain" 
             />
@@ -48,30 +48,33 @@
   </main>
 
   <!-- Added the solid dark footer block with your contact info -->
-  <footer class="w-full bg-[#8A925F] py-6 px-6 sm:px-12">
-    <div class="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-      
-      <!-- Moved Copyright Info to Footer -->
-      <div class="text-center md:text-left">
+<footer class="w-full bg-[#8A925F] py-8 px-6 sm:px-12">
+  <div class="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6 md:gap-4">
+
+    <!-- Logo + Copyright Info -->
+    <div class="flex flex-col sm:flex-row items-center gap-3 text-center sm:text-left">
+      <img src="../assets/logowithtitle.png" alt="Bungipin Logo" class="w-12 h-12 object-contain flex-shrink-0" />
+      <div>
         <p class="text-white font-bold text-sm mb-1">Bungipin Dental Clinic</p>
         <p class="text-gray-300 text-xs">© 2026 Makati City · All Rights Reserved</p>
       </div>
-
-      <!-- Your Provided Contact Info -->
-      <div class="text-center md:text-right">
-        <p class="text-white text-xs mb-1">Hotline: (02) 8123-4567</p>
-        <p class="text-white text-xs">
-          Email:
-          <a href="mailto:dentalclinic@bungipin.com" class="hover:text-yellow-300 transition-colors">
-            dentalclinic@bungipin.com
-          </a>
-        </p>
-      </div>
-
     </div>
-  </footer>
 
-  <!-- Frontend Logic j-->
+    <!-- Contact Info -->
+    <div class="text-center md:text-right">
+      <p class="text-white text-xs mb-1">Hotline: (02) 8123-4567</p>
+      <p class="text-white text-xs">
+        Email:
+        <a href="mailto:dentalclinic@bungipin.com" class="hover:text-yellow-300 transition-colors">
+          dentalclinic@bungipin.com
+        </a>
+      </p>
+    </div>
+
+  </div>
+</footer>
+
+  <!-- Frontend Logic -->
   <script>
     const urlParams = new URLSearchParams(window.location.search);
     const userRole = urlParams.get('role');
