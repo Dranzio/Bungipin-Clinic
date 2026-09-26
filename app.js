@@ -18,6 +18,7 @@ const authenticateToken = require("./authmiddleware");
 const errorHandler = require('./Utils/errorHandler');
 
 const registerServiceRoutes = require("./Admin/ServiceRoutes");
+const registerUserManagementRoutes = require("./Admin/UserManage");
 
 // DENIED DIRECT PAGE ACESS VIA URL
 const registerDashboardRoutes = require("./Admin/DashboardRoutes");
@@ -31,7 +32,8 @@ const app = express();
 
 // login limiter
 const loginLimiter = rateLimit({
-    windowMs: 30,
+    // CHANGE THIS TO ACTUAL VALUE LATER
+    windowMs: .5 * 60 * 1000,
     max: 3,
     standardHeaders: true,
     legacyHeaders: false,
@@ -58,6 +60,7 @@ registerQueueRoutes(app, db);
 registerPatientRecordsRoutes(app, db);
 registerMessagesRoutes(app, db);
 registerServiceRoutes(app, db);
+registerUserManagementRoutes(app, db);
 registerDashboardRoutes(app, db);
 
 // DENIES DIRECT PAGE VIA URL
@@ -81,6 +84,7 @@ app.get('/pageProtection.js', (req, res) => {
     res.sendFile(path.join(__dirname, 'pageProtection.js'));
 });
 app.use('/LogInRegister', express.static(path.join(__dirname, 'LogInRegister')));
+app.use('/WelcomePage', express.static(path.join(__dirname, 'WelcomePage')));
 
 app.use('/Admin', authenticateToken, requirePageRole('admin'), express.static(path.join(__dirname, 'Admin')));
 app.use('/Employee', authenticateToken, requirePageRole('employee'), express.static(path.join(__dirname, 'Employee')));
@@ -91,6 +95,15 @@ app.get('/denied.html', (req, res) => {
 });
 app.get("/", (req, res) => {
     res.sendFile(path.join(__dirname, "WelcomePage", "home.html"));
+});
+app.get('/home.html', (req, res) => {
+    res.sendFile(path.join(__dirname, 'WelcomePage', 'home.html'));
+});
+app.get('/aboutus.html', (req, res) => {
+    res.sendFile(path.join(__dirname, 'WelcomePage', 'aboutus.html'));
+});
+app.get('/contact.html', (req, res) => {
+    res.sendFile(path.join(__dirname, 'WelcomePage', 'contact.html'));
 });
 
 app.get('/api/users', authenticateToken, async (req, res) => {
