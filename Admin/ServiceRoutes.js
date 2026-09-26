@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
-const authenticateToken = require('../authMiddleware');
+const authenticateToken = require('../authmiddleware');
 
 const ICON_DIR = path.join(__dirname, '..', 'uploads', 'services');
 const MAX_ICON_BYTES = 2 * 1024 * 1024;

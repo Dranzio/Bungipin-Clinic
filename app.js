@@ -55,6 +55,7 @@ registerQueueRoutes(app, db);
 registerPatientRecordsRoutes(app, db);
 registerMessagesRoutes(app, db);
 registerServiceRoutes(app, db);
+registerServiceRoutes(app, db);
 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use(express.static(path.join(__dirname)));
