@@ -2,6 +2,14 @@ const jwt = require('jsonwebtoken');
 
 function authenticateToken(req, res, next) {
     const authHeader = req.headers['authorization'];
+    const isPageRequest = !req.path.startsWith('/api') && req.accepts('html');
+
+    function denyPageAccess(status, error) {
+        if (isPageRequest) {
+            return res.redirect('/denied.html');
+        }
+        return res.status(status).json({ error });
+    }
 
     // DENIES DIRECT PAGE ACCESS VIA URL
     const cookies = Object.fromEntries(
@@ -13,12 +21,12 @@ function authenticateToken(req, res, next) {
     const token = (authHeader && authHeader.split(' ')[1]) || cookies.authToken;
 
     if (!token) {
-        return res.status(401).json({ error: 'Access token required' });
+        return denyPageAccess(401, 'Access token required');
     }
 
     jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
         if (err) {
-            return res.status(403).json({ error: 'Invalid or expired token' });
+            return denyPageAccess(403, 'Invalid or expired token');
         }
         req.user = decoded;
         next();
