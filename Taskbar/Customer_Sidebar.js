@@ -70,18 +70,12 @@ function _applySidebarState(collapse) {
 
         sidebar.style.width = '72px';
         if (aside) aside.style.width = '72px';
-
-        // Hide text labels + name badge
         labels.forEach(el => { el.style.display = 'none'; });
         if (nameBadge)     nameBadge.style.display = 'none';
-
-        // Shrink profile circle
         if (profileCircle) {
             profileCircle.style.width  = '44px';
             profileCircle.style.height = '44px';
         }
-
-        // Center icons in nav links
         navLinks.forEach(link => {
             link.style.paddingLeft  = '0';
             link.style.paddingRight = '0';
@@ -89,22 +83,14 @@ function _applySidebarState(collapse) {
         });
 
     } else {
-        // ── Expanded state ──────────────────────────────────────────────────
-        // Remove inline width so Tailwind w-full md:w-[268px] kicks in
         sidebar.style.width = '';
         if (aside) aside.style.width = '';
-
-        // Show text labels + name badge
         labels.forEach(el => { el.style.display = ''; });
         if (nameBadge)     nameBadge.style.display = '';
-
-        // Restore profile circle size
         if (profileCircle) {
             profileCircle.style.width  = '';
             profileCircle.style.height = '';
         }
-
-        // Restore nav link padding
         navLinks.forEach(link => {
             link.style.paddingLeft  = '';
             link.style.paddingRight = '';

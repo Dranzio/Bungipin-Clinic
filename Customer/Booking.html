@@ -59,7 +59,7 @@
                 card.dataset.price = service.price;
 
                 const title = document.createElement('h1');
-                title.className = 'font-bold text-[20px] break-words';
+                title.className = 'font-bold text-[20px] break-words whitespace-normal overflow-hidden max-w-full min-w-0';
                 title.textContent = service.label;
 
                 const img = document.createElement('img');
@@ -419,14 +419,22 @@
                 <div id="service-grid" class="grid text-[#2A1001] grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-5 w-full justify-items-center"> <!--Services are rendered here from /api/services-->
                 </div>
                 <!--Note For Users-->
-                <textarea id="PNote" name="PNote" class="w-full h-[225px] rounded bg-[#FFFFFF] text-[#2c3e2b] font-medium text-lg outline-none resize-none shadow-inner border-2 border-[#000000] p-4" maxlength="1000"></textarea>
+                <textarea id="PNote" name="PNote" class="w-full h-[225px] rounded bg-[#FFFFFF] text-[#2c3e2b] font-medium text-lg outline-none resize-none shadow-inner border-2 border-[#000000] p-4" maxlength="250"></textarea>
                 <div class="Counter-Cont">
-                    <span id="current-count">0</span>/<span id="max-count">1000</span> characters
+                    <span id="current-count">0</span>/<span id="max-count">250</span> characters
                 </div>
 
-                <button type="submit" id="submit-btn" class="z-10 bg-[#D5C04D] hover:bg-[#B8A957] text-[#2A1001] font-black text-xl px-12 py-3 rounded-full shadow-md active:scale-95 transition transform">
-                    Submit Booking
-                </button>
+                <div class="flex justify-center gap-5">
+                    <button type="submit" id="submit-btn" class="z-10 bg-[#D5C04D] hover:bg-[#B8A957] text-[#2A1001] font-black text-xl px-12 py-3 rounded-full shadow-md active:scale-95 transition transform">
+                        Submit Booking
+                    </button>
+
+                    <!--ELIIIIII DRAFT BUTTON HERRRREEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE-->
+                    <button type="button" id="DraftBtn"
+                            class="z-10 bg-[#D5C04D] hover:bg-[#B8A957] text-[#2A1001] font-black text-xl px-12 py-3 rounded-full shadow-md active:scale-95 transition transform">
+                        Draft
+                    </button>
+                </div>
 
                 <!-- Receipt Modal -->
                 <div id="receipt-modal" class="fixed inset-0 bg-black/50 flex items-center justify-center hidden z-50 p-4">

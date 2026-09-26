@@ -404,6 +404,13 @@
       wrapper.appendChild(btn);
     });
   });
+
+    document.addEventListener('keydown', function (e) {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+        e.preventDefault();
+        form.requestSubmit();
+      }
+    });
 </script>
 
 </body>
