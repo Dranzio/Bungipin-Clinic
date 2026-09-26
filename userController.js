@@ -21,7 +21,7 @@ exports.user_forgotPass = (req, res, next) => {
             }
 
             const otp = Math.floor(1000 + Math.random() * 9000);
-            const otpExpire = new Date(Date.now() + 3 * 60 * 1000); // 3 minutes expiration
+            const otpExpire = new Date(Date.now() + 30); // 3 minutes expiration
 
             connection.query("UPDATE users SET otp = ?, otpExpire = ? WHERE email = ?", [otp, otpExpire, req.body.email], (err) => {
                 if (err) return next(new AppError(err, 500));

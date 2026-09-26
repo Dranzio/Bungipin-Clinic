@@ -26,7 +26,7 @@ const app = express();
 
 // login limiter
 const loginLimiter = rateLimit({
-    windowMs: 5 * 60 * 1000,
+    windowMs: 30,
     max: 3,
     standardHeaders: true,
     legacyHeaders: false,
