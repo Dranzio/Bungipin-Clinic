@@ -1,6 +1,6 @@
 const bcrypt = require('bcrypt');
 const crypto = require('crypto');
-const authenticateToken = require('../authMiddleware');
+const authenticateToken = require('../authmiddleware');
 
 const SALT_ROUNDS = 10;
 

@@ -24,6 +24,12 @@
             // 1. Time Slot Selection Logic
             document.querySelectorAll('[data-time]').forEach(slot => {
                 slot.addEventListener('click', () => {
+                    // no past dates
+                    if (!document.getElementById('selected-date').value) {
+                        alert('Please select a date first.');
+                        return;
+                    }
+                    if (slot.dataset.disabled === 'true') return;
                     document.querySelectorAll('[data-time]').forEach(s => s.classList.remove('bg-[#D7E3A5]'));
                     slot.classList.add('bg-[#D7E3A5]');
                     selectedTimeValue = slot.getAttribute('data-time');

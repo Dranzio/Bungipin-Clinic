@@ -311,6 +311,8 @@
 
 <script>
 
+    const escHtml = s => String(s ?? '').replace(/[&<>"']/g, c =>
+        ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
     //  Use this code when there is backend =============================================================================================================================================LOOK HEREEEE
     let patients = [];
@@ -452,14 +454,14 @@
             return `
         <div class="bg-white/70 rounded-2xl p-4">
             <div class="flex justify-between items-start mb-1">
-                <p class="font-bold text-[#2A1001]">${a.appointment_date}</p>
-                <span class="text-xs font-semibold text-[#667733] bg-[#667733]/10 px-3 py-1 rounded-full">${a.service_label}</span>
+                <p class="font-bold text-[#2A1001]">${escHtml(a.appointment_date)}</p>
+                <span class="text-xs font-semibold text-[#667733] bg-[#667733]/10 px-3 py-1 rounded-full">${escHtml(a.service_label)}</span>
             </div>
-            <p class="text-sm text-[#2A1001]/70 mb-1"><span class="font-semibold">Patient Concern:</span> ${a.patient_note || 'None noted'}</p>
-            <p class="text-sm text-[#2A1001]/70 mb-2"><span class="font-semibold">Dentist Note:</span> ${a.dentist_note || 'No notes recorded'}</p>
+            <p class="text-sm text-[#2A1001]/70 mb-1"><span class="font-semibold">Patient Concern:</span> ${escHtml(a.patient_note) || 'None noted'}</p>
+            <p class="text-sm text-[#2A1001]/70 mb-2"><span class="font-semibold">Dentist Note:</span> ${escHtml(a.dentist_note) || 'No notes recorded'}</p>
 
             ${xrayCount > 0
-                ? `<button class="viewVisitXraysBtn text-xs font-semibold text-white bg-[#667733] hover:bg-[#556022] transition px-3 py-1.5 rounded-full" data-appointment-id="${a.appointment_id}" data-date="${a.appointment_date}" data-service="${a.service_label}">
+                ? `<button class="viewVisitXraysBtn text-xs font-semibold text-white bg-[#667733] hover:bg-[#556022] transition px-3 py-1.5 rounded-full" data-appointment-id="${escHtml(a.appointment_id)}" data-date="${escHtml(a.appointment_date)}" data-service="${escHtml(a.service_label)}">
                        View X-Rays (${xrayCount})
                    </button>`
                 : `<p class="text-xs text-[#2A1001]/40 italic">No X-rays for this visit.</p>`
@@ -479,7 +481,7 @@
 
 
                 document.getElementById('visitXrayModalGrid').innerHTML = xraysForVisit
-                    .map(x => `<img src="${x.file_url}" class="w-full aspect-square rounded-xl object-cover cursor-pointer hover:opacity-90 transition" />`)
+                    .map(x => `<img src="${escHtml(x.file_url)}" class="w-full aspect-square rounded-xl object-cover cursor-pointer hover:opacity-90 transition" />`)
                     .join('');
 
                 document.getElementById('visitXrayModal').classList.remove('hidden');
@@ -558,8 +560,8 @@
             const thumb = document.createElement('div');
             thumb.className = "relative w-20 h-20 rounded-xl overflow-hidden border border-[#2A1001]/20";
             thumb.innerHTML = `
-            <img src="${xray.file_url}" class="w-full h-full object-cover" />
-            <button class="removeXrayBtn absolute top-0.5 right-0.5 bg-black/60 text-white text-xs w-5 h-5 rounded-full" data-xray-id="${xray.xray_id}">×</button>
+            <img src="${escHtml(xray.file_url)}" class="w-full h-full object-cover" />
+            <button class="removeXrayBtn absolute top-0.5 right-0.5 bg-black/60 text-white text-xs w-5 h-5 rounded-full" data-xray-id="${escHtml(xray.xray_id)}">×</button>
         `;
             sessionPreview.appendChild(thumb);
         });
@@ -898,11 +900,11 @@
             const row = document.createElement('tr');
             row.className = "border-b border-[#2A1001]/10";
             row.innerHTML = `
-                <td class="text-center py-3 px-6">${p.patient_id}</td>
-                    <td class="text-center py-3 px-6">${p.first_name} ${p.last_name}</td>
-                    <td class="text-center py-3 px-6">${p.last_visit || 'No visits yet'}</td>
+                <td class="text-center py-3 px-6">${escHtml(p.patient_id)}</td>
+                    <td class="text-center py-3 px-6">${escHtml(p.first_name)} ${escHtml(p.last_name)}</td>
+                    <td class="text-center py-3 px-6">${escHtml(p.last_visit) || 'No visits yet'}</td>
                     <td class="text-center py-3 px-6">
-                    <button class="viewFullBtn inline-flex flex-row items-center justify-center gap-2 bg-[#667733] hover:bg-[#556022] transition text-white text-sm font-semibold px-5 py-2 rounded-full" data-id="${p.patient_id}">
+                    <button class="viewFullBtn inline-flex flex-row items-center justify-center gap-2 bg-[#667733] hover:bg-[#556022] transition text-white text-sm font-semibold px-5 py-2 rounded-full" data-id="${escHtml(p.patient_id)}">
                         <img src="../assets/view.png" alt="View" class="w-5 h-5 object-contain shrink-0" />
                         <span class="whitespace-nowrap">View Full</span>
                     </button>
@@ -993,10 +995,6 @@
     populateSortDropdown();
     renderTable();
     activateTab('session');
-
-
-    const escHtml = s => String(s ?? '').replace(/[&<>"']/g, c =>
-        ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
     function buildPrintableRecord(p) {
         const listText = (arr, fmt) => (arr && arr.length ? arr.map(fmt).join(', ') : 'None');
