@@ -4,6 +4,9 @@ const jwt = require('jsonwebtoken');
 const router = express.Router();
 const db = require('./db');
 
+// forgot + reset password
+const Joi = require('@hapi/joi');
+
 const SALT_ROUNDS = 10;
 
 // POST /api/auth/register — patient self-registration only
@@ -92,5 +95,20 @@ router.post('/login', async (req, res) => {
         res.status(500).json({ error: 'Internal Server Error' });
     }
 });
+
+
+// forgot + reset password
+const FORGOT_PASSWORD_MODEL = Joi.object({
+    email: Joi.string().email().required()
+})
+
+const RESET_PASSWORD_MODEL = Joi.object({
+    password: Joi.string().min(8).max(100).required(),
+    confirmPassword: Joi.string().min(8).max(100).required(),
+    otp: Joi.number().required()
+})
+
+router.FORGOT_PASSWORD_MODEL = FORGOT_PASSWORD_MODEL;
+router.RESET_PASSWORD_MODEL = RESET_PASSWORD_MODEL;
 
 module.exports = router;

@@ -13,7 +13,14 @@ const registerQueueRoutes = require("./Employee/QueueRoutes");
 const registerPatientRecordsRoutes = require("./Employee/PatientRecords");
 const registerMessagesRoutes = require("./MessagesRoutes");
 const authenticateToken = require("./authmiddleware");
+
+// login limiter
+const errorHandler = require('./Utils/errorHandler');
 const rateLimit = require("express-rate-limit");
+
+
+// forgot + reset pass
+const router = require('./userRoutes');
 
 const app = express();
 
@@ -30,6 +37,10 @@ const loginLimiter = rateLimit({
 });
 app.use(express.json());
 app.use(cors());
+
+// forgot + reset pass
+app.use(express.urlencoded({ extended: false }));
+app.use('/api/user', router);
 
 app.use('/api/auth/login', loginLimiter);
 app.use('/api/auth', authRoutes);
@@ -92,6 +103,9 @@ app.get('/api/patients/:id', async (req, res) => {
         res.status(500).json({error: "Internal Server Error"});
     }
 });
+
+// send help
+app.use(errorHandler);
 
 const PORT = 3000;
 app.listen(PORT, () => {
