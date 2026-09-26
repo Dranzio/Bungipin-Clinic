@@ -7,6 +7,9 @@ const db = require('./db');
 //  DENIED DIRECT PAGE ACCESS VIA URL
 const authenticateToken = require('./authmiddleware');
 
+// LOGIN ATTEMPT SECURITY
+const loginAttempts = require('./loginAttemptStore');
+
 // forgot + reset password
 const Joi = require('@hapi/joi');
 
@@ -93,10 +96,21 @@ router.post('/register', async (req, res) => {
 
 // POST /api/auth/login
 router.post('/login', async (req, res) => {
-    const { email, password } = req.body;
+    // LOGIN ATTEMPT SECURITY
+    // additional security for email input
+    const email = String(req.body.email || '').trim().toLowerCase();
+    const { password } = req.body;
 
     if (!email || !password) {
         return res.status(400).json({ error: 'Email and password are required' });
+    }
+
+    // LOGIN ATTEMPT SECURITY
+    // error display when attempt goes over 3 and email exists in system
+    if (loginAttempts.isLocked(email)) {
+        return res.status(429).json({
+            error: 'Please contact an administrator to reset your session.'
+        });
     }
 
     try {
@@ -104,7 +118,9 @@ router.post('/login', async (req, res) => {
         const user = rows[0];
 
         if (!user) {
-            return res.status(401).json({ error: 'Invalid email or password' });
+            // LOGIN ATTEMPT SECURITY
+            // error display when user inputs email that doesn't exist in system
+            return res.status(401).json({ error: 'Email does not exist in the system.' });
         }
 
         if (user.account_status === 'suspended') {
@@ -113,8 +129,22 @@ router.post('/login', async (req, res) => {
 
         const match = await bcrypt.compare(password, user.password_hash);
         if (!match) {
-            return res.status(401).json({ error: 'Invalid email or password' });
+            // LOGIN ATTEMPT SECURITY
+            // error display when attempt goes over 3 and email is not in the system
+            const state = loginAttempts.recordFailure(email);
+            if (state.failures >= 3) {
+                return res.status(429).json({
+                    error: 'Please contact an administrator to reset your session.'
+                });
+            }
+            // LOGIN ATTEMPT SECURITY
+            // error display when password input is incorrect for existing email
+            return res.status(401).json({ error: 'Incorrect password.' });
         }
+
+        // LOGIN ATTEMPT SECURITY
+        // resets session for email input that exists in system
+        loginAttempts.clear(email);
 
         const token = jwt.sign(
             { user_id: user.user_id, role: user.role, public_id: user.public_id },

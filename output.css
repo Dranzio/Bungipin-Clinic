@@ -2251,6 +2251,9 @@
   .disabled\:bg-gray-400:disabled {
     background-color: var(--color-gray-400);
   }
+  .disabled\:bg-gray-300:disabled {
+    background-color: var(--color-gray-300);
+  }
   .disabled\:text-\[\#2A1001\]:disabled {
     color: #2A1001;
   }

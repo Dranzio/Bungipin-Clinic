@@ -1,6 +1,8 @@
 const bcrypt = require('bcrypt');
 const crypto = require('crypto');
 const authenticateToken = require('../authmiddleware');
+// LOGIN ATTEMPT SECURITY
+const loginAttempts = require('../loginAttemptStore');
 
 const SALT_ROUNDS = 10;
 
@@ -23,7 +25,12 @@ const USER_SELECT = `
 
 async function fetchUser(conn, userId) {
     const [rows] = await conn.query(`${USER_SELECT} WHERE u.user_id = ?`, [userId]);
-    return rows[0] || null;
+
+    // LOGIN ATTEMPT SECURITY
+    // checks if the email of that user is locked for attempts
+    return rows[0]
+        ? { ...rows[0], login_locked: Boolean(loginAttempts.isLocked(rows[0].email)) }
+        : null;
 }
 
 function registerUserManagementRoutes(app, db) {
@@ -32,7 +39,13 @@ function registerUserManagementRoutes(app, db) {
     app.get('/api/users', authenticateToken, requireAdmin, async (req, res) => {
         try {
             const [rows] = await db.query(`${USER_SELECT} ORDER BY u.user_id`);
-            res.json(rows);
+
+            // LOGIN ATTEMPT SECURITY
+            // checks if the email of that user is locked for attempts
+            res.json(rows.map(user => ({
+                ...user,
+                login_locked: Boolean(loginAttempts.isLocked(user.email))
+            })));
         } catch (err) {
             console.error('User list error:', err);
             res.status(500).json({ message: 'Internal Server Error' });
@@ -192,6 +205,28 @@ function registerUserManagementRoutes(app, db) {
             res.json({ user_id: userId, account_status });
         } catch (err) {
             console.error('Status update error:', err);
+            res.status(500).json({ message: 'Internal Server Error' });
+        }
+    });
+
+    // LOGIN ATTEMPT SECURITY
+    // POST /api/users/:id/reset-login-lock — clear the server-side login lock.
+    app.post('/api/users/:id/reset-login-lock', authenticateToken, requireAdmin, async (req, res) => {
+        const userId = Number(req.params.id);
+        if (!Number.isInteger(userId)) {
+            return res.status(400).json({ message: 'Invalid user id' });
+        }
+
+        try {
+            const [rows] = await db.query('SELECT email FROM users WHERE user_id = ?', [userId]);
+            if (rows.length === 0) {
+                return res.status(404).json({ message: 'User not found' });
+            }
+
+            loginAttempts.clear(rows[0].email);
+            res.json({ message: 'Login session reset successfully', user_id: userId });
+        } catch (err) { 
+            console.error('Login lock reset error:', err);
             res.status(500).json({ message: 'Internal Server Error' });
         }
     });
