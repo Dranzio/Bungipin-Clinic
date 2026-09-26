@@ -64,21 +64,31 @@ registerDashboardRoutes(app, db);
 function requirePageRole(requiredRole) {
     return (req, res, next) => {
         if (req.user.role !== requiredRole) {
-            return res.redirect('/');
+            return res.redirect('/denied.html');
         }
         next();
     };
 }
 
 // DENIES DIRECT PAGE VIA URL
-app.use('/Admin', authenticateToken, requirePageRole('admin'));
-app.use('/Employee', authenticateToken, requirePageRole('employee'));
-app.use('/Customer', authenticateToken, requirePageRole('patient'));
+app.use('/uploads', authenticateToken, express.static(path.join(__dirname, 'uploads')));
+app.use('/assets', express.static(path.join(__dirname, 'assets')));
+app.use('/images', express.static(path.join(__dirname, 'images')));
+app.get('/output.css', (req, res) => {
+    res.sendFile(path.join(__dirname, 'output.css'));
+});
+app.get('/pageProtection.js', (req, res) => {
+    res.sendFile(path.join(__dirname, 'pageProtection.js'));
+});
+app.use('/LogInRegister', express.static(path.join(__dirname, 'LogInRegister')));
 
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-app.use(express.static(path.join(__dirname)));
-app.use(express.static(path.join(__dirname, "images")));
-app.use(express.static(path.join(__dirname, "LogInRegister")));
+app.use('/Admin', authenticateToken, requirePageRole('admin'), express.static(path.join(__dirname, 'Admin')));
+app.use('/Employee', authenticateToken, requirePageRole('employee'), express.static(path.join(__dirname, 'Employee')));
+app.use('/Customer', authenticateToken, requirePageRole('patient'), express.static(path.join(__dirname, 'Customer')));
+app.use('/Taskbar', authenticateToken, express.static(path.join(__dirname, 'Taskbar')));
+app.get('/denied.html', (req, res) => {
+    res.sendFile(path.join(__dirname, 'denied.html'));
+});
 app.get("/", (req, res) => {
     res.sendFile(path.join(__dirname, "LogInRegister", "login.html"));
 });

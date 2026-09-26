@@ -9,6 +9,7 @@
                 ? 'patient'
                 : null;
     const loginUrl = `/LogInRegister/login.html?returnUrl=${encodeURIComponent(window.location.pathname)}`;
+    const deniedUrl = '/denied.html';
 
     document.documentElement.style.visibility = 'hidden';
 
@@ -36,7 +37,7 @@
 
             const user = await response.json();
             if (requiredRole && user.role !== requiredRole) {
-                window.location.replace('/');
+                window.location.replace(deniedUrl);
                 return;
             }
 
