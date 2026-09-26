@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About Us</title>
+      <link href="../output.css" rel="stylesheet">
+</head>
+<body class="font-poppins bg-[#F5F1E7] text-[#2A1001] antialiased overflow-x-hidden">
+<div class="w-full px-4 pt-6 md:pt-10 absolute top-0 z-50 flex justify-center font-poppins">
+
+    <!-- The Pill Navbar Container -->
+    <nav class="bg-[#8A925F] rounded-[32px] md:rounded-[40px] w-full max-w-5xl flex flex-col md:flex-row items-center justify-between px-4 md:px-6 py-4 md:py-5 shadow-lg relative">
+
+        <!-- Logo (on top for mobile, centered/absolute for desktop) -->
+        <div class="w-16 h-16 md:w-32 md:h-32 rounded-full flex items-center justify-center 
+                    md:absolute md:left-1/2 md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:z-10 mb-2 md:mb-0">
+            <img src="../assets/logowithtitle.png" alt="Bungipin Logo" class="w-full h-full object-contain drop-shadow-md" />
+        </div>
+
+        <!-- MOBILE: All links visible, wrap freely, always clickable -->
+        <div class="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 md:hidden">
+            <a href="home.html" class="text-[#2A1001] font-extrabold text-sm tracking-wide hover:text-white transition-colors duration-200">Home</a>
+            <a href="aboutus.html" class="text-[#2A1001] font-extrabold text-sm tracking-wide hover:text-white transition-colors duration-200">About Us</a>
+            <a href="contact.html" class="text-[#2A1001] font-extrabold text-sm tracking-wide hover:text-white transition-colors duration-200">Contact Us</a>
+              <a href="/LoginRegister/login.html" class="text-[#2A1001] font-extrabold text-sm tracking-wide hover:text-white transition-colors duration-200">Account</a>
+        </div>
+
+        <!-- DESKTOP: Left Links -->
+        <div class="hidden md:flex flex-1 justify-end gap-6 md:gap-14 mr-16 md:mr-24">
+            <a href="home.html" class="text-[#2A1001] font-extrabold text-sm md:text-[20px] tracking-wide hover:text-white transition-colors duration-200">Home</a>
+            <a href="aboutus.html" class="text-[#2A1001] font-extrabold text-sm md:text-[20px] tracking-wide hover:text-white transition-colors duration-200">About Us</a>
+        </div>
+
+        <!-- DESKTOP: Right Links -->
+        <div class="hidden md:flex flex-1 justify-start gap-6 md:gap-14 ml-16 md:ml-24">
+            <a href="contact.html" class="text-[#2A1001] font-extrabold text-sm md:text-[20px] tracking-wide hover:text-white transition-colors duration-200">Contact Us</a>
+              <a href="/LoginRegister/login.html" class="text-[#2A1001] font-extrabold text-sm md:text-[20px] tracking-wide hover:text-white transition-colors duration-200">Account</a>
+        </div>
+
+    </nav>
+</div>
+
+<!-- ===== ABOUT US SECTION ===== -->
+<section class="pt-40 md:pt-56 pb-16 bg-[#F5F1E7]">
+  <div class="max-w-5xl mx-auto px-6">
+    <div class="bg-[#D3DCBE] rounded-[32px] p-8 md:p-12">
+      <h1 class="text-3xl md:text-4xl font-extrabold text-[#2A1001] text-center mb-8">ABOUT US</h1>
+
+      <p class="text-[#2A1001] text-sm md:text-base leading-relaxed text-center max-w-3xl mx-auto mb-6">
+        Bungipin was born from a shared dream among five college students who believed everyone deserves a confident smile.
+      </p>
+
+      <p class="text-[#2A1001] text-sm md:text-base leading-relaxed text-center max-w-3xl mx-auto mb-6">
+        Surviving late-night coding sessions and mounting academic stress on coffee and shared laughter, they noticed something profound: even when completely exhausted, a simple reassuring grin completely shifted the room's energy. They realized firsthand how much a healthy smile impacts a person's self-esteem and resilience.
+      </p>
+
+      <p class="text-[#2A1001] text-sm md:text-base leading-relaxed text-center max-w-3xl mx-auto">
+        Recognizing how intimidating traditional healthcare could be, they set out to bridge the gap between modern technology and compassionate dentistry. What started as an ambitious college project has evolved into a modern dental clinic dedicated to restoring your teeth. By combining a welcoming environment with streamlined digital booking and professional care, our goal is simple: bringing back the smile and confidence you deserve in every visit.
+      </p>
+    </div>
+  </div>
+</section>
+<!-- ===== THE TEAM SECTION ===== -->
+<section class="pb-20 bg-[#F5F1E7]">
+  <div class="max-w-5xl mx-auto px-6 text-center">
+    <h2 class="text-3xl md:text-4xl font-extrabold text-[#2A1001] mb-4">THE TEAM</h2>
+    <p class="text-[#2A1001]/80 text-sm md:text-base max-w-2xl mx-auto mb-12">
+      Meet the passionate minds behind Bungipin—five college creators blending technology, care, and late-night dedication to bring you a better dental experience.
+    </p>
+
+    <!-- Top row: 3 members -->
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-10 mb-10 max-w-3xl mx-auto">
+
+      <div class="flex flex-col items-center">
+        <!-- Enlarged container -->
+        <div class="w-32 h-32 md:w-40 md:h-40 rounded-full bg-white shadow-md flex items-center justify-center mb-4 overflow-hidden">
+            <img src="../assets/bonnie.jpg" alt="Andrew Philip Bogtae" class="w-full h-full object-cover" />
+        </div>
+        <p class="font-bold text-[#2A1001] text-sm md:text-base">Andrew Philip Bogtae</p>
+      </div>
+
+      <div class="flex flex-col items-center">
+        <!-- Enlarged container -->
+        <div class="w-32 h-32 md:w-40 md:h-40 rounded-full bg-white shadow-md flex items-center justify-center mb-4 overflow-hidden">
+            <img src="../assets/coleen.jpg" alt="Venus Coleen Silvestre" class="w-full h-full object-cover" />
+        </div>
+        <p class="font-bold text-[#2A1001] text-sm md:text-base">Venus Coleen Silvestre</p>
+      </div>
+
+      <div class="flex flex-col items-center">
+        <!-- Enlarged container -->
+        <div class="w-32 h-32 md:w-40 md:h-40 rounded-full bg-white shadow-md flex items-center justify-center mb-4 overflow-hidden">
+            <img src="../assets/eugene.jpg" alt="Eugene Ross Aquino" class="w-full h-full object-cover" />
+        </div>
+        <p class="font-bold text-[#2A1001] text-sm md:text-base">Eugene Ross Aquino</p>
+      </div>
+
+    </div>
+
+    <!-- Bottom row: 2 members, centered -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-10 max-w-xl mx-auto">
+
+      <div class="flex flex-col items-center">
+        <!-- Enlarged container -->
+        <div class="w-32 h-32 md:w-40 md:h-40 rounded-full bg-white shadow-md flex items-center justify-center mb-4 overflow-hidden">
+            <img src="../assets/jeremiah.jfif" alt="Jeremiah George Pidlaoan" class="w-full h-full object-cover" />
+        </div>
+        <p class="font-bold text-[#2A1001] text-sm md:text-base">Jeremiah George Pidlaoan</p>
+      </div>
+
+      <div class="flex flex-col items-center">
+        <!-- Enlarged container -->
+        <div class="w-32 h-32 md:w-40 md:h-40 rounded-full bg-white shadow-md flex items-center justify-center mb-4 overflow-hidden">
+            <img src="../assets/eli.jfif" alt="Arcelijah Sophia Danielle Santos" class="w-full h-full object-cover" />
+        </div>
+        <p class="font-bold text-[#2A1001] text-sm md:text-base">Arcelijah Sophia Danielle Santos</p>
+      </div>
+
+    </div>
+  </div>
+</section>
+<!-- ===== FOOTER ===== -->
+  <!-- Added the solid dark footer block with your contact info -->
+<footer class="w-full bg-[#8A925F] py-8 px-6 sm:px-12">
+  <div class="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6 md:gap-4">
+
+    <!-- Logo + Copyright Info -->
+    <div class="flex flex-col sm:flex-row items-center gap-3 text-center sm:text-left">
+      <img src="../assets/logowithtitle.png" alt="Bungipin Logo" class="w-12 h-12 object-contain flex-shrink-0" />
+      <div>
+        <p class="text-white font-bold text-sm mb-1">Bungipin Dental Clinic</p>
+        <p class="text-gray-300 text-xs">© 2026 Makati City · All Rights Reserved</p>
+      </div>
+    </div>
+
+    <!-- Contact Info -->
+    <div class="text-center md:text-right">
+      <p class="text-white text-xs mb-1">Hotline: (02) 8123-4567</p>
+      <p class="text-white text-xs">
+        Email:
+        <a href="mailto:dentalclinic@bungipin.com" class="hover:text-yellow-300 transition-colors">
+          dentalclinic@bungipin.com
+        </a>
+      </p>
+    </div>
+
+  </div>
+</footer>
+
+</body>
+</html>

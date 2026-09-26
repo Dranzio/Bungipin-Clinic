@@ -66,3 +66,21 @@ body {
     font-weight: 700;
     border-bottom: 2.5px solid #2A1001;
 }
+
+.faq-panel {
+  display: grid !important;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transition: grid-template-rows 0.35s ease-in-out, opacity 0.3s ease-in-out;
+}
+ 
+details[open] > .faq-panel {
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+ 
+/* Inner wrapper clips the content while it's collapsing/expanding */
+.faq-panel-inner {
+  overflow: hidden;
+  min-height: 0;
+}
