@@ -156,8 +156,10 @@ function syncContentOffset() {
             <!-- Address (EDITABLE) -->
             <div class="flex flex-col gap-1.5">
               <label for="address" class="text-[11px] font-extrabold tracking-wider text-[#2A1001] uppercase">Address:</label>
-              <input type="text" id="address" name="address"
-                class="w-full px-4 py-2.5 rounded-full bg-white text-[#2c3e2b] font-medium text-sm outline-none shadow-inner border border-[#c1ccab] focus:ring-2 focus:ring-[#4a5e3b]/50">
+              <textarea id="address" name="address"
+                rows="1"
+                class="w-full px-4 py-2.5 rounded-[30px] bg-white text-[#2c3e2b] font-medium text-sm outline-none shadow-inner border border-[#c1ccab] focus:ring-2 focus:ring-[#4a5e3b]/50 resize-none break-words overflow-hidden"
+                oninput="this.style.height = 'auto'; this.style.height = this.scrollHeight + 'px';"></textarea>
             </div>
 
             <!-- Phone Number (EDITABLE with 11-digit mask) -->
