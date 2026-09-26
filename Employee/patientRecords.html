@@ -7,11 +7,11 @@
     <script src="../pageProtection.js"></script>
     <title>Patient Records</title>
     <link href="/output.css" rel="stylesheet">
-    <title>Patient Profile</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://kit.fontawesome.com/fc8c3f4103.js" crossorigin="anonymous"></script>
-    <script src="/Taskbar/Customer_Sidebar.js"></script>
+    <script src="/Taskbar/Employee_Sidebar.js"></script>
+    <script src="Messages.js"></script>
 </head>
-
 <body class="min-h-screen md:h-screen md:overflow-hidden bg-[#F3EFE4] relative flex flex-col md:flex-row antialiased">
 
 <!-- SIDEBAR -->
@@ -40,7 +40,7 @@
 
     (async () => {
         try {
-            const response = await fetch('/Taskbar/Customer_Task.html');
+            const response = await fetch('/Taskbar/Employee_Task.html');
             if (response.ok) {
                 const data = await response.text();
                 document.getElementById('sidebar-placeholder').innerHTML = data;
@@ -59,16 +59,15 @@
             console.log('Sidebar fallback:', error);
         }
     })();
-
 </script>
 
-<!-- CONTENT WRAPPER -->
 <div id="main-content" class="flex-1 min-w-0 md:min-h-0 md:overflow-y-auto">
 
+    <!--Header title with logo image-->
+    <div class="flex justify-between items-start pt-5 pl-6 pr-4 md:pl-24 md:pr-8">
 
-    <div class="shrink-0 flex justify-between items-start pt-5 pl-6 pr-4 md:pl-24 md:pr-8">
         <h1 class="text-2xl sm:text-3xl md:text-5xl 2xl:text-[73px] pt-5 font-bold text-[#2A1001] font-['Poppins']">
-            Patient Profile
+            Patient Records
         </h1>
         <img
                 src="../assets/logowithtitle.png"
@@ -77,270 +76,373 @@
     </div>
     <hr class="border-t border-[#2A1001] mt-2 mb-6" />
 
-    <!-- MAIN CONTENT -->
+    <!--boxed so we could contain the search and sort options on top properly-->
+    <div class="flex w-full justify-center gap-1">
 
-    <main class="w-full max-w-5xl mx-auto py-8 px-6 md:px-12">
+        <!--search bar that can filter the table-->
+        <input
+                type="text"
+                id="searchInput"
+                placeholder="Search by name..."
+                class="h-10 w-full max-w-md rounded-full border border-[#2A1001]/20 bg-white px-4 mb-6 outline-none"/>
+
+        <button id="qrBtn" class="h-11 w-11 shrink-0 sflex items-center justify-center rounded-xl bg-[#8A9A6B] hover:bg-[#79885C] transition p-2 mx-5" title="Scan QR (coming soon)"><!---add QR Scanning funtion soon?--->
+            <img src="../assets/scan.png" alt="Scan QR" class="w-full h-full object-contain" />
+        </button>
 
 
-        <!-- PROFILE FORM -->
-        <form id="customer_profile" class="flex flex-col items-center gap-10 sm:gap-12 w-full">
+        <!--sort dropdown that can sort the table by date, month, oldest, recent, year-->
+        <div class="relative">
+            <select id="sortSelect" class="h-11 pl-4 pr-8 shrink-0 flex items-center justify-center rounded-full bg-[#D5C04D] font-bold text-[#2A1001] outline-none cursor-pointer appearance-none">
+                <!-- options of sort now injected by JS via populateSortDropdown() -->
+            </select>
+            <div class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[#2A1001]">▾</div>
+        </div>
 
-            <!-- Section 1: Basic Information -->
-            <div class="relative w-full bg-[#D7E3A5] rounded-2xl p-5 sm:p-7 pt-8 sm:pt-9 shadow-sm border border-[#d2dbbe]">
-          <span class="absolute -top-3.5 left-4 sm:left-6 bg-[#667733] text-white text-[10px] sm:text-xs font-bold px-3 sm:px-4 py-1.5 rounded-full tracking-wider uppercase shadow-sm">
-            Basic Information
-          </span>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 sm:gap-y-5">
+    </div>
 
-                    <!-- First Name (READONLY) -->
-                    <div class="flex flex-col gap-1.5">
-                        <label for="first-name" class="text-[11px] font-extrabold tracking-wider text-[#2A1001] uppercase">First Name:</label>
-                        <input type="text" id="first-name" name="first_name" readonly
-                               class="w-full px-4 py-2.5 rounded-full bg-[#dedede] text-[#2c3e2b]/70 font-semibold text-sm outline-none shadow-inner cursor-not-allowed border border-black/10">
+
+    <!-- Patient Records Table -->
+    <div class="overflow-x-auto rounded-3xl w-full md:w-[80%] mx-auto shadow-xl">
+        <table class="w-full border-collapse">
+            <thead>
+            <tr class="bg-[#667733] text-white">
+                <th class="text-center py-3 px-6">Patient ID</th>
+                <th class="text-center py-3 px-6">Name</th>
+                <th class="text-center py-3 px-6">Last Visit</th>
+                <th class="text-center py-3 px-6"></th>
+            </tr>
+            </thead>
+            <tbody id="tableBody" class="bg-[#ECF5E2]">
+            <!-- record rows injected by JS -->
+            </tbody>
+        </table>
+    </div>
+
+    <!-- pagination -->
+    <div class="flex justify-center gap-2 my-8" id="pagination">
+
+    </div>
+
+    <div id="patientModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-[#F3EFE4] rounded-3xl w-full max-w-3xl max-h-[90vh] overflow-y-auto p-5 sm:p-8 border border-[#2A1001]/20 shadow-2xl relative">
+
+            <button id="closeModal" class="absolute top-4 right-4 text-3xl font-bold text-[#2A1001] hover:opacity-60 cursor-pointer z-50 p-2">
+                &times;
+            </button>
+            <h2 class="text-2xl md:text-3xl font-bold text-[#2A1001] font-['Poppins'] mb-6">Patient Records</h2>
+
+            <div class="bg-[#D3DCBE] rounded-3xl p-6 md:p-8">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                    <!-- model of full patient record to be gathered from profile-->
+
+                    <div>
+                        <label class="block font-semibold text-[#2A1001] text-sm mb-1">First Name:</label>
+                        <div id="mFirstName" class="w-full h-10 px-4 rounded-full bg-white/70 flex items-center text-[#2A1001]"></div>
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-[#2A1001] text-sm mb-1">Last Name:</label>
+                        <div id="mLastName" class="w-full h-10 px-4 rounded-full bg-white/70 flex items-center text-[#2A1001]"></div>
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-[#2A1001] text-sm mb-1">Sex:</label>
+                        <div id="mSex" class="w-full h-10 px-4 rounded-full bg-white/70 flex items-center text-[#2A1001]"></div>
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-[#2A1001] text-sm mb-1">Birthday:</label>
+                        <div id="mBirthday" class="w-full h-10 px-4 rounded-full bg-white/70 flex items-center text-[#2A1001]"></div>
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-[#2A1001] text-sm mb-1">Email:</label>
+                        <div id="mEmail" class="w-full h-10 px-4 rounded-full bg-white/70 flex items-center text-[#2A1001]"></div>
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-[#2A1001] text-sm mb-1">Phone Number:</label>
+                        <div id="mPhone" class="w-full h-10 px-4 rounded-full bg-white/70 flex items-center text-[#2A1001]"></div>
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-[#2A1001] text-sm mb-1">Civil Status:</label>
+                        <div id="mCivilStatus" class="w-full h-10 px-4 rounded-full bg-white/70 flex items-center text-[#2A1001]"></div>
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-[#2A1001] text-sm mb-1">Pre-existing Health Conditions:</label>
+                        <div id="mHealthConditions" class="w-full h-10 px-4 rounded-full bg-white/70 flex items-center text-[#2A1001]"></div>
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-[#2A1001] text-sm mb-1">Pregnancy Status:</label>
+                        <div id="mPregnancy" class="w-full h-10 px-4 rounded-full bg-white/70 flex items-center text-[#2A1001]"></div>
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-[#2A1001] text-sm mb-1">Current Prescriptions:</label>
+                        <div id="mPrescriptions" class="w-full h-10 px-4 rounded-full bg-white/70 flex items-center text-[#2A1001]"></div>
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="block font-semibold text-[#2A1001] text-sm mb-1">Allergies / Maternal Allergies:</label>
+                        <div id="mAllergies" class="w-full h-10 px-4 rounded-full bg-white/70 flex items-center text-[#2A1001]"></div>
                     </div>
 
-                    <!-- Last Name (READONLY) -->
-                    <div class="flex flex-col gap-1.5">
-                        <label for="last-name" class="text-[11px] font-extrabold tracking-wider text-[#2A1001] uppercase">Last Name:</label>
-                        <input type="text" id="last-name" name="last_name" readonly
-                               class="w-full px-4 py-2.5 rounded-full bg-[#dedede] text-[#2c3e2b]/70 font-semibold text-sm outline-none shadow-inner cursor-not-allowed border border-black/10">
-                    </div>
-
-                    <!-- Sex (READONLY) -->
-                    <div class="flex flex-col gap-1.5">
-                        <label for="sex" class="text-[11px] font-extrabold tracking-wider text-[#2A1001] uppercase">Sex:</label>
-                        <input type="text" id="sex" name="sex" readonly
-                               class="w-full px-4 py-2.5 rounded-full bg-[#dedede] text-[#2c3e2b]/70 font-semibold text-sm outline-none shadow-inner cursor-not-allowed border border-black/10">
-                    </div>
-
-                    <!-- Birthday (EDITABLE) -->
-                    <div class="flex flex-col gap-1.5">
-                        <label for="birthday" class="text-[11px] font-extrabold tracking-wider text-[#2A1001] uppercase">Birthday:</label>
-                        <input type="date" id="birthday" name="birthday"
-                               class="w-full px-4 py-2.5 rounded-full bg-white text-[#2c3e2b] font-medium text-sm outline-none shadow-inner border border-[#c1ccab] focus:ring-2 focus:ring-[#4a5e3b]/50">
-                    </div>
-
-                    <!-- Civil Status (EDITABLE) -->
-                    <div class="flex flex-col gap-1.5">
-                        <label for="civil-status" class="text-[11px] font-extrabold tracking-wider text-[#2A1001] uppercase">Civil Status:</label>
-                        <select id="civil-status" name="civil_status"
-                                class="w-full px-4 py-2.5 rounded-full bg-white text-[#2c3e2b] font-medium text-sm outline-none shadow-inner border border-[#c1ccab] focus:ring-2 focus:ring-[#4a5e3b]/50 cursor-pointer">
-                            <option value="" disabled selected>Select civil status</option>
-                            <option value="Single">Single</option>
-                            <option value="Married">Married</option>
-                            <option value="Divorced">Divorced</option>
-                            <option value="Widowed">Widowed</option>
-                        </select>
-                    </div>
                 </div>
-            </div>
 
-            <!-- Section 2: Contact Information -->
-            <div class="relative w-full bg-[#D7E3A5] rounded-2xl p-5 sm:p-7 pt-8 sm:pt-9 shadow-sm border border-[#d2dbbe]">
-          <span class="absolute -top-3.5 left-4 sm:left-6 bg-[#667733] text-white text-[10px] sm:text-xs font-bold px-3 sm:px-4 py-1.5 rounded-full tracking-wider uppercase shadow-sm">
-            Contact Information
-          </span>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 sm:gap-y-5">
+                <!--ongoing session content form -->
+                <div class="mt-8">
 
-                    <!-- Primary Email (READONLY) -->
-                    <div class="flex flex-col gap-1.5">
-                        <label for="email" class="text-[11px] font-extrabold tracking-wider text-[#2A1001] uppercase">Primary Email:</label>
-                        <input type="email" id="email" name="email" readonly
-                               class="w-full px-4 py-2.5 rounded-full bg-[#dedede] text-[#2c3e2b]/70 font-semibold text-sm outline-none shadow-inner cursor-not-allowed border border-black/10">
+                    <!-- Tab buttons -->
+                    <div class="flex gap-2 border-b-2 border-[#2A1001]/20 mb-6">
+                        <button id="tabSessionBtn" class="tabBtn px-6 py-2.5 font-bold text-[#2A1001] border-b-4 border-[#667733] -mb-0.5 transition">
+                            Today's Session
+                        </button>
+                        <button id="tabHistoryBtn" class="tabBtn px-6 py-2.5 font-bold text-[#2A1001]/50 border-b-4 border-transparent -mb-0.5 hover:text-[#2A1001] transition">
+                            Past Visits
+                        </button>
                     </div>
 
-                    <!-- Secondary Email (EDITABLE) -->
-                    <div class="flex flex-col gap-1.5">
-                        <label for="secondary-email" class="text-[11px] font-extrabold tracking-wider text-[#2A1001] uppercase">Secondary Email:</label>
-                        <input type="email" id="secondary-email" name="secondary_email"
-                               class="w-full px-4 py-2.5 rounded-full bg-white text-[#2c3e2b] font-medium text-sm outline-none shadow-inner border border-[#c1ccab] focus:ring-2 focus:ring-[#4a5e3b]/50">
-                    </div>
+                    <!-- Today's Session Content -->
+                    <div id="tabSessionContent" class="tabContent">
 
-                    <!-- Address (EDITABLE) -->
-                    <div class="flex flex-col gap-1.5">
-                        <label for="address" class="text-[11px] font-extrabold tracking-wider text-[#2A1001] uppercase">Address:</label>
-                        <textarea id="address" name="address"
-                                  rows="1"
-                                  class="w-full px-4 py-2.5 rounded-[30px] bg-white text-[#2c3e2b] font-medium text-sm outline-none shadow-inner border border-[#c1ccab] focus:ring-2 focus:ring-[#4a5e3b]/50 resize-none break-words overflow-hidden"
-                                  oninput="this.style.height = 'auto'; this.style.height = this.scrollHeight + 'px';"></textarea>
-                    </div>
-
-                    <!-- Phone Number (EDITABLE with 11-digit mask) -->
-                    <div class="flex flex-col gap-1.5">
-                        <label for="phone" class="text-[11px] font-extrabold tracking-wider text-[#2A1001] uppercase">Phone Number:</label>
-                        <input type="tel" id="phone" name="phone" placeholder="09XXXXXXXXX" maxlength="11"
-                               class="w-full px-4 py-2.5 rounded-full bg-white text-[#2c3e2b] font-medium text-sm outline-none shadow-inner border border-[#c1ccab] focus:ring-2 focus:ring-[#4a5e3b]/50">
-                    </div>
-                </div>
-            </div>
-
-            <!-- Section 3: Change Password -->
-            <div class="relative w-full bg-[#D7E3A5] rounded-2xl p-5 sm:p-7 pt-8 sm:pt-9 shadow-sm border border-[#d2dbbe]">
-          <span class="absolute -top-3.5 left-4 sm:left-6 bg-[#667733] text-white text-[10px] sm:text-xs font-bold px-3 sm:px-4 py-1.5 rounded-full tracking-wider uppercase shadow-sm">
-            Change Password
-          </span>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 sm:gap-y-5">
-                    <div class="flex flex-col gap-1.5">
-                        <label for="new-password" class="text-[11px] font-extrabold tracking-wider text-[#2A1001] uppercase">New Account Password:</label>
-                        <input type="password" id="new-password" name="new_password" placeholder="Enter New Password"
-                               class="w-full px-4 py-2.5 rounded-full bg-white text-[#2c3e2b] font-medium text-sm outline-none shadow-inner border border-[#c1ccab] focus:ring-2 focus:ring-[#4a5e3b]/50">
-                    </div>
-
-                    <div class="flex flex-col gap-1.5">
-                        <label for="confirm-password" class="text-[11px] font-extrabold tracking-wider text-[#2A1001] uppercase">Confirm Account Password:</label>
-                        <input type="password" id="confirm-password" name="confirm_password" placeholder="Re-enter new password"
-                               class="w-full px-4 py-2.5 rounded-full bg-white text-[#2c3e2b] font-medium text-sm outline-none shadow-inner border border-[#c1ccab] focus:ring-2 focus:ring-[#4a5e3b]/50">
-                    </div>
-                </div>
-            </div>
+                        <!-- Shown when patient has NO ongoing session right now — a session starts
+                             automatically once an employee sets queue_status to 'ongoing' on the
+                             Queue Appointments page; there is nothing for the dentist to click here. -->
+                        <div id="noSessionContent" class="hidden text-center py-12">
+                            <p class="text-[#2A1001]/60 font-semibold mb-4">No ongoing session for this patient right now.</p>
+                            <p class="text-[#2A1001]/40 text-sm">Please wait for the receptionist to update the queue status.</p>
+                        </div>
 
                         <!-- Shown when patient DOES have an ongoing session -->
                         <div id="sessionActiveContent">
                             <div class="grid grid-cols-1 gap-4 mb-6">
+                                <div>
+                                    <label class="block font-semibold text-[#2A1001] text-sm mb-1">Patient's Concern:</label>
+                                    <div id="mPatientNote" class="w-full p-4 rounded-2xl bg-white/70 text-[#2A1001] min-h-[2.5rem]"></div>
+                                </div>
                                 <div>
                                     <label class="block font-semibold text-[#2A1001] text-sm mb-1">Dentist Notes:</label>
                                     <textarea id="mNotes" rows="4" class="w-full p-4 rounded-2xl bg-white text-[#2A1001] outline-none resize-none"></textarea>
                                 </div>
                             </div>
 
-                    <div id="pregnancyStatusWrapper" class="flex flex-col gap-1.5">
-                        <label for="pregnancy-status" class="text-[11px] font-extrabold tracking-wider text-[#2A1001] uppercase">Pregnancy Status:</label>
-                        <select id="pregnancy-status" name="pregnancy_status"
-                                class="w-full px-4 py-2.5 rounded-full bg-white text-[#2c3e2b] font-medium text-sm outline-none shadow-inner border border-[#c1ccab] focus:ring-2 focus:ring-[#4a5e3b]/50 cursor-pointer">
-                            <option value="N/A">N/A / Male</option>
-                            <option value="1-3 Months">1-3 Months</option>
-                            <option value="4-6 Months">4-6 Months</option>
-                            <option value="7-9 Months">7-9 Months</option>
-                        </select>
-                    </div>
 
-                    <div id="prescriptionsWrapper" class="flex flex-col gap-1.5 md:col-span-2">
-                        <label class="text-[11px] font-extrabold tracking-wider text-[#2A1001] uppercase">Current Prescriptions:</label>
-                        <div id="prescriptionsList" class="flex flex-wrap items-start gap-2 mb-1"></div>
-                        <div class="flex flex-col sm:flex-row gap-2">
 
-                            <input type="text" id="medicationNameInput" placeholder="Medication name"
-                                   class="min-w-0 flex-1 px-4 py-2.5 rounded-full bg-white text-[#2c3e2b] font-medium text-sm outline-none shadow-inner border border-[#c1ccab] focus:ring-2 focus:ring-[#4a5e3b]/50" maxlength="30">
+                            <!-- X-ray upload -->
+                            <div class="mb-6">
+                                <label class="block font-semibold text-[#2A1001] text-sm mb-2">Upload Today's X-Rays:</label>
+                                <div id="xrayDropZone" class="border-2 border-dashed border-[#2A1001]/40 rounded-2xl bg-white/60 py-10 flex flex-col items-center justify-center cursor-pointer hover:bg-white/80 transition">
+                                    <span class="text-[#2A1001] font-semibold text-center px-4" id="xrayLabel">Click to upload X-ray images</span>
+                                    <input type="file" id="xrayInput" accept="image/*" multiple class="hidden" />
+                                </div>
 
-                            <input type="text" id="dosageInput" placeholder="Dosage (optional)"
-                                   class="min-w-0 sm:w-40 px-4 py-2.5 rounded-full bg-white text-[#78705a] font-medium text-sm outline-none shadow-inner border border-[#c1ccab] focus:ring-2 focus:ring-[#4a5e3b]/50" maxlength="15">
+                                <!-- LIVE PREVIEW: shows a thumbnail of every X-ray uploaded this session -->
+                                <div id="sessionXrayPreview" class="flex flex-wrap gap-3 mt-4"></div>
+                            </div>
 
-                            <button type="button" id="addPrescriptionBtn"
-                                    class="shrink-0 w-full sm:w-auto px-4 py-2.5 whitespace-nowrap rounded-full bg-[#667733] hover:bg-[#556022] text-white font-bold text-sm transition">+ Add</button>
+                            <div class="flex justify-center gap-3 flex-wrap">
+                                <button id="saveSessionBtn" class="bg-[#667733] hover:bg-[#556022] transition text-white font-bold px-8 py-3 rounded-full">
+                                    Save Appointment
+                                </button>
+
+                                <!--REMOVE THIS BUTTON WHEN IMPLEMENTED IN BACKEND! FOR MOCK UP ONLY RAHHHHH=======================================================================================look-->
+                                <button id="completeSessionBtn" class="bg-[#D5C04D] hover:bg-[#c2ad3c] transition text-[#2A1001] font-bold px-8 py-3 rounded-full">
+                                    Complete Visit
+                                </button>
+                            </div>
                         </div>
                     </div>
 
-                    <div class="flex flex-col gap-1.5 md:col-span-2">
-                        <label class="text-[11px] font-extrabold tracking-wider text-[#2A1001] uppercase">Allergies / Historical Allergies:</label>
-                        <div id="allergiesList" class="flex flex-wrap gap-2 mb-1"></div>
-                        <div class="flex gap-2">
-                            <input type="text" id="allergenInput" placeholder="e.g. Penicillin"
-                                   class="flex-1 px-4 py-2.5 rounded-full bg-white text-[#2c3e2b] font-medium text-sm outline-none shadow-inner border border-[#c1ccab] focus:ring-2 focus:ring-[#4a5e3b]/50" maxlength="30">
-                            <button type="button" id="addAllergyBtn"
-                                    class="shrink-0 px-4 rounded-full bg-[#667733] hover:bg-[#556022] text-white font-bold text-sm transition">+ Add</button>
+                    <!--patient history visits -->
+                    <div id="tabHistoryContent" class="tabContent hidden">
+
+
+                        <!-- The existing visit history list -->
+                        <h3 class="font-bold text-[#2A1001] mb-3">Previous Appointments</h3>
+                        <div id="visitHistoryList" class="max-h-80 overflow-y-auto pr-2 space-y-3">
+                            <!-- past visit cards injected by JS -->
                         </div>
                     </div>
                 </div>
-            </div>
-
-
-            <!-- Upload PDF Section -->
-            <div id="pdfDropZone" class="w-full bg-[#e3e8d8] rounded-2xl p-5 sm:p-8 border-2 border-dashed border-[#4a5e3b]/50 flex flex-col items-center justify-center gap-4 min-h-[180px] sm:min-h-[220px] cursor-pointer hover:bg-[#dbe4cb] transition">
-                <div class="flex flex-col sm:flex-row items-center gap-3 text-center sm:text-left">
-                    <p class="text-[#2c3e2b] font-bold text-sm sm:text-base">
-                        Click to upload a PDF of your medical conditions
-                    </p>
-                    <img src="../assets/logowithtitle.png" alt="Clinic Logo" class="w-8 h-8 sm:w-10 sm:h-10 object-contain">
+                <!-- visit x-ray modal -->
+                <div id="visitXrayModal" class="hidden fixed inset-0 bg-black/60 z-[60] flex items-center justify-center p-4">
+                    <div class="bg-[#F3EFE4] rounded-3xl w-full max-w-2xl max-h-[85vh] overflow-y-auto p-6 relative">
+                        <button id="closeVisitXrayModal" class="absolute top-4 right-4 text-2xl font-bold text-[#2A1001] hover:opacity-60">&times;</button>
+                        <h3 class="text-xl font-bold text-[#2A1001] mb-1" id="visitXrayModalDate"></h3>
+                        <p class="text-sm text-[#2A1001]/60 mb-4" id="visitXrayModalService"></p>
+                        <div id="visitXrayModalGrid" class="grid grid-cols-2 sm:grid-cols-3 gap-3"></div>
+                    </div>
                 </div>
-                <input type="file" id="medical-pdf-upload" accept=".pdf" class="hidden">
-                <p id="uploadStatus" class="hidden text-sm font-semibold"></p>
+
+                <!--Image viewer-->
+                <div id="fullImageViewer" class="hidden fixed inset-0 bg-black/95 z-[70] p-6 sm:p-12">
+                    <!-- Changed to fixed positioning so the close button never disappears -->
+                    <button id="closeFullImageBtn" class="fixed top-4 right-6 text-white text-5xl hover:text-gray-300 transition cursor-pointer z-[80]">&times;</button>
+
+                    <!-- This wrapper forces the image to perfectly fit the screen size -->
+                    <div class="w-full h-full flex items-center justify-center">
+                        <img id="fullImageSrc" src="" class="max-w-full max-h-full object-contain rounded-lg shadow-2xl" />
+                    </div>
+                </div>
+
+
+                <div class="flex justify-center mt-8 gap-4 flex-wrap">
+                    <button id="showQrCodeBtn" class="bg-[#D5C04D] hover:bg-[#c2ad3c] transition text-[#2A1001] font-bold px-8 py-3 rounded-full">
+                        Show QR Code
+                    </button>
+
+                    <div id="qrModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 1000;">
+                        <div style="background: white; padding: 20px; border-radius: 8px; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.3); max-width: 300px;">
+                            <h3 style="margin-top: 0; font-family: sans-serif;">Your QR Code</h3>
+                            <div id="qrCodeContainer"></div>
+                            <button id="closeQrBtn" style="margin-top: 15px; padding: 8px 16px; cursor: pointer;">Close</button>
+                        </div>
+                    </div>
+
+                    <button id="printPdfBtn" class="bg-[#D5C04D] hover:bg-[#c2ad3c] transition text-[#2A1001] font-bold px-8 py-3 rounded-full">
+                        Print PDF
+                    </button>
+                </div>
+
+                <div id="saveConfirmation" class="hidden text-center mt-4 text-green-800 font-semibold">
+                    Changes saved!
+                </div>
             </div>
 
-
-            <!-- Submit Button -->
-            <button type="submit" class="z-10 bg-[#D5C04D] hover:bg-[#F6F2DB] text-[#2A1001] font-black text-xl px-12 py-3 rounded-full shadow-md active:scale-95 transition transform">
-                Update Changes
-            </button>
-
-        </form>
-
-        <!-- Success Message -->
-        <div id="successMessage"
-             class="hidden text-center mt-4 p-4 bg-green-100 border border-green-400 text-green-800 rounded-2xl font-poppins">
-            Profile Changes Updated Successfully!
         </div>
-
-    </main>
+    </div>
 
 </div>
 
 <script>
-    // Escapes HTML special characters so untrusted data (health conditions, allergies,
-    // prescriptions typed by the patient, or loaded back from the server) can never break
-    // out of HTML content or attribute context when interpolated into innerHTML.
-    const escHtml = s => String(s ?? '').replace(/[&<>"']/g, c =>
-        ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-
-    const form = document.getElementById('customer_profile');
-    const newPassword = document.getElementById('new-password');
-    const confirmPassword = document.getElementById('confirm-password');
-    const phoneInput = document.getElementById('phone');
-    const successMessage = document.getElementById('successMessage');
-
-    const birthdayInput = document.getElementById('birthday');
-    const today = new Date();
-    const todayString = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-    birthdayInput.max = todayString;
 
 
-    // Show/hide Pregnancy Status and move Current Prescriptions
-    // depending on the patient's sex. M = male, F = female.
-    function updateMedicalLayout() {
-        const sex = document.getElementById('sex').value;
-        const pregnancyWrapper = document.getElementById('pregnancyStatusWrapper');
-        const prescriptionsWrapper = document.getElementById('prescriptionsWrapper');
+    //  Use this code when there is backend =============================================================================================================================================LOOK HEREEEE
+    let patients = [];
 
-        if (!pregnancyWrapper || !prescriptionsWrapper) return;
+    async function loadPatientsFromDatabase() {
+        try {
+            const token = localStorage.getItem('userToken');
+            const response = await fetch('http://localhost:3000/api/patients', {
+                method: 'GET',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
 
-        if (sex === 'M') {
-            pregnancyWrapper.classList.add('hidden');
-            prescriptionsWrapper.classList.remove('md:col-span-2');
-        } else if (sex === 'F') {
-            pregnancyWrapper.classList.remove('hidden');
-            prescriptionsWrapper.classList.add('md:col-span-2');
+            if (!response.ok) throw new Error(`Server error: ${response.status}`);
+
+            patients = await response.json();
+            populateSortDropdown();
+            renderTable();
+        } catch (error) {
+            console.error("Failed to load patient records:", error);
         }
     }
 
-    // EXPANDABLE LISTS — health conditions, prescriptions, allergies
-    // Each patient can have MULTIPLE of these
+    loadPatientsFromDatabase();
 
-    //array of strings
-    let healthConditions = [];
-    let allergies = [];
-    let prescriptions = [];
+    // Sample patient data — swap for real data from a backend later DELETE LATER RAHHHHHHHHH ================================================================================== LOOK HERE
+    // let patients = [
+    //     {
+    //         patient_id: 1,
+    //         public_id: "PAT-0001",
+    //         first_name: "Juan",
+    //         last_name: "Dela Cruz",
+    //         sex: "Male",
+    //         birthday: "1990-05-14",
+    //         email: "juan.delacruz@email.com",
+    //         phone: "0917 123 4567",
+    //         civil_status: "Single",
+    //         pregnancy_status: "N/A",
+    //         health_conditions: [{ description: "None" }],
+    //         allergies: [{ allergen: "Penicillin" }],
+    //         prescriptions: [],
+    //         xrays: [
+    //
+    //             { appointment_id: 150, file_url: "https://images.unsplash.com/photo-1516549655169-df83a0774514?w=300" }
+    //         ],
+    //         last_visit: "2025-09-10",
+    //         ongoing_appointment: {
+    //             appointment_id: 201,
+    //             dentist_note: "",
+    //             patient_note: "Tooth pain, upper left molar"
+    //         },
+    //         past_appointments: [
+    //             { appointment_id: 150, appointment_date: "2025-06-02", service_label: "Checkup", dentist_note: "No issues found.", patient_note: "Routine checkup" }
+    //         ]
+    //     },
+    //     {
+    //         patient_id: 2,
+    //         public_id: "PAT-0002",
+    //         first_name: "Maria",
+    //         last_name: "Santos",
+    //         sex: "Female",
+    //         birthday: "1995-08-22",
+    //         email: "maria.santos@email.com",
+    //         phone: "0918 987 6543",
+    //         civil_status: "Married",
+    //         pregnancy_status: "2nd Trimester",
+    //         health_conditions: [{ description: "Asthma" }],
+    //         allergies: [{ allergen: "None" }],
+    //         prescriptions: [{ medication_name: "Albuterol inhaler", dosage: "As needed" }],
+    //         xrays: [
+    //
+    //             { appointment_id: 140, file_url: "https://images.unsplash.com/photo-1588776814546-1ffcf47267a5?w=300" }
+    //         ],
+    //         last_visit: "2025-10-15",
+    //         ongoing_appointment: {
+    //             appointment_id: 202,
+    //             dentist_note: "",
+    //             patient_note: "Reporting gum sensitivity during brushing"
+    //         },
+    //         past_appointments: [
+    //             { appointment_id: 140, appointment_date: "2025-10-15", service_label: "Cleaning", dentist_note: "Mild plaque buildup.", patient_note: "Regular cleaning" }
+    //         ]
+    //     }
+    // ];
+    let currentPatientId = null;
 
-    // Generic renderer for simple string-chip lists (health conditions, allergies)
-    function renderChipList(containerId, items, onRemove) {
-        const container = document.getElementById(containerId);
-        if (items.length === 0) {
-            container.innerHTML = `<p class="text-xs text-[#2c3e2b]/50 italic">None added yet.</p>`;
-            return;
+    // DELETE AFTER RAHHH REPLACE IT WITH FETCH SA TAAS ========================================================================================================================================================================LOOK HEREEEE-->
+    // function loadPatientsFromDatabase() {
+    //     populateSortDropdown();
+    //     renderTable();
+    // }
+
+    //this is for tab switching
+    const tabSessionBtn = document.getElementById('tabSessionBtn');
+    const tabHistoryBtn = document.getElementById('tabHistoryBtn');
+    const tabSessionContent = document.getElementById('tabSessionContent');
+    const tabHistoryContent = document.getElementById('tabHistoryContent');
+
+
+    // this is the logic that visually switches the tabs and updates their styling
+    function activateTab(tab) {
+        if (tab === 'session') {
+            tabSessionContent.classList.remove('hidden');
+            tabHistoryContent.classList.add('hidden');
+
+            tabSessionBtn.classList.add('border-[#667733]', 'text-[#2A1001]');
+            tabSessionBtn.classList.remove('border-transparent', 'text-[#2A1001]/50');
+
+            tabHistoryBtn.classList.add('border-transparent', 'text-[#2A1001]/50');
+            tabHistoryBtn.classList.remove('border-[#667733]', 'text-[#2A1001]');
+        } else {
+            tabHistoryContent.classList.remove('hidden');
+            tabSessionContent.classList.add('hidden');
+
+            tabHistoryBtn.classList.add('border-[#667733]', 'text-[#2A1001]');
+            tabHistoryBtn.classList.remove('border-transparent', 'text-[#2A1001]/50');
+
+            tabSessionBtn.classList.add('border-transparent', 'text-[#2A1001]/50');
+            tabSessionBtn.classList.remove('border-[#667733]', 'text-[#2A1001]');
         }
-        container.innerHTML = items.map((item, i) => `
-        <span class="inline-flex items-center gap-2 bg-white border border-[#c1ccab] rounded-full px-4 py-1.5 text-sm text-[#2c3e2b] font-medium shadow-inner">
-          ${escHtml(item)}
-          <button type="button" class="removeChipBtn text-[#2c3e2b]/50 hover:text-red-600 font-bold" data-container="${escHtml(containerId)}" data-index="${i}">&times;</button>
-        </span>
-      `).join('');
     }
 
-    function renderHealthConditions() { renderChipList('healthConditionsList', healthConditions); }
-    function renderAllergies() { renderChipList('allergiesList', allergies); }
+    tabSessionBtn.addEventListener('click', () => activateTab('session'));
+    tabHistoryBtn.addEventListener('click', () => activateTab('history'));
 
-    function renderPrescriptions() {
-        const container = document.getElementById('prescriptionsList');
-        if (prescriptions.length === 0) {
-            container.innerHTML = `<p class="text-xs text-[#2c3e2b]/50 italic">None added yet.</p>`;
+
+    // This function dynamically builds and displays the list of past appointment cards in the "Past History" tab.
+    // It loops through a patient's previous visits, counts how many X-rays belong to each specific visit
+    function renderVisitHistory(appointmentsList, allXrays) {
+        const container = document.getElementById('visitHistoryList');
+
+        if (!appointmentsList || appointmentsList.length === 0) {
+            container.innerHTML = `<p class="text-sm text-[#2A1001]/50 text-center py-6">No previous visits recorded.</p>`;
             return;
         }
 
@@ -420,6 +522,7 @@
 
 // Today's Session notes
         const ongoing = p.ongoing_appointment;
+        document.getElementById('mPatientNote').textContent = ongoing ? (ongoing.patient_note || 'No concern noted.') : '';
         document.getElementById('mNotes').value = ongoing ? (ongoing.dentist_note || '') : (p.dentist_note || ''); //DELETE THIS AND REPLACE=================================================================LOOOKKK
         //document.getElementById('mNotes').value = ongoing ? (ongoing.dentist_note || '') : ''; use this
 
@@ -467,252 +570,525 @@
                 const xrayId = this.dataset.xrayId;
                 this.disabled = true;
 
-        try {
-            const token = localStorage.getItem('userToken');
+                try {
+                    const token = localStorage.getItem('userToken');
+                    const response = await fetch(`/api/xrays/${xrayId}`, {
+                        method: 'DELETE',
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
 
-            const response = await fetch('/api/patient-profile/medical-pdf', {
-                method: 'POST',
-                headers: { 'Authorization': `Bearer ${token}` },
-                body: formData
+                    const data = await response.json();
+                    if (!response.ok) {
+                        throw new Error(data.message || `Server error: ${response.status}`);
+                    }
+
+                    p.xrays = p.xrays.filter(x => x.xray_id != xrayId);
+                    renderXrayPreviews(p); // Re-render live session previews
+                } catch (error) {
+                    console.error("Failed to delete X-ray:", error);
+                    alert(error.message || "Failed to delete X-ray. Please try again.");
+                    this.disabled = false;
+                }
             });
-
-            if (!response.ok) throw new Error(`Server error: ${response.status}`);
-
-            status.textContent = `✅ Uploaded: ${file.name}`;
-            status.classList.add('text-green-700');
-
-        } catch (error) {
-            console.error('Upload error:', error);
-            status.textContent = `Could not upload ${file.name}: Please try again.`;
-            status.classList.add('text-red-600');
-        }
-
-        e.target.value = ''; // reset so the same file can be re-selected if needed
-    });
         });
     }
 
-    // Live phone digit masking
-    phoneInput.addEventListener('input', function () {
-        this.value = this.value.replace(/\D/g, '').slice(0, 11);
+
+    //This allows the user to close the X-ray history modal by clicking anywhere in the empty background
+    document.getElementById('visitXrayModal').addEventListener('click', function (e) {
+        if (e.target === this) this.classList.add('hidden');
     });
 
-    // Real-time password match validation
-    confirmPassword.addEventListener('input', function () {
-        if (newPassword.value && this.value && newPassword.value !== this.value) {
-            this.setCustomValidity('Passwords do not match.');
-        } else {
-            this.setCustomValidity('');
+    // Close X-ray history modal when the "X" button is clicked
+    document.getElementById('closeVisitXrayModal').addEventListener('click', function () {
+        document.getElementById('visitXrayModal').classList.add('hidden');
+    });
+
+
+    document.getElementById('visitXrayModalGrid').addEventListener('click', function(e) {
+        // Check if the user clicked on an image
+        if (e.target.tagName === 'IMG') {
+            const fullViewer = document.getElementById('fullImageViewer');
+            document.getElementById('fullImageSrc').src = e.target.src; // Copy the clicked image source
+            fullViewer.classList.remove('hidden'); // Show the dark viewer
+            fullViewer.classList.add('flex');
+        }
+    });
+    //This closes the image viewer when the large "X" button is clicked.
+    document.getElementById('closeFullImageBtn').addEventListener('click', () => {
+        document.getElementById('fullImageViewer').classList.add('hidden');
+        document.getElementById('fullImageViewer').classList.remove('flex');
+    });
+
+    document.getElementById('fullImageViewer').addEventListener('click', function(e) {
+        // Close if the user clicks the dark background outside the image
+        if (e.target === this) {
+            this.classList.add('hidden');
+            this.classList.remove('flex');
         }
     });
 
-    newPassword.addEventListener('input', function () {
-        if (confirmPassword.value && this.value !== confirmPassword.value) {
-            confirmPassword.setCustomValidity('Passwords do not match.');
-        } else {
-            confirmPassword.setCustomValidity('');
-        }
+    // X-ray upload handling
+    document.getElementById('xrayDropZone').addEventListener('click', function () {
+        document.getElementById('xrayInput').click();
     });
 
-    // Collect data from database
-    async function loadProfileFromDatabase() {
+
+    // When user selects files from their computer using the hidden file input
+    document.getElementById('xrayInput').addEventListener('change', async function (e) {
+        const p = patients.find(p => p.patient_id == currentPatientId);
+        const files = Array.from(e.target.files);
+        e.target.value = ''; // reset input so selecting the same file again still fires 'change'
+
+        if (!p || !p.ongoing_appointment || files.length === 0) return;
+
+        const dropZoneLabel = document.getElementById('xrayLabel');
+        const originalLabel = dropZoneLabel.textContent;
+
+        const formData = new FormData();
+        files.forEach(file => formData.append('xrays', file));
+
         try {
+            dropZoneLabel.textContent = 'Uploading...';
+
             const token = localStorage.getItem('userToken');
-            if (!token) {
-                console.warn("No user token found. Redirecting to login or guest mode.");
-                return;
-            }
-
-            const response = await fetch('/api/patient-profile', {
-                method: 'GET',
-                headers: { 'Authorization': `Bearer ${token}` }
+            const response = await fetch(`/api/appointments/${p.ongoing_appointment.appointment_id}/xrays`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` },
+                // No Content-Type header — the browser sets the multipart
+                // boundary itself when the body is a FormData object.
+                body: formData
             });
-
-            if (!response.ok) throw new Error(`Server error: ${response.status}`);
 
             const data = await response.json();
 
-            // Readonly fields
-            document.getElementById('first-name').value = data.first_name || '';
-            document.getElementById('last-name').value  = data.last_name || '';
-            document.getElementById('sex').value         = data.sex || '';
-            updateMedicalLayout();
-            document.getElementById('email').value       = data.email || '';
-
-            // Editable fields
-            if (data.birthday) {
-                document.getElementById('birthday').value = data.birthday.split('T')[0];
+            if (!response.ok) {
+                throw new Error(data.message || `Server error: ${response.status}`);
             }
-            document.getElementById('civil-status').value     = data.civil_status || '';
-            document.getElementById('secondary-email').value  = data.secondary_email || '';
-            document.getElementById('address').value          = data.address || '';
-            document.getElementById('phone').value             = data.phone || '';
-            document.getElementById('pregnancy-status').value = data.pregnancy_status || 'N/A';
-            updateMedicalLayout();
 
-
-            healthConditions = normalizeToStringArray(data.health_conditions, 'description');
-            allergies = normalizeToStringArray(data.allergies, 'allergen');
-            prescriptions = Array.isArray(data.prescriptions)
-                ? data.prescriptions.map(rx => ({ medication_name: rx.medication_name, dosage: rx.dosage || '' }))
-                : [];
-
-            renderHealthConditions();
-            renderAllergies();
-            renderPrescriptions();
+            // Server is the source of truth for xray_id and the saved file_url
+            p.xrays.push(...data.xrays);
+            renderXrayPreviews(p);
 
         } catch (error) {
-            console.error('Failed to load profile:', error);
+            console.error("Failed to upload X-rays:", error);
+            alert(error.message || "Failed to upload X-rays. Please try again.");
+        } finally {
+            dropZoneLabel.textContent = originalLabel;
         }
-    }
+    });
 
+    // Save change of dentist session to the backend — PATCH /api/appointments/:id/notes
+    document.getElementById('saveSessionBtn').addEventListener('click', async function () {
+        const p = patients.find(p => p.patient_id == currentPatientId);
 
-    function normalizeToStringArray(value, key) {
-        if (Array.isArray(value)) {
-            return value.map(item => (typeof item === 'string' ? item : item[key])).filter(Boolean);
-        }
-        if (typeof value === 'string' && value.trim()) {
-            return value.split(',').map(s => s.trim()).filter(Boolean);
-        }
-        return [];
-    }
+        // Stop if no patient is found or if there is no active session
+        if (!p || !p.ongoing_appointment) return;
 
-    // Update profile to database
-    form.addEventListener('submit', async function (e) {
-        e.preventDefault();
+        // Grab the text the dentist typed into the textarea
+        const updatedDentistNote = document.getElementById('mNotes').value;
 
-        const birthdayValue = document.getElementById('birthday').value;
-        if (birthdayValue) {
-            const selectedBirthday = new Date(`${birthdayValue}T00:00:00`);
-            const currentDate = new Date();
-            currentDate.setHours(0, 0, 0, 0);
-
-            if (selectedBirthday > currentDate) {
-                alert('Birthday cannot be a future date.');
-                return;
-            }
-        }
-
-        // Password check — was missing entirely before
-        if (newPassword.value && newPassword.value !== confirmPassword.value) {
-            confirmPassword.setCustomValidity('Passwords do not match.');
-            confirmPassword.reportValidity();
-            return;
-        } else {
-            confirmPassword.setCustomValidity('');
-        }
-
-        // Build payload — only editable fields
-        const payload = {
-            birthday:         document.getElementById('birthday').value,
-            civil_status:     document.getElementById('civil-status').value.trim(),
-            secondary_email:  document.getElementById('secondary-email').value.trim(),
-            address:          document.getElementById('address').value.trim(),
-            phone:            document.getElementById('phone').value.trim(),
-            pregnancy_status: document.getElementById('pregnancy-status').value,
-            health_conditions: healthConditions,
-            prescriptions: prescriptions,
-            allergies: allergies
-        };
-
-        // Only send a password if the user actually typed a new one — was previously always sent, even blank
-        if (newPassword.value) {
-            payload.new_password = newPassword.value;
-        }
+        const btn = document.getElementById('saveSessionBtn');
+        const originalText = btn.textContent;
 
         try {
-            const token = localStorage.getItem('userToken');
+            btn.textContent = "Saving...";
+            btn.disabled = true;
 
-            const response = await fetch('/api/patient-profile', {
+            const token = localStorage.getItem('userToken');
+            const response = await fetch(`/api/appointments/${p.ongoing_appointment.appointment_id}/notes`, {
                 method: 'PATCH',
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 },
-                body: JSON.stringify(payload)
+                body: JSON.stringify({ dentist_note: updatedDentistNote })
             });
 
+            const data = await response.json();
+
             if (!response.ok) {
-                const errData = await response.json();
-                throw new Error(errData.message || 'Failed to update profile');
+                throw new Error(data.message || `Server error: ${response.status}`);
             }
 
-            // Clear password fields after success
-            newPassword.value = '';
-            confirmPassword.value = '';
+            // Only update the local frontend array AFTER the database confirms it saved
+            p.ongoing_appointment.dentist_note = updatedDentistNote;
 
-            // Inline success banner instead of a browser alert
-            successMessage.classList.remove('hidden');
-            successMessage.scrollIntoView({ behavior: 'smooth', block: 'center' });
-
+            // Confirm saved message
+            const confirmation = document.getElementById('saveConfirmation');
+            confirmation.textContent = 'Changes saved!';
+            confirmation.classList.remove('hidden');
             setTimeout(() => {
-                successMessage.classList.add('hidden');
-            }, 4000);
+                confirmation.classList.add('hidden');
+            }, 3000);
 
         } catch (error) {
-            console.error('Error updating profile:', error);
-            alert('Could not update profile: ' + error.message);
+            console.error("Failed to save notes:", error);
+            alert(error.message || "Failed to save notes to the server. Please try again.");
+        } finally {
+            btn.textContent = originalText;
+            btn.disabled = false;
         }
     });
 
-    // Load profile data when page opens
-    document.addEventListener('DOMContentLoaded', function () {
-        renderHealthConditions();
-        renderAllergies();
-        renderPrescriptions();
-        loadProfileFromDatabase();
-    });
+    document.getElementById('completeSessionBtn').addEventListener('click', async function () {
+        const p = patients.find(p => p.patient_id == currentPatientId);
+        if (!p || !p.ongoing_appointment) {
+            alert('No ongoing session for this patient right now.');
+            return;
+        }
 
-    //auto lock
-    document.addEventListener('DOMContentLoaded', () => {
-        // List of all editable fields specific to the customer page
-        const editableFields = [
-            'birthday', 'civil-status', 'secondary-email',
-            'address', 'phone', 'new-password', 'confirm-password',
-            'pregnancy-status'
-        ];
+        const btn = this;
+        const originalText = btn.textContent;
+        const appointmentId = p.ongoing_appointment.appointment_id;
+        const finalNote = document.getElementById('mNotes').value;
 
-        editableFields.forEach(id => {
-            const field = document.getElementById(id);
-            if (!field) return;
+        try {
+            btn.textContent = "Completing...";
+            btn.disabled = true;
 
-            // Lock the fields
-            if (field.tagName === 'SELECT') {
-                field.classList.add('pointer-events-none');
-            } else {
-                field.setAttribute('readonly', 'true');
-                field.classList.add('cursor-default');
-            }
-
-            field.classList.add('pr-10');
-
-            // Create the relative wrapper
-            const wrapper = document.createElement('div');
-            wrapper.className = 'relative w-full flex items-center';
-
-            field.parentNode.insertBefore(wrapper, field);
-            wrapper.appendChild(field);
-
-            // Create the circular pencil button
-            const btn = document.createElement('button');
-            btn.type = 'button';
-            btn.className = 'absolute right-2 w-7 h-7 bg-white rounded-full flex items-center justify-center shadow-md border border-gray-100 hover:bg-gray-50 transition z-10 cursor-pointer';
-            btn.innerHTML = `<img src="../assets/editIcon.png" class="w-3.5 h-3.5 opacity-80" alt="Edit">`;
-
-            // Click event to unlock the field
-            btn.addEventListener('click', () => {
-                if (field.tagName === 'SELECT') {
-                    field.classList.remove('pointer-events-none');
-                } else {
-                    field.removeAttribute('readonly');
-                    field.classList.remove('cursor-default');
-                }
-                field.focus();
-                btn.classList.add('hidden');
+            const token = localStorage.getItem('userToken');
+            const response = await fetch(`/api/appointments/${appointmentId}/complete`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ dentist_note: finalNote })
             });
 
-            wrapper.appendChild(btn);
+            const data = await response.json();
+            if (!response.ok) {
+                throw new Error(data.message || `Server error: ${response.status}`);
+            }
+
+            // Reload from the server so ongoing_appointment/past_appointments reflect
+            // the real DB state, then re-open this same patient with fresh data.
+            await loadPatientsFromDatabase();
+            openModal(currentPatientId);
+            activateTab('history'); // jump them to history so they can see it moved
+
+            const confirmation = document.getElementById('saveConfirmation');
+            confirmation.textContent = 'Appointment completed and moved to history!';
+            confirmation.classList.remove('hidden');
+            setTimeout(() => {
+                confirmation.classList.add('hidden');
+            }, 3000);
+
+        } catch (error) {
+            console.error("Failed to complete visit:", error);
+            alert(error.message || "Failed to complete visit. Please try again.");
+        } finally {
+            btn.textContent = originalText;
+            btn.disabled = false;
+        }
+    });
+
+    //QR generation of patient
+    /**https://github.com/datalog/qrcode-svg/blob/master/qrcode.min.js */
+    'use strict';function QRCode(r){var n,t,o,e,a=[],f=[],i=Math.max,u=Math.min,h=Math.abs,v=Math.ceil,c=/^[0-9]*$/,s=/^[A-Z0-9 $%*+.\/:-]*$/,l="0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ $%*+-./:",g=[[-1,7,10,15,20,26,18,20,24,30,18,20,24,26,30,22,24,28,30,28,28,28,28,30,30,26,28,30,30,30,30,30,30,30,30,30,30,30,30,30,30],[-1,10,16,26,18,24,16,18,22,22,26,30,22,22,24,24,28,28,26,26,26,26,28,28,28,28,28,28,28,28,28,28,28,28,28,28,28,28,28,28,28],[-1,13,22,18,26,18,24,18,22,20,24,28,26,24,20,30,24,28,28,26,30,28,30,30,30,30,28,30,30,30,30,30,30,30,30,30,30,30,30,30,30],[-1,17,28,22,16,22,28,26,26,24,28,24,28,22,24,24,30,28,28,26,28,30,24,30,30,30,30,30,30,30,30,30,30,30,30,30,30,30,30,30,30]],d=[[-1,1,1,1,1,1,2,2,2,2,4,4,4,4,4,6,6,6,6,7,8,8,9,9,10,12,12,12,13,14,15,16,17,18,19,19,20,21,22,24,25],[-1,1,1,1,2,2,4,4,4,5,5,5,8,9,9,10,10,11,13,14,16,17,17,18,20,21,23,25,26,28,29,31,33,35,37,38,40,43,45,47,49],[-1,1,1,2,2,4,4,6,6,8,8,8,10,12,16,12,17,16,18,21,20,23,23,25,27,29,34,34,35,38,40,43,45,48,51,53,56,59,62,65,68],[-1,1,1,2,4,4,4,5,6,8,8,11,11,16,16,18,16,19,21,25,25,25,34,30,32,35,37,40,42,45,48,51,54,57,60,63,66,70,74,77,81]],m={L:[0,1],M:[1,0],Q:[2,3],H:[3,2]},p=function(r,n){for(var t=0,o=8;o--;)t=t<<1^285*(t>>>7)^(n>>>o&1)*r;return t},C=function(r,n){for(var t=[],o=r.length,e=o;e;)for(var a=r[o-e--]^t.shift(),f=n.length;f--;)t[f]^=p(n[f],a);return t},w=function(r){for(var n=[function(){return 0==(t+o)%2},function(){return 0==t%2},function(){return 0==o%3},function(){return 0==(t+o)%3},function(){return 0==((t/2|0)+(o/3|0))%2},function(){return 0==t*o%2+t*o%3},function(){return 0==(t*o%2+t*o%3)%2},function(){return 0==((t+o)%2+t*o%3)%2}][r],t=e;t--;)for(var o=e;o--;)f[t][o]||(a[t][o]^=n())},b=function(){for(var r=function(r,n){n[6]||(r+=e),n.shift(),n.push(r)},n=function(n,o,a){return n&&(r(o,a),o=0),r(o+=e,a),t(a)},t=function(r){var n=r[5],t=n>0&&r[4]==n&&r[3]==3*n&&r[2]==n&&r[1]==n;return(t&&r[6]>=4*n&&r[0]>=n?1:0)+(t&&r[0]>=4*n&&r[6]>=n?1:0)},o=0,f=e*e,i=0,u=e;u--;){for(var c=[0,0,0,0,0,0,0],s=[0,0,0,0,0,0,0],l=!1,g=!1,d=0,m=0,p=e;p--;){a[u][p]==l?5==++d?o+=3:d>5&&o++:(r(d,c),o+=40*t(c),d=1,l=a[u][p]),a[p][u]==g?5==++m?o+=3:m>5&&o++:(r(m,s),o+=40*t(s),m=1,g=a[p][u]);var C=a[u][p];C&&i++,p&&u&&C==a[u][p-1]&&C==a[u-1][p]&&C==a[u-1][p-1]&&(o+=3)}o+=40*n(l,d,c)+40*n(g,m,s)}return o+=10*(v(h(20*i-10*f)/f)-1)},A=function(r,n,t){for(;n--;)t.push(r>>>n&1)},M=function(r,n){return r.numBitsCharCount[(n+7)/17|0]},B=function(r,n){return 0!=(r>>>n&1)},x=function(r,n){for(var t=0,o=r.length;o--;){var e=r[o],a=M(e,n);if(1<<a<=e.numChars)return 1/0;t+=4+a+e.bitData.length}return t},D=function(r){if(r<1||r>40)throw"Version number out of range";var n=(16*r+128)*r+64;if(r>=2){var t=r/7|2;n-=(25*t-10)*t-55,r>=7&&(n-=36)}return n},I=function(r,n){for(var t=2;-2<=t;t--)for(var o=2;-2<=o;o--)E(r+o,n+t,1!=i(h(o),h(t)))},H=function(r,n){for(var t=4;-4<=t;t--)for(var o=4;-4<=o;o--){var a=i(h(o),h(t)),f=r+o,u=n+t;0<=f&&f<e&&0<=u&&u<e&&E(f,u,2!=a&&4!=a)}},$=function(r){for(var n=t[1]<<3|r,o=n,a=10;a--;)o=o<<1^1335*(o>>>9);var f=21522^(n<<10|o);if(f>>>15!=0)throw"Assertion error";for(a=0;a<=5;a++)E(8,a,B(f,a));E(8,7,B(f,6)),E(8,8,B(f,7)),E(7,8,B(f,8));for(a=9;a<15;a++)E(14-a,8,B(f,a));for(a=0;a<8;a++)E(e-1-a,8,B(f,a));for(a=8;a<15;a++)E(8,e-15+a,B(f,a));E(8,e-8,1)},O=function(){for(var r=e;r--;)E(6,r,0==r%2),E(r,6,0==r%2);for(var t=function(){var r=[];if(n>1)for(var t=2+(n/7|0),o=32==n?26:2*v((e-13)/(2*t-2));t--;)r[t]=t*o+6;return r}(),o=r=t.length;o--;)for(var a=r;a--;)0==a&&0==o||0==a&&o==r-1||a==r-1&&0==o||I(t[a],t[o]);H(3,3),H(e-4,3),H(3,e-4),$(0),function(){if(!(7>n)){for(var r=n,t=12;t--;)r=r<<1^7973*(r>>>11);var o=n<<12|r;if(t=18,o>>>18!=0)throw"Assertion error";for(;t--;){var a=e-11+t%3,f=t/3|0,i=B(o,t);E(a,f,i),E(f,a,i)}}}()},Q=function(r){if(r.length!=V(n,t))throw"Invalid argument";for(var o=d[t[0]][n],e=g[t[0]][n],a=D(n)/8|0,f=o-a%o,i=a/o|0,u=[],h=function(r){var n=1,t=[];t[r-1]=1;for(var o=0;o<r;o++){for(var e=0;e<r;e++)t[e]=p(t[e],n)^t[e+1];n=p(n,2)}return t}(e),v=0,c=0;v<o;v++){var s=r.slice(c,c+i-e+(v<f?0:1));c+=s.length;var l=C(s,h);v<f&&s.push(0),u.push(s.concat(l))}var m=[];for(v=0;v<u[0].length;v++)for(var w=0;w<u.length;w++)(v!=i-e||w>=f)&&m.push(u[w][v]);return m},S=function(r){for(var n=[],t=(r=encodeURI(r),0);t<r.length;t++)"%"!=r.charAt(t)?n.push(r.charCodeAt(t)):(n.push(parseInt(r.substr(t+1,2),16)),t+=2);return n},V=function(r,n){return(D(r)/8|0)-g[n[0]][r]*d[n[0]][r]},E=function(r,n,t){a[n][r]=t?1:0,f[n][r]=1},R=function(r){for(var n=[],t=0,o=r;t<o.length;t++){var e=o[t];A(e,8,n)}return{modeBits:4,numBitsCharCount:[8,16,16],numChars:r.length,bitData:n}},Z=function(r){if(!c.test(r))throw"String contains non-numeric characters";for(var n=[],t=0;t<r.length;){var o=u(r.length-t,3);A(parseInt(r.substr(t,o),10),3*o+1,n),t+=o}return{modeBits:1,numBitsCharCount:[10,12,14],numChars:r.length,bitData:n}},z=function(r){if(!s.test(r))throw"String contains unencodable characters in alphanumeric mode";var n,t=[];for(n=0;n+2<=r.length;n+=2){var o=45*l.indexOf(r.charAt(n));o+=l.indexOf(r.charAt(n+1)),A(o,11,t)}return n<r.length&&A(l.indexOf(r.charAt(n)),6,t),{modeBits:2,numBitsCharCount:[9,11,13],numChars:r.length,bitData:t}},L=function(r,n,t,o){var e=function(r){return""==r?[]:c.test(r)?[Z(r)]:s.test(r)?[z(r)]:[R(S(r))]}(r);return U(e,n,t,o)},N=function(r,i,u,h){t=i,o=h;for(var v=e=4*(n=r)+17;v--;)a[v]=[],f[v]=[];if(O(),function(r){for(var n=0,t=1,o=e-1,i=o;i>0;i-=2){6==i&&--i;for(var u=0>(t=-t)?o:0,h=0;h<e;++h){for(var v=i;v>i-2;--v)f[u][v]||(a[u][v]=B(r[n>>>3],7-(7&n)),++n);u+=t}}}(Q(u)),0>o){var c=1e9;for(v=8;v--;){w(v),$(v);var s=b();c>s&&(c=s,o=v),w(v)}}w(o),$(o),f=[]},U=function(r,n,t,o,e,a){if(void 0===e&&(e=1),void 0===a&&(a=40),void 0===o&&(o=-1),void 0===t&&(t=!0),!(1<=e&&e<=a&&a<=40)||o<-1||o>7)throw"Invalid value";for(var f=[],i=236,h=[],v=e;;){var c=x(r,v);if(c<=8*V(v,n))break;if(v>=a)throw"Data too long";v++}if(t)for(var s=(l=[m.H,m.Q,m.M]).length;s--;)c<=8*V(v,l[s])&&(n=l[s]);for(var l=0;l<r.length;l++){var g=r[l];A(g.modeBits,4,f),A(g.numChars,M(g,v),f);for(var d=0,p=g.bitData;d<p.length;d++)f.push(p[d])}if(f.length!=c)throw"Assertion error";var C=8*V(v,n);if(f.length>C)throw"Assertion error";if(A(0,u(4,C-f.length),f),A(0,(8-f.length%8)%8,f),f.length%8!=0)throw"Assertion error";for(;f.length<C;)A(i,8,f),i^=253;for(s=f.length;s--;)h[s>>>3]|=f[s]<<7-(7&s);return N(v,n,h,o)};return function(){function n(r){return/^#[0-9a-f]{3}(?:[0-9a-f]{3})?$/i.test(r)}function t(r,n){for(var t in r=document.createElementNS(s,r),n||{})r.setAttribute(t,n[t]);return r}var o,f,i,u,v,c,s="http://www.w3.org/2000/svg",l="",g="string"==typeof r?{msg:r}:r||{},d=g.pal||["#000"],p=h(g.dim)||256,C=[1,0,0,1,c=(c=h(g.pad))>-1?c:4,c],w=n(w=d[0])?w:"#000",b=n(b=d[1])?b:0,A=g.vrb?0:1;for(L(g.msg||"",m[g.ecl]||m.M,0==g.ecb?0:1,g.mtx),v=e+2*c,i=e;i--;)for(u=0,f=e;f--;)a[i][f]&&(A?(u++,a[i][f-1]||(l+="M"+f+","+i+"h"+u+"v1h-"+u+"v-1z",u=0)):l+="M"+f+","+i+"h1v1h-1v-1z");return o=t("svg",{viewBox:[0,0,v,v].join(" "),width:p,height:p,fill:w,"shape-rendering":"crispEdges",xmlns:s,version:"1.1"}),b&&o.appendChild(t("path",{fill:b,d:"M0,0V"+v+"H"+v+"V0H0Z"})),o.appendChild(t("path",{transform:"matrix("+C+")",d:l})),o}()}
+
+    document.getElementById('showQrCodeBtn').addEventListener('click', () => {
+        const container = document.getElementById('qrCodeContainer');
+        const modal = document.getElementById('qrModal');
+
+        // Clear out any previously generated QR code
+        container.innerHTML = '';
+        const p = patients.find(p => p.patient_id == currentPatientId);
+        if (!p) return;
+        let json_patient = JSON.stringify(p);// encode whole record
+        // Generate the QR code SVG element using the library
+        const svgElement = QRCode({
+            msg: json_patient, // Replace with your target data/URL
+            // dim: 200,
+            // pad: 4
         });
+
+        // Inject the SVG into our container and show the modal
+        container.appendChild(svgElement);
+        modal.style.display = 'flex';
+    });
+
+    //Simple event listener to close the modal when "Close" is clickeSd
+    document.getElementById('closeQrBtn').addEventListener('click', () => {
+        document.getElementById('qrModal').style.display = 'none';
+    });
+
+    const rowsPerPage = 10;
+    let currentPage = 1;
+    let currentSearch = "";
+    let currentSort = "recent";
+
+    function getAvailableDateGroups() {
+        const groups = new Set();
+
+        patients.forEach(p => {
+            if (!p.last_visit) return;
+            const date = new Date(p.last_visit);
+            const year = date.getFullYear();
+            const month = date.toLocaleString('default', { month: 'long' });
+            groups.add(`${year}-${date.getMonth()}::${month} ${year}`);
+        });
+
+
+        return Array.from(groups)
+            .map(g => {
+                const [sortKey, label] = g.split('::');
+                return { sortKey, label };
+            })
+            .sort((a, b) => b.sortKey.localeCompare(a.sortKey));
+    }
+
+
+    //sets up a dropdown menu that lets users sort or filter patients by date
+    function populateSortDropdown() {
+        const sortSelect = document.getElementById('sortSelect');
+        const groups = getAvailableDateGroups();
+
+        // Static top options
+        sortSelect.innerHTML = `
+        <option value="recent" class="bg-white text-[#2A1001]">Sort: Most Recent</option>
+        <option value="oldest" class="bg-white text-[#2A1001]">Oldest First</option>
+    `;
+
+        // Dynamic month/year options, generated from real patient data
+        groups.forEach(g => {
+            const opt = document.createElement('option');
+            opt.value = g.sortKey;
+            opt.textContent = g.label;
+            opt.className = "bg-white text-[#2A1001]";
+            sortSelect.appendChild(opt);
+        });
+    }
+
+
+    // filter patients based on search input and sort selection
+    function getFiltered() {
+        let result = patients.filter(p =>
+            `${p.first_name} ${p.last_name}`.toLowerCase().includes(currentSearch.toLowerCase())
+        );
+
+        if (currentSort === "recent") {
+            result.sort((a, b) => new Date(b.last_visit) - new Date(a.last_visit));
+        } else if (currentSort === "oldest") {
+            result.sort((a, b) => new Date(a.last_visit) - new Date(b.last_visit));
+        } else {
+            // filter to just that year+month
+            const [year, monthIndex] = currentSort.split('-').map(Number);
+            result = result.filter(p => {
+                const d = new Date(p.last_visit);
+                return d.getFullYear() === year && d.getMonth() === monthIndex;
+            });
+            result.sort((a, b) => new Date(b.last_visit) - new Date(a.last_visit));
+        }
+
+        return result;
+    }
+
+    //builds and displays the table of patients making sure only the correct number of rows are shown per page after filtering and sorting
+    function renderTable() {
+        const filtered = getFiltered();
+        const start = (currentPage - 1) * rowsPerPage;
+        const pageItems = filtered.slice(start, start + rowsPerPage);
+
+        const tbody = document.getElementById('tableBody');
+        tbody.innerHTML = '';
+
+        pageItems.forEach(p => {
+            const row = document.createElement('tr');
+            row.className = "border-b border-[#2A1001]/10";
+            row.innerHTML = `
+                <td class="text-center py-3 px-6">${p.patient_id}</td>
+                    <td class="text-center py-3 px-6">${p.first_name} ${p.last_name}</td>
+                    <td class="text-center py-3 px-6">${p.last_visit || 'No visits yet'}</td>
+                    <td class="text-center py-3 px-6">
+                    <button class="viewFullBtn inline-flex flex-row items-center justify-center gap-2 bg-[#667733] hover:bg-[#556022] transition text-white text-sm font-semibold px-5 py-2 rounded-full" data-id="${p.patient_id}">
+                        <img src="../assets/view.png" alt="View" class="w-5 h-5 object-contain shrink-0" />
+                        <span class="whitespace-nowrap">View Full</span>
+                    </button>
+                </td>
+            `;
+            tbody.appendChild(row);
+        });
+
+
+
+        renderPagination(filtered.length);
+    }
+
+    document.getElementById('tableBody').addEventListener('click', function (e) {
+        if (e.target.closest('.viewFullBtn')) {
+            const btn = e.target.closest('.viewFullBtn');
+            openModal(btn.dataset.id);
+        }
+    });
+
+
+    // builds and displays the pagination buttons based on the number of filtered patients and the current page also only shows batch number by 7
+    function renderPagination(totalItems) {
+        const totalPages = Math.max(1, Math.ceil(totalItems / rowsPerPage));
+        const pagination = document.getElementById('pagination');
+        pagination.innerHTML = '';
+
+        const maxVisible = 7;
+        const currentBatch = Math.floor((currentPage - 1) / maxVisible);
+        const batchStart = currentBatch * maxVisible + 1;
+        const batchEnd = Math.min(batchStart + maxVisible - 1, totalPages);
+
+        if (batchStart > 1) {
+            const prevBtn = document.createElement('button');
+            prevBtn.textContent = '‹';
+            prevBtn.className = "w-9 h-9 rounded-full font-bold text-[#2A1001] bg-transparent border border-[#2A1001]/30 hover:bg-[#2A1001]/10 transition flex items-center justify-center";
+            prevBtn.addEventListener('click', () => { currentPage = batchStart - 1; renderTable(); });
+            pagination.appendChild(prevBtn);
+        }
+
+        for (let i = batchStart; i <= batchEnd; i++) {
+            const btn = document.createElement('button');
+            btn.textContent = i;
+            btn.className = `w-9 h-9 rounded-full font-semibold ${i === currentPage ? 'bg-[#6B7A4C] text-white' : 'bg-white text-[#2A1001] border border-[#2A1001]/20'}`;
+            btn.addEventListener('click', () => { currentPage = i; renderTable(); });
+            pagination.appendChild(btn);
+        }
+
+        if (batchEnd < totalPages) {
+            const nextBtn = document.createElement('button');
+            nextBtn.textContent = '›';
+            nextBtn.className = "w-9 h-9 rounded-full font-bold text-[#2A1001] bg-transparent border border-[#2A1001]/30 hover:bg-[#2A1001]/10 transition flex items-center justify-center";
+            nextBtn.addEventListener('click', () => { currentPage = batchEnd + 1; renderTable(); });
+            pagination.appendChild(nextBtn);
+        }
+    }
+
+    //Patient Modal click x button to close
+    document.getElementById('closeModal').addEventListener('click', function () {
+        document.getElementById('patientModal').classList.add('hidden');
+    });
+
+    //Patient Modal click outside to close
+    document.getElementById('patientModal').addEventListener('click', function (e) {
+        if (e.target === this) this.classList.add('hidden');
+    });
+
+    // Search
+    document.getElementById('searchInput').addEventListener('input', function () {
+        currentSearch = this.value;
+        currentPage = 1;
+        renderTable();
+    });
+
+    // Sort
+    document.getElementById('sortSelect').addEventListener('change', function () {
+        currentSort = this.value;
+        currentPage = 1;
+        renderTable();
+    });
+
+    // QR button — placeholder for now
+    document.getElementById('qrBtn').addEventListener('click', function () {
+        alert("QR Scanner coming soon placeholder lng toh lols");
+    });
+
+    // Initial render
+    populateSortDropdown();
+    renderTable();
+    activateTab('session');
+
+
+    const escHtml = s => String(s ?? '').replace(/[&<>"']/g, c =>
+        ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+    function buildPrintableRecord(p) {
+        const listText = (arr, fmt) => (arr && arr.length ? arr.map(fmt).join(', ') : 'None');
+        const row = (label, value) =>
+            `<tr><td>${label}</td><td>${escHtml(value) || '&mdash;'}</td></tr>`;
+
+        const conditions    = listText(p.health_conditions, c => c.description);
+        const allergies     = listText(p.allergies, a => a.allergen);
+        const prescriptions = listText(p.prescriptions,
+            rx => (rx.dosage ? `${rx.medication_name} (${rx.dosage})` : rx.medication_name));
+
+        // Read the textarea so notes that haven't been saved yet are included
+        const todayNote = p.ongoing_appointment
+            ? document.getElementById('mNotes').value.trim()
+            : '';
+
+        const visits = (p.past_appointments || []).map(a => `
+        <div class="visit">
+            <div class="visit-head">
+                <strong>${escHtml(a.appointment_date)}</strong>
+                <span>${escHtml(a.service_label)}</span>
+            </div>
+            <div><b>Patient concern:</b> ${escHtml(a.patient_note) || 'None noted'}</div>
+            <div><b>Dentist note:</b> ${escHtml(a.dentist_note) || 'No notes recorded'}</div>
+        </div>`).join('') || '<p class="muted">No previous visits recorded.</p>';
+
+        return `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Patient Record - ${escHtml(p.public_id || p.patient_id)}</title>
+<style>
+    @page { margin: 16mm; }
+    body { font-family: Arial, sans-serif; color: #2A1001; font-size: 13px; line-height: 1.45; }
+    h1 { font-size: 22px; margin: 0 0 4px; }
+    h2 { font-size: 15px; margin: 22px 0 8px; padding-bottom: 4px; border-bottom: 2px solid #667733; }
+    .muted { color: #666; font-size: 11px; }
+    table.info { width: 100%; border-collapse: collapse; }
+    table.info td { padding: 5px 8px; border-bottom: 1px solid #ddd; vertical-align: top; }
+    table.info td:first-child { width: 190px; font-weight: bold; }
+    .note { white-space: pre-wrap; border: 1px solid #ccc; border-radius: 6px; padding: 8px 12px; }
+    .visit { border: 1px solid #ccc; border-radius: 6px; padding: 8px 12px; margin-bottom: 8px; page-break-inside: avoid; }
+    .visit-head { display: flex; justify-content: space-between; margin-bottom: 4px; }
+</style>
+</head>
+<body>
+    <h1>Patient Record</h1>
+    <p class="muted">${escHtml(p.public_id || '')} &middot; Printed ${escHtml(new Date().toLocaleString())}</p>
+
+    <h2>Personal Information</h2>
+    <table class="info">
+        ${row('First name', p.first_name)}
+        ${row('Last name', p.last_name)}
+        ${row('Sex', p.sex)}
+        ${row('Birthday', p.birthday)}
+        ${row('Email', p.email)}
+        ${row('Phone number', p.phone)}
+        ${row('Civil status', p.civil_status)}
+    </table>
+
+    <h2>Medical Information</h2>
+    <table class="info">
+        ${row('Pre-existing conditions', conditions)}
+        ${row('Pregnancy status', p.pregnancy_status)}
+        ${row('Current prescriptions', prescriptions)}
+        ${row('Allergies', allergies)}
+    </table>
+
+    ${todayNote ? `<h2>Today's Session</h2><div class="note">${escHtml(todayNote)}</div>` : ''}
+
+    <h2>Past Visits</h2>
+    ${visits}
+</body>
+</html>`;
+    }
+
+    document.getElementById('printPdfBtn').addEventListener('click', () => {
+        const p = patients.find(p => p.patient_id == currentPatientId);
+        if (!p) return;
+
+        // Remove the frame from any previous print
+        document.getElementById('printFrame')?.remove();
+
+        const frame = document.createElement('iframe');
+        frame.id = 'printFrame';
+        frame.style.cssText = 'position:fixed; right:0; bottom:0; width:0; height:0; border:0;';
+        frame.onload = () => {
+            frame.contentWindow.focus();
+            frame.contentWindow.print();
+        };
+        frame.srcdoc = buildPrintableRecord(p);
+        document.body.appendChild(frame);
     });
 </script>
 
