@@ -18,6 +18,9 @@ const authenticateToken = require("./authmiddleware");
 const errorHandler = require('./Utils/errorHandler');
 
 const registerServiceRoutes = require("./Admin/ServiceRoutes");
+
+// DENIED DIRECT PAGE ACESS VIA URL
+const registerDashboardRoutes = require("./Admin/DashboardRoutes");
 const rateLimit = require("express-rate-limit");
 
 
@@ -55,7 +58,22 @@ registerQueueRoutes(app, db);
 registerPatientRecordsRoutes(app, db);
 registerMessagesRoutes(app, db);
 registerServiceRoutes(app, db);
-registerServiceRoutes(app, db);
+registerDashboardRoutes(app, db);
+
+// DENIES DIRECT PAGE VIA URL
+function requirePageRole(requiredRole) {
+    return (req, res, next) => {
+        if (req.user.role !== requiredRole) {
+            return res.redirect('/');
+        }
+        next();
+    };
+}
+
+// DENIES DIRECT PAGE VIA URL
+app.use('/Admin', authenticateToken, requirePageRole('admin'));
+app.use('/Employee', authenticateToken, requirePageRole('employee'));
+app.use('/Customer', authenticateToken, requirePageRole('patient'));
 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use(express.static(path.join(__dirname)));
@@ -80,7 +98,11 @@ app.get('/api/users', authenticateToken, async (req, res) => {
     }
 });
 
-app.get('/api/patients', async (req, res) => {
+// DENIES DIRECT PAGE ACCESS VIA URL
+app.get('/api/patients', authenticateToken, async (req, res) => {
+    if (!['employee', 'admin'].includes(req.user.role)) {
+        return res.status(403).json({ error: 'Staff access required' });
+    }
     try {
         const [rows] = await db.query('CALL sp_get_all_patient_records()', ['patient']);
         const patients = rows[0].map(row => {
@@ -94,7 +116,11 @@ app.get('/api/patients', async (req, res) => {
     }
 });
 
-app.get('/api/patients/:id', async (req, res) => {
+// DENIES DIRECT PAGE ACCESS VIA URL
+app.get('/api/patients/:id', authenticateToken, async (req, res) => {
+    if (!['employee', 'admin'].includes(req.user.role)) {
+        return res.status(403).json({ error: 'Staff access required' });
+    }
     try {
         const [rows] = await db.query('CALL sp_get_patient_record(?)', [req.params.id]);
         if (!rows[0] || rows[0].length === 0) {

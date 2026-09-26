@@ -1,4 +1,4 @@
-const authenticateToken = require('../authMiddleware');
+const authenticateToken = require('../authmiddleware');
 
 function registerBookingRoute(app, db) {
     app.post('/api/appointments', authenticateToken, async (req, res) => {
@@ -11,6 +11,12 @@ function registerBookingRoute(app, db) {
 
         if (!appointment_date || !time_slot || !service_id || !payment_method) {
             return res.status(400).json({ message: 'Missing required booking fields' });
+        }
+
+        // no past dates
+        const appointmentDateTime = new Date(`${appointment_date}T${time_slot}`);
+        if (Number.isNaN(appointmentDateTime.getTime()) || appointmentDateTime <= new Date()) {
+            return res.status(400).json({ message: 'Appointments must be scheduled for a future date and time' });
         }
 
         const connection = await db.getConnection();

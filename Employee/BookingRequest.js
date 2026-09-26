@@ -1,4 +1,4 @@
-const authenticateToken = require('../authMiddleware');
+const authenticateToken = require('../authmiddleware');
 
 function registerBookingRequestRoutes(app, db) {
 

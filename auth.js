@@ -20,6 +20,14 @@ const NAME_PATTERN = /^[a-zA-Z\u00C0-\u017F\s'\-.]{1,50}$/;
 const PHONE_PATTERN = /^[0-9]{7,15}$/;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+// DENIES DIRECT PAGE ACCESS VIA URL
+function setAuthCookie(res, token) {
+    res.setHeader(
+        'Set-Cookie',
+        `authToken=${encodeURIComponent(token)}; HttpOnly; Path=/; Max-Age=604800; SameSite=Lax`
+    );
+}
+
 // POST /api/auth/register — patient self-registration only
 router.post('/register', async (req, res) => {
     let { first_name, last_name, email, phone, password, sex } = req.body;
@@ -71,6 +79,8 @@ router.post('/register', async (req, res) => {
             { expiresIn: '7d' }
         );
 
+        // DENIES DIRECT PAGE ACCESS VIA URL
+        setAuthCookie(res, token);
         res.status(201).json({ token, user: newUser });
     } catch (err) {
         if (err.code === 'ER_DUP_ENTRY') {
@@ -112,6 +122,8 @@ router.post('/login', async (req, res) => {
             { expiresIn: '7d' }
         );
 
+        // DENIES DIRECT PAGE ACCESS VIA URL
+        setAuthCookie(res, token);
         res.json({
             token,
             user: {
