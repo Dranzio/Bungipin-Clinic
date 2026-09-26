@@ -136,14 +136,22 @@ function buildCompactCard(appt) {
     card.onclick = () => openDetailModal(appt);
 
     card.innerHTML = `
-        <div class="flex flex-col">
-            <h3 class="font-extrabold text-[#1a281b] text-lg sm:text-xl tracking-wide">${escapeHtml(appt.label || 'General Appointment')}</h3>
-            <p class="font-bold text-sm text-[#1a281b] mt-0.5">Date: ${scheduledDate}</p>
-        </div>
-        <div class="${style.bg} border-2 border-[#1a281b] rounded-[4px] px-6 py-1.5 flex justify-center items-center shadow-sm min-w-[120px]">
-            <span class="font-extrabold text-xs sm:text-sm text-[#1a281b]">${style.text}</span>
-        </div>
-    `;
+    <div class="flex-1 min-w-0 pr-12">
+        <h3 class="font-bold text-xl break-words whitespace-normal min-w-0 [overflow-wrap:anywhere]">
+            ${escapeHtml(appt.label || 'General Appointment')}
+        </h3>
+
+        <p class="font-bold text-sm text-[#1a281b] mt-0.5">
+            Date: ${scheduledDate}
+        </p>
+    </div>
+
+    <div class="${style.bg} border-2 border-[#1a281b] rounded-[4px] px-6 py-1.5 flex justify-center items-center shadow-sm min-w-[120px] shrink-0">
+        <span class="font-extrabold text-xs sm:text-sm text-[#1a281b]">
+            ${style.text}
+        </span>
+    </div>
+`;
 
     return card;
 }
