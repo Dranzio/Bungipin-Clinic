@@ -56,7 +56,6 @@ function _applySidebarState(collapse) {
     sidebar.dataset.collapsed = collapse ? 'true' : 'false';
     const isDesktop = window.innerWidth >= 768;
 
-<<<<<<< HEAD
     if (collapse) {
         // ── Collapsed state ─────────────────────────────────────────────────
         if (isDesktop) {
@@ -107,35 +106,11 @@ function _applySidebarState(collapse) {
 
         // Restore nav link padding
         navLinks.forEach(link => {
-            link.style.paddingLeft    = '';
-            link.style.paddingRight   = '';
+            link.style.paddingLeft  = '';
+            link.style.paddingRight = '';
             link.style.justifyContent = '';
         });
-=======
-    // Collapse is desktop-only. After minimize / < md, drop every inline
-    // collapse style (especially width: 72px) so the full mobile bar returns.
-    if (!isDesktop || !collapse) {
-        _clearCollapseStyles(sidebar, aside, nameBadge, profileCircle, labels, navLinks);
-        return;
->>>>>>> bda39ef64adfbb054b44ba0a3b8782e5a9478e61
     }
-
-    sidebar.style.width = '72px';
-    if (aside) aside.style.width = '72px';
-
-    labels.forEach(el => { el.style.display = 'none'; });
-    if (nameBadge) nameBadge.style.display = 'none';
-
-    if (profileCircle) {
-        profileCircle.style.width  = '44px';
-        profileCircle.style.height = '44px';
-    }
-
-    navLinks.forEach(link => {
-        link.style.paddingLeft    = '0';
-        link.style.paddingRight   = '0';
-        link.style.justifyContent = 'center';
-    });
 }
 
 // Ensure responsive behavior if window is resized
@@ -175,7 +150,7 @@ async function _loadSidebarUser() {
             const avatarImg = document.getElementById('sidebar-user-avatar');
             const defaultAvatar = document.getElementById('sidebar-default-avatar');
             const picUrl = data.profile_picture || data.image_url; // adjust if your DB uses a different column name
-            
+
             if (avatarImg && defaultAvatar) {
                 if (picUrl) {
                     avatarImg.src = picUrl;

@@ -11,87 +11,73 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="../Taskbar/Admin_Sidebar.js"></script>
 </head>
-<<<<<<< HEAD
 <body class="min-h-screen md:h-screen md:overflow-hidden bg-[#F3EFE4] relative flex flex-col md:flex-row antialiased">
-    <div class="min-h-screen flex flex-col md:flex-row w-full">
+<div class="min-h-screen flex flex-col md:flex-row w-full">
 
-<!-- SIDEBAR -->
-  <div id="sidebar-placeholder"></div>
-=======
-<body class="h-screen overflow-hidden bg-[#F3EFE4] relative flex flex-col md:flex-row antialiased">
-
-        <!-- Sidebar Container -->
-            <div id="sidebar-placeholder"></div>
->>>>>>> bda39ef64adfbb054b44ba0a3b8782e5a9478e61
+    <!-- SIDEBAR -->
+    <div id="sidebar-placeholder"></div>
     <script>
-      function syncContentOffset() {
-        const placeholder = document.getElementById('sidebar-placeholder');
-        const sidebar = Array.from(placeholder.children)
-          .find(el => !['SCRIPT', 'STYLE', 'LINK'].includes(el.tagName));
-        if (!sidebar) return;
+        function syncContentOffset() {
+            const placeholder = document.getElementById('sidebar-placeholder');
+            const sidebar = Array.from(placeholder.children)
+                .find(el => !['SCRIPT', 'STYLE', 'LINK'].includes(el.tagName));
+            if (!sidebar) return;
 
-        const set = (el, prop, value) => { if (el.style[prop] !== value) el.style[prop] = value; };
+            const set = (el, prop, value) => { if (el.style[prop] !== value) el.style[prop] = value; };
 
-        const apply = () => {
-          const desktop = window.innerWidth >= 768;
-          set(placeholder, 'flexShrink', '0');
-          set(sidebar, 'position', desktop ? 'sticky' : 'relative');  
-          set(sidebar, 'top', desktop ? '0px' : 'auto');
-          set(sidebar, 'height', desktop ? '100vh' : '');
-          set(sidebar, 'overflowY', desktop ? 'auto' : '');           
-        };
+            const apply = () => {
+                const desktop = window.innerWidth >= 768;
+                set(placeholder, 'flexShrink', '0');
+                set(sidebar, 'position', desktop ? 'sticky' : 'relative');
+                set(sidebar, 'top', desktop ? '0px' : 'auto');
+                set(sidebar, 'height', desktop ? '100vh' : '');
+                set(sidebar, 'overflowY', desktop ? 'auto' : '');
+            };
 
-        window.addEventListener('resize', apply);
-        apply();
-      }
+            window.addEventListener('resize', apply);
+            apply();
+        }
 
         (async () => {
-          try {
-            const response = await fetch('/Taskbar/Admin_Task.html');
-            if (response.ok) {
-              const data = await response.text();
-              document.getElementById('sidebar-placeholder').innerHTML = data;
-              const currentPage = window.location.pathname.split("/").pop();
-              document.querySelectorAll('.nav-link').forEach(link => {
-                if (link.getAttribute('data-page') === currentPage) {
-                  link.classList.add('bg-[#FDFCE9]');
+            try {
+                const response = await fetch('/Taskbar/Admin_Task.html');
+                if (response.ok) {
+                    const data = await response.text();
+                    document.getElementById('sidebar-placeholder').innerHTML = data;
+                    const currentPage = window.location.pathname.split("/").pop();
+                    document.querySelectorAll('.nav-link').forEach(link => {
+                        if (link.getAttribute('data-page') === currentPage) {
+                            link.classList.add('bg-[#FDFCE9]');
+                        }
+                    });
+                    if (typeof initSidebar === 'function') {
+                        initSidebar();
+                    }
+                    syncContentOffset();
                 }
-              });
-              if (typeof initSidebar === 'function') {
-                initSidebar();
-              }
-              syncContentOffset();
+            } catch (error) {
+                console.log('Sidebar fallback:', error);
             }
-          } catch (error) {
-            console.log('Sidebar fallback:', error);
-          }
         })();
-      </script>
-<<<<<<< HEAD
-        
-        <div id="main-content" class="flex-1 min-w-0 md:min-h-0 md:overflow-y-auto">
+    </script>
 
-            <!--Header title with logo image-->
-            <div class="flex justify-between items-start pt-5 pl-6 pr-4 md:pl-24 md:pr-8">
+    <div id="main-content" class="flex-1 min-w-0 md:min-h-0 md:overflow-y-auto">
 
-                <h1 class="text-2xl sm:text-3xl md:text-5xl 2xl:text-[73px] pt-5 font-bold text-[#2A1001] font-['Poppins']">
-                    Admin Dashboard
-                </h1>
-                <img
-                        src="../assets/logowithtitle.png"
-                        class="w-20 sm:w-24 md:w-28 h-auto object-contain shrink-0"
-                        alt="Logo"/>
-                        
-            </div>
-            <hr class="border-t border-[#2A1001] mt-2 mb-6" />
+        <!--Header title with logo image-->
+        <div class="flex justify-between items-start pt-5 pl-6 pr-4 md:pl-24 md:pr-8">
 
-            
-=======
+            <h1 class="text-2xl sm:text-3xl md:text-5xl 2xl:text-[73px] pt-5 font-bold text-[#2A1001] font-['Poppins']">
+                Admin Dashboard
+            </h1>
+            <img
+                    src="../assets/logowithtitle.png"
+                    class="w-20 sm:w-24 md:w-28 h-auto object-contain shrink-0"
+                    alt="Logo"/>
 
-            <div id="main-content" class="flex-1 min-w-0 min-h-0 overflow-y-auto">
+        </div>
+        <hr class="border-t border-[#2A1001] mt-2 mb-6" />
 
-                
->>>>>>> bda39ef64adfbb054b44ba0a3b8782e5a9478e61
+
 
         <!-- Main Content Area -->
         <main class="flex-1 p-6 md:p-10 flex flex-col items-center">
@@ -189,340 +175,336 @@
             </div>
         </main>
 
-<<<<<<< HEAD
 
-        </div>
     </div>
-=======
-            </div>
->>>>>>> bda39ef64adfbb054b44ba0a3b8782e5a9478e61
+</div>
 
-    <script>
-        const NumPatients = document.getElementById('NumPatRev');
-        const appointChart = document.getElementById('appointmentChart');
-        const servChart = document.getElementById('servChart');
-        const TransactionRep = document.getElementById('TransactionRep');
+<script>
+    const NumPatients = document.getElementById('NumPatRev');
+    const appointChart = document.getElementById('appointmentChart');
+    const servChart = document.getElementById('servChart');
+    const TransactionRep = document.getElementById('TransactionRep');
 
-        const numweeklyBtn = document.getElementById('numweeklyBtn');
-        const nummonthlyBtn = document.getElementById('nummonthlyBtn');
-        const numyearlyBtn = document.getElementById('numyearlyBtn');
+    const numweeklyBtn = document.getElementById('numweeklyBtn');
+    const nummonthlyBtn = document.getElementById('nummonthlyBtn');
+    const numyearlyBtn = document.getElementById('numyearlyBtn');
 
-        const transweeklyBtn = document.getElementById('transweeklyBtn');
-        const transmonthlyBtn = document.getElementById('transmonthlyBtn');
-        const transyearlyBtn = document.getElementById('transyearlyBtn');
+    const transweeklyBtn = document.getElementById('transweeklyBtn');
+    const transmonthlyBtn = document.getElementById('transmonthlyBtn');
+    const transyearlyBtn = document.getElementById('transyearlyBtn');
 
-        let NumPatRev;
-        let appointmentChart;
-        let serviceChart;
-        let TransactionChart;
+    let NumPatRev;
+    let appointmentChart;
+    let serviceChart;
+    let TransactionChart;
 
-        function setPatientButton(activeButton) {
-            [numweeklyBtn, nummonthlyBtn, numyearlyBtn].forEach(btn => {
-                btn.classList.remove('bg-[#88925F]', 'text-white');
-                btn.classList.add('bg-gray-200', 'text-[#2A1001]');
-            });
+    function setPatientButton(activeButton) {
+        [numweeklyBtn, nummonthlyBtn, numyearlyBtn].forEach(btn => {
+            btn.classList.remove('bg-[#88925F]', 'text-white');
+            btn.classList.add('bg-gray-200', 'text-[#2A1001]');
+        });
 
-            activeButton.classList.remove('bg-gray-200', 'text-[#2A1001]');
-            activeButton.classList.add('bg-[#88925F]', 'text-white');
-        }
+        activeButton.classList.remove('bg-gray-200', 'text-[#2A1001]');
+        activeButton.classList.add('bg-[#88925F]', 'text-white');
+    }
 
-        function setTransactionButton(activeButton) {
-            [transweeklyBtn, transmonthlyBtn, transyearlyBtn].forEach(btn => {
-                btn.classList.remove('bg-[#88925F]', 'text-white');
-                btn.classList.add('bg-gray-200', 'text-[#2A1001]');
-            });
+    function setTransactionButton(activeButton) {
+        [transweeklyBtn, transmonthlyBtn, transyearlyBtn].forEach(btn => {
+            btn.classList.remove('bg-[#88925F]', 'text-white');
+            btn.classList.add('bg-gray-200', 'text-[#2A1001]');
+        });
 
-            activeButton.classList.remove('bg-gray-200', 'text-[#2A1001]');
-            activeButton.classList.add('bg-[#88925F]', 'text-white');
-        }
+        activeButton.classList.remove('bg-gray-200', 'text-[#2A1001]');
+        activeButton.classList.add('bg-[#88925F]', 'text-white');
+    }
 
-        function buildPatientColors(data) {
-            return data.map(value => {
-                if (value <= 10) {
-                    return '#FA8D8D';
-                } else if (value <= 20) {
-                    return '#D5C04D';
-                } else if (value <= 40) {
-                    return '#D3D078';
-                } else {
-                    return '#88925F';
-                }
-            });
-        }
+    function buildPatientColors(data) {
+        return data.map(value => {
+            if (value <= 10) {
+                return '#FA8D8D';
+            } else if (value <= 20) {
+                return '#D5C04D';
+            } else if (value <= 40) {
+                return '#D3D078';
+            } else {
+                return '#88925F';
+            }
+        });
+    }
 
-        function createCharts(data) {
-            NumPatRev = new Chart(NumPatients, {
-                type: 'bar',
-                data: {
-                    labels: data.patients.labels,
-                    datasets: [{
-                        label: 'Number of patients',
-                        data: data.patients.data,
-                        backgroundColor: buildPatientColors(data.patients.data),
-                        borderRadius: 8
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false
-                }
-            });
+    function createCharts(data) {
+        NumPatRev = new Chart(NumPatients, {
+            type: 'bar',
+            data: {
+                labels: data.patients.labels,
+                datasets: [{
+                    label: 'Number of patients',
+                    data: data.patients.data,
+                    backgroundColor: buildPatientColors(data.patients.data),
+                    borderRadius: 8
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false
+            }
+        });
 
-            appointmentChart = new Chart(appointChart, {
-                type: 'pie',
-                data: {
-                    labels: data.appointments.labels,
-                    datasets: [{
-                        data: data.appointments.data,
-                        backgroundColor: [
-                            '#D5C04D',
-                            '#A2AC89',
-                            '#D7E3A5',
-                            '#FA8D8D'
-                        ],
-                        borderColor: '#2A1001',
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            position: 'right'
-                        }
+        appointmentChart = new Chart(appointChart, {
+            type: 'pie',
+            data: {
+                labels: data.appointments.labels,
+                datasets: [{
+                    data: data.appointments.data,
+                    backgroundColor: [
+                        '#D5C04D',
+                        '#A2AC89',
+                        '#D7E3A5',
+                        '#FA8D8D'
+                    ],
+                    borderColor: '#2A1001',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'right'
                     }
                 }
-            });
+            }
+        });
 
-            serviceChart = new Chart(servChart, {
-                type: 'pie',
-                data: {
-                    labels: data.services.labels,
-                    datasets: [{
-                        data: data.services.data,
-                        backgroundColor: [
-                            '#D7E3A5',
-                            '#FA8D8D',
-                            '#D5C04D',
-                            '#A2AC89',
-                            '#88925F',
-                            '#C7B9A0'
-                        ],
-                        borderColor: '#2A1001',
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            position: 'right'
-                        }
+        serviceChart = new Chart(servChart, {
+            type: 'pie',
+            data: {
+                labels: data.services.labels,
+                datasets: [{
+                    data: data.services.data,
+                    backgroundColor: [
+                        '#D7E3A5',
+                        '#FA8D8D',
+                        '#D5C04D',
+                        '#A2AC89',
+                        '#88925F',
+                        '#C7B9A0'
+                    ],
+                    borderColor: '#2A1001',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'right'
                     }
                 }
-            });
+            }
+        });
 
-            TransactionChart = new Chart(TransactionRep, {
-                type: 'line',
-                data: {
-                    labels: data.transactions.labels,
-                    datasets: [{
-                        label: 'Money',
-                        data: data.transactions.data,
-                        borderColor: '#88925F'
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false
-                }
-            });
+        TransactionChart = new Chart(TransactionRep, {
+            type: 'line',
+            data: {
+                labels: data.transactions.labels,
+                datasets: [{
+                    label: 'Money',
+                    data: data.transactions.data,
+                    borderColor: '#88925F'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false
+            }
+        });
+    }
+
+    async function loadDashboard(period) {
+        const token = localStorage.getItem('userToken');
+
+        if (!token) {
+            alert('Please log in as an admin.');
+            return;
         }
 
-        async function loadDashboard(period) {
-            const token = localStorage.getItem('userToken');
+        try {
+            const response = await fetch(`/api/admin/dashboard?period=${period}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
 
-            if (!token) {
-                alert('Please log in as an admin.');
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.message || `Server error: ${response.status}`);
+            }
+
+            const data = await response.json();
+
+            if (!NumPatRev) {
+                createCharts(data);
                 return;
             }
 
-            try {
-                const response = await fetch(`/api/admin/dashboard?period=${period}`, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
+            NumPatRev.data.labels = data.patients.labels;
+            NumPatRev.data.datasets[0].data = data.patients.data;
+            NumPatRev.data.datasets[0].backgroundColor = buildPatientColors(data.patients.data);
+            NumPatRev.update();
 
-                if (!response.ok) {
-                    const error = await response.json();
-                    throw new Error(error.message || `Server error: ${response.status}`);
-                }
+            appointmentChart.data.labels = data.appointments.labels;
+            appointmentChart.data.datasets[0].data = data.appointments.data;
+            appointmentChart.update();
 
-                const data = await response.json();
+            serviceChart.data.labels = data.services.labels;
+            serviceChart.data.datasets[0].data = data.services.data;
+            serviceChart.update();
 
-                if (!NumPatRev) {
-                    createCharts(data);
-                    return;
-                }
+            TransactionChart.data.labels = data.transactions.labels;
+            TransactionChart.data.datasets[0].data = data.transactions.data;
+            TransactionChart.update();
 
-                NumPatRev.data.labels = data.patients.labels;
-                NumPatRev.data.datasets[0].data = data.patients.data;
-                NumPatRev.data.datasets[0].backgroundColor = buildPatientColors(data.patients.data);
-                NumPatRev.update();
+        } catch (error) {
+            console.error('Failed to load dashboard:', error);
+            alert('Could not load dashboard data: ' + error.message);
+        }
+    }
 
-                appointmentChart.data.labels = data.appointments.labels;
-                appointmentChart.data.datasets[0].data = data.appointments.data;
-                appointmentChart.update();
+    numweeklyBtn.addEventListener('click', async function () {
+        setPatientButton(numweeklyBtn);
+        await loadDashboard('weekly');
+    });
 
-                serviceChart.data.labels = data.services.labels;
-                serviceChart.data.datasets[0].data = data.services.data;
-                serviceChart.update();
+    nummonthlyBtn.addEventListener('click', async function () {
+        setPatientButton(nummonthlyBtn);
+        await loadDashboard('monthly');
+    });
 
-                TransactionChart.data.labels = data.transactions.labels;
-                TransactionChart.data.datasets[0].data = data.transactions.data;
-                TransactionChart.update();
+    numyearlyBtn.addEventListener('click', async function () {
+        setPatientButton(numyearlyBtn);
+        await loadDashboard('yearly');
+    });
 
-            } catch (error) {
-                console.error('Failed to load dashboard:', error);
-                alert('Could not load dashboard data: ' + error.message);
-            }
+    transweeklyBtn.addEventListener('click', async function () {
+        setTransactionButton(transweeklyBtn);
+        await loadDashboard('weekly');
+    });
+
+    transmonthlyBtn.addEventListener('click', async function () {
+        setTransactionButton(transmonthlyBtn);
+        await loadDashboard('monthly');
+    });
+
+    transyearlyBtn.addEventListener('click', async function () {
+        setTransactionButton(transyearlyBtn);
+        await loadDashboard('yearly');
+    });
+
+    loadDashboard('weekly');
+
+    function GenPDF() {
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF('p', 'mm', 'a4');
+
+        const pageWidth = 210;
+        const pageHeight = 297;
+        const margin = 14;
+        const contentWidth = pageWidth - (margin * 2);
+        const border = [26, 16, 8];
+        const olive = [136, 146, 95];
+        const grayBtn = [229, 231, 235];
+        const titleColor = [26, 16, 8];
+
+        pdf.setFillColor(250, 248, 244);
+        pdf.rect(0, 0, pageWidth, pageHeight, 'F');
+
+        function drawCard(x, y, w, h) {
+            pdf.setFillColor(255, 255, 255);
+            pdf.setDrawColor(border[0], border[1], border[2]);
+            pdf.setLineWidth(0.4);
+            pdf.roundedRect(x, y, w, h, 4, 4, 'FD');
         }
 
-        numweeklyBtn.addEventListener('click', async function () {
-            setPatientButton(numweeklyBtn);
-            await loadDashboard('weekly');
-        });
+        function isActive(btn) {
+            return btn && btn.classList.contains('bg-[#88925F]');
+        }
 
-        nummonthlyBtn.addEventListener('click', async function () {
-            setPatientButton(nummonthlyBtn);
-            await loadDashboard('monthly');
-        });
+        function drawPills(rightEdge, y, weeklyBtn, monthlyBtn, yearlyBtn) {
+            const labels = ['Weekly', 'Monthly', 'Yearly'];
+            const buttons = [weeklyBtn, monthlyBtn, yearlyBtn];
+            const pillW = 16;
+            const pillH = 6;
+            const gap = 1.5;
+            let x = rightEdge - (3 * pillW + 2 * gap);
 
-        numyearlyBtn.addEventListener('click', async function () {
-            setPatientButton(numyearlyBtn);
-            await loadDashboard('yearly');
-        });
+            buttons.forEach(function (btn, i) {
+                if (isActive(btn)) {
+                    pdf.setFillColor(olive[0], olive[1], olive[2]);
+                    pdf.setTextColor(255, 255, 255);
+                } else {
+                    pdf.setFillColor(grayBtn[0], grayBtn[1], grayBtn[2]);
+                    pdf.setTextColor(42, 16, 1);
+                }
 
-        transweeklyBtn.addEventListener('click', async function () {
-            setTransactionButton(transweeklyBtn);
-            await loadDashboard('weekly');
-        });
+                pdf.roundedRect(x, y, pillW, pillH, 1.8, 1.8, 'F');
+                pdf.setFont('helvetica', 'bold');
+                pdf.setFontSize(6);
+                pdf.text(labels[i], x + pillW / 2, y + 4.1, { align: 'center' });
+                x += pillW + gap;
+            });
 
-        transmonthlyBtn.addEventListener('click', async function () {
-            setTransactionButton(transmonthlyBtn);
-            await loadDashboard('monthly');
-        });
-
-        transyearlyBtn.addEventListener('click', async function () {
-            setTransactionButton(transyearlyBtn);
-            await loadDashboard('yearly');
-        });
-
-        loadDashboard('weekly');
-
-        function GenPDF() {
-            const { jsPDF } = window.jspdf;
-            const pdf = new jsPDF('p', 'mm', 'a4');
-
-            const pageWidth = 210;
-            const pageHeight = 297;
-            const margin = 14;
-            const contentWidth = pageWidth - (margin * 2);
-            const border = [26, 16, 8];
-            const olive = [136, 146, 95];
-            const grayBtn = [229, 231, 235];
-            const titleColor = [26, 16, 8];
-
-            pdf.setFillColor(250, 248, 244);
-            pdf.rect(0, 0, pageWidth, pageHeight, 'F');
-
-            function drawCard(x, y, w, h) {
-                pdf.setFillColor(255, 255, 255);
-                pdf.setDrawColor(border[0], border[1], border[2]);
-                pdf.setLineWidth(0.4);
-                pdf.roundedRect(x, y, w, h, 4, 4, 'FD');
-            }
-
-            function isActive(btn) {
-                return btn && btn.classList.contains('bg-[#88925F]');
-            }
-
-            function drawPills(rightEdge, y, weeklyBtn, monthlyBtn, yearlyBtn) {
-                const labels = ['Weekly', 'Monthly', 'Yearly'];
-                const buttons = [weeklyBtn, monthlyBtn, yearlyBtn];
-                const pillW = 16;
-                const pillH = 6;
-                const gap = 1.5;
-                let x = rightEdge - (3 * pillW + 2 * gap);
-
-                buttons.forEach(function (btn, i) {
-                    if (isActive(btn)) {
-                        pdf.setFillColor(olive[0], olive[1], olive[2]);
-                        pdf.setTextColor(255, 255, 255);
-                    } else {
-                        pdf.setFillColor(grayBtn[0], grayBtn[1], grayBtn[2]);
-                        pdf.setTextColor(42, 16, 1);
-                    }
-
-                    pdf.roundedRect(x, y, pillW, pillH, 1.8, 1.8, 'F');
-                    pdf.setFont('helvetica', 'bold');
-                    pdf.setFontSize(6);
-                    pdf.text(labels[i], x + pillW / 2, y + 4.1, { align: 'center' });
-                    x += pillW + gap;
-                });
-
-                pdf.setTextColor(titleColor[0], titleColor[1], titleColor[2]);
-            }
-
-            function addChartImage(chart, x, y, w, h) {
-                const image = chart.toBase64Image('image/png', 1);
-                pdf.addImage(image, 'PNG', x, y, w, h);
-            }
-
-            pdf.setTextColor(0, 0, 0);
-            pdf.setFont('helvetica', 'bold');
-            pdf.setFontSize(26);
-            pdf.text('Dashboard Report', pageWidth / 2, 22, { align: 'center' });
-
-            const patientsY = 30;
-            const patientsH = 78;
-            drawCard(margin, patientsY, contentWidth, patientsH);
-            pdf.setFont('helvetica', 'bold');
-            pdf.setFontSize(9);
             pdf.setTextColor(titleColor[0], titleColor[1], titleColor[2]);
-            pdf.text('Total Numbers of Patients Review', margin + 6, patientsY + 9);
-            drawPills(margin + contentWidth - 6, patientsY + 4.2, numweeklyBtn, nummonthlyBtn, numyearlyBtn);
-            addChartImage(NumPatRev, margin + 5, patientsY + 14, contentWidth - 10, patientsH - 18);
-
-            const pieGap = 6;
-            const pieY = 114;
-            const pieH = 68;
-            const pieW = (contentWidth - pieGap) / 2;
-
-            drawCard(margin, pieY, pieW, pieH);
-            pdf.setFont('helvetica', 'bold');
-            pdf.setFontSize(9);
-            pdf.text('Appointment Status', margin + 5, pieY + 8);
-            addChartImage(appointmentChart, margin + 4, pieY + 11, pieW - 8, pieH - 16);
-
-            const servicesX = margin + pieW + pieGap;
-            drawCard(servicesX, pieY, pieW, pieH);
-            pdf.text('Most Requested Services', servicesX + 5, pieY + 8);
-            addChartImage(serviceChart, servicesX + 4, pieY + 11, pieW - 8, pieH - 16);
-
-            const transY = 188;
-            const transH = 82;
-            drawCard(margin, transY, contentWidth, transH);
-            pdf.text('Total Number of Transaction', margin + 6, transY + 9);
-            drawPills(margin + contentWidth - 6, transY + 4.2, transweeklyBtn, transmonthlyBtn, transyearlyBtn);
-            addChartImage(TransactionChart, margin + 5, transY + 14, contentWidth - 10, transH - 18);
-
-            pdf.save('Dashboard_Report.pdf');
         }
-    </script>
+
+        function addChartImage(chart, x, y, w, h) {
+            const image = chart.toBase64Image('image/png', 1);
+            pdf.addImage(image, 'PNG', x, y, w, h);
+        }
+
+        pdf.setTextColor(0, 0, 0);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFontSize(26);
+        pdf.text('Dashboard Report', pageWidth / 2, 22, { align: 'center' });
+
+        const patientsY = 30;
+        const patientsH = 78;
+        drawCard(margin, patientsY, contentWidth, patientsH);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFontSize(9);
+        pdf.setTextColor(titleColor[0], titleColor[1], titleColor[2]);
+        pdf.text('Total Numbers of Patients Review', margin + 6, patientsY + 9);
+        drawPills(margin + contentWidth - 6, patientsY + 4.2, numweeklyBtn, nummonthlyBtn, numyearlyBtn);
+        addChartImage(NumPatRev, margin + 5, patientsY + 14, contentWidth - 10, patientsH - 18);
+
+        const pieGap = 6;
+        const pieY = 114;
+        const pieH = 68;
+        const pieW = (contentWidth - pieGap) / 2;
+
+        drawCard(margin, pieY, pieW, pieH);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFontSize(9);
+        pdf.text('Appointment Status', margin + 5, pieY + 8);
+        addChartImage(appointmentChart, margin + 4, pieY + 11, pieW - 8, pieH - 16);
+
+        const servicesX = margin + pieW + pieGap;
+        drawCard(servicesX, pieY, pieW, pieH);
+        pdf.text('Most Requested Services', servicesX + 5, pieY + 8);
+        addChartImage(serviceChart, servicesX + 4, pieY + 11, pieW - 8, pieH - 16);
+
+        const transY = 188;
+        const transH = 82;
+        drawCard(margin, transY, contentWidth, transH);
+        pdf.text('Total Number of Transaction', margin + 6, transY + 9);
+        drawPills(margin + contentWidth - 6, transY + 4.2, transweeklyBtn, transmonthlyBtn, transyearlyBtn);
+        addChartImage(TransactionChart, margin + 5, transY + 14, contentWidth - 10, transH - 18);
+
+        pdf.save('Dashboard_Report.pdf');
+    }
+</script>
 
 </body>
 </html>

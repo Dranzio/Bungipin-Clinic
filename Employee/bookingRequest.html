@@ -8,66 +8,58 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://kit.fontawesome.com/fc8c3f4103.js" crossorigin="anonymous"></script>
     <script src="/Taskbar/Employee_Sidebar.js"></script>
-<!--    <script src="Messages.js"></script>-->
+    <!--    <script src="Messages.js"></script>-->
 </head>
 
 <body class="min-h-screen bg-[#F3EFE4] relative flex flex-col md:flex-row text-[#2A1001]">
-<<<<<<< HEAD
 <!-- SIDEBAR -->
-  <div id="sidebar-placeholder"></div>
-=======
-    <div id="sidebar-placeholder"></div>
->>>>>>> bda39ef64adfbb054b44ba0a3b8782e5a9478e61
-    <script>
-      function syncContentOffset() {
+<div id="sidebar-placeholder"></div>
+<script>
+    function syncContentOffset() {
         const placeholder = document.getElementById('sidebar-placeholder');
         const sidebar = Array.from(placeholder.children)
-          .find(el => !['SCRIPT', 'STYLE', 'LINK'].includes(el.tagName));
+            .find(el => !['SCRIPT', 'STYLE', 'LINK'].includes(el.tagName));
         if (!sidebar) return;
 
         const set = (el, prop, value) => { if (el.style[prop] !== value) el.style[prop] = value; };
 
         const apply = () => {
-          const desktop = window.innerWidth >= 768;
-          set(placeholder, 'flexShrink', '0');
-          set(sidebar, 'position', desktop ? 'sticky' : 'relative');  
-          set(sidebar, 'top', desktop ? '0px' : 'auto');
-          set(sidebar, 'height', desktop ? '100vh' : '');
-          set(sidebar, 'overflowY', desktop ? 'auto' : '');           
+            const desktop = window.innerWidth >= 768;
+            set(placeholder, 'flexShrink', '0');
+            set(sidebar, 'position', desktop ? 'sticky' : 'relative');
+            set(sidebar, 'top', desktop ? '0px' : 'auto');
+            set(sidebar, 'height', desktop ? '100vh' : '');
+            set(sidebar, 'overflowY', desktop ? 'auto' : '');
         };
 
         window.addEventListener('resize', apply);
         apply();
-      }
+    }
 
-        (async () => {
-          try {
+    (async () => {
+        try {
             const response = await fetch('/Taskbar/Employee_Task.html');
             if (response.ok) {
-              const data = await response.text();
-              document.getElementById('sidebar-placeholder').innerHTML = data;
-              const currentPage = window.location.pathname.split("/").pop();
-              document.querySelectorAll('.nav-link').forEach(link => {
-                if (link.getAttribute('data-page') === currentPage) {
-                  link.classList.add('bg-[#FDFCE9]');
+                const data = await response.text();
+                document.getElementById('sidebar-placeholder').innerHTML = data;
+                const currentPage = window.location.pathname.split("/").pop();
+                document.querySelectorAll('.nav-link').forEach(link => {
+                    if (link.getAttribute('data-page') === currentPage) {
+                        link.classList.add('bg-[#FDFCE9]');
+                    }
+                });
+                if (typeof initSidebar === 'function') {
+                    initSidebar();
                 }
-              });
-              if (typeof initSidebar === 'function') {
-                initSidebar();
-              }
-              syncContentOffset();
+                syncContentOffset();
             }
-          } catch (error) {
+        } catch (error) {
             console.log('Sidebar fallback:', error);
-          }
-        })();
-      </script>
+        }
+    })();
+</script>
 
-<<<<<<< HEAD
 <div id="main-content" class="flex-1 min-w-0 md:min-h-0 md:overflow-y-auto">
-=======
-<div id="main-content" class="flex-1 min-w-0 min-h-0 overflow-y-auto">
->>>>>>> bda39ef64adfbb054b44ba0a3b8782e5a9478e61
     <div class="flex justify-between items-start pt-5 pl-6 pr-4 md:pl-24 md:pr-8">
         <h1 class="text-2xl sm:text-3xl md:text-5xl 2xl:text-[73px] pt-5 font-bold text-[#2A1001] font-['Poppins']">
             Booking Request
@@ -78,145 +70,139 @@
                 class="w-20 sm:w-24 md:w-28 h-auto object-contain shrink-0"
                 alt="Logo"/>
     </div>
-<<<<<<< HEAD
+    <hr class="border-t border-[#2A1001] mt-2 mb-6" />
+
 
     <main class="flex-1 w-full relative">
 
-=======
->>>>>>> bda39ef64adfbb054b44ba0a3b8782e5a9478e61
-    <hr class="border-t border-[#2A1001] mt-2 mb-6" />
-
-    
-<main class="flex-1 w-full relative">
-
-    <!-- Search input -->
-    <div class="flex w-full justify-center gap-3">
-        <input
-                type="text"
-                id="searchInput"
-                placeholder="Search by name..."
-                class="h-10 w-full max-w-md rounded-full border border-[#2A1001]/20 bg-white px-4 mb-6 outline-none"
-        />
-    </div>
-
-    <!-- booking cards -->
-    <div id="booking-container" class="space-y-4 mb-10 w-full md:w-[90%] mx-auto">
-        <!-- cards injected by JS -->
-    </div>
-
-    <!-- decline modal -->
-    <div id="declineModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div class="bg-[#F2F0EF] rounded-3xl p-6 sm:p-8 max-w-lg w-full border border-[#2A1001]/20 shadow-2xl relative">
-            <h3 class="text-xl font-bold text-[#2A1001] mb-2 font-['Poppins']">Decline Booking</h3>
-            <p id="declineModalText" class="text-sm text-[#2A1001]/80 mb-4">
-                Are you sure you want to decline this booking request? This action cannot be undone.
-            </p>
-            <div id="paidWarning" class="hidden bg-amber-100 border-l-4 border-amber-500 text-amber-900 p-3 rounded-r-xl text-xs mb-4">
-                <i class="fa-solid fa-circle-exclamation mr-1"></i>
-                <strong>Notice:</strong> This patient has already paid online. Consider rescheduling instead of declining.
-            </div>
-            <div class="flex items-center justify-end gap-2 mt-6">
-                <button id="cancelDeclineBtn" class="px-4 py-2.5 text-sm font-semibold text-[#2A1001] bg-white border border-[#2A1001]/20 rounded-full hover:bg-gray-100 transition whitespace-nowrap">
-                    Cancel
-                </button>
-                <button id="rescheduleBtn" class="hidden px-4 py-2.5 text-sm font-semibold text-white bg-[#667733] rounded-full hover:bg-[#556022] transition flex flex-row items-center justify-center gap-2 whitespace-nowrap">
-                    <img src="../assets/calendarIcon.png" alt="resched" class="w-4 h-4 object-contain shrink-0 pointer-events-none" onerror="this.style.display='none'">
-                    <span>Reschedule Instead</span>
-                </button>
-                <button id="confirmDeclineBtn" class="px-4 py-2.5 text-sm font-semibold text-white bg-[#D9534F] rounded-full hover:bg-[#c9302c] transition whitespace-nowrap">
-                    Confirm Decline
-                </button>
-            </div>
+        <!-- Search input -->
+        <div class="flex w-full justify-center gap-3">
+            <input
+                    type="text"
+                    id="searchInput"
+                    placeholder="Search by name..."
+                    class="h-10 w-full max-w-md rounded-full border border-[#2A1001]/20 bg-white px-4 mb-6 outline-none"
+            />
         </div>
-    </div>
-    <!--reschedule modal-->
-    <div id="rescheduleModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
-        <div class="bg-[#F3EFE4] rounded-3xl p-6 sm:p-8 relative max-w-4xl w-full shadow-2xl border-[3px] border-[#2A1001]/20 my-auto">
 
-            <!-- Close Button -->
-            <button id="closeRescheduleModal" class="absolute top-5 right-6 text-3xl font-extrabold text-[#382414] hover:opacity-60 transition leading-none">
-                &times;
-            </button>
+        <!-- booking cards -->
+        <div id="booking-container" class="space-y-4 mb-10 w-full md:w-[90%] mx-auto">
+            <!-- cards injected by JS -->
+        </div>
 
-
-            <div class="mb-5 text-center">
-                <h2 class="text-2xl font-bold text-[#2A1001] font-['Poppins']" id="rescheduleModalTitle">
-                    Reschedule Appointment
-                </h2>
-                <p class="text-xs sm:text-sm text-[#2A1001]/70 mt-1" id="reschedulePatientSummary">
-                    Select a new date and available slot for the patient.
+        <!-- decline modal -->
+        <div id="declineModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div class="bg-[#F2F0EF] rounded-3xl p-6 sm:p-8 max-w-lg w-full border border-[#2A1001]/20 shadow-2xl relative">
+                <h3 class="text-xl font-bold text-[#2A1001] mb-2 font-['Poppins']">Decline Booking</h3>
+                <p id="declineModalText" class="text-sm text-[#2A1001]/80 mb-4">
+                    Are you sure you want to decline this booking request? This action cannot be undone.
                 </p>
-            </div>
-
-
-            <div class="flex flex-col-reverse lg:flex-row gap-8 items-center justify-center mt-4">
-
-                <!-- Available slots panel-->
-                <div class="flex justify-center gap-6 sm:gap-8 bg-white/70 p-5 rounded-3xl border-2 border-[#2A1001]/20 shadow-sm w-full lg:w-auto">
-                    <!-- AM time -->
-                    <div class="flex flex-col w-36">
-                        <h4 class="font-bold text-sm text-[#2A1001] mb-3 text-center border-b pb-1 border-[#2A1001]/10">AM - Time</h4>
-                        <div id="amSlotsContainer" class="space-y-3 w-full"></div>
-                    </div>
-                    <!-- PM time -->
-                    <div class="flex flex-col w-36">
-                        <h4 class="font-bold text-sm text-[#2A1001] mb-3 text-center border-b pb-1 border-[#2A1001]/10">PM - Time</h4>
-                        <div id="pmSlotsContainer" class="space-y-3 w-full"></div>
-                    </div>
+                <div id="paidWarning" class="hidden bg-amber-100 border-l-4 border-amber-500 text-amber-900 p-3 rounded-r-xl text-xs mb-4">
+                    <i class="fa-solid fa-circle-exclamation mr-1"></i>
+                    <strong>Notice:</strong> This patient has already paid online. Consider rescheduling instead of declining.
                 </div>
-
-                <!--Dynamic calendar -->
-                <div class="flex flex-col w-[410px] h-[360px] rounded-3xl border-[3.5px] border-black bg-white overflow-hidden shadow-lg shrink-0">
-
-                    <div class="flex justify-between items-center p-[10px] w-full h-15 bg-[#667733]">
-                        <div class="cursor-pointer text-[25px] bold text-[#D7E3A5] px-2 hover:text-white transition" id="prev">
-                            &lt;
-                        </div>
-
-                        <!-- Display Month-Year -->
-                        <div id="month-year" class="text-[25px] bold text-[#D7E3A5]"></div>
-
-                        <div class="cursor-pointer text-[25px] bold text-[#D7E3A5] px-2 hover:text-white transition" id="next">
-                            &gt;
-                        </div>
-                    </div>
-
-                    <!-- The days of the week -->
-                    <div class="grid grid-cols-7 gap-3 px-4 py-2 text-center text-[#2A1001] font-semibold text-sm">
-                        <div>Sun</div>
-                        <div>Mon</div>
-                        <div>Tue</div>
-                        <div>Wed</div>
-                        <div>Thu</div>
-                        <div>Fri</div>
-                        <div>Sat</div>
-                    </div>
-
-                    <!--days of the month grid -->
-                    <div class="grid grid-cols-7 gap-3 px-4 py-1 place-items-center" id="days"></div>
+                <div class="flex items-center justify-end gap-2 mt-6">
+                    <button id="cancelDeclineBtn" class="px-4 py-2.5 text-sm font-semibold text-[#2A1001] bg-white border border-[#2A1001]/20 rounded-full hover:bg-gray-100 transition whitespace-nowrap">
+                        Cancel
+                    </button>
+                    <button id="rescheduleBtn" class="hidden px-4 py-2.5 text-sm font-semibold text-white bg-[#667733] rounded-full hover:bg-[#556022] transition flex flex-row items-center justify-center gap-2 whitespace-nowrap">
+                        <img src="../assets/calendarIcon.png" alt="resched" class="w-4 h-4 object-contain shrink-0 pointer-events-none" onerror="this.style.display='none'">
+                        <span>Reschedule Instead</span>
+                    </button>
+                    <button id="confirmDeclineBtn" class="px-4 py-2.5 text-sm font-semibold text-white bg-[#D9534F] rounded-full hover:bg-[#c9302c] transition whitespace-nowrap">
+                        Confirm Decline
+                    </button>
                 </div>
-
             </div>
-
-            <!-- selected date and time indicator -->
-            <p class="text-sm text-[#2A1001] text-center font-medium mt-6" id="selectedDateDisplay">
-                No date selected yet.
-            </p>
-
-            <!--Confirmation Buttons -->
-            <div class="mt-4 flex flex-col sm:flex-row items-center justify-center gap-3">
-                <button id="cancelRescheduleModalBtn" class="w-full sm:w-auto px-6 py-2.5 text-sm font-semibold text-[#2A1001] bg-white border border-[#2A1001]/20 rounded-full hover:bg-gray-100 transition">
-                    Cancel
-                </button>
-                <button id="confirmRescheduleBtn" disabled class="w-full sm:w-auto bg-[#667733] hover:bg-[#556022] transition text-white font-bold px-8 py-2.5 rounded-full shadow disabled:opacity-40 disabled:cursor-not-allowed">
-                    Confirm Reschedule
-                </button>
-            </div>
-
         </div>
-    </div>
+        <!--reschedule modal-->
+        <div id="rescheduleModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
+            <div class="bg-[#F3EFE4] rounded-3xl p-6 sm:p-8 relative max-w-4xl w-full shadow-2xl border-[3px] border-[#2A1001]/20 my-auto">
 
-</main>
+                <!-- Close Button -->
+                <button id="closeRescheduleModal" class="absolute top-5 right-6 text-3xl font-extrabold text-[#382414] hover:opacity-60 transition leading-none">
+                    &times;
+                </button>
+
+
+                <div class="mb-5 text-center">
+                    <h2 class="text-2xl font-bold text-[#2A1001] font-['Poppins']" id="rescheduleModalTitle">
+                        Reschedule Appointment
+                    </h2>
+                    <p class="text-xs sm:text-sm text-[#2A1001]/70 mt-1" id="reschedulePatientSummary">
+                        Select a new date and available slot for the patient.
+                    </p>
+                </div>
+
+
+                <div class="flex flex-col-reverse lg:flex-row gap-8 items-center justify-center mt-4">
+
+                    <!-- Available slots panel-->
+                    <div class="flex justify-center gap-6 sm:gap-8 bg-white/70 p-5 rounded-3xl border-2 border-[#2A1001]/20 shadow-sm w-full lg:w-auto">
+                        <!-- AM time -->
+                        <div class="flex flex-col w-36">
+                            <h4 class="font-bold text-sm text-[#2A1001] mb-3 text-center border-b pb-1 border-[#2A1001]/10">AM - Time</h4>
+                            <div id="amSlotsContainer" class="space-y-3 w-full"></div>
+                        </div>
+                        <!-- PM time -->
+                        <div class="flex flex-col w-36">
+                            <h4 class="font-bold text-sm text-[#2A1001] mb-3 text-center border-b pb-1 border-[#2A1001]/10">PM - Time</h4>
+                            <div id="pmSlotsContainer" class="space-y-3 w-full"></div>
+                        </div>
+                    </div>
+
+                    <!--Dynamic calendar -->
+                    <div class="flex flex-col w-[410px] h-[360px] rounded-3xl border-[3.5px] border-black bg-white overflow-hidden shadow-lg shrink-0">
+
+                        <div class="flex justify-between items-center p-[10px] w-full h-15 bg-[#667733]">
+                            <div class="cursor-pointer text-[25px] bold text-[#D7E3A5] px-2 hover:text-white transition" id="prev">
+                                &lt;
+                            </div>
+
+                            <!-- Display Month-Year -->
+                            <div id="month-year" class="text-[25px] bold text-[#D7E3A5]"></div>
+
+                            <div class="cursor-pointer text-[25px] bold text-[#D7E3A5] px-2 hover:text-white transition" id="next">
+                                &gt;
+                            </div>
+                        </div>
+
+                        <!-- The days of the week -->
+                        <div class="grid grid-cols-7 gap-3 px-4 py-2 text-center text-[#2A1001] font-semibold text-sm">
+                            <div>Sun</div>
+                            <div>Mon</div>
+                            <div>Tue</div>
+                            <div>Wed</div>
+                            <div>Thu</div>
+                            <div>Fri</div>
+                            <div>Sat</div>
+                        </div>
+
+                        <!--days of the month grid -->
+                        <div class="grid grid-cols-7 gap-3 px-4 py-1 place-items-center" id="days"></div>
+                    </div>
+
+                </div>
+
+                <!-- selected date and time indicator -->
+                <p class="text-sm text-[#2A1001] text-center font-medium mt-6" id="selectedDateDisplay">
+                    No date selected yet.
+                </p>
+
+                <!--Confirmation Buttons -->
+                <div class="mt-4 flex flex-col sm:flex-row items-center justify-center gap-3">
+                    <button id="cancelRescheduleModalBtn" class="w-full sm:w-auto px-6 py-2.5 text-sm font-semibold text-[#2A1001] bg-white border border-[#2A1001]/20 rounded-full hover:bg-gray-100 transition">
+                        Cancel
+                    </button>
+                    <button id="confirmRescheduleBtn" disabled class="w-full sm:w-auto bg-[#667733] hover:bg-[#556022] transition text-white font-bold px-8 py-2.5 rounded-full shadow disabled:opacity-40 disabled:cursor-not-allowed">
+                        Confirm Reschedule
+                    </button>
+                </div>
+
+            </div>
+        </div>
+
+    </main>
 
 </div>
 
