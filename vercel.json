@@ -1,10 +1,19 @@
 {
-  "$schema": "https://openapi.vercel.sh/vercel.json",
   "version": 2,
-  "rewrites": [
+  "builds": [
     {
-      "source": "/((?!.*\\.(?:css|js|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot)).*)",
-      "destination": "/app.js"
+      "src": "app.js",
+      "use": "@vercel/node",
+      "config": {
+        "includeFiles": [
+          "Admin/**", "Customer/**", "Employee/**", "LogInRegister/**",
+          "WelcomePage/**", "Taskbar/**", "assets/**", "images/**",
+          "output.css", "pageProtection.js", "denied.html"
+        ]
+      }
     }
+  ],
+  "routes": [
+    { "src": "/(.*)", "dest": "/app.js" }
   ]
 }
