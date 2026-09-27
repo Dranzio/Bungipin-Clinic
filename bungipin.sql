@@ -1,5 +1,5 @@
-CREATE DATABASE IF NOT EXISTS dental_appointments;
-USE dental_appointments;
+CREATE DATABASE IF NOT EXISTS defaultdb;
+USE defaultdb;
 
 -- Drop Instances *
 DROP PROCEDURE IF EXISTS sp_get_all_patient_records;
@@ -7,6 +7,7 @@ DROP PROCEDURE IF EXISTS sp_get_patient_record;
 DROP PROCEDURE IF EXISTS sp_get_employee_record;
 DROP PROCEDURE IF EXISTS sp_register_user;
 DROP TABLE IF EXISTS notifications;
+DROP TABLE IF EXISTS password_resets;
 DROP TABLE IF EXISTS messages;
 DROP TABLE IF EXISTS xrays;
 DROP TABLE IF EXISTS patient_documents;
@@ -21,6 +22,7 @@ DROP TABLE IF EXISTS admin_profiles;
 DROP TABLE IF EXISTS employee_profiles;
 DROP TABLE IF EXISTS patient_profiles;
 DROP TABLE IF EXISTS users;
+DROP TABLE IF EXISTS doctor_schedules;
 
 CREATE TABLE users (
     user_id         INT AUTO_INCREMENT PRIMARY KEY,
@@ -85,6 +87,7 @@ DELIMITER ;
 CREATE TABLE patient_profiles (
     patient_id       INT PRIMARY KEY,
     birthday         DATE,
+    civil_status     VARCHAR(30),
     secondary_email  VARCHAR(150),
     address          VARCHAR(255),
     address_street   VARCHAR(150),
@@ -100,6 +103,7 @@ CREATE TABLE employee_profiles (
     staff_code    VARCHAR(30) UNIQUE,
     position      VARCHAR(30),
     birthday      DATE,
+    civil_status  VARCHAR(30),
     FOREIGN KEY (employee_id) REFERENCES users(user_id) ON DELETE CASCADE
 );
 
@@ -118,6 +122,19 @@ CREATE TABLE audit_logs (
     notes         TEXT,
     created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (admin_id) REFERENCES admin_profiles(admin_id) ON DELETE CASCADE
+);
+
+CREATE TABLE doctor_schedules (
+    schedule_id   INT AUTO_INCREMENT PRIMARY KEY,
+    employee_id   INT NOT NULL,
+    day_of_week   TINYINT NOT NULL,               -- 0=Sun ... 6=Sat
+    start_time    TIME NULL,
+    end_time      TIME NULL,
+    break_start   TIME NULL,
+    break_end     TIME NULL,
+    is_active     BOOLEAN NOT NULL DEFAULT FALSE,
+    FOREIGN KEY (employee_id) REFERENCES employee_profiles(employee_id) ON DELETE CASCADE,
+    UNIQUE KEY unique_employee_day (employee_id, day_of_week)
 );
 
 CREATE TABLE health_conditions (
@@ -229,6 +246,17 @@ CREATE TABLE patient_documents (
     FOREIGN KEY (patient_id) REFERENCES patient_profiles(patient_id) ON DELETE CASCADE
 );
 
+CREATE TABLE password_resets (
+    reset_id    INT PRIMARY KEY AUTO_INCREMENT,
+    user_id     INT NOT NULL,
+    token_hash  VARCHAR(64) NOT NULL,
+    expires_at  DATETIME NOT NULL,
+    used        BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+    INDEX idx_token_hash (token_hash)
+);
+
 DELIMITER $$
 CREATE PROCEDURE sp_get_patient_record(IN p_patient_id INT)
 BEGIN
@@ -241,6 +269,7 @@ BEGIN
         'birthday', pp.birthday,
         'email', u.email,
         'phone', u.phone,
+        'civil_status', pp.civil_status,
         'address', pp.address,
         'address_street', pp.address_street,
         'address_barangay', pp.address_barangay,
@@ -315,6 +344,7 @@ BEGIN
         'birthday', pp.birthday,
         'email', u.email,
         'phone', u.phone,
+        'civil_status', pp.civil_status,
         'address', pp.address,
         'address_street', pp.address_street,
         'address_barangay', pp.address_barangay,
@@ -390,7 +420,8 @@ BEGIN
         'sex', u.sex,
         'birthday', ep.birthday,
         'email', u.email,
-        'phone', u.phone
+        'phone', u.phone,
+        'civil_status', ep.civil_status
     ) AS employee_record
     FROM employee_profiles ep
     JOIN users u ON ep.employee_id = u.user_id
@@ -406,11 +437,11 @@ CALL sp_register_user('Liza', 'Tan', 'liza.tan@example.com', '09203334444', '$2b
 CALL sp_register_user('Carla', 'Reyes', 'carla.reyes@example.com', '09051119999', '$2b$10$PFUiFjV7FngVMIZ2u/chOOV3l.cVQ84nz4Os8DipZlw72yiqAKKJi', 'F', 'admin', @uid5);
 
 
-UPDATE patient_profiles SET birthday = '1990-04-12', address = '123 Mabini St, Quezon City', address_street = '123 Mabini St', address_city = 'Quezon City', address_province = 'Metro Manila' WHERE patient_id = 1;
-UPDATE patient_profiles SET birthday = '1985-11-02', address = '45 Rizal Ave, Manila', address_street = '45 Rizal Ave', address_city = 'Manila', address_province = 'Metro Manila' WHERE patient_id = 2;
+UPDATE patient_profiles SET birthday = '1990-04-12', civil_status = 'Single', address = '123 Mabini St, Quezon City', address_street = '123 Mabini St', address_city = 'Quezon City', address_province = 'Metro Manila' WHERE patient_id = 1;
+UPDATE patient_profiles SET birthday = '1985-11-02', civil_status = 'Married', address = '45 Rizal Ave, Manila', address_street = '45 Rizal Ave', address_city = 'Manila', address_province = 'Metro Manila' WHERE patient_id = 2;
 
-UPDATE employee_profiles SET staff_code = 'STF-2026-001', position = 'Dentist', birthday = '1985-06-10' WHERE employee_id = 3;
-UPDATE employee_profiles SET staff_code = 'STF-2026-002', position = 'Dentist', birthday = '1990-02-20' WHERE employee_id = 4;
+UPDATE employee_profiles SET staff_code = 'STF-2026-001', position = 'Dentist', birthday = '1985-06-10', civil_status = 'Married' WHERE employee_id = 3;
+UPDATE employee_profiles SET staff_code = 'STF-2026-002', position = 'Dentist', birthday = '1990-02-20', civil_status = 'Single' WHERE employee_id = 4;
 
 UPDATE admin_profiles SET permission_level = 'full_access' WHERE admin_id = 5;
 
@@ -439,19 +470,59 @@ INSERT INTO notifications (user_id, type, title, message, appointment_id) VALUES
 INSERT INTO notifications (user_id, type, title, message, message_id) VALUES
 (1, 'new_message', 'New Message', 'You have a new message from Dr. Ramon Cruz.', 1);
 
-
--- ALTER TABLE users FOR OTP IN FORGOT + RESET PASSWORD
-ALTER TABLE users
-	ADD COLUMN otp			VARCHAR(10) NULL,
-    ADD COLUMN otpExpire	DATETIME	NULL;
-
-
+INSERT INTO doctor_schedules (employee_id, day_of_week, start_time, end_time, break_start, break_end, is_active) VALUES
+(3, 0, NULL, NULL, NULL, NULL, FALSE),
+(3, 1, '08:00:00', '17:00:00', '12:00:00', '13:00:00', TRUE),
+(3, 2, '08:00:00', '17:00:00', '12:00:00', '13:00:00', TRUE),
+(3, 3, '08:00:00', '17:00:00', '12:00:00', '13:00:00', TRUE),
+(3, 4, '08:00:00', '17:00:00', '12:00:00', '13:00:00', TRUE),
+(3, 5, '08:00:00', '17:00:00', '12:00:00', '13:00:00', TRUE),
+(3, 6, '08:00:00', '17:00:00', '12:00:00', '13:00:00', TRUE);
+ 
+-- employee_id 4 = Dr. Liza Tan (Mon-Fri 9-6, lunch 12-1)
+INSERT INTO doctor_schedules (employee_id, day_of_week, start_time, end_time, break_start, break_end, is_active) VALUES
+(4, 0, NULL, NULL, NULL, NULL, FALSE),
+(4, 1, '09:00:00', '18:00:00', '12:00:00', '13:00:00', TRUE),
+(4, 2, '09:00:00', '18:00:00', '12:00:00', '13:00:00', TRUE),
+(4, 3, '09:00:00', '18:00:00', '12:00:00', '13:00:00', TRUE),
+(4, 4, '09:00:00', '18:00:00', '12:00:00', '13:00:00', TRUE),
+(4, 5, '09:00:00', '18:00:00', '12:00:00', '13:00:00', TRUE),
+(4, 6, NULL, NULL, NULL, NULL, FALSE);
+ 
+-- ── Register Dr. Maria Gomez ─────────────────────────────────────────────
+-- Not in the original seed data — added here as a third dentist to match
+-- MOCK_SCHEDULES[3] (all days active, half-day Saturday, no Sunday).
+-- Reuses the same demo password hash ('12345678', bcrypt) as your other
+-- seed users for consistency — change this before using real accounts.
+CALL sp_register_user(
+    'Maria', 'Gomez', 'maria.gomez@example.com', '09171112223',
+    '$2b$10$PFUiFjV7FngVMIZ2u/chOOV3l.cVQ84nz4Os8DipZlw72yiqAKKJi',
+    'F', 'employee', @uid6
+);
+ 
+UPDATE employee_profiles SET staff_code = 'STF-2026-003', position = 'Dentist', birthday = '1988-09-03' WHERE employee_id = @uid6;
+ 
+-- Her schedule: Mon-Fri full day (8-5, lunch 12-1), Sat half-day (8-12, no break), off Sunday.
+INSERT INTO doctor_schedules (employee_id, day_of_week, start_time, end_time, break_start, break_end, is_active) VALUES
+(@uid6, 0, NULL, NULL, NULL, NULL, FALSE),
+(@uid6, 1, '08:00:00', '17:00:00', '12:00:00', '13:00:00', TRUE),
+(@uid6, 2, '08:00:00', '17:00:00', '12:00:00', '13:00:00', TRUE),
+(@uid6, 3, '08:00:00', '17:00:00', '12:00:00', '13:00:00', TRUE),
+(@uid6, 4, '08:00:00', '17:00:00', '12:00:00', '13:00:00', TRUE),
+(@uid6, 5, '08:00:00', '17:00:00', '12:00:00', '13:00:00', TRUE),
+(@uid6, 6, '08:00:00', '12:00:00', NULL, NULL, TRUE);
+ 
+-- Sanity check
+SELECT * FROM users WHERE email = 'maria.gomez@example.com';
+SELECT * FROM doctor_schedules WHERE employee_id = @uid6;
 
 CALL sp_get_all_patient_records();
 select * from users;
 select * from appointments;
-select a.first_name from users a INNER JOIN  employee_profiles b on a.user_id = b.employee_id;
+select a.first_name, b.civil_status  from users a INNER JOIN  employee_profiles b on a.user_id = b.employee_id;
 select * from payments;
 select a.appointment_id, s.label AS service_offered from appointments a INNER JOIN services s on a.service_id = s.service_id;
-select * from patient_profiles;
+
  SELECT email, login_attempts, is_locked FROM users WHERE email = 'juan.delacruz@example.com';
+ 
+ Select * from password_resets;
