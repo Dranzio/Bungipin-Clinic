@@ -43,6 +43,42 @@ function escapeHtml(value) {
     return div.innerHTML;
 }
 
+// Strip characters that have no business in these fields, and cap length
+function sanitizeInput(str, maxLen = 100) {
+    return String(str ?? '').trim().replace(/[<>]/g, '').slice(0, maxLen);
+}
+
+// Format validators — return true/false
+function isValidPHMobile(value) {
+    return /^09\d{9}$/.test(value.replace(/\s|-/g, ''));
+}
+function isValidEmail(value) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+}
+function isValidCardNumber(value) {
+    const digits = value.replace(/\s/g, '');
+    return /^\d{13,19}$/.test(digits);
+}
+function isValidExpiry(value) {
+    const match = /^(\d{2})\/(\d{2})$/.exec(value.trim());
+    if (!match) return false;
+    const month = Number(match[1]);
+    if (month < 1 || month > 12) return false;
+    const year = 2000 + Number(match[2]);
+    const now = new Date();
+    const expiryDate = new Date(year, month, 0); // last day of expiry month
+    return expiryDate >= new Date(now.getFullYear(), now.getMonth(), 1);
+}
+function isValidCVV(value) {
+    return /^\d{3,4}$/.test(value.trim());
+}
+function isValidCardLast4(value) {
+    return /^\d{4}$/.test(value.trim());
+}
+function isValidNameField(value) {
+    return /^[a-zA-ZñÑ.'\- ]{2,60}$/.test(value.trim());
+}
+
 // ── State Management ────────────────────────────────────────────────────────
 let availableServices = [];
 let availableDoctors  = [];
@@ -279,7 +315,7 @@ function populateDoctorDropdown(doctors) {
     const doctorSelect = document.getElementById('doctorSelect');
     if (!doctorSelect) return;
 
-    doctorSelect.innerHTML = '<option value="" disabled selected>-- Select Your Attending Dentist --</option>';
+    doctorSelect.innerHTML = '<option value="" disabled selected style="color:#9CA3AF;">-- Select Your Attending Dentist --</option>';
     doctors.forEach(doc => {
         const opt = document.createElement('option');
         opt.value = doc.doctor_id;
@@ -287,12 +323,13 @@ function populateDoctorDropdown(doctors) {
         doctorSelect.appendChild(opt);
     });
 
-    if (doctors.length > 0) {
-        doctorSelect.selectedIndex = 1;
-        selectedDoctorId = Number(doctors[0].doctor_id);
-        const docInput = document.getElementById('selected-doctor-id');
-        if (docInput) docInput.value = selectedDoctorId;
-    }
+    // Leave unselected — placeholder stays shown until the person picks one
+       doctorSelect.selectedIndex = 0;
+    selectedDoctorId = null;
+    doctorSelect.classList.add('text-gray-400');   // ← add this line
+    doctorSelect.classList.remove('text-[#2A1001]'); // ← and this line
+    const docInput = document.getElementById('selected-doctor-id');
+    if (docInput) docInput.value = '';
 }
 
 function initDoctorSelection() {
@@ -303,6 +340,10 @@ function initDoctorSelection() {
         selectedDoctorId = e.target.value ? Number(e.target.value) : null;
         const docInput = document.getElementById('selected-doctor-id');
         if (docInput) docInput.value = selectedDoctorId || '';
+
+        // Grey when empty, dark once a real doctor is chosen
+        doctorSelect.classList.toggle('text-gray-400', !selectedDoctorId);
+        doctorSelect.classList.toggle('text-[#2A1001]', !!selectedDoctorId);
         
         if (selectedDateValue) {
             fetchAvailableSlotsForDoctor(selectedDoctorId, selectedDateValue);
@@ -642,17 +683,19 @@ function renderChannelContent(channel) {
                     </div>
                     <div>
                         <label class="text-xs font-bold text-[#2A1001] block mb-1">Your GCash Mobile No. <span class="text-red-500">*</span></label>
-                        <input type="tel" id="gcash-mobile" placeholder="09XX XXX XXXX" maxlength="13" class="w-full bg-gray-50 border border-black/20 rounded-xl px-3 py-2 text-sm font-semibold outline-none focus:ring-2 focus:ring-[#005CEE]" required>
+                        <input type="tel" id="gcash-mobile" placeholder="09XX XXX XXXX" maxlength="13" class="w-full bg-gray-50 border border-black/20 rounded-xl px-3 py-2 text-sm font-semibold outline-none focus:ring-2 focus:ring-[#005CEE]">
                     </div>
                     <div>
                         <label class="text-xs font-bold text-[#2A1001] block mb-1">GCash Reference No.:</label>
-                        <input type="text" id="gcash-ref" value="${refNumber}" class="w-full bg-gray-50 border border-black/20 rounded-xl px-3 py-2 text-sm font-semibold outline-none text-gray-700">
+                        <input type="text" id="gcash-ref" value="${refNumber}" readonly class="w-full bg-gray-100 border border-black/20 rounded-xl px-3 py-2 text-sm font-semibold outline-none text-gray-500 cursor-not-allowed">
                     </div>
                 </div>
             </div>
         `;
+          restrictToDigits(document.getElementById('gcash-mobile'), 13);
     } else if (channel === 'maya') {
         box.innerHTML = `
+        
             <div class="flex flex-col sm:flex-row items-center gap-4">
                 <div class="bg-emerald-50 border-2 border-green-600/40 rounded-2xl p-3 flex flex-col items-center justify-center shrink-0">
                     <img src="https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=MAYA_PAYMENT_${refNumber}_${totalAmount}" class="w-32 h-32 rounded-lg border border-black/10 shadow-sm" alt="Maya QR">
@@ -665,17 +708,19 @@ function renderChannelContent(channel) {
                     </div>
                     <div>
                         <label class="text-xs font-bold text-[#2A1001] block mb-1">Your Maya Mobile No. <span class="text-red-500">*</span></label>
-                        <input type="tel" id="maya-mobile" placeholder="09XX XXX XXXX" maxlength="13" class="w-full bg-gray-50 border border-black/20 rounded-xl px-3 py-2 text-sm font-semibold outline-none focus:ring-2 focus:ring-green-600" required>
+                        <input type="tel" id="maya-mobile" placeholder="09XX XXX XXXX" maxlength="13" class="w-full bg-gray-50 border border-black/20 rounded-xl px-3 py-2 text-sm font-semibold outline-none focus:ring-2 focus:ring-green-600">
                     </div>
                     <div>
                         <label class="text-xs font-bold text-[#2A1001] block mb-1">Maya Reference Code:</label>
-                        <input type="text" id="maya-ref" value="${refNumber}" class="w-full bg-gray-50 border border-black/20 rounded-xl px-3 py-2 text-sm font-semibold outline-none text-gray-700">
+                       <input type="text" id="maya-ref" value="${refNumber}" readonly class="w-full bg-gray-100 border border-black/20 rounded-xl px-3 py-2 text-sm font-semibold outline-none text-gray-500 cursor-not-allowed">
                     </div>
                 </div>
             </div>
         `;
+         restrictToDigits(document.getElementById('maya-mobile'), 13);
     } else if (channel === 'gotyme') {
         box.innerHTML = `
+      
             <div class="flex flex-col gap-3">
                 <div class="bg-purple-50 p-3 rounded-xl border border-purple-700/30 flex items-center justify-between">
                     <div>
@@ -687,33 +732,18 @@ function renderChannelContent(channel) {
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                     <div>
                         <label class="text-xs font-bold text-[#2A1001] block mb-1">Account Holder Name: <span class="text-red-500">*</span></label>
-                        <input type="text" id="gotyme-name" placeholder="Juan Dela Cruz" class="w-full bg-gray-50 border border-black/20 rounded-xl px-3 py-2 text-sm font-semibold outline-none focus:ring-2 focus:ring-purple-700" required>
+                        <input type="text" id="gotyme-name" placeholder="Juan Dela Cruz" class="w-full bg-gray-50 border border-black/20 rounded-xl px-3 py-2 text-sm font-semibold outline-none focus:ring-2 focus:ring-purple-700">
                     </div>
                     <div>
                         <label class="text-xs font-bold text-[#2A1001] block mb-1">Card Last 4 Digits: <span class="text-red-500">*</span></label>
-                        <input type="text" id="gotyme-account" placeholder="XXXX" maxlength="4" class="w-full bg-gray-50 border border-black/20 rounded-xl px-3 py-2 text-sm font-semibold outline-none focus:ring-2 focus:ring-purple-700" required>
+                        <input type="text" id="gotyme-account" placeholder="XXXX" maxlength="4" class="w-full bg-gray-50 border border-black/20 rounded-xl px-3 py-2 text-sm font-semibold outline-none focus:ring-2 focus:ring-purple-700">
                     </div>
                 </div>
             </div>
+            
         `;
-    } else if (channel === 'ewallet') {
-        box.innerHTML = `
-            <div class="flex flex-col gap-3">
-                <div>
-                    <label class="text-xs font-bold text-[#2A1001] block mb-1">Select Philippine E-Wallet: <span class="text-red-500">*</span></label>
-                    <select id="ewallet-provider" class="w-full bg-gray-50 border border-black/20 rounded-xl px-3 py-2 text-sm font-semibold outline-none focus:ring-2 focus:ring-[#667733]">
-                        <option value="ShopeePay">ShopeePay (SeaMoney)</option>
-                        <option value="GrabPay">GrabPay Philippines</option>
-                        <option value="CoinsPH">Coins.ph</option>
-                        <option value="PalawanPay">PalawanPay</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="text-xs font-bold text-[#2A1001] block mb-1">Registered Mobile Number: <span class="text-red-500">*</span></label>
-                    <input type="tel" id="ewallet-mobile" placeholder="09XX XXX XXXX" maxlength="13" class="w-full bg-gray-50 border border-black/20 rounded-xl px-3 py-2 text-sm font-semibold outline-none focus:ring-2 focus:ring-[#667733]" required>
-                </div>
-            </div>
-        `;
+           restrictToNameChars(document.getElementById('gotyme-name'));
+        restrictToDigits(document.getElementById('gotyme-account'), 4);
     } else if (channel === 'card') {
         box.innerHTML = `
             <div class="flex flex-col gap-3">
@@ -727,52 +757,43 @@ function renderChannelContent(channel) {
                 </div>
                 <div>
                     <label class="text-xs font-bold text-[#2A1001] block mb-1">Cardholder Full Name: <span class="text-red-500">*</span></label>
-                    <input type="text" id="card-name" placeholder="JUAN DELA CRUZ" class="w-full uppercase bg-gray-50 border border-black/20 rounded-xl px-3 py-2 text-sm font-semibold outline-none focus:ring-2 focus:ring-[#667733]" required>
+                    <input type="text" id="card-name" placeholder="JUAN DELA CRUZ" class="w-full uppercase bg-gray-50 border border-black/20 rounded-xl px-3 py-2 text-sm font-semibold outline-none focus:ring-2 focus:ring-[#667733]">
                 </div>
                 <div>
                     <label class="text-xs font-bold text-[#2A1001] block mb-1">Card Number (Visa / Mastercard / BancNet): <span class="text-red-500">*</span></label>
-                    <input type="text" id="card-number" placeholder="4111 2222 3333 4444" maxlength="19" class="w-full bg-gray-50 border border-black/20 rounded-xl px-3 py-2 text-sm font-semibold outline-none focus:ring-2 focus:ring-[#667733]" required>
+                    <input type="text" id="card-number" placeholder="4111 2222 3333 4444" maxlength="19" class="w-full bg-gray-50 border border-black/20 rounded-xl px-3 py-2 text-sm font-semibold outline-none focus:ring-2 focus:ring-[#667733]">
                 </div>
                 <div class="grid grid-cols-2 gap-2.5">
                     <div>
                         <label class="text-xs font-bold text-[#2A1001] block mb-1">Expiry (MM/YY): <span class="text-red-500">*</span></label>
-                        <input type="text" id="card-expiry" placeholder="12/28" maxlength="5" class="w-full bg-gray-50 border border-black/20 rounded-xl px-3 py-2 text-sm font-semibold outline-none focus:ring-2 focus:ring-[#667733]" required>
+                        <input type="text" id="card-expiry" placeholder="12/28" maxlength="5" class="w-full bg-gray-50 border border-black/20 rounded-xl px-3 py-2 text-sm font-semibold outline-none focus:ring-2 focus:ring-[#667733]">
                     </div>
                     <div>
                         <label class="text-xs font-bold text-[#2A1001] block mb-1">CVV / CVC: <span class="text-red-500">*</span></label>
-                        <input type="password" id="card-cvv" placeholder="•••" maxlength="4" class="w-full bg-gray-50 border border-black/20 rounded-xl px-3 py-2 text-sm font-semibold outline-none focus:ring-2 focus:ring-[#667733]" required>
+                        <input type="password" id="card-cvv" placeholder="•••" maxlength="4" class="w-full bg-gray-50 border border-black/20 rounded-xl px-3 py-2 text-sm font-semibold outline-none focus:ring-2 focus:ring-[#667733]">
                     </div>
                 </div>
             </div>
         `;
-    } else if (channel === 'qrph') {
+         restrictToNameChars(document.getElementById('card-name'));
+        restrictToDigitsAndSpaces(document.getElementById('card-number'), 19);
+        restrictToExpiryFormat(document.getElementById('card-expiry'));
+        restrictToDigits(document.getElementById('card-cvv'), 4);
+    }  else if (channel === 'paypal') {
         box.innerHTML = `
-            <div class="flex flex-col sm:flex-row items-center gap-4">
-                <div class="bg-red-50 border-2 border-red-600/40 rounded-2xl p-3 flex flex-col items-center justify-center shrink-0">
-                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=QRPH_BSP_${refNumber}_${totalAmount}" class="w-32 h-32 rounded-lg border border-black/10 shadow-sm" alt="QR Ph Standard">
-                    <span class="text-[10px] font-black text-red-700 mt-1.5 uppercase tracking-wider">BSP QR Ph Standard</span>
+            <div class="flex flex-col gap-3">
+                <div class="bg-blue-50 p-2.5 rounded-xl border border-blue-300 text-xs text-[#003087] font-bold flex items-center gap-2">
+                    <i class="fa-brands fa-paypal text-lg"></i> You'll be charged in USD equivalent via PayPal checkout.
                 </div>
-                <div class="flex-1 flex flex-col gap-2 w-full">
-                    <p class="text-xs font-bold text-[#2A1001]">Pay using any Philippine Bank or Fintech App:</p>
-                    <div class="flex flex-wrap gap-1.5 text-[10px] font-extrabold text-gray-700">
-                        <span class="bg-gray-100 border border-black/15 px-2 py-0.5 rounded-md">BDO</span>
-                        <span class="bg-gray-100 border border-black/15 px-2 py-0.5 rounded-md">BPI</span>
-                        <span class="bg-gray-100 border border-black/15 px-2 py-0.5 rounded-md">UnionBank</span>
-                        <span class="bg-gray-100 border border-black/15 px-2 py-0.5 rounded-md">Metrobank</span>
-                        <span class="bg-gray-100 border border-black/15 px-2 py-0.5 rounded-md">Landbank</span>
-                        <span class="bg-gray-100 border border-black/15 px-2 py-0.5 rounded-md">RCBC</span>
-                        <span class="bg-gray-100 border border-black/15 px-2 py-0.5 rounded-md">GCash</span>
-                        <span class="bg-gray-100 border border-black/15 px-2 py-0.5 rounded-md">Maya</span>
-                    </div>
-                    <div class="mt-1">
-                        <label class="text-xs font-bold text-[#2A1001] block mb-1">Your Bank / App Name: <span class="text-red-500">*</span></label>
-                        <input type="text" id="qrph-bank" placeholder="e.g., BDO Online / BPI" class="w-full bg-gray-50 border border-black/20 rounded-xl px-3 py-2 text-sm font-semibold outline-none focus:ring-2 focus:ring-red-600" required>
-                    </div>
+                <div>
+                    <label class="text-xs font-bold text-[#2A1001] block mb-1">PayPal Email Address: <span class="text-red-500">*</span></label>
+                    <input type="email" id="paypal-email" placeholder="you@example.com" class="w-full bg-gray-50 border border-black/20 rounded-xl px-3 py-2 text-sm font-semibold outline-none focus:ring-2 focus:ring-[#003087]">
                 </div>
             </div>
         `;
     }
 }
+
 
 // ── 6. Modal & Booking Workflow ─────────────────────────────────────────────
 function initBookingForm() {
@@ -792,9 +813,9 @@ function initBookingForm() {
         e.preventDefault();
 
         if (!selectedDoctorId) {
-            showValidationModal('Please select an attending dentist before continuing.', document.getElementById('doctorSelect'));
-            return;
-        }
+    showValidationModal('Please select an attending dentist before continuing.', document.getElementById('doctorSelect'));
+    return;
+}
         if (selectedServices.length === 0) {
             showValidationModal('Please select at least one dental treatment.');
             return;
@@ -808,7 +829,7 @@ function initBookingForm() {
             return;
         }
 
-        const noteVal = document.getElementById('PNote')?.value.trim() || 'None';
+        const noteVal = sanitizeInput(document.getElementById('PNote')?.value, 250) || 'None';
         const docObj  = availableDoctors.find(d => d.doctor_id == selectedDoctorId);
         const doctorName = docObj ? docObj.name : 'Attending Dentist';
         const totalAmount = selectedServices.reduce((sum, s) => sum + s.price, 0);
@@ -872,45 +893,81 @@ function initBookingForm() {
         });
     }
 
-    if (payCashBtn) {
+       if (payCashBtn) {
         payCashBtn.addEventListener('click', () => {
-            if (confirm("Confirm booking this appointment with In-Clinic Cash payment?")) {
+            const cashModal = document.getElementById('cash-confirm-modal');
+            const cancelBtn = document.getElementById('cash-confirm-cancel');
+            const okBtn = document.getElementById('cash-confirm-ok');
+            if (!cashModal || !cancelBtn || !okBtn) {
+                if (confirm("Confirm booking this appointment with In-Clinic Cash payment?")) {
+                    receiptModal.classList.add('hidden');
+                    submitBookingToDatabase('cash', null, null);
+                }
+                return;
+            }
+            cashModal.classList.remove('hidden');
+            cancelBtn.onclick = () => cashModal.classList.add('hidden');
+            okBtn.onclick = () => {
+                cashModal.classList.add('hidden');
                 receiptModal.classList.add('hidden');
                 submitBookingToDatabase('cash', null, null);
-            }
+            };
         });
     }
 
-    if (submitOnlineBookingBtn) {
+     if (submitOnlineBookingBtn) {
         submitOnlineBookingBtn.addEventListener('click', () => {
             let paymentRef = '';
+
             if (currentPaymentChannel === 'gcash') {
-                const mob = document.getElementById('gcash-mobile')?.value.trim();
-                if (!mob) { alert('Please input your GCash mobile number.'); return; }
-                paymentRef = document.getElementById('gcash-ref')?.value.trim() || 'GCASH-' + Date.now();
+                const mobField = document.getElementById('gcash-mobile');
+                const mob = sanitizeInput(mobField?.value, 13);
+                if (!mob) { showValidationModal('Please input your GCash mobile number.', mobField); return; }
+                if (!isValidPHMobile(mob)) { showValidationModal('Please enter a valid PH mobile number (e.g. 09171234567).', mobField); return; }
+                paymentRef = sanitizeInput(document.getElementById('gcash-ref')?.value, 30) || 'GCASH-' + Date.now();
+
             } else if (currentPaymentChannel === 'maya') {
-                const mob = document.getElementById('maya-mobile')?.value.trim();
-                if (!mob) { alert('Please input your Maya mobile number.'); return; }
-                paymentRef = document.getElementById('maya-ref')?.value.trim() || 'MAYA-' + Date.now();
+                const mobField = document.getElementById('maya-mobile');
+                const mob = sanitizeInput(mobField?.value, 13);
+                if (!mob) { showValidationModal('Please input your Maya mobile number.', mobField); return; }
+                if (!isValidPHMobile(mob)) { showValidationModal('Please enter a valid PH mobile number (e.g. 09171234567).', mobField); return; }
+                paymentRef = sanitizeInput(document.getElementById('maya-ref')?.value, 30) || 'MAYA-' + Date.now();
+
             } else if (currentPaymentChannel === 'gotyme') {
-                const name = document.getElementById('gotyme-name')?.value.trim();
-                if (!name) { alert('Please input your GoTyme account name.'); return; }
+                const nameField = document.getElementById('gotyme-name');
+                const accField = document.getElementById('gotyme-account');
+                const name = sanitizeInput(nameField?.value, 60);
+                const acc = sanitizeInput(accField?.value, 4);
+                if (!name) { showValidationModal('Please input your GoTyme account name.', nameField); return; }
+                if (!isValidNameField(name)) { showValidationModal('Account name should only contain letters, spaces, and basic punctuation.', nameField); return; }
+                if (!acc) { showValidationModal('Please input the last 4 digits of your card.', accField); return; }
+                if (!isValidCardLast4(acc)) { showValidationModal('Please enter exactly 4 digits.', accField); return; }
                 paymentRef = 'GOTYME-' + Date.now();
+
             } else if (currentPaymentChannel === 'card') {
-                const num = document.getElementById('card-number')?.value.trim();
-                const exp = document.getElementById('card-expiry')?.value.trim();
-                const cvv = document.getElementById('card-cvv')?.value.trim();
-                if (!num || !exp || !cvv) { alert('Please fill in complete Card details.'); return; }
-                paymentRef = 'CARD-' + num.slice(-4) + '-' + Date.now();
-            } else if (currentPaymentChannel === 'qrph') {
-                const bank = document.getElementById('qrph-bank')?.value.trim();
-                if (!bank) { alert('Please specify your Bank/Payment app.'); return; }
-                paymentRef = 'QRPH-' + bank + '-' + Date.now();
-            } else if (currentPaymentChannel === 'ewallet') {
-                const mob = document.getElementById('ewallet-mobile')?.value.trim();
-                if (!mob) { alert('Please input your registered E-Wallet number.'); return; }
-                const prov = document.getElementById('ewallet-provider')?.value;
-                paymentRef = prov + '-' + Date.now();
+                const nameField = document.getElementById('card-name');
+                const numField = document.getElementById('card-number');
+                const expField = document.getElementById('card-expiry');
+                const cvvField = document.getElementById('card-cvv');
+                const name = sanitizeInput(nameField?.value, 60);
+                const num = sanitizeInput(numField?.value, 19);
+                const exp = sanitizeInput(expField?.value, 5);
+                const cvv = sanitizeInput(cvvField?.value, 4);
+
+                if (!name || !num || !exp || !cvv) { showValidationModal('Please fill in complete Card details.', numField); return; }
+                if (!isValidNameField(name)) { showValidationModal('Cardholder name should only contain letters and spaces.', nameField); return; }
+                if (!isValidCardNumber(num)) { showValidationModal('Please enter a valid card number.', numField); return; }
+                if (!isValidExpiry(exp)) { showValidationModal('Please enter a valid, non-expired date (MM/YY).', expField); return; }
+                if (!isValidCVV(cvv)) { showValidationModal('Please enter a valid 3 or 4-digit CVV.', cvvField); return; }
+
+                paymentRef = 'CARD-' + num.replace(/\s/g, '').slice(-4) + '-' + Date.now();
+
+            } else if (currentPaymentChannel === 'paypal') {
+                const emailField = document.getElementById('paypal-email');
+                const email = sanitizeInput(emailField?.value, 100);
+                if (!email) { showValidationModal('Please enter your PayPal email address.', emailField); return; }
+                if (!isValidEmail(email)) { showValidationModal('Please enter a valid email address.', emailField); return; }
+                paymentRef = 'PAYPAL-' + email;
             }
 
             submitOnlineBookingBtn.disabled = true;
@@ -922,6 +979,53 @@ function initBookingForm() {
             }, 800);
         });
     }
+}
+
+// Restrict a text input to digits only (and an optional max length), live as they type
+function restrictToDigits(input, maxLen) {
+    if (!input) return;
+    input.addEventListener('input', () => {
+        let digitsOnly = input.value.replace(/\D/g, '');
+        if (maxLen) digitsOnly = digitsOnly.slice(0, maxLen);
+        input.value = digitsOnly;
+    });
+}
+
+
+
+// Restrict a text input to digits + spaces (for card numbers), live as they type
+function restrictToDigitsAndSpaces(input, maxLen) {
+    if (!input) return;
+    input.addEventListener('input', () => {
+        let filtered = input.value.replace(/[^\d ]/g, '');
+        if (maxLen) filtered = filtered.slice(0, maxLen);
+        input.value = filtered;
+    });
+}
+
+// Restrict a text input to digits + a single "/" (for MM/YY expiry), live as they type
+function restrictToExpiryFormat(input) {
+    if (!input) return;
+    input.addEventListener('input', () => {
+        let v = input.value.replace(/[^\d/]/g, '');
+        // Auto-insert the slash after 2 digits if not already there
+        if (v.length === 2 && !v.includes('/') && input.dataset.lastLen < v.length) {
+            v = v + '/';
+        }
+        input.dataset.lastLen = v.length;
+        input.value = v.slice(0, 5);
+    });
+}
+
+// Restrict a text input to letters, spaces, and basic name punctuation, live as they type
+function restrictToNameChars(input) {
+    if (!input) return;
+    const clean = () => {
+        input.value = input.value.replace(/[^a-zA-ZñÑ.'\- ]/g, '');
+    };
+    input.addEventListener('input', clean);
+    input.addEventListener('paste', () => setTimeout(clean, 0));
+    input.addEventListener('blur', clean);
 }
 
 function showValidationModal(message, focusTarget = null) {
@@ -946,6 +1050,32 @@ function showValidationModal(message, focusTarget = null) {
     modal.onclick = (e) => { if (e.target === modal) closeModal(); };
 }
 
+function showSuccessModal({ date, time, doctorName, servicesLabel, amount }) {
+    const modal = document.getElementById('success-modal');
+    const details = document.getElementById('success-modal-details');
+    const okBtn = document.getElementById('success-modal-ok');
+
+    if (!modal || !details || !okBtn) {
+        alert('Booking confirmed!');
+        window.location.href = 'History.html';
+        return;
+    }
+
+    details.innerHTML = `
+        <div class="flex justify-between"><span class="font-bold text-[#2A1001]/60">Date:</span><span class="font-semibold">${escapeHtml(date || '')}</span></div>
+        <div class="flex justify-between"><span class="font-bold text-[#2A1001]/60">Time:</span><span class="font-semibold">${escapeHtml(time || '')}</span></div>
+        <div class="flex justify-between"><span class="font-bold text-[#2A1001]/60">Dentist:</span><span class="font-semibold">${escapeHtml(doctorName || '')}</span></div>
+        <div class="flex justify-between"><span class="font-bold text-[#2A1001]/60">Services:</span><span class="font-semibold text-right">${escapeHtml(servicesLabel || '')}</span></div>
+        <div class="flex justify-between border-t border-black/10 pt-1.5 mt-1"><span class="font-bold text-[#2A1001]/60">Amount Paid:</span><span class="font-black text-[#667733]">₱${Number(amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}</span></div>
+    `;
+    modal.classList.remove('hidden');
+
+    okBtn.onclick = () => {
+        modal.classList.add('hidden');
+        window.location.href = 'History.html';
+    };
+}
+
 
 // ── 7. Submit Appointment to Backend API ────────────────────────────────────
 async function submitBookingToDatabase(method, channel = null, reference = null) {
@@ -961,7 +1091,7 @@ async function submitBookingToDatabase(method, channel = null, reference = null)
         doctor_id: selectedDoctorId || null,
         service_id: selectedServices[0].service_id,
         service_ids: selectedServices.map(s => s.service_id),
-        patient_note: document.getElementById('PNote')?.value.trim() || '',
+        patient_note: sanitizeInput(document.getElementById('PNote')?.value, 250),
         payment_method: method,
         payment_channel: channel || (method === 'cash' ? 'cash' : 'online'),
         payment_reference: reference || null
@@ -980,21 +1110,28 @@ async function submitBookingToDatabase(method, channel = null, reference = null)
             body: JSON.stringify(payload)
         });
 
-        const result = await response.json();
+             const result = await response.json();
         if (!response.ok) throw new Error(result.message || 'Failed to complete booking.');
 
-        alert(result.message || (method === 'online' ? 'Payment confirmed & appointment scheduled!' : 'Appointment scheduled successfully!'));
-        window.location.href = 'History.html';
+        const docObj = availableDoctors.find(d => d.doctor_id == selectedDoctorId);
+        const totalAmount = selectedServices.reduce((sum, s) => sum + s.price, 0);
 
-    } catch (error) {
+        showSuccessModal({
+            date: selectedDateValue,
+            time: `${format12Hour(selectedStartTime)} – ${format12Hour(selectedEndTime)}`,
+            doctorName: docObj ? docObj.name : 'Attending Dentist',
+            servicesLabel: selectedServices.map(s => s.label).join(', '),
+            amount: totalAmount
+        });
+
+     } catch (error) {
         console.error('Booking Submission Error:', error);
-        alert('Booking Error: ' + error.message);
+        showValidationModal('Booking Error: ' + error.message);
         const submitOnlineBtn = document.getElementById('submitOnlineBookingBtn');
         if (submitOnlineBtn) {
             submitOnlineBtn.disabled = false;
             submitOnlineBtn.innerHTML = '<i class="fa-solid fa-check-circle"></i> Confirm &amp; Finalize Booking';
         }
     }
-
 }
- 
+
