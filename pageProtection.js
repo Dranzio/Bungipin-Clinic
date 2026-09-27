@@ -86,4 +86,18 @@
     });
 
     validatePageAccess();
+
+    // Exposed for existing "Logout" buttons to call, e.g. onclick="logout()".
+    // Clears the server-side cookie FIRST — without this, localStorage alone
+    // being cleared doesn't actually log the browser out, since the leftover
+    // httpOnly cookie can still authenticate page requests on its own.
+    window.logout = async function logout() {
+        try {
+            await fetch('/api/auth/logout', { method: 'POST' });
+        } catch (err) {
+            console.error('Logout request failed (clearing local session anyway):', err);
+        }
+        localStorage.removeItem('userToken');
+        window.location.replace(loginUrl);
+    };
 })();
