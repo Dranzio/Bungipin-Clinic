@@ -1,10 +1,13 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
-const authenticateToken = require('../authmiddleware');
+const { put } = require('@vercel/blob');
+const authenticateToken = require('../authMiddleware');
 
 const ICON_DIR = path.join(__dirname, '..', 'uploads', 'services');
 const MAX_ICON_BYTES = 2 * 1024 * 1024;
+
+const isVercel = process.env.VERCEL === '1' || !!process.env.BLOB_READ_WRITE_TOKEN;
 
 function requireAdmin(req, res, next) {
     if (req.user.role !== 'admin') {
@@ -16,13 +19,12 @@ function requireAdmin(req, res, next) {
 // The page sends the icon as a base64 data URL (FileReader). services.icon is
 // VARCHAR(255), so write the image to /uploads/services and store only the URL.
 // Existing URLs (unchanged icon on edit) pass straight through.
-function resolveIcon(icon) {
+async function resolveIcon(icon) {
     if (!icon) return null;
 
     if (!icon.startsWith('data:')) {
-        // Unchanged icon on edit — must actually look like a path or URL we
-        // generated, not arbitrary text an admin (or a compromised admin
-        // session) could smuggle into an <img src> attribute on the client.
+        // Unchanged icon validation
+        // Allows local paths (/uploads/services/...) and external URLs (https://...)
         if (!/^(\/uploads\/services\/[\w.-]+|https?:\/\/[^\s"'<>]+)$/.test(icon)) {
             const err = new Error('Invalid icon value');
             err.status = 400;
@@ -45,11 +47,38 @@ function resolveIcon(icon) {
         throw err;
     }
 
-    fs.mkdirSync(ICON_DIR, { recursive: true });
     const ext = match[1] === 'jpeg' ? 'jpg' : match[1];
     const filename = `${crypto.randomUUID()}.${ext}`;
-    fs.writeFileSync(path.join(ICON_DIR, filename), buffer);
-    return `/uploads/services/${filename}`;
+
+    // Conditional storage logic
+    if (isVercel) {
+        // --- PRODUCTION (Vercel): Use Vercel Blob ---
+        try {
+            const { put } = require('@vercel/blob');
+            const blob = await put(`services/${filename}`, buffer, {
+                access: 'public',
+                contentType: `image/${match[1]}`,
+            });
+            return blob.url;
+        } catch (uploadErr) {
+            console.error('Blob upload error:', uploadErr);
+            const err = new Error('Failed to upload icon image to cloud storage');
+            err.status = 500;
+            throw err;
+        }
+    } else {
+        // --- LOCAL DEVELOPMENT: Use Local Filesystem ---
+        try {
+            fs.mkdirSync(ICON_DIR, { recursive: true });
+            fs.writeFileSync(path.join(ICON_DIR, filename), buffer);
+            return `/uploads/services/${filename}`;
+        } catch (localErr) {
+            console.error('Local file write error:', localErr);
+            const err = new Error('Failed to save icon locally');
+            err.status = 500;
+            throw err;
+        }
+    }
 }
 
 function toService(row) {
@@ -84,7 +113,7 @@ function registerServiceRoutes(app, db) {
         if (v.error) return res.status(400).json({ message: v.error });
 
         try {
-            const icon = resolveIcon(req.body.icon);
+            const icon = await resolveIcon(req.body.icon);
             const [result] = await db.query(
                 'INSERT INTO services (label, price, icon) VALUES (?, ?, ?)',
                 [v.label, v.price, icon]
@@ -106,7 +135,7 @@ function registerServiceRoutes(app, db) {
         if (v.error) return res.status(400).json({ message: v.error });
 
         try {
-            const icon = resolveIcon(req.body.icon);
+            const icon = await resolveIcon(req.body.icon);
             const [result] = await db.query(
                 'UPDATE services SET label = ?, price = ?, icon = ? WHERE service_id = ?',
                 [v.label, v.price, icon, id]

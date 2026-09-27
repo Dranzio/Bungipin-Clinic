@@ -94,20 +94,58 @@
                         Password: <span class="text-red-500">*</span>
                     </label>
 
-                    <input type="password" id="password_hash" name="password_hash" required minlength="8"
-                           class="w-full h-8 md:h-11 px-4 bg-white outline-none rounded-[30px] border border-gray-200 mb-4 md:mb-12"
-                           placeholder="12345678" />
+                    <div class="relative w-full mb-12 md:mb-14">
+
+                        <input type="password" id="password_hash" name="password_hash"  required minlength="8"
+                            class="w-full h-8 md:h-11 px-4 pr-16 bg-white outline-none rounded-[30px] border border-gray-200"
+                            placeholder="12345678"
+                        />
+
+                        <button
+                            type="button"
+                            id="ShowPass"
+                            aria-label="Show Password"
+                            class="absolute right-4 top-0 h-8 md:h-11 flex items-center cursor-pointer text-sm text-gray-500 hover:text-gray-700 font-medium"
+                        >
+                            Show
+                        </button>
+
+                        <div id="StrengthBars" class="flex gap-5 mt-2.5 mb-[10px] w-[95%] mx-auto">
+                            <div class="StrengthCap flex-1 h-[10px] rounded-[99px] bg-[#808a92]" id="Weak"></div>
+                            <div class="StrengthCap flex-1 h-[10px] rounded-[99px] bg-[#808a92]" id="Medium"></div>
+                            <div class="StrengthCap flex-1 h-[10px] rounded-[99px] bg-[#808a92]" id="Good"></div>
+                            <div class="StrengthCap flex-1 h-[10px] rounded-[99px] bg-[#808a92]" id="Strong"></div>
+                        </div>
+
+                        <p class="absolute left-0 top-full mt-1 text-lg md:text-sm text-[#2A1001]">
+                            Strength:
+                            <span id="PassStrength"></span>
+                        </p>
+
+                    </div>
+                    
+                    <div id="passwordWarning"
+                         class="text-red-700 text-xs md:text-sm font-poppins font-semibold mb-6 md:mb-12 hidden">
+                    </div>
                 </div>
 
                 <div class="flex-1">
                     <label class="text-sm md:text-[20px] block font-semibold text-[#2A1001] font-poppins mb-2">
                         Confirm Password: <span class="text-red-500">*</span>
                     </label>
+                    <div class="relative w-full mb-4 md:mb-12">
+                        <input type="password" id="confirm_password" name="confirm_password" required minlength="8"
+                            class="w-full h-8 md:h-11 px-4 pr-16 bg-white outline-none rounded-[30px] border border-gray-200"
+                            placeholder="Confirm Password"
+                            oninput="this.setCustomValidity(this.value !== document.getElementById('password_hash').value ? 'Passwords do not match.' : '')" />
+                        
+                        <button type="button" id="ConShowEye" aria-label="Show Password" 
+                        class="absolute right-4 top-1/2 -translate-y-1/2 cursor-pointer text-sm text-gray-500 hover:text-gray-700 font-medium">Show</button>
+                    </div>
 
-                    <input type="password" id="confirm_password" name="confirm_password" required minlength="8"
-                           class="w-full h-8 md:h-11 px-4 bg-white outline-none rounded-[30px] border border-gray-200 mb-4 md:mb-12"
-                           placeholder="Confirm Password"
-                           oninput="this.setCustomValidity(this.value !== document.getElementById('password_hash').value ? 'Passwords do not match.' : '')" />
+                    <div id="passwordWarning"
+                        class="text-red-700 text-xs md:text-sm font-poppins font-semibold mb-6 md:mb-12 hidden">
+                    </div>
                 </div>
             </div>
 
@@ -138,30 +176,6 @@
                 </div>
             </div>
 
-            <div class="flex justify-center gap-5">
-
-                <button type="submit" id="createAccountBtn" disabled
-                        class="w-1/2 sm:w-[220px] text-sm md:text-[20px] font-bold py-2 px-4 rounded-full transition-all duration-200 ease-in-out text-center
-                        disabled:bg-[#667733] disabled:text-[#2A1001] disabled:cursor-not-allowed disabled:shadow-none disabled:hover:scale-100 disabled:active:scale-100
-                        bg-[#D5C04D] text-[#FDFCE9] shadow-lg hover:scale-105 hover:bg-[#FDFCE9] cursor-pointer hover:text-[#2A1001] hover:shadow-xl active:scale-95 active:bg-[#c2ae3b]">
-                    Create Account
-                </button>
-
-                <button type="reset" id="clearBtn" disabled
-                        class="w-1/2 sm:w-[220px] text-sm md:text-[20px] font-bold py-2 px-4 rounded-full transition-all duration-200 ease-in-out text-center
-                        disabled:bg-[#667733] disabled:text-[#2A1001] disabled:cursor-not-allowed disabled:shadow-none disabled:hover:scale-100 disabled:active:scale-100
-                        bg-[#D5C04D] text-[#FDFCE9] shadow-lg hover:scale-105 hover:bg-[#FDFCE9] cursor-pointer hover:text-[#2A1001] hover:shadow-xl active:scale-95 active:bg-[#c2ae3b]">
-                    Clear
-                </button>
-
-                <button type="button" id="DraftBtn"
-                        class="w-1/2 sm:w-[220px] text-sm md:text-[20px] font-bold py-2 px-4 rounded-full transition-all duration-200 ease-in-out text-center
-                        bg-[#D5C04D] text-[#FDFCE9] shadow-lg hover:scale-105 hover:bg-[#FDFCE9] cursor-pointer hover:text-[#2A1001] hover:shadow-xl active:scale-95 active:bg-[#c2ae3b]">
-                    Draft
-                </button>
-
-            </div>
-
             <div class="flex items-center justify-center gap-2 mt-6 mb-6 md:mb-8">
                 <input type="checkbox" id="terms" required
                        class="w-4 h-4 accent-[#2A1001] cursor-pointer"
@@ -185,6 +199,30 @@
                         Privacy Policy
                     </span>
                 </div>
+            </div>
+
+            <div class="flex justify-center gap-5">
+
+                <button type="submit" id="createAccountBtn" disabled
+                        class="w-1/2 sm:w-[220px] text-sm md:text-[20px] font-bold py-2 px-4 rounded-full transition-all duration-200 ease-in-out text-center
+                        disabled:bg-[#808a92] disabled:text-[#2A1001] disabled:cursor-not-allowed disabled:shadow-none disabled:hover:scale-100 disabled:active:scale-100
+                        bg-[#D5C04D] text-[#FDFCE9] shadow-lg hover:scale-105 hover:bg-[#FDFCE9] cursor-pointer hover:text-[#2A1001] hover:shadow-xl active:scale-95 active:bg-[#c2ae3b]">
+                    Create Account
+                </button>
+
+                <button type="reset" id="clearBtn" disabled
+                        class="w-1/2 sm:w-[220px] text-sm md:text-[20px] font-bold py-2 px-4 rounded-full transition-all duration-200 ease-in-out text-center
+                        disabled:bg-[#808a92] disabled:text-[#2A1001] disabled:cursor-not-allowed disabled:shadow-none disabled:hover:scale-100 disabled:active:scale-100
+                        bg-[#D5C04D] text-[#FDFCE9] shadow-lg hover:scale-105 hover:bg-[#FDFCE9] cursor-pointer hover:text-[#2A1001] hover:shadow-xl active:scale-95 active:bg-[#c2ae3b]">
+                    Clear Fields
+                </button>
+
+                <button type="button" id="DraftBtn"
+                        class="w-1/2 sm:w-[220px] text-sm md:text-[20px] font-bold py-2 px-4 rounded-full transition-all duration-200 ease-in-out text-center
+                        bg-[#D5C04D] text-[#FDFCE9] shadow-lg hover:scale-105 hover:bg-[#FDFCE9] cursor-pointer hover:text-[#2A1001] hover:shadow-xl active:scale-95 active:bg-[#c2ae3b]">
+                    Save Draft
+                </button>
+
             </div>
 
             <div class="text-center mt-2 mb-4 md:mb-8 text-sm md:text-base text-[#2A1001] font-poppins">
@@ -248,6 +286,13 @@
         const termsCheckbox = document.getElementById('terms');
         const createAccountBtn = document.getElementById('createAccountBtn');
         const passwordWarning = document.getElementById('passwordWarning');
+        const ShowEye = document.getElementById('ShowPass');
+        const ConShowEye = document.getElementById('ConShowEye');
+        const weakBar = document.getElementById('Weak');
+        const mediumBar = document.getElementById('Medium');
+        const goodBar = document.getElementById('Good');
+        const strongBar = document.getElementById('Strong');
+        const passStrength = document.getElementById('PassStrength');
 
         const policyModal = document.getElementById('policyModal');
         const termsLink = document.getElementById('termsLink');
@@ -256,6 +301,84 @@
         const closeModalIcon = document.getElementById('closeModalIcon');
         const modalTitle = document.getElementById('modalTitle');
         const modalContent = document.getElementById('modalContent');
+
+        ShowEye.addEventListener('click', () => {
+            if (password.type === 'password') {
+                password.type = 'text';
+                ShowEye.textContent = 'Hide';
+            } else {
+                password.type = 'password';
+                ShowEye.textContent = 'Show';
+            }
+        });
+
+        ConShowEye.addEventListener('click', () => {
+            if (confirmPassword.type === 'password') {
+                confirmPassword.type = 'text';
+                ConShowEye.textContent = 'Hide';
+            } else {
+                confirmPassword.type = 'password';
+                ConShowEye.textContent = 'Show';
+            }
+        });
+
+        function updatePasswordStrength() {
+            const value = password.value;
+
+            const bars = [weakBar, mediumBar, goodBar, strongBar];
+
+            let strengthColor = '#808a92';
+
+            bars.forEach(bar => {
+                bar.style.background = '#808A92';
+            });
+
+            passStrength.textContent = '';
+
+            if (value === '') {
+                return;
+            }
+
+            let strength = 0;
+
+            if (value.length >= 8) {
+                strength++;
+            }
+
+            if (/\d/.test(value)) {
+                strength++;
+            }
+
+            // 3. Contains a special character
+            if (/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(value)) {
+                strength++;
+            }
+
+            if (/[A-Z]/.test(value) && /[a-z]/.test(value)) {
+                strength++
+            }
+
+            // Strength text
+            if (strength === 1) {
+                passStrength.textContent = 'Weak';
+                strengthColor = '#EF4444';
+            } else if (strength === 2) {
+                passStrength.textContent = 'Medium';
+                strengthColor = '#F59E0B';
+            } else if (strength === 3) {
+                passStrength.textContent = 'Good';
+                strengthColor = '#EAB308';
+            } else if (strength === 4) {
+                passStrength.textContent = 'Strong';
+                strengthColor = '#22C55E';
+            }
+
+            for (let i = 0; i < strength; i++) {
+                bars[i].style.backgroundColor = strengthColor;
+            }
+        }
+
+        password.addEventListener('input', updatePasswordStrength);
 
         function checkForm() {
             let hasAnyInput = false;
@@ -675,7 +798,7 @@
             try {
 
                 const response = await fetch(
-                    'http://localhost:3000/api/auth/register',
+                    '/api/auth/register',
                     {
                         method: 'POST',
                         headers: {

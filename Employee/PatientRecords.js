@@ -2,17 +2,13 @@ const authenticateToken = require('../authMiddleware');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const { put, del } = require('@vercel/blob');
 
 const xrayUploadDir = path.join(__dirname, '..', 'uploads', 'xrays');
-fs.mkdirSync(xrayUploadDir, { recursive: true });
+const isVercel = process.env.VERCEL === '1' || !!process.env.BLOB_READ_WRITE_TOKEN;
 
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => cb(null, xrayUploadDir),
-    filename: (req, file, cb) => {
-        const unique = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
-        cb(null, `${req.xrayPatientId}-${unique}${path.extname(file.originalname)}`);
-    }
-});
+// Use memoryStorage so buffers are available on both local and Vercel serverless environments
+const storage = multer.memoryStorage();
 
 const upload = multer({
     storage,
@@ -29,10 +25,7 @@ function registerPatientRecordsRoutes(app, db) {
 
     // PATCH /api/appointments/:id/notes — save dentist notes for the
     // currently ongoing session. Only allowed while the appointment is
-    // approved AND queue_status is 'ongoing' — matches how patientRecords.html
-    // decides whether a patient has a live session at all (see
-    // sp_get_patient_record's ongoing_appointment condition), so a dentist
-    // can't edit notes on a stale or already-completed appointment_id.
+    // approved AND queue_status is 'ongoing'.
     app.patch('/api/appointments/:id/notes', authenticateToken, async (req, res) => {
         if (!['employee', 'admin'].includes(req.user.role)) {
             return res.status(403).json({ message: 'Not authorized' });
@@ -74,13 +67,6 @@ function registerPatientRecordsRoutes(app, db) {
 
     // POST /api/appointments/:id/xrays — upload one or more x-ray images for
     // the currently ongoing session.
-    //
-    // Employees only, not admins: xrays.uploaded_by has a foreign key to
-    // employee_profiles(employee_id), and admin accounts only have a row in
-    // admin_profiles, so an admin upload would fail the FK constraint at
-    // insert time. Same "must actually be ongoing" precondition as notes,
-    // checked BEFORE multer touches the filesystem so an invalid appointment
-    // id never results in an orphaned file on disk.
     app.post('/api/appointments/:id/xrays',
         authenticateToken,
         async (req, res, next) => {
@@ -123,7 +109,25 @@ function registerPatientRecordsRoutes(app, db) {
             try {
                 const created = [];
                 for (const file of req.files) {
-                    const fileUrl = `/uploads/xrays/${file.filename}`;
+                    const unique = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
+                    const filename = `${req.xrayPatientId}-${unique}${path.extname(file.originalname)}`;
+                    let fileUrl;
+
+                    if (isVercel) {
+                        // --- PRODUCTION (Vercel): Upload to Vercel Blob ---
+                        const blob = await put(`xrays/${filename}`, file.buffer, {
+                            access: 'public',
+                            contentType: file.mimetype,
+                        });
+                        fileUrl = blob.url;
+                    } else {
+                        // --- LOCAL DEVELOPMENT: Write to local disk ---
+                        fs.mkdirSync(xrayUploadDir, { recursive: true });
+                        const localPath = path.join(xrayUploadDir, filename);
+                        fs.writeFileSync(localPath, file.buffer);
+                        fileUrl = `/uploads/xrays/${filename}`;
+                    }
+
                     const [result] = await db.query(
                         `INSERT INTO xrays (patient_id, appointment_id, uploaded_by, file_url)
                          VALUES (?, ?, ?, ?)`,
@@ -145,9 +149,7 @@ function registerPatientRecordsRoutes(app, db) {
     );
 
     // DELETE /api/xrays/:xrayId — remove an x-ray uploaded during the
-    // current, still-ongoing session. Same ongoing precondition, checked via
-    // a join back to appointments so a dentist can't delete an x-ray that
-    // belongs to an already-completed visit.
+    // current, still-ongoing session.
     app.delete('/api/xrays/:xrayId', authenticateToken, async (req, res) => {
         if (req.user.role !== 'employee') {
             return res.status(403).json({ message: 'Only employees can delete X-rays' });
@@ -173,10 +175,14 @@ function registerPatientRecordsRoutes(app, db) {
 
             await db.query('DELETE FROM xrays WHERE xray_id = ?', [xrayId]);
 
-            // Best-effort file cleanup — a failure here shouldn't fail the request,
-            // the DB record (the source of truth for the UI) is already gone.
-            const filePath = path.join(__dirname, '..', rows[0].file_url);
-            fs.unlink(filePath, () => {});
+            // Best-effort file cleanup supporting both Vercel Blob URLs and local files
+            const fileUrl = rows[0].file_url;
+            if (fileUrl.startsWith('http://') || fileUrl.startsWith('https://')) {
+                await del(fileUrl).catch(() => {}); // Delete from Vercel Blob
+            } else {
+                const filePath = path.join(__dirname, '..', fileUrl);
+                fs.unlink(filePath, () => {}); // Delete local disk file
+            }
 
             res.json({ message: 'X-ray deleted successfully' });
         } catch (err) {
@@ -237,7 +243,5 @@ function registerPatientRecordsRoutes(app, db) {
         }
     });
 }
-
-
 
 module.exports = registerPatientRecordsRoutes;

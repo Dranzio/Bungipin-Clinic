@@ -5,7 +5,7 @@ const router = express.Router();
 const db = require('./db');
 
 //  DENIED DIRECT PAGE ACCESS VIA URL
-const authenticateToken = require('./authmiddleware');
+const authenticateToken = require('./authMiddleware');
 
 // forgot + reset password
 const Joi = require('@hapi/joi');
@@ -189,6 +189,7 @@ router.get('/me', authenticateToken, (req, res) => {
     res.json(req.user);
 });
 
+// check this 193 to 228
 // POST /api/auth/reauth - verify the current user's password before sensitive pages open
 router.post('/reauth', authenticateToken, async (req, res) => {
     const password = String(req.body.password || '');
@@ -217,6 +218,13 @@ router.post('/reauth', authenticateToken, async (req, res) => {
         console.error('Re-authentication error:', err);
         res.status(500).json({ error: 'Unable to verify password.' });
     }
+// POST /api/auth/logout — the frontend clears localStorage itself, but the
+// httpOnly authToken cookie can only be cleared here, server-side. Without
+// this, a "logged out" browser could still authenticate against page routes
+// via the leftover cookie alone.
+router.post('/logout', (req, res) => {
+    authenticateToken.clearAuthCookie(res);
+    res.json({ message: 'Logged out' });
 });
 
 // forgot + reset password

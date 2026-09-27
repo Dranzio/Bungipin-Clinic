@@ -320,7 +320,7 @@
     async function loadPatientsFromDatabase() {
         try {
             const token = localStorage.getItem('userToken');
-            const response = await fetch('http://localhost:3000/api/patients', {
+            const response = await fetch('/api/patients', {
                 method: 'GET',
                 headers: { 'Authorization': `Bearer ${token}` }
             });

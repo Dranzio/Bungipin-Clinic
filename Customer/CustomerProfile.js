@@ -1,25 +1,22 @@
 const bcrypt = require('bcrypt');
-const authenticateToken = require('../authmiddleware');
+const authenticateToken = require('../authMiddleware');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const { put, del } = require('@vercel/blob');
 
 const SALT_ROUNDS = 10;
 
 const uploadDir = path.join(__dirname, '..', 'uploads', 'medical-pdfs');
-fs.mkdirSync(uploadDir, { recursive: true });
+const isVercel = process.env.VERCEL === '1' || !!process.env.BLOB_READ_WRITE_TOKEN;
 
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => cb(null, uploadDir),
-    filename: (req, file, cb) => {
-        cb(null, `${req.user.user_id}-${Date.now()}${path.extname(file.originalname)}`);
-    }
-});
+// Use memoryStorage so buffers are available on both local and Vercel serverless environments
+const storage = multer.memoryStorage();
 
 const upload = multer({
     storage,
     limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
-    fileFilter: (req, file, cb) => {//
+    fileFilter: (req, file, cb) => {
         if (file.mimetype !== 'application/pdf') {
             return cb(new Error('Only PDF files are allowed'));
         }
@@ -57,9 +54,26 @@ function registerPatientProfileRoute(app, db) {
             return res.status(400).json({ message: 'No PDF file was uploaded' });
         }
 
-        const fileUrl = `/uploads/medical-pdfs/${req.file.filename}`;
+        const unique = `${req.user.user_id}-${Date.now()}`;
+        const filename = `${unique}${path.extname(req.file.originalname)}`;
+        let fileUrl;
 
         try {
+            if (isVercel) {
+                // --- PRODUCTION (Vercel): Upload PDF to Vercel Blob ---
+                const blob = await put(`medical-pdfs/${filename}`, req.file.buffer, {
+                    access: 'public',
+                    contentType: req.file.mimetype,
+                });
+                fileUrl = blob.url;
+            } else {
+                // --- LOCAL DEVELOPMENT: Write PDF to local disk ---
+                fs.mkdirSync(uploadDir, { recursive: true });
+                const localPath = path.join(uploadDir, filename);
+                fs.writeFileSync(localPath, req.file.buffer);
+                fileUrl = `/uploads/medical-pdfs/${filename}`;
+            }
+
             await db.query(
                 'INSERT INTO patient_documents (patient_id, file_url) VALUES (?, ?)',
                 [req.user.user_id, fileUrl]
@@ -152,12 +166,22 @@ function registerPatientProfileRoute(app, db) {
             // Ignore if surgeries table hasn't been created in DB yet
         }
 
-        // 5. Life Factors (Safely handled if table exists)
-        try {
-            await connection.query('DELETE FROM life_factors WHERE patient_id = ?', [patient_id]);
-            if (Array.isArray(life_factors) && life_factors.length > 0) {
-                const values = life_factors.map(description => [patient_id, description]);
-                await connection.query('INSERT INTO life_factors (patient_id, description) VALUES ?', [values]);
+            await connection.query(
+                `UPDATE patient_profiles
+                 SET birthday = ?, secondary_email = ?, pregnancy_status = ?,
+                     address = ?, address_street = ?, address_barangay = ?, address_city = ?, address_province = ?
+                 WHERE patient_id = ?`,
+                [
+                    birthday || null, secondary_email, pregnancy_status || null,
+                    address || null, addressStreet || null, addressBarangay || null, addressCity || null, addressProvince || null,
+                    patientId
+                ]
+            );
+
+            await connection.query('DELETE FROM health_conditions WHERE patient_id = ?', [patientId]);
+            if (Array.isArray(health_conditions) && health_conditions.length > 0) {
+                const values = health_conditions.map(description => [patientId, description]);
+                await connection.query('INSERT INTO health_conditions (patient_id, description) VALUES ?', [values]);
             }
         } catch (err) {
             // Ignore if life_factors table hasn't been created in DB yet
