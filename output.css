@@ -2931,6 +2931,46 @@ details[open] > .faq-panel {
   overflow: hidden;
   min-height: 0;
 }
+html.password-gate-pending body > *:not(#password-gate) {
+  visibility: hidden;
+}
+body.password-gated > *:not(#password-gate) {
+  filter: blur(7px);
+  pointer-events: none;
+  user-select: none;
+}
+#password-gate {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(42, 16, 1, 0.38);
+  backdrop-filter: blur(4px);
+}
+.password-gate-card {
+  width: min(100%, 28rem);
+  padding: 2rem;
+  border-radius: 1.5rem;
+  background: #D3DCBE;
+  color: #2A1001;
+  box-shadow: 0 1.5rem 4rem rgba(42, 16, 1, 0.28);
+  text-align: center;
+  font-family: 'Poppins', sans-serif;
+}
+.password-gate-lock { margin-bottom: 0.75rem; font-size: 2rem; }
+.password-gate-card h1 { margin: 0 0 0.5rem; font-size: 1.5rem; font-weight: 800; }
+.password-gate-card > p { margin: 0 0 1.5rem; color: rgba(42, 16, 1, 0.72); }
+#password-gate-form { text-align: left; }
+#password-gate-form label { display: block; margin-bottom: 0.4rem; font-size: 0.8rem; font-weight: 700; text-transform: uppercase; }
+#password-gate-input { width: 100%; box-sizing: border-box; padding: 0.8rem 1rem; border: 1px solid rgba(42, 16, 1, 0.2); border-radius: 999px; outline: none; background: #fff; color: #2A1001; }
+#password-gate-input:focus { box-shadow: 0 0 0 3px rgba(102, 119, 51, 0.35); }
+.password-gate-error { min-height: 1.25rem; margin: 0.5rem 0; color: #b91c1c; font-size: 0.85rem; font-weight: 700; }
+#password-gate-form button { width: 100%; padding: 0.8rem 1rem; border: 0; border-radius: 999px; background: #667733; color: #fff; font-weight: 800; cursor: pointer; }
+#password-gate-form button:hover { background: #556022; }
+#password-gate-form button:disabled { background: #9ca3af; cursor: not-allowed; }
 @property --tw-translate-x {
   syntax: "*";
   inherits: false;

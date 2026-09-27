@@ -2,6 +2,72 @@
 // Handles: sidebar collapse/expand, user name+email loading
 // Called by each Customer page after the sidebar HTML is injected
 
+// IO socket for real-time stuff; connects to window.location.host
+const socket = io();
+const token = localStorage.getItem('userToken');
+if (token) {
+    socket.emit('authenticate', { token });
+}
+
+// listen for global real-time events
+socket.on('connect', () => {
+    console.log('socket connected: ', socket.id);
+});
+
+socket.on('notification', (data) => {
+    // update sidebar text dynamically
+    const badgeEl = document.getElementById('sidebar-notification-badge');
+    if (badgeEl) {
+        badgeEl.textContent = data.unreadCount;
+        badgeEl.classList.remove('hidden');
+    }
+});
+
+// exposing socket globally if individual pages need to emit custom events
+window.appSocket = socket;
+
+// Helper function to toggle booking link UI state
+function updateBookingLinkUI(isComplete) {
+    const bookLink = document.querySelector('a[data-page="Booking.html"]');
+    let warningText = document.getElementById('profile-warning-text');
+
+    if (!bookLink) return;
+
+    if (isComplete) {
+        // Enable link
+        bookLink.style.pointerEvents = 'auto';
+        bookLink.style.opacity = '1';
+        bookLink.href = '../Customer/Booking.html';
+
+        if (warningText) {
+            warningText.remove();
+        }
+    } else {
+        // Disable link
+        bookLink.style.pointerEvents = 'none';
+        bookLink.style.opacity = '0.4';
+        bookLink.removeAttribute('href');
+
+        // Inject red warning text if missing
+        if (!warningText) {
+            warningText = document.createElement('div');
+            warningText.id = 'profile-warning-text';
+            warningText.className = 'text-red-600 text-[10px] md:text-xs font-medium px-2 md:px-8 text-center md:text-left leading-tight w-full mt-1';
+            warningText.innerText = 'Please accomplish your profile first before booking.';
+            bookLink.insertAdjacentElement('afterend', warningText);
+        }
+    }
+}
+
+// Real-time listener for profile status changes
+if (window.appSocket) {
+    window.appSocket.on('profile_status_changed', (data) => {
+        console.log('Profile status changed via socket:', data);
+        const isComplete = Boolean(data.isComplete || data.birthday);
+        updateBookingLinkUI(isComplete);
+    });
+}
+
 function initSidebar() {
     _loadSidebarUser();
     _initCollapseToggle();
@@ -114,11 +180,8 @@ async function _loadSidebarUser() {
     if (!nameEl || !emailEl) return;
 
     const token = localStorage.getItem('userToken');
-    if (!token) {
-        nameEl.textContent  = 'Guest';
-        emailEl.textContent = '';
-        return;
-    }
+    if (!token) return;
+    
 
     try {
         // Pulls first_name, last_name, email from the users table
@@ -132,10 +195,41 @@ async function _loadSidebarUser() {
             nameEl.textContent  = `${data.first_name || ''} ${data.last_name || ''}`.trim() || 'User';
             emailEl.textContent = data.email || '';
 
+            // check if profile is complete
+            const isProfileComplete = data.birthday && data.birthday !== '0000-00-00' && data.birthday !== '1970-01-01T00:00:00.000Z';
+
             // Handle Profile Picture
             const avatarImg = document.getElementById('sidebar-user-avatar');
             const defaultAvatar = document.getElementById('sidebar-default-avatar');
             const picUrl = data.profile_picture || data.image_url; // adjust if your DB uses a different column name
+
+            // lock/unlock booking link and show warning text if not yet complete
+            const bookLink = document.querySelector('a[data-page="Booking.html"]');
+            let warningText = document.getElementById('profile-warning-text');
+
+            if (bookLink) {
+                if (!isProfileComplete) {
+                    // disable link
+                    bookLink.style.pointerEvents = 'none';
+                    bookLink.style.opacity = '0.4';
+                    bookLink.removeAttribute('href');
+                    
+                    // inject tailwind RED WARNENG text below link
+                    if (!warningText) {
+                        warningText = document.createElement('div');
+                        warningText.id = 'profile-warning-text';
+                        warningText.className = 'text-red-600 text-[10px] md:text-xs font-medium px-2 md:px-8 text-center md:text-left leading-tight w-full mt-1';
+                        warningText.innerText = 'Please accomplish your profile first before booking.';
+                        bookLink.insertAdjacentElement('afterend', warningText);
+                    }
+                } else {
+                    // enable link when profile complete
+                    bookLink.style.pointerEvents = 'auto';
+                    bookLink.style.opacity = '1';
+                    bookLink.href = '../Customer/Booking.html';
+                    if (warningText) warningText.remove();
+                }
+            }
 
             if (avatarImg && defaultAvatar) {
                 if (picUrl) {

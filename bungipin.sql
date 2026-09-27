@@ -85,7 +85,6 @@ DELIMITER ;
 CREATE TABLE patient_profiles (
     patient_id       INT PRIMARY KEY,
     birthday         DATE,
-    civil_status     VARCHAR(30),
     secondary_email  VARCHAR(150),
     address          VARCHAR(255),
     address_street   VARCHAR(150),
@@ -101,7 +100,6 @@ CREATE TABLE employee_profiles (
     staff_code    VARCHAR(30) UNIQUE,
     position      VARCHAR(30),
     birthday      DATE,
-    civil_status  VARCHAR(30),
     FOREIGN KEY (employee_id) REFERENCES users(user_id) ON DELETE CASCADE
 );
 
@@ -243,7 +241,6 @@ BEGIN
         'birthday', pp.birthday,
         'email', u.email,
         'phone', u.phone,
-        'civil_status', pp.civil_status,
         'address', pp.address,
         'address_street', pp.address_street,
         'address_barangay', pp.address_barangay,
@@ -318,7 +315,6 @@ BEGIN
         'birthday', pp.birthday,
         'email', u.email,
         'phone', u.phone,
-        'civil_status', pp.civil_status,
         'address', pp.address,
         'address_street', pp.address_street,
         'address_barangay', pp.address_barangay,
@@ -394,8 +390,7 @@ BEGIN
         'sex', u.sex,
         'birthday', ep.birthday,
         'email', u.email,
-        'phone', u.phone,
-        'civil_status', ep.civil_status
+        'phone', u.phone
     ) AS employee_record
     FROM employee_profiles ep
     JOIN users u ON ep.employee_id = u.user_id
@@ -411,11 +406,11 @@ CALL sp_register_user('Liza', 'Tan', 'liza.tan@example.com', '09203334444', '$2b
 CALL sp_register_user('Carla', 'Reyes', 'carla.reyes@example.com', '09051119999', '$2b$10$PFUiFjV7FngVMIZ2u/chOOV3l.cVQ84nz4Os8DipZlw72yiqAKKJi', 'F', 'admin', @uid5);
 
 
-UPDATE patient_profiles SET birthday = '1990-04-12', civil_status = 'Single', address = '123 Mabini St, Quezon City', address_street = '123 Mabini St', address_city = 'Quezon City', address_province = 'Metro Manila' WHERE patient_id = 1;
-UPDATE patient_profiles SET birthday = '1985-11-02', civil_status = 'Married', address = '45 Rizal Ave, Manila', address_street = '45 Rizal Ave', address_city = 'Manila', address_province = 'Metro Manila' WHERE patient_id = 2;
+UPDATE patient_profiles SET birthday = '1990-04-12', address = '123 Mabini St, Quezon City', address_street = '123 Mabini St', address_city = 'Quezon City', address_province = 'Metro Manila' WHERE patient_id = 1;
+UPDATE patient_profiles SET birthday = '1985-11-02', address = '45 Rizal Ave, Manila', address_street = '45 Rizal Ave', address_city = 'Manila', address_province = 'Metro Manila' WHERE patient_id = 2;
 
-UPDATE employee_profiles SET staff_code = 'STF-2026-001', position = 'Dentist', birthday = '1985-06-10', civil_status = 'Married' WHERE employee_id = 3;
-UPDATE employee_profiles SET staff_code = 'STF-2026-002', position = 'Dentist', birthday = '1990-02-20', civil_status = 'Single' WHERE employee_id = 4;
+UPDATE employee_profiles SET staff_code = 'STF-2026-001', position = 'Dentist', birthday = '1985-06-10' WHERE employee_id = 3;
+UPDATE employee_profiles SET staff_code = 'STF-2026-002', position = 'Dentist', birthday = '1990-02-20' WHERE employee_id = 4;
 
 UPDATE admin_profiles SET permission_level = 'full_access' WHERE admin_id = 5;
 
@@ -444,16 +439,19 @@ INSERT INTO notifications (user_id, type, title, message, appointment_id) VALUES
 INSERT INTO notifications (user_id, type, title, message, message_id) VALUES
 (1, 'new_message', 'New Message', 'You have a new message from Dr. Ramon Cruz.', 1);
 
--- ALTER TABLE FOR OTP IN FORGOT + RESET PASSWORD
+
+-- ALTER TABLE users FOR OTP IN FORGOT + RESET PASSWORD
 ALTER TABLE users
 	ADD COLUMN otp			VARCHAR(10) NULL,
     ADD COLUMN otpExpire	DATETIME	NULL;
 
+
+
 CALL sp_get_all_patient_records();
 select * from users;
 select * from appointments;
-select a.first_name, b.civil_status  from users a INNER JOIN  employee_profiles b on a.user_id = b.employee_id;
+select a.first_name from users a INNER JOIN  employee_profiles b on a.user_id = b.employee_id;
 select * from payments;
 select a.appointment_id, s.label AS service_offered from appointments a INNER JOIN services s on a.service_id = s.service_id;
-
+select * from patient_profiles;
  SELECT email, loginAttempts, isLocked FROM users WHERE email = 'juan.delacruz@example.com';

@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script src="../pageProtection.js"></script>
+  <script src="/passwordGate.js"></script>
   <link href="/output.css" rel="stylesheet">
   <title>Patient Profile</title>
   <script src="https://kit.fontawesome.com/fc8c3f4103.js" crossorigin="anonymous"></script>
@@ -60,6 +61,9 @@
     <hr class="border-t border-[#2A1001] mt-2 mb-6" />
 
     <main class="w-full max-w-5xl mx-auto py-8 px-6 md:px-12">
+      <div id="incompleteProfileBanner" class="hidden mb-6 p-4 bg-red-100 border border-red-400 text-red-800 rounded-2xl font-semibold text-sm text-center">
+        Your profile is incomplete. Please fill out your birthday, phone number, and address to continue using all features.
+      </div>
       <form id="customer_profile" class="flex flex-col items-center gap-10 sm:gap-12 w-full">
 
         <!-- ── Basic Information ── -->
@@ -398,6 +402,47 @@
     const dosageInput      = document.getElementById('dosageInput');
     const dosageOtherRow   = document.getElementById('dosageOtherRow');
     const dosageOtherInput = document.getElementById('dosageOtherInput');
+
+
+    // kapag nag submit na siya
+    if (form) {
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const birthdayVal = document.getElementById('birthday').value;
+
+            // Gather your other form fields as normal...
+            const formData = {
+                birthday: birthdayVal,
+                // ... other fields
+            };
+
+            try {
+                const response = await fetch('/api/patient-profile', {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('userToken')}`
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                if (response.ok) {
+                    console.log('Profile updated successfully!');
+
+                    // INSTANTLY update the booking link across the sidebar without a reload:
+                    if (window.appSocket) {
+                        window.appSocket.emit('profile_updated_client', {
+                            isComplete: Boolean(birthdayVal),
+                            birthday: birthdayVal
+                        });
+                    }
+                }
+            } catch (err) {
+                console.error('Error updating profile:', err);
+            }
+        });
+      }
 
 dosageInput.addEventListener('change', function () {
   const isOther = this.value === '__other__';
