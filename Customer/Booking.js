@@ -554,7 +554,7 @@ function createSlotBtn(slot) {
     pmSlots.forEach(s => pmList.appendChild(createSlotBtn(s)));
 }
 
-// ── 4. Calendar Logic ───────────────────────────────────────────────────────
+// ──/ 4. Calendar Logic ───────────────────────────────────────────────────────
 function initCalendar() {
     const monthYear = document.getElementById('month-year');
     const daysContainer = document.getElementById('days');
