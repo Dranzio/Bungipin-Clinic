@@ -287,6 +287,162 @@ function registerUserManagementRoutes(app, db) {
             res.status(500).json({ message: 'Internal Server Error' });
         }
     });
+
+    // ── DOCTOR SCHEDULE MANAGEMENT (admin) ──────────────────────────────────
+    // Powers the "Manage Schedule" button + doctorScheduleModal in userManage.html.
+    // Same 7-row shape as MOCK_SCHEDULES / doctor_schedules: one row per
+    // day_of_week (0=Sunday..6=Saturday), with start/end/break times and
+    // is_active. This is the admin-facing counterpart to the read-only
+    // query the booking flow's /available-slots route already runs.
+
+    const TIME_RE = /^([01]\d|2[0-3]):([0-5]\d):([0-5]\d)$/;
+
+    async function assertDentist(conn, employeeId) {
+        const [[emp]] = await conn.query(
+            `SELECT ep.employee_id, ep.position
+             FROM employee_profiles ep
+             WHERE ep.employee_id = ?`,
+            [employeeId]
+        );
+        if (!emp) return { ok: false, status: 404, message: 'Doctor not found' };
+        if (emp.position !== 'Dentist') {
+            return { ok: false, status: 400, message: 'This employee is not a dentist' };
+        }
+        return { ok: true };
+    }
+
+    // GET /api/doctors/:id/schedule — load the 7-day week for the modal
+    app.get('/api/doctors/:id/schedule', authenticateToken, requireAdmin, async (req, res) => {
+        const employeeId = Number(req.params.id);
+        if (!Number.isInteger(employeeId)) {
+            return res.status(400).json({ message: 'Invalid doctor id' });
+        }
+
+        try {
+            const check = await assertDentist(db, employeeId);
+            if (!check.ok) {
+                return res.status(check.status).json({ message: check.message });
+            }
+
+            const [rows] = await db.query(
+                `SELECT day_of_week, start_time, end_time, break_start, break_end, is_active
+                 FROM doctor_schedules
+                 WHERE employee_id = ?
+                 ORDER BY day_of_week`,
+                [employeeId]
+            );
+
+            res.json(rows);
+        } catch (err) {
+            console.error('Error fetching doctor schedule:', err);
+            res.status(500).json({ message: 'Internal Server Error' });
+        }
+    });
+
+    // PUT /api/doctors/:id/schedule — replace the full week in one save
+    app.put('/api/doctors/:id/schedule', authenticateToken, requireAdmin, async (req, res) => {
+        const employeeId = Number(req.params.id);
+        if (!Number.isInteger(employeeId)) {
+            return res.status(400).json({ message: 'Invalid doctor id' });
+        }
+
+        const { schedules } = req.body;
+        if (!Array.isArray(schedules) || schedules.length !== 7) {
+            return res.status(400).json({ message: 'Exactly 7 day rows (0-6) are required' });
+        }
+
+        const seenDays = new Set();
+        const clean = [];
+
+        for (const row of schedules) {
+            const day = Number(row.day_of_week);
+            if (!Number.isInteger(day) || day < 0 || day > 6 || seenDays.has(day)) {
+                return res.status(400).json({ message: `Invalid or duplicate day_of_week: ${row.day_of_week}` });
+            }
+            seenDays.add(day);
+
+            const isActive = !!row.is_active;
+
+            // Inactive days are stored with NULL times, regardless of what the
+            // (disabled/greyed-out) inputs still held on the frontend — keeps
+            // this consistent with the seeded off-days in bungipin.sql.
+            if (!isActive) {
+                clean.push({ day, start: null, end: null, breakStart: null, breakEnd: null, active: 0 });
+                continue;
+            }
+
+            const { start_time, end_time, break_start, break_end } = row;
+            if (![start_time, end_time].every(t => TIME_RE.test(t))) {
+                return res.status(400).json({ message: `Invalid start/end time on day ${day}` });
+            }
+            if (start_time >= end_time) {
+                return res.status(400).json({ message: `Start time must be before end time on day ${day}` });
+            }
+
+            let breakStart = null, breakEnd = null;
+            const hasBreak = break_start && break_end;
+            if (hasBreak) {
+                if (![break_start, break_end].every(t => TIME_RE.test(t))) {
+                    return res.status(400).json({ message: `Invalid break time on day ${day}` });
+                }
+                if (break_start >= break_end || break_start < start_time || break_end > end_time) {
+                    return res.status(400).json({ message: `Break must fall within the shift on day ${day}` });
+                }
+                breakStart = break_start;
+                breakEnd = break_end;
+            }
+
+            clean.push({ day, start: start_time, end: end_time, breakStart, breakEnd, active: 1 });
+        }
+
+        const connection = await db.getConnection();
+
+        try {
+            const check = await assertDentist(connection, employeeId);
+            if (!check.ok) {
+                connection.release();
+                return res.status(check.status).json({ message: check.message });
+            }
+
+            await connection.beginTransaction();
+
+            // One row per day already exists (or should) thanks to
+            // unique_employee_day — upsert so a partially-seeded doctor
+            // (like Ramon before he had any rows) gets filled in cleanly too.
+            for (const row of clean) {
+                await connection.query(
+                    `INSERT INTO doctor_schedules
+                        (employee_id, day_of_week, start_time, end_time, break_start, break_end, is_active)
+                     VALUES (?, ?, ?, ?, ?, ?, ?)
+                     ON DUPLICATE KEY UPDATE
+                        start_time = VALUES(start_time),
+                        end_time = VALUES(end_time),
+                        break_start = VALUES(break_start),
+                        break_end = VALUES(break_end),
+                        is_active = VALUES(is_active)`,
+                    [employeeId, row.day, row.start, row.end, row.breakStart, row.breakEnd, row.active]
+                );
+            }
+
+            await connection.commit();
+
+            const [updated] = await connection.query(
+                `SELECT day_of_week, start_time, end_time, break_start, break_end, is_active
+                 FROM doctor_schedules
+                 WHERE employee_id = ?
+                 ORDER BY day_of_week`,
+                [employeeId]
+            );
+
+            res.json(updated);
+        } catch (err) {
+            await connection.rollback();
+            console.error('Doctor schedule update error:', err);
+            res.status(500).json({ message: 'Internal Server Error' });
+        } finally {
+            connection.release();
+        }
+    });
 }
 
 module.exports = registerUserManagementRoutes;
