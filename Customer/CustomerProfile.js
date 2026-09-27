@@ -1,5 +1,5 @@
 const bcrypt = require('bcrypt');
-const authenticateToken = require('../authmiddleware');
+const authenticateToken = require('../authMiddleware');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');

@@ -12,7 +12,7 @@ const registerBookingRequestRoutes = require("./Employee/BookingRequest");
 const registerQueueRoutes = require("./Employee/QueueRoutes");
 const registerPatientRecordsRoutes = require("./Employee/PatientRecords");
 const registerMessagesRoutes = require("./MessagesRoutes");
-const authenticateToken = require("./authmiddleware");
+const authenticateToken = require("./authMiddleware");
 
 // show IO in routes
 const http = require('http');

@@ -5,7 +5,7 @@ const router = express.Router();
 const db = require('./db');
 
 //  DENIED DIRECT PAGE ACCESS VIA URL
-const authenticateToken = require('./authmiddleware');
+const authenticateToken = require('./authMiddleware');
 
 // forgot + reset password
 const Joi = require('@hapi/joi');

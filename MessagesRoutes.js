@@ -3,7 +3,7 @@
 // A patient and employee can only message each other if they share a
 // non-cancelled appointment. Admins bypass the restriction.
 
-const authenticateToken = require('./authmiddleware');
+const authenticateToken = require('./authMiddleware');
 
 module.exports = function registerMessagesRoutes(app, db) {
 

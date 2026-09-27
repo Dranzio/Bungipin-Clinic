@@ -1,4 +1,4 @@
-const authenticateToken = require('../authmiddleware');
+const authenticateToken = require('../authMiddleware');
 
 function registerBookingRoute(app, db) {
     app.post('/api/appointments', authenticateToken, async (req, res) => {
