@@ -5,21 +5,27 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <!-- DENIED DIRECT PAGE ACCESS VIA URL -->
     <script src="../pageProtection.js"></script>
-    <title>Patient Records</title>
+    <title>Patient Records Management</title>
     <link href="/output.css" rel="stylesheet">
+    <!-- Tailwind CDN Fallback for missing builds -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://kit.fontawesome.com/fc8c3f4103.js" crossorigin="anonymous"></script>
     <script src="/Taskbar/Employee_Sidebar.js"></script>
-    <script src="Messages.js"></script>
+    <style>
+        select#sortSelect option {
+            background-color: #ffffff !important;
+            color: #2A1001 !important;
+        }
+    </style>
 </head>
-<body class="min-h-screen md:h-screen md:overflow-hidden bg-[#F3EFE4] relative flex flex-col md:flex-row antialiased">
+<body class="min-h-screen md:h-screen md:overflow-hidden bg-[#F3EFE4] relative flex flex-col md:flex-row antialiased text-[#2A1001]">
 
 <!-- SIDEBAR -->
 <div id="sidebar-placeholder"></div>
 <script>
     function syncContentOffset() {
         const placeholder = document.getElementById('sidebar-placeholder');
-        const sidebar = Array.from(placeholder.children)
+        const sidebar = Array.from(placeholder?.children || [])
             .find(el => !['SCRIPT', 'STYLE', 'LINK'].includes(el.tagName));
         if (!sidebar) return;
 
@@ -40,7 +46,8 @@
 
     (async () => {
         try {
-            const response = await fetch('/Taskbar/Employee_Task.html');
+            let response = await fetch('/Taskbar/Employee_Task.html');
+            if (!response.ok) response = await fetch('/Taskbar/Admin_Task.html');
             if (response.ok) {
                 const data = await response.text();
                 document.getElementById('sidebar-placeholder').innerHTML = data;
@@ -61,262 +68,366 @@
     })();
 </script>
 
-<div id="main-content" class="flex-1 min-w-0 md:min-h-0 md:overflow-y-auto">
+<div id="main-content" class="flex-1 min-w-0 md:min-h-0 md:overflow-y-auto flex flex-col">
 
-    <!--Header title with logo image-->
-    <div class="flex justify-between items-start pt-5 pl-6 pr-4 md:pl-24 md:pr-8">
-
-        <h1 class="text-2xl sm:text-3xl md:text-5xl 2xl:text-[73px] pt-5 font-bold text-[#2A1001] font-['Poppins']">
-            Patient Records
-        </h1>
+    <!-- Header title with logo image -->
+    <div class="flex justify-between items-start pt-5 pl-4 pr-4 sm:pl-6 sm:pr-6 md:pl-24 md:pr-8">
+        <div>
+            <h1 class="text-2xl sm:text-3xl md:text-5xl 2xl:text-[73px] pt-2 sm:pt-5 font-bold text-[#2A1001] font-['Poppins']">
+                Patient Records
+            </h1>
+            <p class="text-xs sm:text-sm font-semibold text-[#667733] mt-0.5">
+                Comprehensive clinical medical history &amp; treatment charts
+            </p>
+        </div>
         <img
-                src="../assets/logowithtitle.png"
-                class="w-20 sm:w-24 md:w-28 h-auto object-contain shrink-0"
-                alt="Logo"/>
+            src="../assets/logowithtitle.png"
+            class="w-16 sm:w-20 md:w-28 h-auto object-contain shrink-0"
+            onerror="this.style.display='none'"
+            alt="Logo"/>
     </div>
-    <hr class="border-t border-[#2A1001] mt-2 mb-6" />
+    <hr class="border-t border-[#2A1001] mt-2 mb-6 mx-4 sm:mx-6 md:mx-12" />
 
-    <!--boxed so we could contain the search and sort options on top properly-->
-    <div class="flex w-full justify-center gap-1">
-
-        <!--search bar that can filter the table-->
-        <input
+    <!-- Filter & Search Controls Bar -->
+    <div class="px-4 sm:px-8 max-w-6xl w-full mx-auto mb-6 flex flex-col md:flex-row items-center justify-between gap-3">
+        
+        <!-- Search bar -->
+        <div class="relative w-full md:max-w-md">
+            <input
                 type="text"
                 id="searchInput"
-                placeholder="Search by name..."
-                class="h-10 w-full max-w-md rounded-full border border-[#2A1001]/20 bg-white px-4 mb-6 outline-none"/>
-
-        <button id="qrBtn" class="h-11 w-11 shrink-0 sflex items-center justify-center rounded-xl bg-[#8A9A6B] hover:bg-[#79885C] transition p-2 mx-5" title="Scan QR (coming soon)"><!---add QR Scanning funtion soon?--->
-            <img src="../assets/scan.png" alt="Scan QR" class="w-full h-full object-contain" />
-        </button>
-
-
-        <!--sort dropdown that can sort the table by date, month, oldest, recent, year-->
-        <div class="relative">
-            <select id="sortSelect" class="h-11 pl-4 pr-8 shrink-0 flex items-center justify-center rounded-full bg-[#D5C04D] font-bold text-[#2A1001] outline-none cursor-pointer appearance-none">
-                <!-- options of sort now injected by JS via populateSortDropdown() -->
-            </select>
-            <div class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[#2A1001]">▾</div>
+                placeholder="Search by patient name, ID, phone, or email..."
+                class="h-11 w-full rounded-full border border-black/20 bg-white px-5 outline-none shadow-sm text-sm focus:ring-2 focus:ring-[#667733]/50"
+            />
         </div>
 
+        <div class="flex items-center gap-3 w-full md:w-auto justify-start md:justify-end">
+            <!-- Sort dropdown -->
+            <div class="relative">
+                <select id="sortSelect" class="h-11 pl-4 pr-9 rounded-full bg-[#D5C04D] hover:bg-[#c6b242] font-bold text-xs sm:text-sm text-[#2A1001] outline-none cursor-pointer appearance-none shadow-sm transition">
+                    <option value="recent" class="bg-white text-[#2A1001]">Sort: Most Recent Visit</option>
+                    <option value="oldest" class="bg-white text-[#2A1001]">Oldest First</option>
+                    <option value="name_asc" class="bg-white text-[#2A1001]">Name (A-Z)</option>
+                    <option value="name_desc" class="bg-white text-[#2A1001]">Name (Z-A)</option>
+                </select>
+                <div class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[#2A1001] text-xs">▼</div>
+            </div>
+        </div>
     </div>
-
 
     <!-- Patient Records Table -->
-    <div class="overflow-x-auto rounded-3xl w-full md:w-[80%] mx-auto shadow-xl">
-        <table class="w-full border-collapse">
-            <thead>
-            <tr class="bg-[#667733] text-white">
-                <th class="text-center py-3 px-6">Patient ID</th>
-                <th class="text-center py-3 px-6">Name</th>
-                <th class="text-center py-3 px-6">Last Visit</th>
-                <th class="text-center py-3 px-6"></th>
-            </tr>
-            </thead>
-            <tbody id="tableBody" class="bg-[#ECF5E2]">
-            <!-- record rows injected by JS -->
-            </tbody>
-        </table>
-    </div>
-
-    <!-- pagination -->
-    <div class="flex justify-center gap-2 my-8" id="pagination">
-
-    </div>
-
-    <div id="patientModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div class="bg-[#F3EFE4] rounded-3xl w-full max-w-3xl max-h-[90vh] overflow-y-auto p-5 sm:p-8 border border-[#2A1001]/20 shadow-2xl relative">
-
-            <button id="closeModal" class="absolute top-4 right-4 text-3xl font-bold text-[#2A1001] hover:opacity-60 cursor-pointer z-50 p-2">
-                &times;
-            </button>
-            <h2 class="text-2xl md:text-3xl font-bold text-[#2A1001] font-['Poppins'] mb-6">Patient Records</h2>
-
-            <div class="bg-[#D3DCBE] rounded-3xl p-6 md:p-8">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-
-                    <!-- model of full patient record to be gathered from profile-->
-
-                    <div>
-                        <label class="block font-semibold text-[#2A1001] text-sm mb-1">First Name:</label>
-                        <div id="mFirstName" class="w-full h-10 px-4 rounded-full bg-white/70 flex items-center text-[#2A1001]"></div>
-                    </div>
-                    <div>
-                        <label class="block font-semibold text-[#2A1001] text-sm mb-1">Last Name:</label>
-                        <div id="mLastName" class="w-full h-10 px-4 rounded-full bg-white/70 flex items-center text-[#2A1001]"></div>
-                    </div>
-                    <div>
-                        <label class="block font-semibold text-[#2A1001] text-sm mb-1">Sex:</label>
-                        <div id="mSex" class="w-full h-10 px-4 rounded-full bg-white/70 flex items-center text-[#2A1001]"></div>
-                    </div>
-                    <div>
-                        <label class="block font-semibold text-[#2A1001] text-sm mb-1">Birthday:</label>
-                        <div id="mBirthday" class="w-full h-10 px-4 rounded-full bg-white/70 flex items-center text-[#2A1001]"></div>
-                    </div>
-                    <div>
-                        <label class="block font-semibold text-[#2A1001] text-sm mb-1">Email:</label>
-                        <div id="mEmail" class="w-full h-10 px-4 rounded-full bg-white/70 flex items-center text-[#2A1001]"></div>
-                    </div>
-                    <div>
-                        <label class="block font-semibold text-[#2A1001] text-sm mb-1">Phone Number:</label>
-                        <div id="mPhone" class="w-full h-10 px-4 rounded-full bg-white/70 flex items-center text-[#2A1001]"></div>
-                    </div>
-                    <div>
-                        <label class="block font-semibold text-[#2A1001] text-sm mb-1">Civil Status:</label>
-                        <div id="mCivilStatus" class="w-full h-10 px-4 rounded-full bg-white/70 flex items-center text-[#2A1001]"></div>
-                    </div>
-                    <div>
-                        <label class="block font-semibold text-[#2A1001] text-sm mb-1">Pre-existing Health Conditions:</label>
-                        <div id="mHealthConditions" class="w-full h-10 px-4 rounded-full bg-white/70 flex items-center text-[#2A1001]"></div>
-                    </div>
-                    <div>
-                        <label class="block font-semibold text-[#2A1001] text-sm mb-1">Pregnancy Status:</label>
-                        <div id="mPregnancy" class="w-full h-10 px-4 rounded-full bg-white/70 flex items-center text-[#2A1001]"></div>
-                    </div>
-                    <div>
-                        <label class="block font-semibold text-[#2A1001] text-sm mb-1">Current Prescriptions:</label>
-                        <div id="mPrescriptions" class="w-full h-10 px-4 rounded-full bg-white/70 flex items-center text-[#2A1001]"></div>
-                    </div>
-                    <div class="md:col-span-2">
-                        <label class="block font-semibold text-[#2A1001] text-sm mb-1">Allergies / Maternal Allergies:</label>
-                        <div id="mAllergies" class="w-full h-10 px-4 rounded-full bg-white/70 flex items-center text-[#2A1001]"></div>
-                    </div>
-
-                </div>
-
-                <!--ongoing session content form -->
-                <div class="mt-8">
-
-                    <!-- Tab buttons -->
-                    <div class="flex gap-2 border-b-2 border-[#2A1001]/20 mb-6">
-                        <button id="tabSessionBtn" class="tabBtn px-6 py-2.5 font-bold text-[#2A1001] border-b-4 border-[#667733] -mb-0.5 transition">
-                            Today's Session
-                        </button>
-                        <button id="tabHistoryBtn" class="tabBtn px-6 py-2.5 font-bold text-[#2A1001]/50 border-b-4 border-transparent -mb-0.5 hover:text-[#2A1001] transition">
-                            Past Visits
-                        </button>
-                    </div>
-
-                    <!-- Today's Session Content -->
-                    <div id="tabSessionContent" class="tabContent">
-
-                        <!-- Shown when patient has NO ongoing session right now — a session starts
-                             automatically once an employee sets queue_status to 'ongoing' on the
-                             Queue Appointments page; there is nothing for the dentist to click here. -->
-                        <div id="noSessionContent" class="hidden text-center py-12">
-                            <p class="text-[#2A1001]/60 font-semibold mb-4">No ongoing session for this patient right now.</p>
-                            <p class="text-[#2A1001]/40 text-sm">Please wait for the receptionist to update the queue status.</p>
-                        </div>
-
-                        <!-- Shown when patient DOES have an ongoing session -->
-                        <div id="sessionActiveContent">
-                            <div class="grid grid-cols-1 gap-4 mb-6">
-                                <div>
-                                    <label class="block font-semibold text-[#2A1001] text-sm mb-1">Patient's Concern:</label>
-                                    <div id="mPatientNote" class="w-full p-4 rounded-2xl bg-white/70 text-[#2A1001] min-h-[2.5rem]"></div>
-                                </div>
-                                <div>
-                                    <label class="block font-semibold text-[#2A1001] text-sm mb-1">Dentist Notes:</label>
-                                    <textarea id="mNotes" rows="4" class="w-full p-4 rounded-2xl bg-white text-[#2A1001] outline-none resize-none"></textarea>
-                                </div>
-                            </div>
-
-
-
-                            <!-- X-ray upload -->
-                            <div class="mb-6">
-                                <label class="block font-semibold text-[#2A1001] text-sm mb-2">Upload Today's X-Rays:</label>
-                                <div id="xrayDropZone" class="border-2 border-dashed border-[#2A1001]/40 rounded-2xl bg-white/60 py-10 flex flex-col items-center justify-center cursor-pointer hover:bg-white/80 transition">
-                                    <span class="text-[#2A1001] font-semibold text-center px-4" id="xrayLabel">Click to upload X-ray images</span>
-                                    <input type="file" id="xrayInput" accept="image/*" multiple class="hidden" />
-                                </div>
-
-                                <!-- LIVE PREVIEW: shows a thumbnail of every X-ray uploaded this session -->
-                                <div id="sessionXrayPreview" class="flex flex-wrap gap-3 mt-4"></div>
-                            </div>
-
-                            <div class="flex justify-center gap-3 flex-wrap">
-                                <button id="saveSessionBtn" class="bg-[#667733] hover:bg-[#556022] transition text-white font-bold px-8 py-3 rounded-full">
-                                    Save Appointment
-                                </button>
-
-                                <!--REMOVE THIS BUTTON WHEN IMPLEMENTED IN BACKEND! FOR MOCK UP ONLY RAHHHHH=======================================================================================look-->
-                                <button id="completeSessionBtn" class="bg-[#D5C04D] hover:bg-[#c2ad3c] transition text-[#2A1001] font-bold px-8 py-3 rounded-full">
-                                    Complete Visit
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!--patient history visits -->
-                    <div id="tabHistoryContent" class="tabContent hidden">
-
-
-                        <!-- The existing visit history list -->
-                        <h3 class="font-bold text-[#2A1001] mb-3">Previous Appointments</h3>
-                        <div id="visitHistoryList" class="max-h-80 overflow-y-auto pr-2 space-y-3">
-                            <!-- past visit cards injected by JS -->
-                        </div>
-                    </div>
-                </div>
-                <!-- visit x-ray modal -->
-                <div id="visitXrayModal" class="hidden fixed inset-0 bg-black/60 z-[60] flex items-center justify-center p-4">
-                    <div class="bg-[#F3EFE4] rounded-3xl w-full max-w-2xl max-h-[85vh] overflow-y-auto p-6 relative">
-                        <button id="closeVisitXrayModal" class="absolute top-4 right-4 text-2xl font-bold text-[#2A1001] hover:opacity-60">&times;</button>
-                        <h3 class="text-xl font-bold text-[#2A1001] mb-1" id="visitXrayModalDate"></h3>
-                        <p class="text-sm text-[#2A1001]/60 mb-4" id="visitXrayModalService"></p>
-                        <div id="visitXrayModalGrid" class="grid grid-cols-2 sm:grid-cols-3 gap-3"></div>
-                    </div>
-                </div>
-
-                <!--Image viewer-->
-                <div id="fullImageViewer" class="hidden fixed inset-0 bg-black/95 z-[70] p-6 sm:p-12">
-                    <!-- Changed to fixed positioning so the close button never disappears -->
-                    <button id="closeFullImageBtn" class="fixed top-4 right-6 text-white text-5xl hover:text-gray-300 transition cursor-pointer z-[80]">&times;</button>
-
-                    <!-- This wrapper forces the image to perfectly fit the screen size -->
-                    <div class="w-full h-full flex items-center justify-center">
-                        <img id="fullImageSrc" src="" class="max-w-full max-h-full object-contain rounded-lg shadow-2xl" />
-                    </div>
-                </div>
-
-
-                <div class="flex justify-center mt-8 gap-4 flex-wrap">
-                    <button id="showQrCodeBtn" class="bg-[#D5C04D] hover:bg-[#c2ad3c] transition text-[#2A1001] font-bold px-8 py-3 rounded-full">
-                        Show QR Code
-                    </button>
-
-                    <div id="qrModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 1000;">
-                        <div style="background: white; padding: 20px; border-radius: 8px; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.3); max-width: 300px;">
-                            <h3 style="margin-top: 0; font-family: sans-serif;">Your QR Code</h3>
-                            <div id="qrCodeContainer"></div>
-                            <button id="closeQrBtn" style="margin-top: 15px; padding: 8px 16px; cursor: pointer;">Close</button>
-                        </div>
-                    </div>
-
-                    <button id="printPdfBtn" class="bg-[#D5C04D] hover:bg-[#c2ad3c] transition text-[#2A1001] font-bold px-8 py-3 rounded-full">
-                        Print PDF
-                    </button>
-                </div>
-
-                <div id="saveConfirmation" class="hidden text-center mt-4 text-green-800 font-semibold">
-                    Changes saved!
-                </div>
-            </div>
-
+    <div class="px-4 sm:px-8 w-full max-w-6xl mx-auto mb-8">
+        <div class="overflow-x-auto rounded-3xl w-full shadow-xl border border-[#2A1001]/10 bg-[#ECF5E2]">
+            <table class="w-full border-collapse text-left">
+                <thead>
+                <tr class="bg-[#667733] text-white text-xs sm:text-sm font-bold uppercase tracking-wider">
+                    <th class="py-4 px-4 sm:px-6 text-center whitespace-nowrap rounded-tl-2xl">Patient ID</th>
+                    <th class="py-4 px-4 sm:px-6">Name</th>
+                    <th class="py-4 px-4 sm:px-6">Phone Number</th>
+                    <th class="py-4 px-4 sm:px-6">Email</th>
+                    <th class="py-4 px-4 sm:px-6 text-center whitespace-nowrap">Last Visit</th>
+                    <th class="py-4 px-4 sm:px-6 text-center w-36 rounded-tr-2xl">Action</th>
+                </tr>
+                </thead>
+                <tbody id="tableBody" class="divide-y divide-[#2A1001]/10 text-xs sm:text-sm font-medium">
+                    <!-- record rows injected by JS -->
+                </tbody>
+            </table>
         </div>
+
+        <!-- Empty State -->
+        <div id="emptyState" class="hidden text-center py-12 bg-white/40 rounded-3xl mt-4 border border-[#2A1001]/10">
+            <i class="fa-solid fa-user-xmark text-4xl text-[#2A1001]/30 mb-2"></i>
+            <p class="text-base font-bold text-[#2A1001]/70">No patient records found</p>
+            <p class="text-xs text-[#2A1001]/50">Try adjusting your search criteria or sorting filters.</p>
+        </div>
+
+        <!-- Pagination -->
+        <div class="flex justify-center items-center gap-2 my-8" id="pagination"></div>
     </div>
 
 </div>
 
-<script>
+<!-- ================= PATIENT FULL PROFILE & CLINICAL RECORD MODAL ================= -->
+<div id="patientModal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
+    <div class="bg-[#F3EFE4] rounded-3xl w-full max-w-4xl max-h-[92vh] overflow-y-auto p-5 sm:p-8 border border-[#2A1001]/20 shadow-2xl relative my-auto flex flex-col gap-6">
 
+        <!-- Modal Close Button -->
+        <button id="closeModal" class="absolute top-4 right-5 text-3xl font-extrabold text-[#2A1001] hover:opacity-60 cursor-pointer transition leading-none z-50">
+            &times;
+        </button>
+
+        <!-- Modal Header -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between pr-8 border-b border-[#2A1001]/10 pb-4 gap-2">
+            <div>
+                <h2 class="text-xl sm:text-2xl md:text-3xl font-bold text-[#2A1001] font-['Poppins'] flex items-center gap-2">
+                    <i class="fa-solid fa-address-card text-[#667733]"></i> <span id="mHeaderName">Patient Record</span>
+                </h2>
+                <p class="text-xs sm:text-sm font-bold text-[#667733] mt-0.5" id="mHeaderPublicId">
+                    ID: PAT-0000
+                </p>
+            </div>
+            <div class="flex items-center gap-2">
+                <span id="mLastVisitBadge" class="text-xs font-bold px-3 py-1 rounded-full bg-white border border-[#2A1001]/15 text-[#2A1001] shadow-sm">
+                    Last Visit: N/A
+                </span>
+            </div>
+        </div>
+
+        <!-- Form Sections Content Container (Matching New Customer Profile Cards) -->
+        <div class="flex flex-col gap-6 w-full">
+
+            <!-- ── CARD 1: Basic Information ── -->
+            <div class="relative w-full bg-[#D7E3A5] rounded-2xl p-5 sm:p-7 pt-8 sm:pt-9 shadow-sm border border-[#d2dbbe]">
+                <span class="absolute -top-3 left-4 sm:left-6 bg-[#667733] text-white text-[10px] sm:text-xs font-bold px-3 sm:px-4 py-1 rounded-full tracking-wider uppercase shadow-sm">
+                    Basic Information
+                </span>
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+                    <div class="flex flex-col gap-1">
+                        <label class="text-[10px] sm:text-[11px] font-extrabold tracking-wider text-[#2A1001] uppercase">First Name:</label>
+                        <div id="mFirstName" class="w-full px-4 py-2 rounded-full bg-white text-[#2c3e2b] font-semibold text-xs sm:text-sm shadow-inner truncate"></div>
+                    </div>
+                    <div class="flex flex-col gap-1">
+                        <label class="text-[10px] sm:text-[11px] font-extrabold tracking-wider text-[#2A1001] uppercase">Last Name:</label>
+                        <div id="mLastName" class="w-full px-4 py-2 rounded-full bg-white text-[#2c3e2b] font-semibold text-xs sm:text-sm shadow-inner truncate"></div>
+                    </div>
+                    <div class="flex flex-col gap-1">
+                        <label class="text-[10px] sm:text-[11px] font-extrabold tracking-wider text-[#2A1001] uppercase">Sex:</label>
+                        <div id="mSex" class="w-full px-4 py-2 rounded-full bg-white text-[#2c3e2b] font-semibold text-xs sm:text-sm shadow-inner capitalize"></div>
+                    </div>
+                    <div class="flex flex-col gap-1">
+                        <label class="text-[10px] sm:text-[11px] font-extrabold tracking-wider text-[#2A1001] uppercase">Birthday &amp; Age:</label>
+                        <div id="mBirthday" class="w-full px-4 py-2 rounded-full bg-white text-[#2c3e2b] font-semibold text-xs sm:text-sm shadow-inner truncate"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── CARD 2: Contact & Location Information ── -->
+            <div class="relative w-full bg-[#D7E3A5] rounded-2xl p-5 sm:p-7 pt-8 sm:pt-9 shadow-sm border border-[#d2dbbe]">
+                <span class="absolute -top-3 left-4 sm:left-6 bg-[#667733] text-white text-[10px] sm:text-xs font-bold px-3 sm:px-4 py-1 rounded-full tracking-wider uppercase shadow-sm">
+                    Contact &amp; Location Information
+                </span>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
+                    <div class="flex flex-col gap-1">
+                        <label class="text-[10px] sm:text-[11px] font-extrabold tracking-wider text-[#2A1001] uppercase">Primary Email:</label>
+                        <div id="mEmail" class="w-full px-4 py-2 rounded-full bg-white text-[#2c3e2b] font-semibold text-xs sm:text-sm shadow-inner truncate"></div>
+                    </div>
+                    <div class="flex flex-col gap-1">
+                        <label class="text-[10px] sm:text-[11px] font-extrabold tracking-wider text-[#2A1001] uppercase">Secondary Email:</label>
+                        <div id="mSecondaryEmail" class="w-full px-4 py-2 rounded-full bg-white text-[#2c3e2b] font-medium text-xs sm:text-sm shadow-inner truncate"></div>
+                    </div>
+                    <div class="flex flex-col gap-1">
+                        <label class="text-[10px] sm:text-[11px] font-extrabold tracking-wider text-[#2A1001] uppercase">Phone Number:</label>
+                        <div id="mPhone" class="w-full px-4 py-2 rounded-full bg-white text-[#2c3e2b] font-semibold text-xs sm:text-sm shadow-inner truncate"></div>
+                    </div>
+
+                    <!-- Address Breakdown -->
+                    <div class="flex flex-col gap-1.5 md:col-span-3 mt-1">
+                        <label class="text-[10px] sm:text-[11px] font-extrabold tracking-wider text-[#2A1001] uppercase">Complete Address:</label>
+                        <div id="mFullAddress" class="w-full px-4 py-2.5 rounded-xl bg-white text-[#2c3e2b] font-medium text-xs sm:text-sm shadow-inner leading-relaxed"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── CARD 3: Medical Information & Clinical History ── -->
+            <div class="relative w-full bg-[#D7E3A5] rounded-2xl p-5 sm:p-7 pt-8 sm:pt-9 shadow-sm border border-[#d2dbbe]">
+                <span class="absolute -top-3 left-4 sm:left-6 bg-[#667733] text-white text-[10px] sm:text-xs font-bold px-3 sm:px-4 py-1 rounded-full tracking-wider uppercase shadow-sm">
+                    Medical Information &amp; Clinical History
+                </span>
+                
+                <div class="flex flex-col gap-4">
+
+                    <!-- Pre-existing Health Conditions -->
+                    <div class="flex flex-col gap-1">
+                        <label class="text-[10px] sm:text-[11px] font-extrabold tracking-wider text-[#2A1001] uppercase flex items-center gap-1.5">
+                            <i class="fa-solid fa-heart-pulse text-[#667733]"></i> Pre-existing Health Conditions:
+                        </label>
+                        <div id="mHealthConditions" class="flex flex-wrap gap-1.5 min-h-[32px] p-2 rounded-xl bg-white/70"></div>
+                    </div>
+
+                    <!-- Past Surgeries -->
+                    <div class="flex flex-col gap-1">
+                        <label class="text-[10px] sm:text-[11px] font-extrabold tracking-wider text-[#2A1001] uppercase flex items-center gap-1.5">
+                            <i class="fa-solid fa-hospital-user text-[#667733]"></i> Past Surgeries:
+                        </label>
+                        <div id="mSurgeries" class="flex flex-wrap gap-1.5 min-h-[32px] p-2 rounded-xl bg-white/70"></div>
+                    </div>
+
+                    <!-- Lifestyle Factors -->
+                    <div class="flex flex-col gap-1">
+                        <label class="text-[10px] sm:text-[11px] font-extrabold tracking-wider text-[#2A1001] uppercase flex items-center gap-1.5">
+                            <i class="fa-solid fa-dna text-[#667733]"></i> Lifestyle Factors:
+                        </label>
+                        <div id="mLifeFactors" class="flex flex-wrap gap-1.5 min-h-[32px] p-2 rounded-xl bg-white/70"></div>
+                    </div>
+
+                    <!-- Current Prescriptions -->
+                    <div class="flex flex-col gap-1">
+                        <label class="text-[10px] sm:text-[11px] font-extrabold tracking-wider text-[#2A1001] uppercase flex items-center gap-1.5">
+                            <i class="fa-solid fa-prescription-bottle-medical text-[#667733]"></i> Current Prescriptions:
+                        </label>
+                        <div id="mPrescriptions" class="flex flex-wrap gap-1.5 min-h-[32px] p-2 rounded-xl bg-white/70"></div>
+                    </div>
+
+                    <!-- Allergies & Warnings -->
+                    <div class="flex flex-col gap-1">
+                        <label class="text-[10px] sm:text-[11px] font-extrabold tracking-wider text-[#2A1001] uppercase flex items-center gap-1.5">
+                            <i class="fa-solid fa-triangle-exclamation text-amber-700"></i> Allergies / Historical Allergies:
+                        </label>
+                        <div id="mAllergies" class="flex flex-wrap gap-1.5 min-h-[32px] p-2 rounded-xl bg-white/70"></div>
+                    </div>
+
+                    <!-- Pregnancy Status (Conditional) -->
+                    <div id="mPregnancyWrapper" class="hidden flex-col gap-1">
+                        <label class="text-[10px] sm:text-[11px] font-extrabold tracking-wider text-[#2A1001] uppercase flex items-center gap-1.5">
+                            <i class="fa-solid fa-person-breastfeeding text-[#667733]"></i> Pregnancy &amp; Nursing Status:
+                        </label>
+                        <div id="mPregnancy" class="w-full px-4 py-2 rounded-full bg-white text-[#2c3e2b] font-semibold text-xs sm:text-sm shadow-inner"></div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- ── CARD 4: Uploaded Medical Documents / PDFs ── -->
+            <div id="mMedicalDocsCard" class="relative w-full bg-[#D7E3A5] rounded-2xl p-5 sm:p-7 pt-8 sm:pt-9 shadow-sm border border-[#d2dbbe]">
+                <span class="absolute -top-3 left-4 sm:left-6 bg-[#667733] text-white text-[10px] sm:text-xs font-bold px-3 sm:px-4 py-1 rounded-full tracking-wider uppercase shadow-sm">
+                    Medical Documents &amp; PDFs
+                </span>
+                <div id="mMedicalDocsList" class="flex flex-col gap-2">
+                    <!-- Populated dynamically -->
+                </div>
+            </div>
+
+            <!-- ── CARD 5: Clinical Sessions & Visit History (Tabbed) ── -->
+            <div class="bg-[#D3DCBE] rounded-3xl p-5 sm:p-7 border border-[#2A1001]/15 shadow-sm flex flex-col gap-4">
+                
+                <!-- Tab Switching Navigation -->
+                <div class="flex gap-2 border-b-2 border-[#2A1001]/20 pb-1">
+                    <button id="tabSessionBtn" class="tabBtn px-5 py-2 font-bold text-xs sm:text-sm text-[#2A1001] border-b-4 border-[#667733] -mb-1.5 transition cursor-pointer flex items-center gap-1.5">
+                        <i class="fa-solid fa-stethoscope"></i> Today's Clinical Session
+                    </button>
+                    <button id="tabHistoryBtn" class="tabBtn px-5 py-2 font-bold text-xs sm:text-sm text-[#2A1001]/50 border-b-4 border-transparent -mb-1.5 hover:text-[#2A1001] transition cursor-pointer flex items-center gap-1.5">
+                        <i class="fa-solid fa-clock-rotate-left"></i> Past Visits History (<span id="pastVisitsCount">0</span>)
+                    </button>
+                </div>
+
+                <!-- Tab 1: Today's Clinical Session -->
+                <div id="tabSessionContent" class="tabContent pt-2">
+                    
+                    <!-- No Active Ongoing Session Notice -->
+                    <div id="noSessionContent" class="hidden text-center py-8 bg-white/60 rounded-2xl p-6 border border-[#2A1001]/10">
+                        <i class="fa-solid fa-user-clock text-3xl text-[#2A1001]/30 mb-2 block"></i>
+                        <p class="text-[#2A1001]/70 font-bold text-sm">No ongoing session active for this patient today.</p>
+                        <p class="text-[#2A1001]/50 text-xs mt-0.5">Sessions activate automatically when queue status is marked ongoing.</p>
+                    </div>
+
+                    <!-- Active Session Form -->
+                    <div id="sessionActiveContent" class="flex flex-col gap-4">
+                        <div>
+                            <label class="block font-bold text-[#2A1001] text-xs uppercase tracking-wide mb-1">Patient's Chief Concern:</label>
+                            <div id="mPatientNote" class="w-full p-3.5 rounded-2xl bg-white/80 text-[#2A1001] text-xs sm:text-sm min-h-[40px] shadow-inner font-medium"></div>
+                        </div>
+
+                        <div>
+                            <label class="block font-bold text-[#2A1001] text-xs uppercase tracking-wide mb-1">Dentist Clinical Remarks &amp; Diagnosis:</label>
+                            <textarea id="mNotes" rows="3" placeholder="Enter clinical notes, diagnosis, performed procedures, and prescriptions..." class="w-full p-3.5 rounded-2xl bg-white text-[#2A1001] text-xs sm:text-sm outline-none resize-none shadow-inner border border-black/10 focus:ring-2 focus:ring-[#667733]"></textarea>
+                        </div>
+
+                        <!-- X-Ray Dropzone -->
+                        <div>
+                            <label class="block font-bold text-[#2A1001] text-xs uppercase tracking-wide mb-1">Upload Session X-Rays:</label>
+                            <div id="xrayDropZone" class="border-2 border-dashed border-[#2A1001]/30 rounded-2xl bg-white/60 py-6 flex flex-col items-center justify-center cursor-pointer hover:bg-white/90 transition shadow-inner">
+                                <i class="fa-solid fa-x-ray text-2xl text-[#667733] mb-1"></i>
+                                <span class="text-xs font-bold text-[#2A1001]" id="xrayLabel">Click or drag X-ray images to upload</span>
+                                <span class="text-[10px] text-gray-500">Supports JPG, PNG (Max 10MB)</span>
+                                <input type="file" id="xrayInput" accept="image/*" multiple class="hidden" />
+                            </div>
+                            <!-- Live Session Thumbnails -->
+                            <div id="sessionXrayPreview" class="flex flex-wrap gap-2.5 mt-3"></div>
+                        </div>
+
+                        <div class="flex justify-center gap-3 pt-2">
+                            <button id="saveSessionBtn" class="bg-[#667733] hover:bg-[#556022] transition text-white font-bold text-xs sm:text-sm px-7 py-2.5 rounded-full shadow-md cursor-pointer active:scale-95 flex items-center gap-1.5">
+                                <i class="fa-solid fa-floppy-disk"></i> Save Notes
+                            </button>
+                            <button id="completeSessionBtn" class="bg-[#D5C04D] hover:bg-[#c6b242] transition text-[#2A1001] font-bold text-xs sm:text-sm px-7 py-2.5 rounded-full shadow-md cursor-pointer active:scale-95 flex items-center gap-1.5">
+                                <i class="fa-solid fa-circle-check"></i> Complete Visit
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab 2: Past History Visits -->
+                <div id="tabHistoryContent" class="tabContent hidden pt-2">
+                    <div id="visitHistoryList" class="max-h-96 overflow-y-auto pr-1 space-y-3">
+                        <!-- Injected dynamically -->
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- Modal Bottom Action Bar -->
+        <div class="flex flex-wrap items-center justify-between border-t border-[#2A1001]/10 pt-4 gap-3">
+            <div id="saveConfirmation" class="hidden text-xs font-bold text-green-800 bg-green-100 px-3 py-1 rounded-full border border-green-300">
+                <i class="fa-solid fa-check mr-1"></i> Changes saved!
+            </div>
+            
+            <div class="flex items-center gap-2.5 ml-auto">
+                <button id="showQrCodeBtn" class="bg-[#D5C04D] hover:bg-[#c6b242] text-[#2A1001] font-bold text-xs sm:text-sm px-5 py-2.5 rounded-full transition shadow-sm cursor-pointer active:scale-95 flex items-center gap-1.5">
+                    <i class="fa-solid fa-qrcode"></i> Show QR Code
+                </button>
+                <button id="printPdfBtn" class="bg-[#667733] hover:bg-[#556022] text-white font-bold text-xs sm:text-sm px-5 py-2.5 rounded-full transition shadow-sm cursor-pointer active:scale-95 flex items-center gap-1.5">
+                    <i class="fa-solid fa-print"></i> Print Patient Chart
+                </button>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- ================= VISIT X-RAY MODAL ================= -->
+<div id="visitXrayModal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
+    <div class="bg-[#F3EFE4] rounded-3xl w-full max-w-2xl max-h-[85vh] overflow-y-auto p-6 relative shadow-2xl border border-black/20">
+        <button id="closeVisitXrayModal" class="absolute top-4 right-4 text-2xl font-bold text-[#2A1001] hover:opacity-60 cursor-pointer">&times;</button>
+        <h3 class="text-lg font-bold text-[#2A1001]" id="visitXrayModalDate"></h3>
+        <p class="text-xs text-[#2A1001]/70 mb-4" id="visitXrayModalService"></p>
+        <div id="visitXrayModalGrid" class="grid grid-cols-2 sm:grid-cols-3 gap-3"></div>
+    </div>
+</div>
+
+<!-- ================= FULL IMAGE VIEWER ================= -->
+<div id="fullImageViewer" class="hidden fixed inset-0 bg-black/95 z-[70] p-4 sm:p-8 flex items-center justify-center">
+    <button id="closeFullImageBtn" class="fixed top-4 right-6 text-white text-4xl hover:text-gray-300 transition cursor-pointer z-[80]">&times;</button>
+    <div class="w-full h-full flex items-center justify-center">
+        <img id="fullImageSrc" src="" class="max-w-full max-h-full object-contain rounded-lg shadow-2xl" alt="Full view"/>
+    </div>
+</div>
+
+<!-- ================= QR CODE MODAL ================= -->
+<div id="qrModal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-[65] flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl p-6 text-center max-w-xs w-full shadow-2xl border border-black/10 flex flex-col items-center gap-3">
+        <h3 class="font-extrabold text-base text-[#2A1001]">Patient Chart QR Code</h3>
+        <p class="text-xs text-gray-500" id="qrPatientName"></p>
+        <div id="qrCodeContainer" class="p-2 bg-gray-50 rounded-2xl border border-black/10"></div>
+        <button id="closeQrBtn" class="w-full py-2 bg-[#667733] hover:bg-[#556022] text-white text-xs font-bold rounded-full transition cursor-pointer">Close</button>
+    </div>
+</div>
+
+<!-- ================= CLIENT JAVASCRIPT ================= -->
+<script>
     const escHtml = s => String(s ?? '').replace(/[&<>"']/g, c =>
         ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
-    //  Use this code when there is backend =============================================================================================================================================LOOK HEREEEE
     let patients = [];
+    let currentPatientId = null;
+    let currentPage = 1;
+    const rowsPerPage = 10;
+    let currentSearch = "";
+    let currentSort = "recent";
 
+    // ── Load Patients From Backend ──────────────────────────────────────────
     async function loadPatientsFromDatabase() {
         try {
             const token = localStorage.getItem('userToken');
@@ -328,90 +439,19 @@
             if (!response.ok) throw new Error(`Server error: ${response.status}`);
 
             patients = await response.json();
-            populateSortDropdown();
             renderTable();
         } catch (error) {
             console.error("Failed to load patient records:", error);
+            renderTable();
         }
     }
 
-    loadPatientsFromDatabase();
-
-    // Sample patient data — swap for real data from a backend later DELETE LATER RAHHHHHHHHH ================================================================================== LOOK HERE
-    // let patients = [
-    //     {
-    //         patient_id: 1,
-    //         public_id: "PAT-0001",
-    //         first_name: "Juan",
-    //         last_name: "Dela Cruz",
-    //         sex: "Male",
-    //         birthday: "1990-05-14",
-    //         email: "juan.delacruz@email.com",
-    //         phone: "0917 123 4567",
-    //         civil_status: "Single",
-    //         pregnancy_status: "N/A",
-    //         health_conditions: [{ description: "None" }],
-    //         allergies: [{ allergen: "Penicillin" }],
-    //         prescriptions: [],
-    //         xrays: [
-    //
-    //             { appointment_id: 150, file_url: "https://images.unsplash.com/photo-1516549655169-df83a0774514?w=300" }
-    //         ],
-    //         last_visit: "2025-09-10",
-    //         ongoing_appointment: {
-    //             appointment_id: 201,
-    //             dentist_note: "",
-    //             patient_note: "Tooth pain, upper left molar"
-    //         },
-    //         past_appointments: [
-    //             { appointment_id: 150, appointment_date: "2025-06-02", service_label: "Checkup", dentist_note: "No issues found.", patient_note: "Routine checkup" }
-    //         ]
-    //     },
-    //     {
-    //         patient_id: 2,
-    //         public_id: "PAT-0002",
-    //         first_name: "Maria",
-    //         last_name: "Santos",
-    //         sex: "Female",
-    //         birthday: "1995-08-22",
-    //         email: "maria.santos@email.com",
-    //         phone: "0918 987 6543",
-    //         civil_status: "Married",
-    //         pregnancy_status: "2nd Trimester",
-    //         health_conditions: [{ description: "Asthma" }],
-    //         allergies: [{ allergen: "None" }],
-    //         prescriptions: [{ medication_name: "Albuterol inhaler", dosage: "As needed" }],
-    //         xrays: [
-    //
-    //             { appointment_id: 140, file_url: "https://images.unsplash.com/photo-1588776814546-1ffcf47267a5?w=300" }
-    //         ],
-    //         last_visit: "2025-10-15",
-    //         ongoing_appointment: {
-    //             appointment_id: 202,
-    //             dentist_note: "",
-    //             patient_note: "Reporting gum sensitivity during brushing"
-    //         },
-    //         past_appointments: [
-    //             { appointment_id: 140, appointment_date: "2025-10-15", service_label: "Cleaning", dentist_note: "Mild plaque buildup.", patient_note: "Regular cleaning" }
-    //         ]
-    //     }
-    // ];
-    let currentPatientId = null;
-
-    // DELETE AFTER RAHHH REPLACE IT WITH FETCH SA TAAS ========================================================================================================================================================================LOOK HEREEEE-->
-    // function loadPatientsFromDatabase() {
-    //     populateSortDropdown();
-    //     renderTable();
-    // }
-
-    //this is for tab switching
+    // ── Tab Switching ───────────────────────────────────────────────────────
     const tabSessionBtn = document.getElementById('tabSessionBtn');
     const tabHistoryBtn = document.getElementById('tabHistoryBtn');
     const tabSessionContent = document.getElementById('tabSessionContent');
     const tabHistoryContent = document.getElementById('tabHistoryContent');
 
-
-    // this is the logic that visually switches the tabs and updates their styling
     function activateTab(tab) {
         if (tab === 'session') {
             tabSessionContent.classList.remove('hidden');
@@ -437,59 +477,139 @@
     tabSessionBtn.addEventListener('click', () => activateTab('session'));
     tabHistoryBtn.addEventListener('click', () => activateTab('history'));
 
+    // ── Helpers ─────────────────────────────────────────────────────────────
+    function calculateAge(birthdayStr) {
+        if (!birthdayStr) return '';
+        const b = new Date(birthdayStr);
+        if (isNaN(b)) return '';
+        const ageDifMs = Date.now() - b.getTime();
+        const ageDate = new Date(ageDifMs);
+        const age = Math.abs(ageDate.getUTCFullYear() - 1970);
+        return `(${age} yrs)`;
+    }
 
-    // This function dynamically builds and displays the list of past appointment cards in the "Past History" tab.
-    // It loops through a patient's previous visits, counts how many X-rays belong to each specific visit
-    function renderVisitHistory(appointmentsList, allXrays) {
-        const container = document.getElementById('visitHistoryList');
+    function renderChipBadges(containerId, items, badgeType = 'default') {
+        const container = document.getElementById(containerId);
+        if (!container) return;
 
-        if (!appointmentsList || appointmentsList.length === 0) {
-            container.innerHTML = `<p class="text-sm text-[#2A1001]/50 text-center py-6">No previous visits recorded.</p>`;
+        const normalized = Array.isArray(items) ? items : [];
+        if (normalized.length === 0) {
+            container.innerHTML = `<span class="text-xs text-gray-500 italic">None recorded</span>`;
             return;
         }
 
-        container.innerHTML = appointmentsList.map(a => {
-            const xrayCount = allXrays.filter(x => x.appointment_id === a.appointment_id).length;
+        const styles = {
+            default: 'bg-white text-[#2A1001] border-[#c1ccab]',
+            warning: 'bg-red-50 text-red-800 border-red-200 font-bold',
+            prescription: 'bg-white text-[#667733] border-[#667733]/40 font-bold'
+        };
 
+        const s = styles[badgeType] || styles.default;
+
+        container.innerHTML = normalized.map(item => {
+            let label = typeof item === 'string' ? item : (item.description || item.allergen || item.medication_name || '');
+            if (item.dosage) label += ` (${item.dosage})`;
             return `
-        <div class="bg-white/70 rounded-2xl p-4">
-            <div class="flex justify-between items-start mb-1">
-                <p class="font-bold text-[#2A1001]">${escHtml(a.appointment_date)}</p>
-                <span class="text-xs font-semibold text-[#667733] bg-[#667733]/10 px-3 py-1 rounded-full">${escHtml(a.service_label)}</span>
-            </div>
-            <p class="text-sm text-[#2A1001]/70 mb-1"><span class="font-semibold">Patient Concern:</span> ${escHtml(a.patient_note) || 'None noted'}</p>
-            <p class="text-sm text-[#2A1001]/70 mb-2"><span class="font-semibold">Dentist Note:</span> ${escHtml(a.dentist_note) || 'No notes recorded'}</p>
-
-            ${xrayCount > 0
-                ? `<button class="viewVisitXraysBtn text-xs font-semibold text-white bg-[#667733] hover:bg-[#556022] transition px-3 py-1.5 rounded-full" data-appointment-id="${escHtml(a.appointment_id)}" data-date="${escHtml(a.appointment_date)}" data-service="${escHtml(a.service_label)}">
-                       View X-Rays (${xrayCount})
-                   </button>`
-                : `<p class="text-xs text-[#2A1001]/40 italic">No X-rays for this visit.</p>`
-            }
-        </div>
-    `}).join('');
-
-
-        // "View X-Rays" button and filters the X-rays for last visit's specific date, populates the modal gallery
-        // it also displays the pop-up window so the dentist can see the previous xray assets
-        document.querySelectorAll('.viewVisitXraysBtn').forEach(btn => {
-            btn.addEventListener('click', function () {
-                const xraysForVisit = allXrays.filter(x => x.appointment_id == this.dataset.appointmentId);
-
-                document.getElementById('visitXrayModalDate').textContent = this.dataset.date;
-                document.getElementById('visitXrayModalService').textContent = this.dataset.service;
-
-
-                document.getElementById('visitXrayModalGrid').innerHTML = xraysForVisit
-                    .map(x => `<img src="${escHtml(x.file_url)}" class="w-full aspect-square rounded-xl object-cover cursor-pointer hover:opacity-90 transition" />`)
-                    .join('');
-
-                document.getElementById('visitXrayModal').classList.remove('hidden');
-            });
-        });
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs border shadow-inner ${s}">
+                    ${escHtml(label)}
+                </span>
+            `;
+        }).join('');
     }
 
-    //This checks if the receptionist has cchanged the status queue of the patient to ongoing. If yes, it shows the medical form.
+    // ── Open Patient Detail Modal ───────────────────────────────────────────
+    function openModal(id) {
+        const p = patients.find(p => p.patient_id == id);
+        if (!p) return;
+
+        currentPatientId = id;
+
+        // Header
+        document.getElementById('mHeaderName').textContent = `${p.first_name || ''} ${p.last_name || ''}`;
+        document.getElementById('mHeaderPublicId').textContent = `System ID: ${p.public_id || `PAT-${p.patient_id}`}`;
+        
+        const lastVisitDate = p.last_visit 
+            ? new Date(p.last_visit + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+            : 'No visits yet';
+        document.getElementById('mLastVisitBadge').textContent = `Last Visit: ${lastVisitDate}`;
+
+        // Basic Information
+        document.getElementById('mFirstName').textContent = p.first_name || '—';
+        document.getElementById('mLastName').textContent = p.last_name || '—';
+        document.getElementById('mSex').textContent = p.sex || '—';
+
+        const birthdayFormatted = p.birthday ? p.birthday.split('T')[0] : '—';
+        const ageStr = calculateAge(p.birthday);
+        document.getElementById('mBirthday').textContent = `${birthdayFormatted} ${ageStr}`.trim();
+
+        // Contact & Location
+        document.getElementById('mEmail').textContent = p.email || '—';
+        document.getElementById('mSecondaryEmail').textContent = p.secondary_email || 'None';
+        document.getElementById('mPhone').textContent = p.phone || '—';
+
+        // Full Address Breakdown
+        const fullAddr = p.address || [p.address_street, p.address_barangay, p.address_city, p.address_province].filter(Boolean).join(', ') || 'No address provided';
+        document.getElementById('mFullAddress').textContent = fullAddr;
+
+        // Medical History Chips
+        renderChipBadges('mHealthConditions', p.health_conditions, 'default');
+        renderChipBadges('mSurgeries', p.surgeries, 'default');
+        renderChipBadges('mLifeFactors', p.life_factors, 'default');
+        renderChipBadges('mPrescriptions', p.prescriptions, 'prescription');
+        renderChipBadges('mAllergies', p.allergies, 'warning');
+
+        // Pregnancy Status (Shown if female or populated)
+        const sexLower = (p.sex || '').toLowerCase();
+        const pregWrap = document.getElementById('mPregnancyWrapper');
+        if (sexLower === 'f' || sexLower === 'female' || p.pregnancy_status) {
+            pregWrap.classList.remove('hidden');
+            pregWrap.classList.add('flex');
+            document.getElementById('mPregnancy').textContent = p.pregnancy_status || 'Not Pregnant';
+        } else {
+            pregWrap.classList.add('hidden');
+            pregWrap.classList.remove('flex');
+        }
+
+        // Uploaded Medical PDF Documents
+        const docsCard = document.getElementById('mMedicalDocsCard');
+        const docsList = document.getElementById('mMedicalDocsList');
+        const docs = Array.isArray(p.patient_documents) ? p.patient_documents : [];
+
+        if (docs.length > 0) {
+            docsCard.classList.remove('hidden');
+            docsList.innerHTML = docs.map((doc, idx) => `
+                <div class="flex items-center justify-between bg-white border border-[#c1ccab] rounded-xl px-4 py-2.5 shadow-inner">
+                    <div class="flex items-center gap-2 min-w-0">
+                        <i class="fa-solid fa-file-pdf text-red-600 text-base"></i>
+                        <span class="text-xs sm:text-sm font-semibold text-[#2c3e2b] truncate">Medical Document #${idx + 1} (${escHtml(doc.uploaded_at ? doc.uploaded_at.split('T')[0] : 'PDF')})</span>
+                    </div>
+                    <a href="${escHtml(doc.file_url)}" target="_blank" rel="noopener noreferrer" class="bg-[#667733] hover:bg-[#556022] text-white font-bold text-xs px-3.5 py-1.5 rounded-full transition shrink-0 flex items-center gap-1">
+                        <i class="fa-solid fa-eye"></i> View PDF
+                    </a>
+                </div>
+            `).join('');
+        } else {
+            docsCard.classList.add('hidden');
+            docsList.innerHTML = '';
+        }
+
+        // Ongoing Live Session
+        const ongoing = p.ongoing_appointment;
+        document.getElementById('mPatientNote').textContent = ongoing ? (ongoing.patient_note || 'No specific concern noted.') : 'No ongoing concern';
+        document.getElementById('mNotes').value = ongoing ? (ongoing.dentist_note || '') : '';
+
+        refreshSessionTabVisibility(p);
+        renderXrayPreviews(p);
+
+        // Past Visits History Tab
+        renderVisitHistory(p.past_appointments, p.xrays || []);
+        document.getElementById('pastVisitsCount').textContent = (p.past_appointments || []).length;
+
+        activateTab('session');
+        document.getElementById('saveConfirmation').classList.add('hidden');
+        document.getElementById('patientModal').classList.remove('hidden');
+    }
+
     function refreshSessionTabVisibility(p) {
         const noSession = document.getElementById('noSessionContent');
         const activeSession = document.getElementById('sessionActiveContent');
@@ -503,72 +623,81 @@
         }
     }
 
-    //opens the modal and populates the fields with the selected patient's data
-    function openModal(id) {
-        const p = patients.find(p => p.patient_id == id);
-        if (!p) return;
+    // ── Render Past Visits History ──────────────────────────────────────────
+    function renderVisitHistory(appointmentsList, allXrays) {
+        const container = document.getElementById('visitHistoryList');
+        if (!container) return;
 
-        currentPatientId = id;
-
-        document.getElementById('mFirstName').textContent = p.first_name;
-        document.getElementById('mLastName').textContent = p.last_name;
-        document.getElementById('mSex').textContent = p.sex;
-        document.getElementById('mBirthday').textContent = p.birthday;
-        document.getElementById('mEmail').textContent = p.email;
-        document.getElementById('mPhone').textContent = p.phone;
-        document.getElementById('mCivilStatus').textContent = p.civil_status;
-        document.getElementById('mHealthConditions').textContent = p.health_conditions.map(c => c.description).join(', ') || 'None';
-        document.getElementById('mPregnancy').textContent = p.pregnancy_status;
-        document.getElementById('mPrescriptions').textContent = p.prescriptions.map(rx => rx.medication_name).join(', ') || 'None';
-        document.getElementById('mAllergies').textContent = p.allergies.map(a => a.allergen).join(', ') || 'None';
-
-// Today's Session notes
-        const ongoing = p.ongoing_appointment;
-        document.getElementById('mPatientNote').textContent = ongoing ? (ongoing.patient_note || 'No concern noted.') : '';
-        document.getElementById('mNotes').value = ongoing ? (ongoing.dentist_note || '') : (p.dentist_note || ''); //DELETE THIS AND REPLACE=================================================================LOOOKKK
-        //document.getElementById('mNotes').value = ongoing ? (ongoing.dentist_note || '') : ''; use this
-
-        // Past History
-        renderVisitHistory(p.past_appointments, p.xrays);
-
-        renderXrayPreviews(p);
-
-        refreshSessionTabVisibility(p); // show live session form
-
-        activateTab('session'); // always reset to Tab 1 when opening a patient
-        document.getElementById('saveConfirmation').classList.add('hidden')//Save confirmation message
-        document.getElementById('patientModal').classList.remove('hidden');
-    }
-
-    //This function displays a patient's X-ray assets as small thumbnails and lets the user delete them.
-    function renderXrayPreviews(p) {
-        const sessionPreview = document.getElementById('sessionXrayPreview');
-        sessionPreview.innerHTML = '';
-
-        // Filter to only show X-rays belonging to today's ongoing appointment
-        const ongoingId = p.ongoing_appointment ? p.ongoing_appointment.appointment_id : null;
-        const todayXrays = p.xrays.filter(x => x.appointment_id === ongoingId);
-
-
-//If no assets have been uploaded today, show a default placeholder message
-        if (todayXrays.length === 0) {
-            sessionPreview.innerHTML = `<p class="text-sm text-[#2A1001]/50 w-full text-center py-2">No X-rays uploaded for today's session yet.</p>`;
+        if (!appointmentsList || appointmentsList.length === 0) {
+            container.innerHTML = `<p class="text-xs text-[#2A1001]/50 text-center py-6">No previous visits recorded for this patient.</p>`;
             return;
         }
 
-        todayXrays.forEach((xray) => {
+        container.innerHTML = appointmentsList.map(a => {
+            const xrayCount = (allXrays || []).filter(x => x.appointment_id === a.appointment_id).length;
+
+            return `
+                <div class="bg-white/80 rounded-2xl p-4 border border-[#2A1001]/10 shadow-sm flex flex-col gap-1.5">
+                    <div class="flex justify-between items-start gap-2">
+                        <p class="font-extrabold text-sm text-[#2A1001] font-mono">${escHtml(a.appointment_date)}</p>
+                        <span class="text-xs font-bold text-[#667733] bg-[#667733]/15 px-3 py-0.5 rounded-full border border-[#667733]/20">
+                            ${escHtml(a.service_label || 'Dental Treatment')}
+                        </span>
+                    </div>
+                    <p class="text-xs text-[#2A1001]/80"><span class="font-bold">Patient Concern:</span> ${escHtml(a.patient_note) || 'None noted'}</p>
+                    <p class="text-xs text-green-900 bg-green-50/70 p-2 rounded-xl border border-green-200"><span class="font-bold">Dentist Diagnosis &amp; Remarks:</span> ${escHtml(a.dentist_note) || 'No notes recorded'}</p>
+
+                    ${xrayCount > 0 ? `
+                        <div class="pt-1 mt-1">
+                            <button class="viewVisitXraysBtn text-xs font-bold text-white bg-[#667733] hover:bg-[#556022] transition px-3 py-1.5 rounded-full flex items-center gap-1 cursor-pointer" data-appointment-id="${escHtml(a.appointment_id)}" data-date="${escHtml(a.appointment_date)}" data-service="${escHtml(a.service_label || 'Dental Service')}">
+                                <i class="fa-solid fa-x-ray"></i> View Visit X-Rays (${xrayCount})
+                            </button>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+        }).join('');
+
+        document.querySelectorAll('.viewVisitXraysBtn').forEach(btn => {
+            btn.addEventListener('click', function () {
+                const xraysForVisit = (allXrays || []).filter(x => x.appointment_id == this.dataset.appointmentId);
+                document.getElementById('visitXrayModalDate').textContent = `X-Rays for visit: ${this.dataset.date}`;
+                document.getElementById('visitXrayModalService').textContent = `Service: ${this.dataset.service}`;
+                document.getElementById('visitXrayModalGrid').innerHTML = xraysForVisit
+                    .map(x => `<img src="${escHtml(x.file_url)}" class="w-full aspect-square rounded-xl object-cover cursor-pointer hover:opacity-90 transition border border-black/10 shadow-sm" alt="X-Ray"/>`)
+                    .join('');
+                document.getElementById('visitXrayModal').classList.remove('hidden');
+            });
+        });
+    }
+
+    // ── X-Ray Previews & Handling ───────────────────────────────────────────
+    function renderXrayPreviews(p) {
+        const sessionPreview = document.getElementById('sessionXrayPreview');
+        if (!sessionPreview) return;
+        sessionPreview.innerHTML = '';
+
+        const ongoingId = p.ongoing_appointment ? p.ongoing_appointment.appointment_id : null;
+        const todayXrays = (p.xrays || []).filter(x => x.appointment_id === ongoingId);
+
+        if (todayXrays.length === 0) {
+            sessionPreview.innerHTML = `<p class="text-xs text-[#2A1001]/50 w-full text-center py-1 italic">No X-rays uploaded for today's session.</p>`;
+            return;
+        }
+
+        todayXrays.forEach(xray => {
             const thumb = document.createElement('div');
-            thumb.className = "relative w-20 h-20 rounded-xl overflow-hidden border border-[#2A1001]/20";
+            thumb.className = "relative w-20 h-20 rounded-xl overflow-hidden border border-[#2A1001]/20 shadow-sm";
             thumb.innerHTML = `
-            <img src="${escHtml(xray.file_url)}" class="w-full h-full object-cover" />
-            <button class="removeXrayBtn absolute top-0.5 right-0.5 bg-black/60 text-white text-xs w-5 h-5 rounded-full" data-xray-id="${escHtml(xray.xray_id)}">×</button>
-        `;
+                <img src="${escHtml(xray.file_url)}" class="w-full h-full object-cover cursor-pointer hover:opacity-90" alt="Thumbnail" />
+                <button class="removeXrayBtn absolute top-1 right-1 bg-black/70 hover:bg-red-600 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center cursor-pointer transition" data-xray-id="${escHtml(xray.xray_id)}">&times;</button>
+            `;
             sessionPreview.appendChild(thumb);
         });
 
-
         document.querySelectorAll('.removeXrayBtn').forEach(btn => {
-            btn.addEventListener('click', async function () {
+            btn.addEventListener('click', async function (e) {
+                e.stopPropagation();
                 const xrayId = this.dataset.xrayId;
                 this.disabled = true;
 
@@ -579,68 +708,77 @@
                         headers: { 'Authorization': `Bearer ${token}` }
                     });
 
-                    const data = await response.json();
                     if (!response.ok) {
-                        throw new Error(data.message || `Server error: ${response.status}`);
+                        const data = await response.json().catch(() => ({}));
+                        throw new Error(data.message || 'Failed to delete X-ray');
                     }
 
                     p.xrays = p.xrays.filter(x => x.xray_id != xrayId);
-                    renderXrayPreviews(p); // Re-render live session previews
+                    renderXrayPreviews(p);
                 } catch (error) {
-                    console.error("Failed to delete X-ray:", error);
-                    alert(error.message || "Failed to delete X-ray. Please try again.");
+                    console.error("Delete X-ray error:", error);
+                    alert(error.message || "Failed to delete X-ray.");
                     this.disabled = false;
                 }
             });
         });
     }
 
+    // Modal Close Listeners
+    document.getElementById('closeModal')?.addEventListener('click', () => {
+        document.getElementById('patientModal').classList.add('hidden');
+    });
 
-    //This allows the user to close the X-ray history modal by clicking anywhere in the empty background
-    document.getElementById('visitXrayModal').addEventListener('click', function (e) {
+    document.getElementById('patientModal')?.addEventListener('click', function (e) {
         if (e.target === this) this.classList.add('hidden');
     });
 
-    // Close X-ray history modal when the "X" button is clicked
-    document.getElementById('closeVisitXrayModal').addEventListener('click', function () {
+    document.getElementById('closeVisitXrayModal')?.addEventListener('click', () => {
         document.getElementById('visitXrayModal').classList.add('hidden');
     });
 
+    document.getElementById('visitXrayModal')?.addEventListener('click', function (e) {
+        if (e.target === this) this.classList.add('hidden');
+    });
 
-    document.getElementById('visitXrayModalGrid').addEventListener('click', function(e) {
-        // Check if the user clicked on an image
+    // Image Viewer
+    document.getElementById('visitXrayModalGrid')?.addEventListener('click', function(e) {
         if (e.target.tagName === 'IMG') {
-            const fullViewer = document.getElementById('fullImageViewer');
-            document.getElementById('fullImageSrc').src = e.target.src; // Copy the clicked image source
-            fullViewer.classList.remove('hidden'); // Show the dark viewer
-            fullViewer.classList.add('flex');
+            document.getElementById('fullImageSrc').src = e.target.src;
+            document.getElementById('fullImageViewer').classList.remove('hidden');
+            document.getElementById('fullImageViewer').classList.add('flex');
         }
     });
-    //This closes the image viewer when the large "X" button is clicked.
-    document.getElementById('closeFullImageBtn').addEventListener('click', () => {
+
+    document.getElementById('sessionXrayPreview')?.addEventListener('click', function(e) {
+        if (e.target.tagName === 'IMG') {
+            document.getElementById('fullImageSrc').src = e.target.src;
+            document.getElementById('fullImageViewer').classList.remove('hidden');
+            document.getElementById('fullImageViewer').classList.add('flex');
+        }
+    });
+
+    document.getElementById('closeFullImageBtn')?.addEventListener('click', () => {
         document.getElementById('fullImageViewer').classList.add('hidden');
         document.getElementById('fullImageViewer').classList.remove('flex');
     });
 
-    document.getElementById('fullImageViewer').addEventListener('click', function(e) {
-        // Close if the user clicks the dark background outside the image
+    document.getElementById('fullImageViewer')?.addEventListener('click', function(e) {
         if (e.target === this) {
             this.classList.add('hidden');
             this.classList.remove('flex');
         }
     });
 
-    // X-ray upload handling
-    document.getElementById('xrayDropZone').addEventListener('click', function () {
+    // X-Ray Dropzone handling
+    document.getElementById('xrayDropZone')?.addEventListener('click', () => {
         document.getElementById('xrayInput').click();
     });
 
-
-    // When user selects files from their computer using the hidden file input
-    document.getElementById('xrayInput').addEventListener('change', async function (e) {
+    document.getElementById('xrayInput')?.addEventListener('change', async function (e) {
         const p = patients.find(p => p.patient_id == currentPatientId);
         const files = Array.from(e.target.files);
-        e.target.value = ''; // reset input so selecting the same file again still fires 'change'
+        e.target.value = '';
 
         if (!p || !p.ongoing_appointment || files.length === 0) return;
 
@@ -651,24 +789,18 @@
         files.forEach(file => formData.append('xrays', file));
 
         try {
-            dropZoneLabel.textContent = 'Uploading...';
-
+            dropZoneLabel.textContent = 'Uploading X-ray images...';
             const token = localStorage.getItem('userToken');
             const response = await fetch(`/api/appointments/${p.ongoing_appointment.appointment_id}/xrays`, {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${token}` },
-                // No Content-Type header — the browser sets the multipart
-                // boundary itself when the body is a FormData object.
                 body: formData
             });
 
             const data = await response.json();
+            if (!response.ok) throw new Error(data.message || 'Upload failed');
 
-            if (!response.ok) {
-                throw new Error(data.message || `Server error: ${response.status}`);
-            }
-
-            // Server is the source of truth for xray_id and the saved file_url
+            if (!p.xrays) p.xrays = [];
             p.xrays.push(...data.xrays);
             renderXrayPreviews(p);
 
@@ -680,21 +812,17 @@
         }
     });
 
-    // Save change of dentist session to the backend — PATCH /api/appointments/:id/notes
-    document.getElementById('saveSessionBtn').addEventListener('click', async function () {
+    // Save Dentist Session Notes
+    document.getElementById('saveSessionBtn')?.addEventListener('click', async function () {
         const p = patients.find(p => p.patient_id == currentPatientId);
-
-        // Stop if no patient is found or if there is no active session
         if (!p || !p.ongoing_appointment) return;
 
-        // Grab the text the dentist typed into the textarea
         const updatedDentistNote = document.getElementById('mNotes').value;
-
-        const btn = document.getElementById('saveSessionBtn');
-        const originalText = btn.textContent;
+        const btn = this;
+        const originalText = btn.innerHTML;
 
         try {
-            btn.textContent = "Saving...";
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...';
             btn.disabled = true;
 
             const token = localStorage.getItem('userToken');
@@ -707,46 +835,39 @@
                 body: JSON.stringify({ dentist_note: updatedDentistNote })
             });
 
-            const data = await response.json();
+            if (!response.ok) throw new Error('Failed to save notes');
 
-            if (!response.ok) {
-                throw new Error(data.message || `Server error: ${response.status}`);
-            }
-
-            // Only update the local frontend array AFTER the database confirms it saved
             p.ongoing_appointment.dentist_note = updatedDentistNote;
 
-            // Confirm saved message
             const confirmation = document.getElementById('saveConfirmation');
-            confirmation.textContent = 'Changes saved!';
+            confirmation.textContent = 'Changes saved successfully!';
             confirmation.classList.remove('hidden');
-            setTimeout(() => {
-                confirmation.classList.add('hidden');
-            }, 3000);
+            setTimeout(() => confirmation.classList.add('hidden'), 3000);
 
         } catch (error) {
             console.error("Failed to save notes:", error);
-            alert(error.message || "Failed to save notes to the server. Please try again.");
+            alert(error.message || "Could not save notes.");
         } finally {
-            btn.textContent = originalText;
+            btn.innerHTML = originalText;
             btn.disabled = false;
         }
     });
 
-    document.getElementById('completeSessionBtn').addEventListener('click', async function () {
+    // Complete Session Visit
+    document.getElementById('completeSessionBtn')?.addEventListener('click', async function () {
         const p = patients.find(p => p.patient_id == currentPatientId);
         if (!p || !p.ongoing_appointment) {
-            alert('No ongoing session for this patient right now.');
+            alert('No active ongoing session found for this patient.');
             return;
         }
 
         const btn = this;
-        const originalText = btn.textContent;
+        const originalText = btn.innerHTML;
         const appointmentId = p.ongoing_appointment.appointment_id;
         const finalNote = document.getElementById('mNotes').value;
 
         try {
-            btn.textContent = "Completing...";
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Completing...';
             btn.disabled = true;
 
             const token = localStorage.getItem('userToken');
@@ -759,178 +880,128 @@
                 body: JSON.stringify({ dentist_note: finalNote })
             });
 
-            const data = await response.json();
-            if (!response.ok) {
-                throw new Error(data.message || `Server error: ${response.status}`);
-            }
+            if (!response.ok) throw new Error('Failed to complete appointment');
 
-            // Reload from the server so ongoing_appointment/past_appointments reflect
-            // the real DB state, then re-open this same patient with fresh data.
             await loadPatientsFromDatabase();
             openModal(currentPatientId);
-            activateTab('history'); // jump them to history so they can see it moved
-
-            const confirmation = document.getElementById('saveConfirmation');
-            confirmation.textContent = 'Appointment completed and moved to history!';
-            confirmation.classList.remove('hidden');
-            setTimeout(() => {
-                confirmation.classList.add('hidden');
-            }, 3000);
+            activateTab('history');
 
         } catch (error) {
             console.error("Failed to complete visit:", error);
-            alert(error.message || "Failed to complete visit. Please try again.");
+            alert(error.message || "Failed to complete visit.");
         } finally {
-            btn.textContent = originalText;
+            btn.innerHTML = originalText;
             btn.disabled = false;
         }
     });
 
-    //QR generation of patient
-    /**https://github.com/datalog/qrcode-svg/blob/master/qrcode.min.js */
-    'use strict';function QRCode(r){var n,t,o,e,a=[],f=[],i=Math.max,u=Math.min,h=Math.abs,v=Math.ceil,c=/^[0-9]*$/,s=/^[A-Z0-9 $%*+.\/:-]*$/,l="0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ $%*+-./:",g=[[-1,7,10,15,20,26,18,20,24,30,18,20,24,26,30,22,24,28,30,28,28,28,28,30,30,26,28,30,30,30,30,30,30,30,30,30,30,30,30,30,30],[-1,10,16,26,18,24,16,18,22,22,26,30,22,22,24,24,28,28,26,26,26,26,28,28,28,28,28,28,28,28,28,28,28,28,28,28,28,28,28,28,28],[-1,13,22,18,26,18,24,18,22,20,24,28,26,24,20,30,24,28,28,26,30,28,30,30,30,30,28,30,30,30,30,30,30,30,30,30,30,30,30,30,30],[-1,17,28,22,16,22,28,26,26,24,28,24,28,22,24,24,30,28,28,26,28,30,24,30,30,30,30,30,30,30,30,30,30,30,30,30,30,30,30,30,30]],d=[[-1,1,1,1,1,1,2,2,2,2,4,4,4,4,4,6,6,6,6,7,8,8,9,9,10,12,12,12,13,14,15,16,17,18,19,19,20,21,22,24,25],[-1,1,1,1,2,2,4,4,4,5,5,5,8,9,9,10,10,11,13,14,16,17,17,18,20,21,23,25,26,28,29,31,33,35,37,38,40,43,45,47,49],[-1,1,1,2,2,4,4,6,6,8,8,8,10,12,16,12,17,16,18,21,20,23,23,25,27,29,34,34,35,38,40,43,45,48,51,53,56,59,62,65,68],[-1,1,1,2,4,4,4,5,6,8,8,11,11,16,16,18,16,19,21,25,25,25,34,30,32,35,37,40,42,45,48,51,54,57,60,63,66,70,74,77,81]],m={L:[0,1],M:[1,0],Q:[2,3],H:[3,2]},p=function(r,n){for(var t=0,o=8;o--;)t=t<<1^285*(t>>>7)^(n>>>o&1)*r;return t},C=function(r,n){for(var t=[],o=r.length,e=o;e;)for(var a=r[o-e--]^t.shift(),f=n.length;f--;)t[f]^=p(n[f],a);return t},w=function(r){for(var n=[function(){return 0==(t+o)%2},function(){return 0==t%2},function(){return 0==o%3},function(){return 0==(t+o)%3},function(){return 0==((t/2|0)+(o/3|0))%2},function(){return 0==t*o%2+t*o%3},function(){return 0==(t*o%2+t*o%3)%2},function(){return 0==((t+o)%2+t*o%3)%2}][r],t=e;t--;)for(var o=e;o--;)f[t][o]||(a[t][o]^=n())},b=function(){for(var r=function(r,n){n[6]||(r+=e),n.shift(),n.push(r)},n=function(n,o,a){return n&&(r(o,a),o=0),r(o+=e,a),t(a)},t=function(r){var n=r[5],t=n>0&&r[4]==n&&r[3]==3*n&&r[2]==n&&r[1]==n;return(t&&r[6]>=4*n&&r[0]>=n?1:0)+(t&&r[0]>=4*n&&r[6]>=n?1:0)},o=0,f=e*e,i=0,u=e;u--;){for(var c=[0,0,0,0,0,0,0],s=[0,0,0,0,0,0,0],l=!1,g=!1,d=0,m=0,p=e;p--;){a[u][p]==l?5==++d?o+=3:d>5&&o++:(r(d,c),o+=40*t(c),d=1,l=a[u][p]),a[p][u]==g?5==++m?o+=3:m>5&&o++:(r(m,s),o+=40*t(s),m=1,g=a[p][u]);var C=a[u][p];C&&i++,p&&u&&C==a[u][p-1]&&C==a[u-1][p]&&C==a[u-1][p-1]&&(o+=3)}o+=40*n(l,d,c)+40*n(g,m,s)}return o+=10*(v(h(20*i-10*f)/f)-1)},A=function(r,n,t){for(;n--;)t.push(r>>>n&1)},M=function(r,n){return r.numBitsCharCount[(n+7)/17|0]},B=function(r,n){return 0!=(r>>>n&1)},x=function(r,n){for(var t=0,o=r.length;o--;){var e=r[o],a=M(e,n);if(1<<a<=e.numChars)return 1/0;t+=4+a+e.bitData.length}return t},D=function(r){if(r<1||r>40)throw"Version number out of range";var n=(16*r+128)*r+64;if(r>=2){var t=r/7|2;n-=(25*t-10)*t-55,r>=7&&(n-=36)}return n},I=function(r,n){for(var t=2;-2<=t;t--)for(var o=2;-2<=o;o--)E(r+o,n+t,1!=i(h(o),h(t)))},H=function(r,n){for(var t=4;-4<=t;t--)for(var o=4;-4<=o;o--){var a=i(h(o),h(t)),f=r+o,u=n+t;0<=f&&f<e&&0<=u&&u<e&&E(f,u,2!=a&&4!=a)}},$=function(r){for(var n=t[1]<<3|r,o=n,a=10;a--;)o=o<<1^1335*(o>>>9);var f=21522^(n<<10|o);if(f>>>15!=0)throw"Assertion error";for(a=0;a<=5;a++)E(8,a,B(f,a));E(8,7,B(f,6)),E(8,8,B(f,7)),E(7,8,B(f,8));for(a=9;a<15;a++)E(14-a,8,B(f,a));for(a=0;a<8;a++)E(e-1-a,8,B(f,a));for(a=8;a<15;a++)E(8,e-15+a,B(f,a));E(8,e-8,1)},O=function(){for(var r=e;r--;)E(6,r,0==r%2),E(r,6,0==r%2);for(var t=function(){var r=[];if(n>1)for(var t=2+(n/7|0),o=32==n?26:2*v((e-13)/(2*t-2));t--;)r[t]=t*o+6;return r}(),o=r=t.length;o--;)for(var a=r;a--;)0==a&&0==o||0==a&&o==r-1||a==r-1&&0==o||I(t[a],t[o]);H(3,3),H(e-4,3),H(3,e-4),$(0),function(){if(!(7>n)){for(var r=n,t=12;t--;)r=r<<1^7973*(r>>>11);var o=n<<12|r;if(t=18,o>>>18!=0)throw"Assertion error";for(;t--;){var a=e-11+t%3,f=t/3|0,i=B(o,t);E(a,f,i),E(f,a,i)}}}()},Q=function(r){if(r.length!=V(n,t))throw"Invalid argument";for(var o=d[t[0]][n],e=g[t[0]][n],a=D(n)/8|0,f=o-a%o,i=a/o|0,u=[],h=function(r){var n=1,t=[];t[r-1]=1;for(var o=0;o<r;o++){for(var e=0;e<r;e++)t[e]=p(t[e],n)^t[e+1];n=p(n,2)}return t}(e),v=0,c=0;v<o;v++){var s=r.slice(c,c+i-e+(v<f?0:1));c+=s.length;var l=C(s,h);v<f&&s.push(0),u.push(s.concat(l))}var m=[];for(v=0;v<u[0].length;v++)for(var w=0;w<u.length;w++)(v!=i-e||w>=f)&&m.push(u[w][v]);return m},S=function(r){for(var n=[],t=(r=encodeURI(r),0);t<r.length;t++)"%"!=r.charAt(t)?n.push(r.charCodeAt(t)):(n.push(parseInt(r.substr(t+1,2),16)),t+=2);return n},V=function(r,n){return(D(r)/8|0)-g[n[0]][r]*d[n[0]][r]},E=function(r,n,t){a[n][r]=t?1:0,f[n][r]=1},R=function(r){for(var n=[],t=0,o=r;t<o.length;t++){var e=o[t];A(e,8,n)}return{modeBits:4,numBitsCharCount:[8,16,16],numChars:r.length,bitData:n}},Z=function(r){if(!c.test(r))throw"String contains non-numeric characters";for(var n=[],t=0;t<r.length;){var o=u(r.length-t,3);A(parseInt(r.substr(t,o),10),3*o+1,n),t+=o}return{modeBits:1,numBitsCharCount:[10,12,14],numChars:r.length,bitData:n}},z=function(r){if(!s.test(r))throw"String contains unencodable characters in alphanumeric mode";var n,t=[];for(n=0;n+2<=r.length;n+=2){var o=45*l.indexOf(r.charAt(n));o+=l.indexOf(r.charAt(n+1)),A(o,11,t)}return n<r.length&&A(l.indexOf(r.charAt(n)),6,t),{modeBits:2,numBitsCharCount:[9,11,13],numChars:r.length,bitData:t}},L=function(r,n,t,o){var e=function(r){return""==r?[]:c.test(r)?[Z(r)]:s.test(r)?[z(r)]:[R(S(r))]}(r);return U(e,n,t,o)},N=function(r,i,u,h){t=i,o=h;for(var v=e=4*(n=r)+17;v--;)a[v]=[],f[v]=[];if(O(),function(r){for(var n=0,t=1,o=e-1,i=o;i>0;i-=2){6==i&&--i;for(var u=0>(t=-t)?o:0,h=0;h<e;++h){for(var v=i;v>i-2;--v)f[u][v]||(a[u][v]=B(r[n>>>3],7-(7&n)),++n);u+=t}}}(Q(u)),0>o){var c=1e9;for(v=8;v--;){w(v),$(v);var s=b();c>s&&(c=s,o=v),w(v)}}w(o),$(o),f=[]},U=function(r,n,t,o,e,a){if(void 0===e&&(e=1),void 0===a&&(a=40),void 0===o&&(o=-1),void 0===t&&(t=!0),!(1<=e&&e<=a&&a<=40)||o<-1||o>7)throw"Invalid value";for(var f=[],i=236,h=[],v=e;;){var c=x(r,v);if(c<=8*V(v,n))break;if(v>=a)throw"Data too long";v++}if(t)for(var s=(l=[m.H,m.Q,m.M]).length;s--;)c<=8*V(v,l[s])&&(n=l[s]);for(var l=0;l<r.length;l++){var g=r[l];A(g.modeBits,4,f),A(g.numChars,M(g,v),f);for(var d=0,p=g.bitData;d<p.length;d++)f.push(p[d])}if(f.length!=c)throw"Assertion error";var C=8*V(v,n);if(f.length>C)throw"Assertion error";if(A(0,u(4,C-f.length),f),A(0,(8-f.length%8)%8,f),f.length%8!=0)throw"Assertion error";for(;f.length<C;)A(i,8,f),i^=253;for(s=f.length;s--;)h[s>>>3]|=f[s]<<7-(7&s);return N(v,n,h,o)};return function(){function n(r){return/^#[0-9a-f]{3}(?:[0-9a-f]{3})?$/i.test(r)}function t(r,n){for(var t in r=document.createElementNS(s,r),n||{})r.setAttribute(t,n[t]);return r}var o,f,i,u,v,c,s="http://www.w3.org/2000/svg",l="",g="string"==typeof r?{msg:r}:r||{},d=g.pal||["#000"],p=h(g.dim)||256,C=[1,0,0,1,c=(c=h(g.pad))>-1?c:4,c],w=n(w=d[0])?w:"#000",b=n(b=d[1])?b:0,A=g.vrb?0:1;for(L(g.msg||"",m[g.ecl]||m.M,0==g.ecb?0:1,g.mtx),v=e+2*c,i=e;i--;)for(u=0,f=e;f--;)a[i][f]&&(A?(u++,a[i][f-1]||(l+="M"+f+","+i+"h"+u+"v1h-"+u+"v-1z",u=0)):l+="M"+f+","+i+"h1v1h-1v-1z");return o=t("svg",{viewBox:[0,0,v,v].join(" "),width:p,height:p,fill:w,"shape-rendering":"crispEdges",xmlns:s,version:"1.1"}),b&&o.appendChild(t("path",{fill:b,d:"M0,0V"+v+"H"+v+"V0H0Z"})),o.appendChild(t("path",{transform:"matrix("+C+")",d:l})),o}()}
-
-    document.getElementById('showQrCodeBtn').addEventListener('click', () => {
-        const container = document.getElementById('qrCodeContainer');
-        const modal = document.getElementById('qrModal');
-
-        // Clear out any previously generated QR code
-        container.innerHTML = '';
-        const p = patients.find(p => p.patient_id == currentPatientId);
-        if (!p) return;
-        let json_patient = JSON.stringify(p);// encode whole record
-        // Generate the QR code SVG element using the library
-        const svgElement = QRCode({
-            msg: json_patient, // Replace with your target data/URL
-            // dim: 200,
-            // pad: 4
-        });
-
-        // Inject the SVG into our container and show the modal
-        container.appendChild(svgElement);
-        modal.style.display = 'flex';
-    });
-
-    //Simple event listener to close the modal when "Close" is clickeSd
-    document.getElementById('closeQrBtn').addEventListener('click', () => {
-        document.getElementById('qrModal').style.display = 'none';
-    });
-
-    const rowsPerPage = 10;
-    let currentPage = 1;
-    let currentSearch = "";
-    let currentSort = "recent";
-
-    function getAvailableDateGroups() {
-        const groups = new Set();
-
-        patients.forEach(p => {
-            if (!p.last_visit) return;
-            const date = new Date(p.last_visit);
-            const year = date.getFullYear();
-            const month = date.toLocaleString('default', { month: 'long' });
-            groups.add(`${year}-${date.getMonth()}::${month} ${year}`);
-        });
-
-
-        return Array.from(groups)
-            .map(g => {
-                const [sortKey, label] = g.split('::');
-                return { sortKey, label };
-            })
-            .sort((a, b) => b.sortKey.localeCompare(a.sortKey));
-    }
-
-
-    //sets up a dropdown menu that lets users sort or filter patients by date
-    function populateSortDropdown() {
-        const sortSelect = document.getElementById('sortSelect');
-        const groups = getAvailableDateGroups();
-
-        // Static top options
-        sortSelect.innerHTML = `
-        <option value="recent" class="bg-white text-[#2A1001]">Sort: Most Recent</option>
-        <option value="oldest" class="bg-white text-[#2A1001]">Oldest First</option>
-    `;
-
-        // Dynamic month/year options, generated from real patient data
-        groups.forEach(g => {
-            const opt = document.createElement('option');
-            opt.value = g.sortKey;
-            opt.textContent = g.label;
-            opt.className = "bg-white text-[#2A1001]";
-            sortSelect.appendChild(opt);
-        });
-    }
-
-
-    // filter patients based on search input and sort selection
+    // ── Table Rendering & Filtering ─────────────────────────────────────────
     function getFiltered() {
-        let result = patients.filter(p =>
-            `${p.first_name} ${p.last_name}`.toLowerCase().includes(currentSearch.toLowerCase())
-        );
+        let result = patients.filter(p => {
+            const term = currentSearch.toLowerCase();
+            const name = `${p.first_name || ''} ${p.last_name || ''}`.toLowerCase();
+            const pubId = String(p.public_id || `PAT-${p.patient_id}`).toLowerCase();
+            const phone = String(p.phone || '').toLowerCase();
+            const email = String(p.email || '').toLowerCase();
+
+            return !term || name.includes(term) || pubId.includes(term) || phone.includes(term) || email.includes(term);
+        });
 
         if (currentSort === "recent") {
-            result.sort((a, b) => new Date(b.last_visit) - new Date(a.last_visit));
+            result.sort((a, b) => new Date(b.last_visit || 0) - new Date(a.last_visit || 0));
         } else if (currentSort === "oldest") {
-            result.sort((a, b) => new Date(a.last_visit) - new Date(b.last_visit));
-        } else {
-            // filter to just that year+month
-            const [year, monthIndex] = currentSort.split('-').map(Number);
-            result = result.filter(p => {
-                const d = new Date(p.last_visit);
-                return d.getFullYear() === year && d.getMonth() === monthIndex;
-            });
-            result.sort((a, b) => new Date(b.last_visit) - new Date(a.last_visit));
+            result.sort((a, b) => new Date(a.last_visit || 0) - new Date(b.last_visit || 0));
+        } else if (currentSort === "name_asc") {
+            result.sort((a, b) => (a.first_name || '').localeCompare(b.first_name || ''));
+        } else if (currentSort === "name_desc") {
+            result.sort((a, b) => (b.first_name || '').localeCompare(a.first_name || ''));
         }
 
         return result;
     }
 
-    //builds and displays the table of patients making sure only the correct number of rows are shown per page after filtering and sorting
     function renderTable() {
         const filtered = getFiltered();
         const start = (currentPage - 1) * rowsPerPage;
         const pageItems = filtered.slice(start, start + rowsPerPage);
 
         const tbody = document.getElementById('tableBody');
+        const emptyState = document.getElementById('emptyState');
+        if (!tbody) return;
+
         tbody.innerHTML = '';
+
+        if (pageItems.length === 0) {
+            if (emptyState) emptyState.classList.remove('hidden');
+        } else {
+            if (emptyState) emptyState.classList.add('hidden');
+        }
 
         pageItems.forEach(p => {
             const row = document.createElement('tr');
-            row.className = "border-b border-[#2A1001]/10";
+            row.className = "hover:bg-[#FDFCE9]/70 transition-colors border-b border-[#2A1001]/10";
+
+            const pubId = escHtml(p.public_id || p.patient_id || '—');
+            const fullName = escHtml(`${p.first_name || ''} ${p.last_name || ''}`).trim() || 'Patient';
+            const phone = p.phone ? escHtml(p.phone) : '—';
+            const email = p.email ? escHtml(p.email) : '—';
+
+            const lastVisit = p.last_visit
+                ? new Date(p.last_visit + 'T00:00:00').toLocaleDateString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit' })
+                : '<span class="italic text-gray-400 font-normal">None</span>';
+
             row.innerHTML = `
-                <td class="text-center py-3 px-6">${escHtml(p.patient_id)}</td>
-                    <td class="text-center py-3 px-6">${escHtml(p.first_name)} ${escHtml(p.last_name)}</td>
-                    <td class="text-center py-3 px-6">${escHtml(p.last_visit) || 'No visits yet'}</td>
-                    <td class="text-center py-3 px-6">
-                    <button class="viewFullBtn inline-flex flex-row items-center justify-center gap-2 bg-[#667733] hover:bg-[#556022] transition text-white text-sm font-semibold px-5 py-2 rounded-full" data-id="${escHtml(p.patient_id)}">
-                        <img src="../assets/view.png" alt="View" class="w-5 h-5 object-contain shrink-0" />
-                        <span class="whitespace-nowrap">View Full</span>
+                <!-- 1. Patient ID -->
+                <td class="py-4 px-4 sm:px-6 text-center font-bold text-[#2A1001] whitespace-nowrap">
+                    ${pubId}
+                </td>
+
+                <!-- 2. Name -->
+                <td class="py-4 px-4 sm:px-6 font-extrabold text-[#2A1001]">
+                    ${fullName}
+                </td>
+
+                <!-- 3. Phone Number -->
+                <td class="py-4 px-4 sm:px-6 font-semibold text-[#2A1001]">
+                    ${phone}
+                </td>
+
+                <!-- 4. Email -->
+                <td class="py-4 px-4 sm:px-6 font-medium text-[#2A1001]/80 text-xs sm:text-sm">
+                    ${email}
+                </td>
+
+                <!-- 5. Last Visit -->
+                <td class="py-4 px-4 sm:px-6 text-center font-bold text-[#2A1001] whitespace-nowrap">
+                    ${lastVisit}
+                </td>
+
+                <!-- 6. Action -->
+                <td class="py-4 px-4 sm:px-6 text-center whitespace-nowrap">
+                    <button class="viewFullBtn inline-flex items-center justify-center gap-1.5 bg-[#5d6e2e] hover:bg-[#4a5825] text-white text-xs font-bold px-4 py-1.5 rounded-full transition shadow-sm cursor-pointer active:scale-95" data-id="${escHtml(p.patient_id)}">
+                        <i class="fa-solid fa-eye text-xs"></i>
+                        <span>View Full</span>
                     </button>
                 </td>
             `;
             tbody.appendChild(row);
         });
 
-
-
         renderPagination(filtered.length);
     }
 
-    document.getElementById('tableBody').addEventListener('click', function (e) {
-        if (e.target.closest('.viewFullBtn')) {
-            const btn = e.target.closest('.viewFullBtn');
-            openModal(btn.dataset.id);
-        }
+    document.getElementById('tableBody')?.addEventListener('click', function (e) {
+        const btn = e.target.closest('.viewFullBtn');
+        if (btn) openModal(btn.dataset.id);
     });
 
-
-    // builds and displays the pagination buttons based on the number of filtered patients and the current page also only shows batch number by 7
     function renderPagination(totalItems) {
         const totalPages = Math.max(1, Math.ceil(totalItems / rowsPerPage));
         const pagination = document.getElementById('pagination');
+        if (!pagination) return;
         pagination.innerHTML = '';
+
+        if (totalPages <= 1) return;
 
         const maxVisible = 7;
         const currentBatch = Math.floor((currentPage - 1) / maxVisible);
@@ -940,7 +1011,7 @@
         if (batchStart > 1) {
             const prevBtn = document.createElement('button');
             prevBtn.textContent = '‹';
-            prevBtn.className = "w-9 h-9 rounded-full font-bold text-[#2A1001] bg-transparent border border-[#2A1001]/30 hover:bg-[#2A1001]/10 transition flex items-center justify-center";
+            prevBtn.className = "w-9 h-9 rounded-full font-bold text-[#2A1001] bg-white border border-[#2A1001]/20 hover:bg-[#2A1001]/10 transition flex items-center justify-center cursor-pointer";
             prevBtn.addEventListener('click', () => { currentPage = batchStart - 1; renderTable(); });
             pagination.appendChild(prevBtn);
         }
@@ -948,7 +1019,7 @@
         for (let i = batchStart; i <= batchEnd; i++) {
             const btn = document.createElement('button');
             btn.textContent = i;
-            btn.className = `w-9 h-9 rounded-full font-semibold ${i === currentPage ? 'bg-[#6B7A4C] text-white' : 'bg-white text-[#2A1001] border border-[#2A1001]/20'}`;
+            btn.className = `w-9 h-9 rounded-full font-semibold cursor-pointer transition ${i === currentPage ? 'bg-[#667733] text-white shadow' : 'bg-white text-[#2A1001] border border-[#2A1001]/20 hover:bg-gray-50'}`;
             btn.addEventListener('click', () => { currentPage = i; renderTable(); });
             pagination.appendChild(btn);
         }
@@ -956,138 +1027,150 @@
         if (batchEnd < totalPages) {
             const nextBtn = document.createElement('button');
             nextBtn.textContent = '›';
-            nextBtn.className = "w-9 h-9 rounded-full font-bold text-[#2A1001] bg-transparent border border-[#2A1001]/30 hover:bg-[#2A1001]/10 transition flex items-center justify-center";
+            nextBtn.className = "w-9 h-9 rounded-full font-bold text-[#2A1001] bg-white border border-[#2A1001]/20 hover:bg-[#2A1001]/10 transition flex items-center justify-center cursor-pointer";
             nextBtn.addEventListener('click', () => { currentPage = batchEnd + 1; renderTable(); });
             pagination.appendChild(nextBtn);
         }
     }
 
-    //Patient Modal click x button to close
-    document.getElementById('closeModal').addEventListener('click', function () {
-        document.getElementById('patientModal').classList.add('hidden');
-    });
-
-    //Patient Modal click outside to close
-    document.getElementById('patientModal').addEventListener('click', function (e) {
-        if (e.target === this) this.classList.add('hidden');
-    });
-
-    // Search
-    document.getElementById('searchInput').addEventListener('input', function () {
+    // Search and Sort events
+    document.getElementById('searchInput')?.addEventListener('input', function () {
         currentSearch = this.value;
         currentPage = 1;
         renderTable();
     });
 
-    // Sort
-    document.getElementById('sortSelect').addEventListener('change', function () {
+    document.getElementById('sortSelect')?.addEventListener('change', function () {
         currentSort = this.value;
         currentPage = 1;
         renderTable();
     });
 
-    // QR button — placeholder for now
-    document.getElementById('qrBtn').addEventListener('click', function () {
-        alert("QR Scanner coming soon placeholder lng toh lols");
+    // ── QR Code Generator Modal ─────────────────────────────────────────────
+    document.getElementById('showQrCodeBtn')?.addEventListener('click', () => {
+        const p = patients.find(p => p.patient_id == currentPatientId);
+        if (!p) return;
+
+        const container = document.getElementById('qrCodeContainer');
+        container.innerHTML = '';
+        document.getElementById('qrPatientName').textContent = `${p.first_name} ${p.last_name} (${p.public_id || `PAT-${p.patient_id}`})`;
+
+        // Use standard online SVG QR generator payload
+        const qrPayload = JSON.stringify({
+            id: p.public_id || `PAT-${p.patient_id}`,
+            name: `${p.first_name} ${p.last_name}`,
+            phone: p.phone,
+            allergies: (p.allergies || []).map(a => a.allergen),
+            emergency: p.secondary_email || p.email
+        });
+
+        const qrImg = document.createElement('img');
+        qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(qrPayload)}`;
+        qrImg.className = "w-44 h-44 object-contain rounded-xl";
+        qrImg.alt = "QR Code";
+
+        container.appendChild(qrImg);
+        document.getElementById('qrModal').classList.remove('hidden');
     });
 
-    // Initial render
-    populateSortDropdown();
-    renderTable();
-    activateTab('session');
+    document.getElementById('closeQrBtn')?.addEventListener('click', () => {
+        document.getElementById('qrModal').classList.add('hidden');
+    });
 
-    function buildPrintableRecord(p) {
-        const listText = (arr, fmt) => (arr && arr.length ? arr.map(fmt).join(', ') : 'None');
-        const row = (label, value) =>
-            `<tr><td>${label}</td><td>${escHtml(value) || '&mdash;'}</td></tr>`;
+    // ── Printable Patient Medical Chart ──────────────────────────────────────
+    function buildPrintablePatientChart(p) {
+        const listText = (arr, fn) => (Array.isArray(arr) && arr.length ? arr.map(fn).join(', ') : 'None recorded');
+        const row = (label, val) => `<tr><td>${label}:</td><td><strong>${escHtml(val) || '&mdash;'}</strong></td></tr>`;
 
-        const conditions    = listText(p.health_conditions, c => c.description);
-        const allergies     = listText(p.allergies, a => a.allergen);
-        const prescriptions = listText(p.prescriptions,
-            rx => (rx.dosage ? `${rx.medication_name} (${rx.dosage})` : rx.medication_name));
+        const conditions = listText(p.health_conditions, c => typeof c === 'string' ? c : c.description);
+        const surgeries = listText(p.surgeries, s => typeof s === 'string' ? s : s.description);
+        const lifeFactors = listText(p.life_factors, l => typeof l === 'string' ? l : l.description);
+        const allergies = listText(p.allergies, a => typeof a === 'string' ? a : a.allergen);
+        const prescriptions = listText(p.prescriptions, rx => rx.dosage ? `${rx.medication_name} (${rx.dosage})` : rx.medication_name);
 
-        // Read the textarea so notes that haven't been saved yet are included
-        const todayNote = p.ongoing_appointment
-            ? document.getElementById('mNotes').value.trim()
-            : '';
+        const fullAddr = p.address || [p.address_street, p.address_barangay, p.address_city, p.address_province].filter(Boolean).join(', ') || 'None';
 
         const visits = (p.past_appointments || []).map(a => `
-        <div class="visit">
-            <div class="visit-head">
-                <strong>${escHtml(a.appointment_date)}</strong>
-                <span>${escHtml(a.service_label)}</span>
+            <div style="border: 1px solid #ccc; border-radius: 6px; padding: 8px 12px; margin-bottom: 8px; page-break-inside: avoid;">
+                <div style="display:flex; justify-content:space-between; margin-bottom: 4px;">
+                    <strong>Date: ${escHtml(a.appointment_date)}</strong>
+                    <span style="color:#667733; font-weight:bold;">${escHtml(a.service_label || 'Dental Service')}</span>
+                </div>
+                <div><b>Patient Concern:</b> ${escHtml(a.patient_note) || 'None noted'}</div>
+                <div><b>Dentist Clinical Diagnosis:</b> ${escHtml(a.dentist_note) || 'No notes recorded'}</div>
             </div>
-            <div><b>Patient concern:</b> ${escHtml(a.patient_note) || 'None noted'}</div>
-            <div><b>Dentist note:</b> ${escHtml(a.dentist_note) || 'No notes recorded'}</div>
-        </div>`).join('') || '<p class="muted">No previous visits recorded.</p>';
+        `).join('') || '<p style="color:#888; font-style:italic;">No past visit history recorded.</p>';
 
         return `<!DOCTYPE html>
 <html>
 <head>
-<meta charset="UTF-8">
-<title>Patient Record - ${escHtml(p.public_id || p.patient_id)}</title>
-<style>
-    @page { margin: 16mm; }
-    body { font-family: Arial, sans-serif; color: #2A1001; font-size: 13px; line-height: 1.45; }
-    h1 { font-size: 22px; margin: 0 0 4px; }
-    h2 { font-size: 15px; margin: 22px 0 8px; padding-bottom: 4px; border-bottom: 2px solid #667733; }
-    .muted { color: #666; font-size: 11px; }
-    table.info { width: 100%; border-collapse: collapse; }
-    table.info td { padding: 5px 8px; border-bottom: 1px solid #ddd; vertical-align: top; }
-    table.info td:first-child { width: 190px; font-weight: bold; }
-    .note { white-space: pre-wrap; border: 1px solid #ccc; border-radius: 6px; padding: 8px 12px; }
-    .visit { border: 1px solid #ccc; border-radius: 6px; padding: 8px 12px; margin-bottom: 8px; page-break-inside: avoid; }
-    .visit-head { display: flex; justify-content: space-between; margin-bottom: 4px; }
-</style>
+    <meta charset="UTF-8">
+    <title>Patient Chart - ${escHtml(p.public_id || p.patient_id)}</title>
+    <style>
+        @page { margin: 15mm; }
+        body { font-family: 'Helvetica Neue', Arial, sans-serif; color: #2A1001; font-size: 12px; line-height: 1.5; padding: 10px; }
+        .header { text-align: center; margin-bottom: 20px; border-bottom: 2px solid #667733; padding-bottom: 10px; }
+        .header h1 { margin: 0; font-size: 20px; color: #2A1001; }
+        .header p { margin: 2px 0; color: #666; font-size: 11px; }
+        h2 { font-size: 13px; margin: 15px 0 6px; padding-bottom: 3px; border-bottom: 1px solid #667733; text-transform: uppercase; color: #667733; }
+        table.info { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
+        table.info td { padding: 4px 6px; border-bottom: 1px solid #eee; vertical-align: top; }
+        table.info td:first-child { width: 180px; font-weight: bold; color: #555; }
+    </style>
 </head>
 <body>
-    <h1>Patient Record</h1>
-    <p class="muted">${escHtml(p.public_id || '')} &middot; Printed ${escHtml(new Date().toLocaleString())}</p>
+    <div class="header">
+        <h1>DENTAL CLINIC INC.</h1>
+        <p>Official Patient Record &amp; Clinical Dental Chart</p>
+        <p>Printed on: ${new Date().toLocaleDateString()} &bull; Patient ID: ${escHtml(p.public_id || `PAT-${p.patient_id}`)}</p>
+    </div>
 
-    <h2>Personal Information</h2>
+    <h2>Personal &amp; Contact Information</h2>
     <table class="info">
-        ${row('First name', p.first_name)}
-        ${row('Last name', p.last_name)}
+        ${row('Full Name', `${p.first_name || ''} ${p.last_name || ''}`)}
         ${row('Sex', p.sex)}
-        ${row('Birthday', p.birthday)}
-        ${row('Email', p.email)}
-        ${row('Phone number', p.phone)}
-        ${row('Civil status', p.civil_status)}
+        ${row('Birthday & Age', `${p.birthday ? p.birthday.split('T')[0] : ''} ${calculateAge(p.birthday)}`)}
+        ${row('Civil Status', p.civil_status)}
+        ${row('Primary Email', p.email)}
+        ${row('Secondary Email', p.secondary_email)}
+        ${row('Phone Number', p.phone)}
+        ${row('Complete Address', fullAddr)}
     </table>
 
-    <h2>Medical Information</h2>
+    <h2>Medical &amp; Clinical History</h2>
     <table class="info">
-        ${row('Pre-existing conditions', conditions)}
-        ${row('Pregnancy status', p.pregnancy_status)}
-        ${row('Current prescriptions', prescriptions)}
-        ${row('Allergies', allergies)}
+        ${row('Pre-existing Health Conditions', conditions)}
+        ${row('Past Surgeries', surgeries)}
+        ${row('Lifestyle Factors', lifeFactors)}
+        ${row('Allergies / Warnings', allergies)}
+        ${row('Current Prescriptions', prescriptions)}
+        ${row('Pregnancy & Nursing Status', p.pregnancy_status)}
     </table>
 
-    ${todayNote ? `<h2>Today's Session</h2><div class="note">${escHtml(todayNote)}</div>` : ''}
-
-    <h2>Past Visits</h2>
+    <h2>Past Dental Visits &amp; Treatment History</h2>
     ${visits}
 </body>
 </html>`;
     }
 
-    document.getElementById('printPdfBtn').addEventListener('click', () => {
+    document.getElementById('printPdfBtn')?.addEventListener('click', () => {
         const p = patients.find(p => p.patient_id == currentPatientId);
         if (!p) return;
 
-        // Remove the frame from any previous print
-        document.getElementById('printFrame')?.remove();
-
+        document.getElementById('printChartFrame')?.remove();
         const frame = document.createElement('iframe');
-        frame.id = 'printFrame';
+        frame.id = 'printChartFrame';
         frame.style.cssText = 'position:fixed; right:0; bottom:0; width:0; height:0; border:0;';
         frame.onload = () => {
             frame.contentWindow.focus();
             frame.contentWindow.print();
         };
-        frame.srcdoc = buildPrintableRecord(p);
+        frame.srcdoc = buildPrintablePatientChart(p);
         document.body.appendChild(frame);
     });
+
+    // Start
+    loadPatientsFromDatabase();
 </script>
 
 </body>

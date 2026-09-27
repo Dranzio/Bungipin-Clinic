@@ -7,18 +7,19 @@
   <script src="/passwordGate.js"></script>
   <link href="/output.css" rel="stylesheet">
   <title>Patient Profile</title>
+  <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://kit.fontawesome.com/fc8c3f4103.js" crossorigin="anonymous"></script>
   <script src="/Taskbar/Customer_Sidebar.js"></script>
 </head>
 
-<body class="min-h-screen md:h-screen md:overflow-hidden bg-[#F3EFE4] relative flex flex-col md:flex-row antialiased">
+<body class="min-h-screen md:h-screen md:overflow-hidden bg-[#F3EFE4] relative flex flex-col md:flex-row antialiased text-[#2A1001]">
 
   <!-- SIDEBAR -->
   <div id="sidebar-placeholder"></div>
   <script>
     function syncContentOffset() {
       const placeholder = document.getElementById('sidebar-placeholder');
-      const sidebar = Array.from(placeholder.children).find(el => !['SCRIPT','STYLE','LINK'].includes(el.tagName));
+      const sidebar = Array.from(placeholder?.children || []).find(el => !['SCRIPT','STYLE','LINK'].includes(el.tagName));
       if (!sidebar) return;
       const set = (el, prop, value) => { if (el.style[prop] !== value) el.style[prop] = value; };
       const apply = () => {
@@ -27,7 +28,7 @@
         set(sidebar, 'position', desktop ? 'sticky' : 'relative');
         set(sidebar, 'top', desktop ? '0px' : 'auto');
         set(sidebar, 'height', desktop ? '100vh' : '');
-        set(sidebar, 'overflowY', desktop ? 'auto' : '');//
+        set(sidebar, 'overflowY', desktop ? 'auto' : '');
       };
       window.addEventListener('resize', apply);
       apply();
@@ -58,7 +59,7 @@
       </h1>
       <img src="../assets/logowithtitle.png" class="w-20 sm:w-24 md:w-28 h-auto object-contain shrink-0" alt="Logo"/>
     </div>
-    <hr class="border-t border-[#2A1001] mt-2 mb-6" />
+    <hr class="border-t border-[#2A1001] mt-2 mb-6 mx-4 sm:mx-6 md:mx-12" />
 
     <main class="w-full max-w-5xl mx-auto py-8 px-6 md:px-12">
       <div id="incompleteProfileBanner" class="hidden mb-6 p-4 bg-red-100 border border-red-400 text-red-800 rounded-2xl font-semibold text-sm text-center">
@@ -170,128 +171,125 @@
           <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 sm:gap-y-5">
 
             <!-- Pre-existing Health Conditions -->
-        <!-- Pre-existing Health Conditions -->
-<div class="flex flex-col gap-1.5 md:col-span-2">
-  <div>
-    <label class="text-[11px] font-extrabold tracking-wider text-[#2A1001] uppercase">Pre-existing Health Conditions:</label>
-    <p class="text-[10px] text-[#4a5e3b]/80 italic mt-0.5">Please check all that apply.</p>
-  </div>
-  <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
-    <label class="flex items-center gap-2 bg-white border border-[#c1ccab] rounded-full px-4 py-2 text-sm text-[#2c3e2b] font-medium cursor-pointer shadow-inner min-w-0"><input type="checkbox" class="healthConditionCheckbox accent-[#667733] shrink-0" value="Asthma"> <span class="break-words">Asthma</span></label>
-    <label class="flex items-center gap-2 bg-white border border-[#c1ccab] rounded-full px-4 py-2 text-sm text-[#2c3e2b] font-medium cursor-pointer shadow-inner min-w-0"><input type="checkbox" class="healthConditionCheckbox accent-[#667733] shrink-0" value="Diabetes"> <span class="break-words">Diabetes</span></label>
-    <label class="flex items-center gap-2 bg-white border border-[#c1ccab] rounded-full px-4 py-2 text-sm text-[#2c3e2b] font-medium cursor-pointer shadow-inner min-w-0"><input type="checkbox" class="healthConditionCheckbox accent-[#667733] shrink-0" value="Hypertension"> <span class="break-words">Hypertension</span></label>
-    <label class="flex items-center gap-2 bg-white border border-[#c1ccab] rounded-full px-4 py-2 text-sm text-[#2c3e2b] font-medium cursor-pointer shadow-inner min-w-0"><input type="checkbox" class="healthConditionCheckbox accent-[#667733] shrink-0" value="Heart Disease"> <span class="break-words">Heart Disease</span></label>
-    <label class="flex items-center gap-2 bg-white border border-[#c1ccab] rounded-full px-4 py-2 text-sm text-[#2c3e2b] font-medium cursor-pointer shadow-inner min-w-0"><input type="checkbox" class="healthConditionCheckbox accent-[#667733] shrink-0" value="Hepatitis"> <span class="break-words">Hepatitis</span></label>
-    <label class="flex items-center gap-2 bg-white border border-[#c1ccab] rounded-full px-4 py-2 text-sm text-[#2c3e2b] font-medium cursor-pointer shadow-inner min-w-0"><input type="checkbox" class="healthConditionCheckbox accent-[#667733] shrink-0" value="Bleeding Disorder"> <span class="break-words">Bleeding Disorder</span></label>
-    <label class="flex items-center gap-2 bg-white border border-[#c1ccab] rounded-full px-4 py-2 text-sm text-[#2c3e2b] font-medium cursor-pointer shadow-inner min-w-0"><input type="checkbox" class="healthConditionCheckbox accent-[#667733] shrink-0" value="Epilepsy"> <span class="break-words">Epilepsy</span></label>
-    <label class="flex items-center gap-2 bg-white border border-[#c1ccab] rounded-full px-4 py-2 text-sm text-[#2c3e2b] font-medium cursor-pointer shadow-inner min-w-0"><input type="checkbox" id="healthConditionOtherCheckbox" class="accent-[#667733] shrink-0"> <span class="break-words">Others</span></label>
-    <label class="flex items-center gap-2 bg-white border border-[#c1ccab] rounded-full px-4 py-2 text-sm text-[#2c3e2b] font-medium cursor-pointer shadow-inner min-w-0"><input type="checkbox" id="healthConditionNoneCheckbox" class="accent-[#667733] shrink-0"> <span class="break-words">None</span></label>
-  </div>
-  <div id="healthConditionOtherRow" class="hidden flex gap-2 mt-1">
-    <input type="text" id="healthConditionOtherInput" placeholder="Please specify other condition"
-      class="flex-1 px-4 py-2.5 rounded-full bg-white text-[#2c3e2b] font-medium text-sm outline-none shadow-inner border border-[#c1ccab] focus:ring-2 focus:ring-[#4a5e3b]/50" maxlength="40">
-    <button type="button" id="addHealthConditionOtherBtn"
-      class="shrink-0 px-4 py-2.5 rounded-full bg-[#667733] hover:bg-[#556022] text-white font-bold text-sm transition">+ Add</button>
-  </div>
-  <div id="healthConditionOtherList" class="flex flex-wrap gap-2 mt-1"></div>
-</div>
+            <div class="flex flex-col gap-1.5 md:col-span-2">
+              <div>
+                <label class="text-[11px] font-extrabold tracking-wider text-[#2A1001] uppercase">Pre-existing Health Conditions:</label>
+                <p class="text-[10px] text-[#4a5e3b]/80 italic mt-0.5">Please check all that apply.</p>
+              </div>
+              <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+                <label class="flex items-center gap-2 bg-white border border-[#c1ccab] rounded-full px-4 py-2 text-sm text-[#2c3e2b] font-medium cursor-pointer shadow-inner min-w-0"><input type="checkbox" class="healthConditionCheckbox accent-[#667733] shrink-0" value="Asthma"> <span class="break-words">Asthma</span></label>
+                <label class="flex items-center gap-2 bg-white border border-[#c1ccab] rounded-full px-4 py-2 text-sm text-[#2c3e2b] font-medium cursor-pointer shadow-inner min-w-0"><input type="checkbox" class="healthConditionCheckbox accent-[#667733] shrink-0" value="Diabetes"> <span class="break-words">Diabetes</span></label>
+                <label class="flex items-center gap-2 bg-white border border-[#c1ccab] rounded-full px-4 py-2 text-sm text-[#2c3e2b] font-medium cursor-pointer shadow-inner min-w-0"><input type="checkbox" class="healthConditionCheckbox accent-[#667733] shrink-0" value="Hypertension"> <span class="break-words">Hypertension</span></label>
+                <label class="flex items-center gap-2 bg-white border border-[#c1ccab] rounded-full px-4 py-2 text-sm text-[#2c3e2b] font-medium cursor-pointer shadow-inner min-w-0"><input type="checkbox" class="healthConditionCheckbox accent-[#667733] shrink-0" value="Heart Disease"> <span class="break-words">Heart Disease</span></label>
+                <label class="flex items-center gap-2 bg-white border border-[#c1ccab] rounded-full px-4 py-2 text-sm text-[#2c3e2b] font-medium cursor-pointer shadow-inner min-w-0"><input type="checkbox" class="healthConditionCheckbox accent-[#667733] shrink-0" value="Hepatitis"> <span class="break-words">Hepatitis</span></label>
+                <label class="flex items-center gap-2 bg-white border border-[#c1ccab] rounded-full px-4 py-2 text-sm text-[#2c3e2b] font-medium cursor-pointer shadow-inner min-w-0"><input type="checkbox" class="healthConditionCheckbox accent-[#667733] shrink-0" value="Bleeding Disorder"> <span class="break-words">Bleeding Disorder</span></label>
+                <label class="flex items-center gap-2 bg-white border border-[#c1ccab] rounded-full px-4 py-2 text-sm text-[#2c3e2b] font-medium cursor-pointer shadow-inner min-w-0"><input type="checkbox" class="healthConditionCheckbox accent-[#667733] shrink-0" value="Epilepsy"> <span class="break-words">Epilepsy</span></label>
+                <label class="flex items-center gap-2 bg-white border border-[#c1ccab] rounded-full px-4 py-2 text-sm text-[#2c3e2b] font-medium cursor-pointer shadow-inner min-w-0"><input type="checkbox" id="healthConditionOtherCheckbox" class="accent-[#667733] shrink-0"> <span class="break-words">Others</span></label>
+                <label class="flex items-center gap-2 bg-white border border-[#c1ccab] rounded-full px-4 py-2 text-sm text-[#2c3e2b] font-medium cursor-pointer shadow-inner min-w-0"><input type="checkbox" id="healthConditionNoneCheckbox" class="accent-[#667733] shrink-0"> <span class="break-words">None</span></label>
+              </div>
+              <div id="healthConditionOtherRow" class="hidden flex gap-2 mt-1">
+                <input type="text" id="healthConditionOtherInput" placeholder="Please specify other condition"
+                  class="flex-1 px-4 py-2.5 rounded-full bg-white text-[#2c3e2b] font-medium text-sm outline-none shadow-inner border border-[#c1ccab] focus:ring-2 focus:ring-[#4a5e3b]/50" maxlength="40">
+                <button type="button" id="addHealthConditionOtherBtn"
+                  class="shrink-0 px-4 py-2.5 rounded-full bg-[#667733] hover:bg-[#556022] text-white font-bold text-sm transition">+ Add</button>
+              </div>
+              <div id="healthConditionOtherList" class="flex flex-wrap gap-2 mt-1"></div>
+            </div>
 
             <!-- Past Surgeries -->
-         <!-- Past Surgeries -->
-<div class="flex flex-col gap-1.5 md:col-span-2">
-  <div>
-    <label class="text-[11px] font-extrabold tracking-wider text-[#2A1001] uppercase">Past Surgeries:</label>
-    <p class="text-[10px] text-[#4a5e3b]/80 italic mt-0.5">Please check all that apply.</p>
-  </div>
-  <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
-    <label class="flex items-center gap-2 bg-white border border-[#c1ccab] rounded-full px-4 py-2 text-sm text-[#2c3e2b] font-medium cursor-pointer shadow-inner min-w-0"><input type="checkbox" class="surgeryCheckbox accent-[#667733] shrink-0" value="Tooth Extraction"> <span class="break-words">Tooth Extraction</span></label>
-    <label class="flex items-center gap-2 bg-white border border-[#c1ccab] rounded-full px-4 py-2 text-sm text-[#2c3e2b] font-medium cursor-pointer shadow-inner min-w-0"><input type="checkbox" class="surgeryCheckbox accent-[#667733] shrink-0" value="Wisdom Tooth Removal"> <span class="break-words">Wisdom Tooth Removal</span></label>
-    <label class="flex items-center gap-2 bg-white border border-[#c1ccab] rounded-full px-4 py-2 text-sm text-[#2c3e2b] font-medium cursor-pointer shadow-inner min-w-0"><input type="checkbox" class="surgeryCheckbox accent-[#667733] shrink-0" value="Root Canal Surgery"> <span class="break-words">Root Canal Surgery</span></label>
-    <label class="flex items-center gap-2 bg-white border border-[#c1ccab] rounded-full px-4 py-2 text-sm text-[#2c3e2b] font-medium cursor-pointer shadow-inner min-w-0"><input type="checkbox" class="surgeryCheckbox accent-[#667733] shrink-0" value="Jaw Surgery"> <span class="break-words">Jaw Surgery</span></label>
-    <label class="flex items-center gap-2 bg-white border border-[#c1ccab] rounded-full px-4 py-2 text-sm text-[#2c3e2b] font-medium cursor-pointer shadow-inner min-w-0"><input type="checkbox" class="surgeryCheckbox accent-[#667733] shrink-0" value="Appendectomy"> <span class="break-words">Appendectomy</span></label>
-    <label class="flex items-center gap-2 bg-white border border-[#c1ccab] rounded-full px-4 py-2 text-sm text-[#2c3e2b] font-medium cursor-pointer shadow-inner min-w-0"><input type="checkbox" class="surgeryCheckbox accent-[#667733] shrink-0" value="Cesarean Section"> <span class="break-words">Cesarean Section</span></label>
-    <label class="flex items-center gap-2 bg-white border border-[#c1ccab] rounded-full px-4 py-2 text-sm text-[#2c3e2b] font-medium cursor-pointer shadow-inner min-w-0"><input type="checkbox" id="surgeryOtherCheckbox" class="accent-[#667733] shrink-0"> <span class="break-words">Others</span></label>
-    <label class="flex items-center gap-2 bg-white border border-[#c1ccab] rounded-full px-4 py-2 text-sm text-[#2c3e2b] font-medium cursor-pointer shadow-inner min-w-0"><input type="checkbox" id="surgeryNoneCheckbox" class="accent-[#667733] shrink-0"> <span class="break-words">None</span></label>
-  </div>
-  <div id="surgeryOtherRow" class="hidden flex gap-2 mt-1">
-    <input type="text" id="surgeryOtherInput" placeholder="Please specify other surgery"
-      class="flex-1 px-4 py-2.5 rounded-full bg-white text-[#2c3e2b] font-medium text-sm outline-none shadow-inner border border-[#c1ccab] focus:ring-2 focus:ring-[#4a5e3b]/50" maxlength="40">
-    <button type="button" id="addSurgeryOtherBtn"
-      class="shrink-0 px-4 py-2.5 rounded-full bg-[#667733] hover:bg-[#556022] text-white font-bold text-sm transition">+ Add</button>
-  </div>
-  <div id="surgeryOtherList" class="flex flex-wrap gap-2 mt-1"></div>
-</div>
-
+            <div class="flex flex-col gap-1.5 md:col-span-2">
+              <div>
+                <label class="text-[11px] font-extrabold tracking-wider text-[#2A1001] uppercase">Past Surgeries:</label>
+                <p class="text-[10px] text-[#4a5e3b]/80 italic mt-0.5">Please check all that apply.</p>
+              </div>
+              <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+                <label class="flex items-center gap-2 bg-white border border-[#c1ccab] rounded-full px-4 py-2 text-sm text-[#2c3e2b] font-medium cursor-pointer shadow-inner min-w-0"><input type="checkbox" class="surgeryCheckbox accent-[#667733] shrink-0" value="Tooth Extraction"> <span class="break-words">Tooth Extraction</span></label>
+                <label class="flex items-center gap-2 bg-white border border-[#c1ccab] rounded-full px-4 py-2 text-sm text-[#2c3e2b] font-medium cursor-pointer shadow-inner min-w-0"><input type="checkbox" class="surgeryCheckbox accent-[#667733] shrink-0" value="Wisdom Tooth Removal"> <span class="break-words">Wisdom Tooth Removal</span></label>
+                <label class="flex items-center gap-2 bg-white border border-[#c1ccab] rounded-full px-4 py-2 text-sm text-[#2c3e2b] font-medium cursor-pointer shadow-inner min-w-0"><input type="checkbox" class="surgeryCheckbox accent-[#667733] shrink-0" value="Root Canal Surgery"> <span class="break-words">Root Canal Surgery</span></label>
+                <label class="flex items-center gap-2 bg-white border border-[#c1ccab] rounded-full px-4 py-2 text-sm text-[#2c3e2b] font-medium cursor-pointer shadow-inner min-w-0"><input type="checkbox" class="surgeryCheckbox accent-[#667733] shrink-0" value="Jaw Surgery"> <span class="break-words">Jaw Surgery</span></label>
+                <label class="flex items-center gap-2 bg-white border border-[#c1ccab] rounded-full px-4 py-2 text-sm text-[#2c3e2b] font-medium cursor-pointer shadow-inner min-w-0"><input type="checkbox" class="surgeryCheckbox accent-[#667733] shrink-0" value="Appendectomy"> <span class="break-words">Appendectomy</span></label>
+                <label class="flex items-center gap-2 bg-white border border-[#c1ccab] rounded-full px-4 py-2 text-sm text-[#2c3e2b] font-medium cursor-pointer shadow-inner min-w-0"><input type="checkbox" class="surgeryCheckbox accent-[#667733] shrink-0" value="Cesarean Section"> <span class="break-words">Cesarean Section</span></label>
+                <label class="flex items-center gap-2 bg-white border border-[#c1ccab] rounded-full px-4 py-2 text-sm text-[#2c3e2b] font-medium cursor-pointer shadow-inner min-w-0"><input type="checkbox" id="surgeryOtherCheckbox" class="accent-[#667733] shrink-0"> <span class="break-words">Others</span></label>
+                <label class="flex items-center gap-2 bg-white border border-[#c1ccab] rounded-full px-4 py-2 text-sm text-[#2c3e2b] font-medium cursor-pointer shadow-inner min-w-0"><input type="checkbox" id="surgeryNoneCheckbox" class="accent-[#667733] shrink-0"> <span class="break-words">None</span></label>
+              </div>
+              <div id="surgeryOtherRow" class="hidden flex gap-2 mt-1">
+                <input type="text" id="surgeryOtherInput" placeholder="Please specify other surgery"
+                  class="flex-1 px-4 py-2.5 rounded-full bg-white text-[#2c3e2b] font-medium text-sm outline-none shadow-inner border border-[#c1ccab] focus:ring-2 focus:ring-[#4a5e3b]/50" maxlength="40">
+                <button type="button" id="addSurgeryOtherBtn"
+                  class="shrink-0 px-4 py-2.5 rounded-full bg-[#667733] hover:bg-[#556022] text-white font-bold text-sm transition">+ Add</button>
+              </div>
+              <div id="surgeryOtherList" class="flex flex-wrap gap-2 mt-1"></div>
+            </div>
 
             <!-- Lifestyle Factors -->
-<div class="flex flex-col gap-1.5 md:col-span-2">
-  <div>
-    <label class="text-[11px] font-extrabold tracking-wider text-[#2A1001] uppercase">Lifestyle Factors:</label>
-    <p class="text-[10px] text-[#4a5e3b]/80 italic mt-0.5">Please check all that apply.</p>
-  </div>
-  <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
-    <label class="flex items-center gap-2 bg-white border border-[#c1ccab] rounded-full px-4 py-2 text-sm text-[#2c3e2b] font-medium cursor-pointer shadow-inner min-w-0"><input type="checkbox" name="life_factors" value="Smoker" class="lifeFactorCheckbox accent-[#667733] shrink-0"> <span class="break-words">Smoker</span></label>
-    <label class="flex items-center gap-2 bg-white border border-[#c1ccab] rounded-full px-4 py-2 text-sm text-[#2c3e2b] font-medium cursor-pointer shadow-inner min-w-0"><input type="checkbox" name="life_factors" value="Alcohol Consumption" class="lifeFactorCheckbox accent-[#667733] shrink-0"> <span class="break-words">Alcohol Consumption</span></label>
-    <label class="flex items-center gap-2 bg-white border border-[#c1ccab] rounded-full px-4 py-2 text-sm text-[#2c3e2b] font-medium cursor-pointer shadow-inner min-w-0"><input type="checkbox" name="life_factors" value="Regular Exercise" class="lifeFactorCheckbox accent-[#667733] shrink-0"> <span class="break-words">Regular Exercise</span></label>
-    <label class="flex items-center gap-2 bg-white border border-[#c1ccab] rounded-full px-4 py-2 text-sm text-[#2c3e2b] font-medium cursor-pointer shadow-inner min-w-0"><input type="checkbox" name="life_factors" value="Poor Diet" class="lifeFactorCheckbox accent-[#667733] shrink-0"> <span class="break-words">Poor Diet</span></label>
-    <label class="flex items-center gap-2 bg-white border border-[#c1ccab] rounded-full px-4 py-2 text-sm text-[#2c3e2b] font-medium cursor-pointer shadow-inner min-w-0"><input type="checkbox" name="life_factors" value="High Stress" class="lifeFactorCheckbox accent-[#667733] shrink-0"> <span class="break-words">High Stress</span></label>
-    <label class="flex items-center gap-2 bg-white border border-[#c1ccab] rounded-full px-4 py-2 text-sm text-[#2c3e2b] font-medium cursor-pointer shadow-inner min-w-0"><input type="checkbox" id="lifeFactorOtherCheckbox" class="accent-[#667733] shrink-0"> <span class="break-words">Others</span></label>
-    <label class="flex items-center gap-2 bg-white border border-[#c1ccab] rounded-full px-4 py-2 text-sm text-[#2c3e2b] font-medium cursor-pointer shadow-inner min-w-0"><input type="checkbox" id="lifeFactorNoneCheckbox" class="accent-[#667733] shrink-0"> <span class="break-words">None</span></label>
-  </div>
-  <div id="lifeFactorOtherRow" class="hidden flex gap-2 mt-1">
-    <input type="text" id="lifeFactorOtherInput" placeholder="Please specify other lifestyle factor"
-      class="flex-1 px-4 py-2.5 rounded-full bg-white text-[#2c3e2b] font-medium text-sm outline-none shadow-inner border border-[#c1ccab] focus:ring-2 focus:ring-[#4a5e3b]/50" maxlength="40">
-    <button type="button" id="addLifeFactorOtherBtn"
-      class="shrink-0 px-4 py-2.5 rounded-full bg-[#667733] hover:bg-[#556022] text-white font-bold text-sm transition">+ Add</button>
-  </div>
-  <div id="lifeFactorOtherList" class="flex flex-wrap gap-2 mt-1"></div>
-</div>
+            <div class="flex flex-col gap-1.5 md:col-span-2">
+              <div>
+                <label class="text-[11px] font-extrabold tracking-wider text-[#2A1001] uppercase">Lifestyle Factors:</label>
+                <p class="text-[10px] text-[#4a5e3b]/80 italic mt-0.5">Please check all that apply.</p>
+              </div>
+              <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+                <label class="flex items-center gap-2 bg-white border border-[#c1ccab] rounded-full px-4 py-2 text-sm text-[#2c3e2b] font-medium cursor-pointer shadow-inner min-w-0"><input type="checkbox" name="life_factors" value="Smoker" class="lifeFactorCheckbox accent-[#667733] shrink-0"> <span class="break-words">Smoker</span></label>
+                <label class="flex items-center gap-2 bg-white border border-[#c1ccab] rounded-full px-4 py-2 text-sm text-[#2c3e2b] font-medium cursor-pointer shadow-inner min-w-0"><input type="checkbox" name="life_factors" value="Alcohol Consumption" class="lifeFactorCheckbox accent-[#667733] shrink-0"> <span class="break-words">Alcohol Consumption</span></label>
+                <label class="flex items-center gap-2 bg-white border border-[#c1ccab] rounded-full px-4 py-2 text-sm text-[#2c3e2b] font-medium cursor-pointer shadow-inner min-w-0"><input type="checkbox" name="life_factors" value="Regular Exercise" class="lifeFactorCheckbox accent-[#667733] shrink-0"> <span class="break-words">Regular Exercise</span></label>
+                <label class="flex items-center gap-2 bg-white border border-[#c1ccab] rounded-full px-4 py-2 text-sm text-[#2c3e2b] font-medium cursor-pointer shadow-inner min-w-0"><input type="checkbox" name="life_factors" value="Poor Diet" class="lifeFactorCheckbox accent-[#667733] shrink-0"> <span class="break-words">Poor Diet</span></label>
+                <label class="flex items-center gap-2 bg-white border border-[#c1ccab] rounded-full px-4 py-2 text-sm text-[#2c3e2b] font-medium cursor-pointer shadow-inner min-w-0"><input type="checkbox" name="life_factors" value="High Stress" class="lifeFactorCheckbox accent-[#667733] shrink-0"> <span class="break-words">High Stress</span></label>
+                <label class="flex items-center gap-2 bg-white border border-[#c1ccab] rounded-full px-4 py-2 text-sm text-[#2c3e2b] font-medium cursor-pointer shadow-inner min-w-0"><input type="checkbox" id="lifeFactorOtherCheckbox" class="accent-[#667733] shrink-0"> <span class="break-words">Others</span></label>
+                <label class="flex items-center gap-2 bg-white border border-[#c1ccab] rounded-full px-4 py-2 text-sm text-[#2c3e2b] font-medium cursor-pointer shadow-inner min-w-0"><input type="checkbox" id="lifeFactorNoneCheckbox" class="accent-[#667733] shrink-0"> <span class="break-words">None</span></label>
+              </div>
+              <div id="lifeFactorOtherRow" class="hidden flex gap-2 mt-1">
+                <input type="text" id="lifeFactorOtherInput" placeholder="Please specify other lifestyle factor"
+                  class="flex-1 px-4 py-2.5 rounded-full bg-white text-[#2c3e2b] font-medium text-sm outline-none shadow-inner border border-[#c1ccab] focus:ring-2 focus:ring-[#4a5e3b]/50" maxlength="40">
+                <button type="button" id="addLifeFactorOtherBtn"
+                  class="shrink-0 px-4 py-2.5 rounded-full bg-[#667733] hover:bg-[#556022] text-white font-bold text-sm transition">+ Add</button>
+              </div>
+              <div id="lifeFactorOtherList" class="flex flex-wrap gap-2 mt-1"></div>
+            </div>
 
-      <!-- Current Prescriptions -->
-<div id="prescriptionsWrapper" class="flex flex-col gap-1.5 w-full col-span-1 md:col-span-2">
-  <div>
-    <label class="text-[11px] font-extrabold tracking-wider text-[#2A1001] uppercase">Current Prescriptions:</label>
-    <p class="text-[10px] text-[#4a5e3b]/80 italic mt-0.5">(Leave blank if none.)</p>
-  </div>
-  <div id="prescriptionsList" class="flex flex-wrap items-start gap-2 mb-1"></div>
-  <div class="flex flex-col sm:flex-row gap-2 items-stretch">
-    <input type="text" id="medicationNameInput" placeholder="e.g. Ibuprofen"
-      class="flex-1 min-w-0 px-4 py-2.5 rounded-full bg-white text-[#2c3e2b] font-medium text-sm outline-none shadow-inner border border-[#c1ccab] focus:ring-2 focus:ring-[#4a5e3b]/50" maxlength="40">
-    <div class="flex gap-2 items-stretch">
-      <select id="dosageInput" name="dosage"
-        class="w-1/3 min-w-[100px] max-w-[180px] px-4 py-2.5 rounded-full bg-white text-[#2c3e2b] font-medium text-sm outline-none shadow-inner border border-[#c1ccab] focus:ring-2 focus:ring-[#4a5e3b]/50 cursor-pointer">
-        <option value="" selected>Dosage (optional)</option>
-        <option value="5mg">5mg</option>
-        <option value="10mg">10mg</option>
-        <option value="20mg">20mg</option>
-        <option value="25mg">25mg</option>
-        <option value="40mg">40mg</option>
-        <option value="50mg">50mg</option>
-        <option value="75mg">75mg</option>
-        <option value="100mg">100mg</option>
-        <option value="125mg">125mg</option>
-        <option value="200mg">200mg</option>
-        <option value="250mg">250mg</option>
-        <option value="400mg">400mg</option>
-        <option value="500mg">500mg</option>
-        <option value="1g">1g</option>
-        <option value="mcg (Micrograms)">mcg (Micrograms)</option>
-        <option value="mL (Liquid)">mL (Liquid)</option>
-        <option value="Units (Insulin)">Units (Insulin)</option>
-        <option value="Puffs/Sprays">Puffs / Sprays</option>
-        <option value="Drops">Drops</option>
-        <option value="__other__">Other (type in)</option>
-      </select>
-      <button type="button" id="addPrescriptionBtn"
-        class="shrink-0 px-4 py-2.5 rounded-full bg-[#667733] hover:bg-[#556022] text-white font-bold text-sm transition">+ Add</button>
-    </div>
-  </div>
-  <div id="dosageOtherRow" class="hidden gap-2 mt-1">
-    <input type="text" id="dosageOtherInput" maxlength="30"
-      placeholder="Type exact dosage (e.g. 15mg, 2 tablets, twice daily)"
-      class="flex-1 px-4 py-2.5 rounded-full bg-white text-[#2c3e2b] font-medium text-sm outline-none shadow-inner border border-[#c1ccab] focus:ring-2 focus:ring-[#4a5e3b]/50">
-  </div>
-</div>
+            <!-- Current Prescriptions -->
+            <div id="prescriptionsWrapper" class="flex flex-col gap-1.5 w-full col-span-1 md:col-span-2">
+              <div>
+                <label class="text-[11px] font-extrabold tracking-wider text-[#2A1001] uppercase">Current Prescriptions:</label>
+                <p class="text-[10px] text-[#4a5e3b]/80 italic mt-0.5">(Leave blank if none.)</p>
+              </div>
+              <div id="prescriptionsList" class="flex flex-wrap items-start gap-2 mb-1"></div>
+              <div class="flex flex-col sm:flex-row gap-2 items-stretch">
+                <input type="text" id="medicationNameInput" placeholder="e.g. Ibuprofen"
+                  class="flex-1 min-w-0 px-4 py-2.5 rounded-full bg-white text-[#2c3e2b] font-medium text-sm outline-none shadow-inner border border-[#c1ccab] focus:ring-2 focus:ring-[#4a5e3b]/50" maxlength="40">
+                <div class="flex gap-2 items-stretch">
+                  <select id="dosageInput" name="dosage"
+                    class="w-1/3 min-w-[100px] max-w-[180px] px-4 py-2.5 rounded-full bg-white text-[#2c3e2b] font-medium text-sm outline-none shadow-inner border border-[#c1ccab] focus:ring-2 focus:ring-[#4a5e3b]/50 cursor-pointer">
+                    <option value="" selected>Dosage (optional)</option>
+                    <option value="5mg">5mg</option>
+                    <option value="10mg">10mg</option>
+                    <option value="20mg">20mg</option>
+                    <option value="25mg">25mg</option>
+                    <option value="40mg">40mg</option>
+                    <option value="50mg">50mg</option>
+                    <option value="75mg">75mg</option>
+                    <option value="100mg">100mg</option>
+                    <option value="125mg">125mg</option>
+                    <option value="200mg">200mg</option>
+                    <option value="250mg">250mg</option>
+                    <option value="400mg">400mg</option>
+                    <option value="500mg">500mg</option>
+                    <option value="1g">1g</option>
+                    <option value="mcg (Micrograms)">mcg (Micrograms)</option>
+                    <option value="mL (Liquid)">mL (Liquid)</option>
+                    <option value="Units (Insulin)">Units (Insulin)</option>
+                    <option value="Puffs/Sprays">Puffs / Sprays</option>
+                    <option value="Drops">Drops</option>
+                    <option value="__other__">Other (type in)</option>
+                  </select>
+                  <button type="button" id="addPrescriptionBtn"
+                    class="shrink-0 px-4 py-2.5 rounded-full bg-[#667733] hover:bg-[#556022] text-white font-bold text-sm transition">+ Add</button>
+                </div>
+              </div>
+              <div id="dosageOtherRow" class="hidden gap-2 mt-1">
+                <input type="text" id="dosageOtherInput" maxlength="30"
+                  placeholder="Type exact dosage (e.g. 15mg, 2 tablets, twice daily)"
+                  class="flex-1 px-4 py-2.5 rounded-full bg-white text-[#2c3e2b] font-medium text-sm outline-none shadow-inner border border-[#c1ccab] focus:ring-2 focus:ring-[#4a5e3b]/50">
+              </div>
+            </div>
 
             <!-- Allergies -->
             <div class="flex flex-col gap-1.5 md:col-span-2">
@@ -363,28 +361,26 @@
         </div>
 
         <!-- ── Save / Cancel / Edit buttons ── -->
-        <!-- Submit group: shown when editing (first save OR after Edit click) -->
         <div id="submitGroup" class="flex flex-wrap gap-3 items-center justify-center">
           <button type="submit" id="submitBtn"
-            class="z-10 bg-[#D5C04D] hover:bg-[#F6F2DB] text-[#2A1001] font-black text-xl px-12 py-3 rounded-full shadow-md active:scale-95 transition transform">
+            class="z-10 bg-[#D5C04D] hover:bg-[#F6F2DB] text-[#2A1001] font-black text-xl px-12 py-3 rounded-full shadow-md active:scale-95 transition transform cursor-pointer">
             Save Profile
           </button>
-          <!-- Cancel: only visible when editing an already-saved profile -->
-         <button type="button" id="cancelBtn"
-  class="hidden z-10 bg-[#D9534F] hover:bg-[#c9302c] text-white font-black text-xl px-10 py-3 rounded-full shadow-md active:scale-95 transition transform">
-  Cancel
-</button>
+          <button type="button" id="cancelBtn"
+            class="hidden z-10 bg-[#D9534F] hover:bg-[#c9302c] text-white font-black text-xl px-10 py-3 rounded-full shadow-md active:scale-95 transition transform cursor-pointer">
+            Cancel
+          </button>
         </div>
 
         <!-- Edit button: shown after save when form is locked -->
         <button type="button" id="editBtn"
-          class="hidden z-10 bg-[#667733] hover:bg-[#556022] text-white font-black text-xl px-12 py-3 rounded-full shadow-md active:scale-95 transition transform">
+          class="hidden z-10 bg-[#667733] hover:bg-[#556022] text-white font-black text-xl px-12 py-3 rounded-full shadow-md active:scale-95 transition transform cursor-pointer">
           Edit Profile
         </button>
 
       </form>
 
-      <div id="successMessage" class="hidden text-center mt-4 p-4 bg-green-100 border border-green-400 text-green-800 rounded-2xl">
+      <div id="successMessage" class="hidden text-center mt-4 p-4 bg-green-100 border border-green-400 text-green-800 rounded-2xl font-bold">
         Profile Changes Updated Successfully!
       </div>
     </main>
@@ -402,72 +398,28 @@
     const dosageInput      = document.getElementById('dosageInput');
     const dosageOtherRow   = document.getElementById('dosageOtherRow');
     const dosageOtherInput = document.getElementById('dosageOtherInput');
-
-
-    // kapag nag submit na siya
-    if (form) {
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-
-            const birthdayVal = document.getElementById('birthday').value;
-
-            // Gather your other form fields as normal...
-            const formData = {
-                birthday: birthdayVal,
-                // ... other fields
-            };
-
-            try {
-                const response = await fetch('/api/patient-profile', {
-                    method: 'PATCH',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${localStorage.getItem('userToken')}`
-                    },
-                    body: JSON.stringify(formData)
-                });
-
-                if (response.ok) {
-                    console.log('Profile updated successfully!');
-
-                    // INSTANTLY update the booking link across the sidebar without a reload:
-                    if (window.appSocket) {
-                        window.appSocket.emit('profile_updated_client', {
-                            isComplete: Boolean(birthdayVal),
-                            birthday: birthdayVal
-                        });
-                    }
-                }
-            } catch (err) {
-                console.error('Error updating profile:', err);
-            }
-        });
-      }
-
-dosageInput.addEventListener('change', function () {
-  const isOther = this.value === '__other__';
-  dosageOtherRow.classList.toggle('hidden', !isOther);
-  dosageOtherRow.classList.toggle('flex', isOther);
-  if (isOther) dosageOtherInput.focus(); else dosageOtherInput.value = '';
-});
     const successMessage  = document.getElementById('successMessage');
 
-    // Birthday max = today
+    dosageInput.addEventListener('change', function () {
+      const isOther = this.value === '__other__';
+      dosageOtherRow.classList.toggle('hidden', !isOther);
+      dosageOtherRow.classList.toggle('flex', isOther);
+      if (isOther) dosageOtherInput.focus(); else dosageOtherInput.value = '';
+    });
+
     const birthdayInput = document.getElementById('birthday');
     const today = new Date();
     birthdayInput.max = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
 
+    function escapeHtml(str) {
+      return String(str ?? '').replace(/[&<>"']/g, ch => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+      }[ch]));
+    }
 
-    // Escape before ever injecting into innerHTML
-function escapeHtml(str) {
-  return String(str ?? '').replace(/[&<>"']/g, ch => ({
-    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
-  }[ch]));
-}
-// Trim + strip characters that have no business in a name/dosage/allergy field
-function sanitizeInput(str) {
-  return String(str ?? '').trim().replace(/[<>]/g, '').slice(0, 100);
-}
+    function sanitizeInput(str) {
+      return String(str ?? '').trim().replace(/[<>]/g, '').slice(0, 100);
+    }
 
     // ══════════════════════════════════════════════════════
     //  SNAPSHOT — capture & restore full form state for Cancel
@@ -484,7 +436,6 @@ function sanitizeInput(str) {
         addressBarangay: document.getElementById('address-barangay').value,
         phone:           document.getElementById('phone').value,
         pregnancyStatus: document.getElementById('pregnancy-status').value,
-        // Checkboxes
         healthConditions:         [...document.querySelectorAll('.healthConditionCheckbox:checked')].map(cb => cb.value),
         healthConditionOtherChk:  document.getElementById('healthConditionOtherCheckbox').checked,
         healthConditionNoneChk:   document.getElementById('healthConditionNoneCheckbox').checked,
@@ -497,7 +448,6 @@ function sanitizeInput(str) {
         lifeFactorOtherChk:       document.getElementById('lifeFactorOtherCheckbox').checked,
         lifeFactorNoneChk:        document.getElementById('lifeFactorNoneCheckbox').checked,
         lifeFactorOthers:         [...lifeFactorOthers],
-        // Chip arrays (deep copy)
         allergies:     allergies.map(v => v),
         prescriptions: prescriptions.map(rx => ({ ...rx })),
       };
@@ -514,12 +464,10 @@ function sanitizeInput(str) {
       document.getElementById('pregnancy-status').value = s.pregnancyStatus;
       newPassword.value = ''; confirmPassword.value = '';
 
-      // Address dropdowns (values were saved, options still loaded)
       document.getElementById('address-province').value = s.addressProvince;
       document.getElementById('address-city').value     = s.addressCity;
       document.getElementById('address-barangay').value = s.addressBarangay;
 
-      // Health conditions
       document.querySelectorAll('.healthConditionCheckbox').forEach(cb => cb.checked = s.healthConditions.includes(cb.value));
       document.getElementById('healthConditionOtherCheckbox').checked = s.healthConditionOtherChk;
       document.getElementById('healthConditionNoneCheckbox').checked  = s.healthConditionNoneChk;
@@ -527,7 +475,6 @@ function sanitizeInput(str) {
       healthConditionOthers.length = 0; s.healthConditionOthers.forEach(v => healthConditionOthers.push(v));
       healthConditionOtherHandler.render();
 
-      // Surgeries
       document.querySelectorAll('.surgeryCheckbox').forEach(cb => cb.checked = s.surgeries.includes(cb.value));
       document.getElementById('surgeryOtherCheckbox').checked = s.surgeryOtherChk;
       document.getElementById('surgeryNoneCheckbox').checked  = s.surgeryNoneChk;
@@ -535,7 +482,6 @@ function sanitizeInput(str) {
       surgeryOthers.length = 0; s.surgeryOthers.forEach(v => surgeryOthers.push(v));
       surgeryOtherHandler.render();
 
-      // Lifestyle
       document.querySelectorAll('.lifeFactorCheckbox').forEach(cb => cb.checked = s.lifeFactors.includes(cb.value));
       document.getElementById('lifeFactorOtherCheckbox').checked = s.lifeFactorOtherChk;
       document.getElementById('lifeFactorNoneCheckbox').checked  = s.lifeFactorNoneChk;
@@ -543,7 +489,6 @@ function sanitizeInput(str) {
       lifeFactorOthers.length = 0; s.lifeFactorOthers.forEach(v => lifeFactorOthers.push(v));
       lifeFactorOtherHandler.render();
 
-      // Chip lists
       allergies.length = 0;     s.allergies.forEach(v => allergies.push(v));
       prescriptions.length = 0; s.prescriptions.forEach(rx => prescriptions.push({ ...rx }));
       renderAllergies(); renderPrescriptions();
@@ -663,11 +608,10 @@ function sanitizeInput(str) {
     //  FORM LOCK / UNLOCK
     // ══════════════════════════════════════════════════════
     function setFormLocked(locked) {
-      // Text inputs
       ['birthday','secondary-email','address-street','phone',
- 'new-password','confirm-password',
- 'medicationNameInput','allergenInput','dosageOtherInput',
- 'healthConditionOtherInput','surgeryOtherInput','lifeFactorOtherInput'
+       'new-password','confirm-password',
+       'medicationNameInput','allergenInput','dosageOtherInput',
+       'healthConditionOtherInput','surgeryOtherInput','lifeFactorOtherInput'
       ].forEach(id => {
         const el = document.getElementById(id);
         if (!el) return;
@@ -677,7 +621,6 @@ function sanitizeInput(str) {
         el.classList.toggle('cursor-not-allowed', locked);
       });
 
-      // Simple selects
       ['pregnancy-status','dosageInput'].forEach(id => {
         const el = document.getElementById(id);
         if (!el) return;
@@ -686,11 +629,9 @@ function sanitizeInput(str) {
         el.classList.toggle('cursor-not-allowed', locked);
       });
 
-      // Province (always re-enable fully)
       const pEl = document.getElementById('address-province');
       if (pEl) { pEl.disabled = locked; pEl.classList.toggle('opacity-60', locked); pEl.classList.toggle('cursor-not-allowed', locked); }
 
-      // City & Barangay: unlock only if options are already loaded
       ['address-city','address-barangay'].forEach(id => {
         const el = document.getElementById(id);
         if (!el) return;
@@ -699,7 +640,6 @@ function sanitizeInput(str) {
         el.classList.toggle('cursor-not-allowed', locked);
       });
 
-      // Add buttons
       ['addPrescriptionBtn','addAllergyBtn','addHealthConditionOtherBtn','addSurgeryOtherBtn','addLifeFactorOtherBtn'].forEach(id => {
         const el = document.getElementById(id);
         if (!el) return;
@@ -708,46 +648,38 @@ function sanitizeInput(str) {
         el.classList.toggle('pointer-events-none', locked);
       });
 
-      // Checkboxes
       document.querySelectorAll('.healthConditionCheckbox,.surgeryCheckbox,.lifeFactorCheckbox').forEach(cb => { cb.disabled = locked; });
       ['healthConditionOtherCheckbox','surgeryOtherCheckbox','lifeFactorOtherCheckbox',
        'healthConditionNoneCheckbox','surgeryNoneCheckbox','lifeFactorNoneCheckbox'
       ].forEach(id => { const el = document.getElementById(id); if (el) el.disabled = locked; });
 
-      // Chip list containers
       ['prescriptionsList','allergiesList','healthConditionOtherList','surgeryOtherList','lifeFactorOtherList'].forEach(id => {
         const el = document.getElementById(id);
         if (el) el.style.pointerEvents = locked ? 'none' : '';
       });
 
-      // PDF zone
       const pdfZone = document.getElementById('pdfDropZone');
       if (pdfZone) { pdfZone.style.pointerEvents = locked ? 'none' : ''; pdfZone.style.opacity = locked ? '0.55' : ''; pdfZone.style.cursor = locked ? 'not-allowed' : ''; }
       const pdfList = document.getElementById('uploadedFilesList');
       if (pdfList) pdfList.style.pointerEvents = locked ? 'none' : '';
 
-      // Button visibility
       submitGroup.classList.toggle('hidden', locked);
       editBtn.classList.toggle('hidden', !locked);
-      // Cancel only shows when editing a previously-saved profile (formSnapshot exists)
       cancelBtn.classList.toggle('hidden', locked || !formSnapshot);
     }
 
     editBtn.addEventListener('click', () => {
-      takeSnapshot();           // save current state so Cancel can restore it
+      takeSnapshot();
       setFormLocked(false);
       submitBtn.textContent = 'Update Changes';
     });
 
     cancelBtn.addEventListener('click', () => {
-      restoreSnapshot();        // revert everything
+      restoreSnapshot();
       setFormLocked(true);
       submitBtn.textContent = 'Update Changes';
     });
 
-    // ══════════════════════════════════════════════════════
-    //  PREGNANCY / LAYOUT
-    // ══════════════════════════════════════════════════════
     function updateMedicalLayout() {
       const sex = (document.getElementById('sex').value || '').trim().toLowerCase();
       const pregnancyWrapper     = document.getElementById('pregnancyStatusWrapper');
@@ -767,36 +699,32 @@ function sanitizeInput(str) {
     let allergies     = [];
     let prescriptions = [];
 
-  function renderChipList(containerId, items) {
-  const el = document.getElementById(containerId);
-  if (!el) return;
-  el.innerHTML = items.length === 0
-    ? `<p class="text-xs text-[#2c3e2b]/50 italic">None added yet.</p>`
-    : items.map((item, i) => `
-        <span class="inline-flex items-center gap-2 bg-white border border-[#c1ccab] rounded-full px-4 py-1.5 text-sm text-[#2c3e2b] font-medium shadow-inner">
-          ${escapeHtml(item)}
-          <button type="button" class="removeChipBtn text-[#2c3e2b]/50 hover:text-red-600 font-bold" data-container="${containerId}" data-index="${i}">&times;</button>
-        </span>`).join('');
-}
+    function renderChipList(containerId, items) {
+      const el = document.getElementById(containerId);
+      if (!el) return;
+      el.innerHTML = items.length === 0
+        ? `<p class="text-xs text-[#2c3e2b]/50 italic">None added yet.</p>`
+        : items.map((item, i) => `
+            <span class="inline-flex items-center gap-2 bg-white border border-[#c1ccab] rounded-full px-4 py-1.5 text-sm text-[#2c3e2b] font-medium shadow-inner">
+              ${escapeHtml(item)}
+              <button type="button" class="removeChipBtn text-[#2c3e2b]/50 hover:text-red-600 font-bold cursor-pointer" data-container="${containerId}" data-index="${i}">&times;</button>
+            </span>`).join('');
+    }
 
     function renderAllergies() { renderChipList('allergiesList', allergies); }
-
 
     function renderPrescriptions() {
       const el = document.getElementById('prescriptionsList');
       if (!el) return;
       el.innerHTML = prescriptions.length === 0
-  ? `<p class="text-xs text-[#2c3e2b]/50 italic">None added yet.</p>`
-  : prescriptions.map((rx, i) => `
-      <div class="inline-flex items-center gap-3 bg-white border border-[#c1ccab] rounded-full px-3 py-1 shadow-inner w-fit">
-        <span class="text-sm text-[#2A1001] font-medium">${escapeHtml(rx.medication_name)}${rx.dosage ? ` — ${escapeHtml(rx.dosage)}` : ''}</span>
-        <button type="button" class="removePrescriptionBtn text-[#2c3e2b]/50 hover:text-red-600 font-bold" data-index="${i}">&times;</button>
-      </div>`).join('');
+        ? `<p class="text-xs text-[#2c3e2b]/50 italic">None added yet.</p>`
+        : prescriptions.map((rx, i) => `
+            <div class="inline-flex items-center gap-3 bg-white border border-[#c1ccab] rounded-full px-3 py-1 shadow-inner w-fit">
+              <span class="text-sm text-[#2A1001] font-medium">${escapeHtml(rx.medication_name)}${rx.dosage ? ` — ${escapeHtml(rx.dosage)}` : ''}</span>
+              <button type="button" class="removePrescriptionBtn text-[#2c3e2b]/50 hover:text-red-600 font-bold cursor-pointer" data-index="${i}">&times;</button>
+            </div>`).join('');
     }
 
-    // ══════════════════════════════════════════════════════
-    //  "OTHER" CHIP-LIST HELPER
-    // ══════════════════════════════════════════════════════
     function setupOtherChipList({ checkboxId, rowId, inputId, addBtnId, listId, items }) {
       const checkbox = document.getElementById(checkboxId);
       const row      = document.getElementById(rowId);
@@ -805,23 +733,23 @@ function sanitizeInput(str) {
       const list     = document.getElementById(listId);
 
       const render = () => {
-  list.innerHTML = items.map((item, i) => `
-    <span class="inline-flex items-center gap-2 bg-white border border-[#c1ccab] rounded-full px-4 py-1.5 text-sm text-[#2c3e2b] font-medium shadow-inner">
-      ${escapeHtml(item)}
-      <button type="button" class="removeOtherChipBtn text-[#2c3e2b]/50 hover:text-red-600 font-bold" data-list="${listId}" data-index="${i}">&times;</button>
-    </span>`).join('');
-};
+        list.innerHTML = items.map((item, i) => `
+          <span class="inline-flex items-center gap-2 bg-white border border-[#c1ccab] rounded-full px-4 py-1.5 text-sm text-[#2c3e2b] font-medium shadow-inner">
+            ${escapeHtml(item)}
+            <button type="button" class="removeOtherChipBtn text-[#2c3e2b]/50 hover:text-red-600 font-bold cursor-pointer" data-list="${listId}" data-index="${i}">&times;</button>
+          </span>`).join('');
+      };
 
       checkbox.addEventListener('change', function () {
         row.classList.toggle('hidden', !this.checked);
         if (this.checked) input.focus(); else input.value = '';
       });
 
-     const addValue = () => {
-  const value = sanitizeInput(input.value);
-  if (!value) return;
-  items.push(value); input.value = ''; render();
-};
+      const addValue = () => {
+        const value = sanitizeInput(input.value);
+        if (!value) return;
+        items.push(value); input.value = ''; render();
+      };
 
       addBtn.addEventListener('click', addValue);
       input.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); e.stopPropagation(); addValue(); } });
@@ -837,7 +765,6 @@ function sanitizeInput(str) {
     const surgeryOtherHandler         = setupOtherChipList({ checkboxId:'surgeryOtherCheckbox',         rowId:'surgeryOtherRow',         inputId:'surgeryOtherInput',         addBtnId:'addSurgeryOtherBtn',         listId:'surgeryOtherList',         items:surgeryOthers });
     const lifeFactorOtherHandler      = setupOtherChipList({ checkboxId:'lifeFactorOtherCheckbox',      rowId:'lifeFactorOtherRow',      inputId:'lifeFactorOtherInput',      addBtnId:'addLifeFactorOtherBtn',      listId:'lifeFactorOtherList',      items:lifeFactorOthers });
 
-    // "None" logic for all three sections
     function setupNoneCheckbox({ noneId, checkboxSel, otherCheckboxId, otherRowId, otherHandler, otherItems }) {
       const noneCb = document.getElementById(noneId);
       noneCb.addEventListener('change', function () {
@@ -856,9 +783,6 @@ function sanitizeInput(str) {
     setupNoneCheckbox({ noneId:'surgeryNoneCheckbox',         checkboxSel:'.surgeryCheckbox',         otherCheckboxId:'surgeryOtherCheckbox',         otherRowId:'surgeryOtherRow',         otherHandler:surgeryOtherHandler,         otherItems:surgeryOthers });
     setupNoneCheckbox({ noneId:'lifeFactorNoneCheckbox',      checkboxSel:'.lifeFactorCheckbox',      otherCheckboxId:'lifeFactorOtherCheckbox',      otherRowId:'lifeFactorOtherRow',      otherHandler:lifeFactorOtherHandler,      otherItems:lifeFactorOthers });
 
-    // ══════════════════════════════════════════════════════
-    //  GETTERS & SETTERS
-    // ══════════════════════════════════════════════════════
     const getSelectedHealthConditions = () => [...Array.from(document.querySelectorAll('.healthConditionCheckbox:checked')).map(cb=>cb.value), ...healthConditionOthers];
     const getSelectedSurgeries        = () => [...Array.from(document.querySelectorAll('.surgeryCheckbox:checked')).map(cb=>cb.value), ...surgeryOthers];
     const getSelectedLifeFactors      = () => [...Array.from(document.querySelectorAll('.lifeFactorCheckbox:checked')).map(cb=>cb.value), ...lifeFactorOthers];
@@ -871,11 +795,11 @@ function sanitizeInput(str) {
         if (cb) cb.checked = true;
         else if (val && !predefined.includes(val)) healthConditionOthers.push(val);
       });
-      // DB FIX: mark "Others" checkbox as checked if custom values were loaded
       if (healthConditionOthers.length > 0) document.getElementById('healthConditionOtherCheckbox').checked = true;
       if (values.length === 0) document.getElementById('healthConditionNoneCheckbox').checked = true;
       healthConditionOtherHandler.render();
     }
+
     function setSurgeries(values) {
       if (!Array.isArray(values)) return;
       const predefined = Array.from(document.querySelectorAll('.surgeryCheckbox')).map(cb=>cb.value);
@@ -884,11 +808,11 @@ function sanitizeInput(str) {
         if (cb) cb.checked = true;
         else if (val && !predefined.includes(val)) surgeryOthers.push(val);
       });
-      // DB FIX: mark "Others" checkbox as checked if custom values were loaded
       if (surgeryOthers.length > 0) document.getElementById('surgeryOtherCheckbox').checked = true;
       if (values.length === 0) document.getElementById('surgeryNoneCheckbox').checked = true;
       surgeryOtherHandler.render();
     }
+
     function setLifeFactors(values) {
       if (!Array.isArray(values)) return;
       const predefined = Array.from(document.querySelectorAll('.lifeFactorCheckbox')).map(cb=>cb.value);
@@ -897,35 +821,31 @@ function sanitizeInput(str) {
         if (cb) cb.checked = true;
         else if (val && !predefined.includes(val)) lifeFactorOthers.push(val);
       });
-      // DB FIX: mark "Others" checkbox as checked if custom values were loaded
       if (lifeFactorOthers.length > 0) document.getElementById('lifeFactorOtherCheckbox').checked = true;
       if (values.length === 0) document.getElementById('lifeFactorNoneCheckbox').checked = true;
       lifeFactorOtherHandler.render();
     }
 
-    // ══════════════════════════════════════════════════════
-    //  ADD BUTTONS
-    // ══════════════════════════════════════════════════════
- document.getElementById('addAllergyBtn').addEventListener('click', () => {
-  const input = document.getElementById('allergenInput');
-  const val   = sanitizeInput(input.value);
-  if (!val) return;
-  allergies.push(val); input.value = ''; renderAllergies();
-});
+    document.getElementById('addAllergyBtn').addEventListener('click', () => {
+      const input = document.getElementById('allergenInput');
+      const val   = sanitizeInput(input.value);
+      if (!val) return;
+      allergies.push(val); input.value = ''; renderAllergies();
+    });
 
-document.getElementById('addPrescriptionBtn').addEventListener('click', () => {
-  const n = document.getElementById('medicationNameInput');
-  const d = document.getElementById('dosageInput');
-  const name = sanitizeInput(n.value);
-  if (!name) return;
-  const dosageValue = d.value === '__other__'
-    ? sanitizeInput(dosageOtherInput.value)
-    : d.value;
-  prescriptions.push({ medication_name: name, dosage: dosageValue });
-  n.value = ''; d.value = ''; dosageOtherInput.value = '';
-  dosageOtherRow.classList.add('hidden'); dosageOtherRow.classList.remove('flex');
-  renderPrescriptions();
-});
+    document.getElementById('addPrescriptionBtn').addEventListener('click', () => {
+      const n = document.getElementById('medicationNameInput');
+      const d = document.getElementById('dosageInput');
+      const name = sanitizeInput(n.value);
+      if (!name) return;
+      const dosageValue = d.value === '__other__'
+        ? sanitizeInput(dosageOtherInput.value)
+        : d.value;
+      prescriptions.push({ medication_name: name, dosage: dosageValue });
+      n.value = ''; d.value = ''; dosageOtherInput.value = '';
+      dosageOtherRow.classList.add('hidden'); dosageOtherRow.classList.remove('flex');
+      renderPrescriptions();
+    });
 
     ['allergenInput','medicationNameInput'].forEach(id => {
       document.getElementById(id).addEventListener('keydown', e => {
@@ -935,9 +855,87 @@ document.getElementById('addPrescriptionBtn').addEventListener('click', () => {
     });
 
     // ══════════════════════════════════════════════════════
-    //  REMOVE CHIPS
+    //  PDF UPLOAD & PERSISTENCE
     // ══════════════════════════════════════════════════════
-    document.addEventListener('click', e => {
+    let uploadedPdfs = [];
+
+    function renderPdfList() {
+      const list = document.getElementById('uploadedFilesList');
+      if (uploadedPdfs.length === 0) { list.innerHTML = ''; return; }
+      list.innerHTML = uploadedPdfs.map((f, i) => `
+        <div class="flex items-center justify-between bg-white border border-[#c1ccab] rounded-xl px-4 py-2.5 shadow-inner w-full gap-2">
+          <div class="flex items-center gap-2 min-w-0 flex-1">
+            <svg class="w-4 h-4 text-red-500 shrink-0" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M7 2a2 2 0 00-2 2v16a2 2 0 002 2h10a2 2 0 002-2V9.414A2 2 0 0018.414 8L14 3.586A2 2 0 0012.586 3H7zm5 1.5L17.5 9H13a1 1 0 01-1-1V3.5z"/>
+            </svg>
+            <span class="text-sm text-[#2c3e2b] font-medium truncate">${escapeHtml(f.name)}</span>
+            ${f.file_url ? `<a href="${escapeHtml(f.file_url)}" target="_blank" rel="noopener noreferrer" class="text-xs text-[#667733] hover:underline font-bold shrink-0 ml-1"><i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i> View</a>` : ''}
+          </div>
+          <span class="shrink-0 text-xs font-semibold ${f.status === 'uploading' ? 'text-yellow-600' : f.status === 'uploaded' ? 'text-green-600' : 'text-red-500'}">
+            ${f.status === 'uploading' ? '⏳ Uploading…' : f.status === 'uploaded' ? '✅ Uploaded' : `❌ ${escapeHtml(f.reason || 'Failed')}`}
+          </span>
+          <button type="button" class="removePdfBtn shrink-0 text-[#2c3e2b]/40 hover:text-red-600 font-bold text-xl leading-none ml-1 cursor-pointer" data-index="${i}">&times;</button>
+        </div>`).join('');
+    }
+
+    document.getElementById('pdfDropZone').addEventListener('click', () => document.getElementById('medical-pdf-upload').click());
+
+    const MAX_FILE_SIZE_MB = 10;
+    const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
+    const MAX_TOTAL_SIZE_MB = 50;
+    const MAX_TOTAL_SIZE_BYTES = MAX_TOTAL_SIZE_MB * 1024 * 1024;
+
+    document.getElementById('medical-pdf-upload').addEventListener('change', async function (e) {
+      const incoming = Array.from(e.target.files);
+      if (!incoming.length) return;
+
+      const token = localStorage.getItem('userToken');
+      const startIdx = uploadedPdfs.length;
+
+      for (const f of incoming) {
+        const isPdfExt  = /\.pdf$/i.test(f.name);
+        const isPdfMime = f.type === 'application/pdf';
+        if (!isPdfExt || !isPdfMime) {
+          uploadedPdfs.push({ name: f.name, status: 'failed', reason: 'Not a valid PDF file' });
+          continue;
+        }
+        if (f.size > MAX_FILE_SIZE_BYTES) {
+          uploadedPdfs.push({ name: f.name, status: 'failed', reason: `Exceeds ${MAX_FILE_SIZE_MB}MB limit` });
+          continue;
+        }
+        uploadedPdfs.push({ name: f.name, status: 'uploading', file: f, size: f.size });
+      }
+      renderPdfList();
+
+      for (let i = startIdx; i < uploadedPdfs.length; i++) {
+        const entry = uploadedPdfs[i];
+        if (entry.status !== 'uploading') continue;
+
+        const fd = new FormData();
+        fd.append('medical_pdf', entry.file);
+        try {
+          const res = await fetch('/api/patient-profile/medical-pdf', {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` },
+            body: fd
+          });
+          if (!res.ok) throw new Error();
+          const result = await res.json();
+          entry.status = 'uploaded';
+          entry.file_url = result.file_url;
+          entry.document_id = result.document_id;
+        } catch {
+          entry.status = 'failed';
+          entry.reason = 'Upload failed';
+        }
+        delete entry.file;
+        renderPdfList();
+      }
+
+      e.target.value = '';
+    });
+
+    document.addEventListener('click', async e => {
       if (e.target.classList.contains('removeChipBtn')) {
         const i = Number(e.target.dataset.index);
         if (e.target.dataset.container === 'allergiesList') { allergies.splice(i,1); renderAllergies(); }
@@ -952,101 +950,24 @@ document.getElementById('addPrescriptionBtn').addEventListener('click', () => {
         if (e.target.dataset.list === 'lifeFactorOtherList')      lifeFactorOtherHandler.remove(i);
       }
       if (e.target.classList.contains('removePdfBtn')) {
-        if (!editBtn.classList.contains('hidden')) return; // form is locked
-        uploadedPdfs.splice(Number(e.target.dataset.index), 1);
+        const idx = Number(e.target.dataset.index);
+        const item = uploadedPdfs[idx];
+        if (item && item.document_id) {
+          try {
+            const token = localStorage.getItem('userToken');
+            await fetch(`/api/patient-profile/medical-pdf/${item.document_id}`, {
+              method: 'DELETE',
+              headers: { 'Authorization': `Bearer ${token}` }
+            });
+          } catch (err) {
+            console.warn('PDF delete error:', err);
+          }
+        }
+        uploadedPdfs.splice(idx, 1);
         renderPdfList();
       }
     });
 
-    // ══════════════════════════════════════════════════════
-    //  PDF UPLOAD — multiple files, stacked list
-    // ══════════════════════════════════════════════════════
-    let uploadedPdfs = [];
-
-    function renderPdfList() {
-  const list = document.getElementById('uploadedFilesList');
-  if (uploadedPdfs.length === 0) { list.innerHTML = ''; return; }
-  list.innerHTML = uploadedPdfs.map((f, i) => `
-    <div class="flex items-center justify-between bg-white border border-[#c1ccab] rounded-xl px-4 py-2.5 shadow-inner w-full gap-2">
-      <div class="flex items-center gap-2 min-w-0 flex-1">
-        <svg class="w-4 h-4 text-red-500 shrink-0" fill="currentColor" viewBox="0 0 24 24">
-          <path d="M7 2a2 2 0 00-2 2v16a2 2 0 002 2h10a2 2 0 002-2V9.414A2 2 0 0018.414 8L14 3.586A2 2 0 0012.586 3H7zm5 1.5L17.5 9H13a1 1 0 01-1-1V3.5z"/>
-        </svg>
-        <span class="text-sm text-[#2c3e2b] font-medium truncate">${escapeHtml(f.name)}</span>
-      </div>
-      <span class="shrink-0 text-xs font-semibold ${f.status === 'uploading' ? 'text-yellow-600' : f.status === 'uploaded' ? 'text-green-600' : 'text-red-500'}">
-        ${f.status === 'uploading' ? '⏳ Uploading…' : f.status === 'uploaded' ? '✅ Uploaded' : `❌ ${escapeHtml(f.reason || 'Failed')}`}
-      </span>
-      <button type="button" class="removePdfBtn shrink-0 text-[#2c3e2b]/40 hover:text-red-600 font-bold text-xl leading-none ml-1" data-index="${i}">&times;</button>
-    </div>`).join('');
-}
-    document.getElementById('pdfDropZone').addEventListener('click', () => document.getElementById('medical-pdf-upload').click());
-
-const MAX_FILE_SIZE_MB = 10;
-const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
-const MAX_TOTAL_SIZE_MB = 50; // total across all files combined
-const MAX_TOTAL_SIZE_BYTES = MAX_TOTAL_SIZE_MB * 1024 * 1024;
-
-
-document.getElementById('medical-pdf-upload').addEventListener('change', async function (e) {
-  const incoming = Array.from(e.target.files);
-  if (!incoming.length) return;
-
-  const token = localStorage.getItem('userToken');
-
-  const currentTotalBytes = uploadedPdfs
-    .filter(f => f.status !== 'failed')
-    .reduce((sum, f) => sum + (f.size || 0), 0);
-
-  const startIdx = uploadedPdfs.length;   // ← this line was missing
-
-  for (const f of incoming) {
-    const isPdfExt  = /\.pdf$/i.test(f.name);
-    const isPdfMime = f.type === 'application/pdf';
-    if (!isPdfExt || !isPdfMime) {
-      uploadedPdfs.push({ name: f.name, status: 'failed', reason: 'Not a valid PDF file' });
-      continue;
-    }
-    if (f.size > MAX_FILE_SIZE_BYTES) {
-      uploadedPdfs.push({ name: f.name, status: 'failed', reason: `Exceeds ${MAX_FILE_SIZE_MB}MB limit` });
-      continue;
-    }
-    if (currentTotalBytes + f.size > MAX_TOTAL_SIZE_BYTES) {
-      uploadedPdfs.push({ name: f.name, status: 'failed', reason: `Would exceed ${MAX_TOTAL_SIZE_MB}MB total limit` });
-      continue;
-    }
-    uploadedPdfs.push({ name: f.name, status: 'uploading', file: f, size: f.size });
-  }
-  renderPdfList();
-
-  // Upload only the ones marked 'uploading'
-  for (let i = startIdx; i < uploadedPdfs.length; i++) {
-    const entry = uploadedPdfs[i];
-    if (entry.status !== 'uploading') continue;
-
-    const fd = new FormData();
-    fd.append('medical_pdf', entry.file);
-    try {
-      const res = await fetch('/api/patient-profile/medical-pdf', {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` },
-        body: fd
-      });
-      if (!res.ok) throw new Error();
-      entry.status = 'uploaded';
-    } catch {
-      entry.status = 'failed';
-      entry.reason = 'Upload failed';
-    }
-    delete entry.file;
-    renderPdfList();
-  }
-
-  e.target.value = '';
-});
-    // ══════════════════════════════════════════════════════
-    //  VALIDATION HELPERS
-    // ══════════════════════════════════════════════════════
     phoneInput.addEventListener('input', function () { this.value = this.value.replace(/\D/g,'').slice(0,11); });
     confirmPassword.addEventListener('input', function () {
       this.setCustomValidity(newPassword.value && this.value && newPassword.value !== this.value ? 'Passwords do not match.' : '');
@@ -1091,8 +1012,18 @@ document.getElementById('medical-pdf-upload').addEventListener('change', async f
         renderAllergies();
         renderPrescriptions();
 
+        // PERSISTENCE FIX: Load saved medical PDF documents from database
+        if (Array.isArray(data.patient_documents)) {
+          uploadedPdfs = data.patient_documents.map(doc => ({
+            document_id: doc.document_id,
+            name: doc.file_url.split('/').pop().replace(/^\d+-\d+-/, ''),
+            file_url: doc.file_url,
+            status: 'uploaded'
+          }));
+          renderPdfList();
+        }
+
         if (data.birthday) {
-          // Take initial snapshot AFTER loading — this is the baseline for Cancel
           takeSnapshot();
           setFormLocked(true);
           submitBtn.textContent = 'Update Changes';
@@ -1147,7 +1078,7 @@ document.getElementById('medical-pdf-upload').addEventListener('change', async f
         if (!res.ok) { const err = await res.json(); throw new Error(err.message || 'Failed to update profile'); }
 
         newPassword.value = ''; confirmPassword.value = '';
-        takeSnapshot();           // update baseline snapshot to newly saved state
+        takeSnapshot();
         setFormLocked(true);
         submitBtn.textContent = 'Update Changes';
         successMessage.classList.remove('hidden');
@@ -1159,9 +1090,6 @@ document.getElementById('medical-pdf-upload').addEventListener('change', async f
       }
     });
 
-    // ══════════════════════════════════════════════════════
-    //  INIT
-    // ══════════════════════════════════════════════════════
     document.addEventListener('DOMContentLoaded', () => {
       renderAllergies();
       renderPrescriptions();

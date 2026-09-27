@@ -23,58 +23,160 @@ const upload = multer({
 
 function registerPatientRecordsRoutes(app, db) {
 
-    // PATCH /api/appointments/:id/notes — save dentist notes for the
-    // currently ongoing session. Only allowed while the appointment is
-    // approved AND queue_status is 'ongoing'.
+    // GET /api/patients — Retrieve all patient records for staff/dentists/admins
+    app.get('/api/patients', authenticateToken, async (req, res) => {
+        if (!['employee', 'admin'].includes(req.user.role)) {
+            return res.status(403).json({ message: 'Not authorized' });
+        }
+
+        try {
+            // Try stored procedure first
+            let patients = [];
+            try {
+                const [rows] = await db.query('CALL sp_get_all_patient_records()');
+                if (rows && rows[0]) {
+                    patients = rows[0].map(r => {
+                        const record = r.patient_record;
+                        return typeof record === 'string' ? JSON.parse(record) : record;
+                    });
+                }
+            } catch (spErr) {
+                console.warn('SP sp_get_all_patient_records fallback to query:', spErr.message);
+                
+                // Comprehensive fallback query
+                const [pRows] = await db.query(`
+                    SELECT 
+                        u.user_id AS patient_id,
+                        u.public_id,
+                        u.first_name,
+                        u.last_name,
+                        u.email,
+                        u.phone,
+                        u.sex,
+                        pp.birthday,
+                        pp.civil_status,
+                        pp.secondary_email,
+                        pp.address,
+                        pp.address_street,
+                        pp.address_barangay,
+                        pp.address_city,
+                        pp.address_province,
+                        pp.pregnancy_status
+                    FROM users u
+                    JOIN patient_profiles pp ON pp.patient_id = u.user_id
+                    WHERE u.role = 'patient'
+                    ORDER BY u.user_id ASC
+                `);
+
+                for (const p of pRows) {
+                    const [conditions] = await db.query('SELECT description FROM health_conditions WHERE patient_id = ?', [p.patient_id]).catch(() => [[]]);
+                    const [surgeries] = await db.query('SELECT description FROM surgeries WHERE patient_id = ?', [p.patient_id]).catch(() => [[]]);
+                    const [lifeFactors] = await db.query('SELECT description FROM life_factors WHERE patient_id = ?', [p.patient_id]).catch(() => [[]]);
+                    const [allergies] = await db.query('SELECT allergen FROM allergies WHERE patient_id = ?', [p.patient_id]).catch(() => [[]]);
+                    const [prescriptions] = await db.query('SELECT medication_name, dosage FROM prescriptions WHERE patient_id = ?', [p.patient_id]).catch(() => [[]]);
+                    const [xrays] = await db.query('SELECT xray_id, appointment_id, file_url FROM xrays WHERE patient_id = ?', [p.patient_id]).catch(() => [[]]);
+                    const [docs] = await db.query('SELECT document_id, file_url, uploaded_at FROM patient_documents WHERE patient_id = ?', [p.patient_id]).catch(() => [[]]);
+                    
+                    const [[lastVisitRow]] = await db.query(`
+                        SELECT MAX(appointment_date) AS last_visit FROM appointments 
+                        WHERE patient_id = ? AND appointment_status = 'completed'
+                    `, [p.patient_id]).catch(() => [[{ last_visit: null }]]);
+
+                    const [[ongoing]] = await db.query(`
+                        SELECT a.appointment_id, a.appointment_date, s.label AS service_label, a.dentist_note, a.patient_note
+                        FROM appointments a
+                        JOIN services s ON a.service_id = s.service_id
+                        WHERE a.patient_id = ? AND a.appointment_status = 'approved' AND a.queue_status = 'ongoing'
+                        ORDER BY a.time_slot DESC LIMIT 1
+                    `, [p.patient_id]).catch(() => [[null]]);
+
+                    const [pastAppts] = await db.query(`
+                        SELECT a.appointment_id, a.appointment_date, s.label AS service_label, a.dentist_note, a.patient_note
+                        FROM appointments a
+                        JOIN services s ON a.service_id = s.service_id
+                        WHERE a.patient_id = ? AND a.appointment_status = 'completed'
+                        ORDER BY a.appointment_date DESC
+                    `, [p.patient_id]).catch(() => [[]]);
+
+                    patients.push({
+                        ...p,
+                        health_conditions: conditions,
+                        surgeries: surgeries,
+                        life_factors: lifeFactors,
+                        allergies: allergies,
+                        prescriptions: prescriptions,
+                        xrays: xrays,
+                        patient_documents: docs,
+                        last_visit: lastVisitRow ? lastVisitRow.last_visit : null,
+                        ongoing_appointment: ongoing || null,
+                        past_appointments: pastAppts
+                    });
+                }
+            }
+
+            res.json(patients);
+        } catch (err) {
+            console.error('Load all patient records error:', err);
+            res.status(500).json({ message: 'Internal Server Error' });
+        }
+    });
+
+    // GET /api/patients/:id — Retrieve single detailed patient record
+    app.get('/api/patients/:id', authenticateToken, async (req, res) => {
+        if (!['employee', 'admin'].includes(req.user.role)) {
+            return res.status(403).json({ message: 'Not authorized' });
+        }
+
+        const patientId = Number(req.params.id);
+        if (!Number.isInteger(patientId)) {
+            return res.status(400).json({ message: 'Invalid patient ID' });
+        }
+
+        try {
+            const [rows] = await db.query('CALL sp_get_patient_record(?)', [patientId]);
+            if (rows && rows[0] && rows[0][0]) {
+                const record = rows[0][0].patient_record;
+                return res.json(typeof record === 'string' ? JSON.parse(record) : record);
+            }
+
+            return res.status(404).json({ message: 'Patient not found' });
+        } catch (err) {
+            console.error('Fetch patient record error:', err);
+            res.status(500).json({ message: 'Internal Server Error' });
+        }
+    });
+
+    // PATCH /api/appointments/:id/notes — save dentist notes for the ongoing session
     app.patch('/api/appointments/:id/notes', authenticateToken, async (req, res) => {
         if (!['employee', 'admin'].includes(req.user.role)) {
             return res.status(403).json({ message: 'Not authorized' });
         }
 
         const { dentist_note } = req.body;
-        if (typeof dentist_note !== 'string') {
-            return res.status(400).json({ message: 'dentist_note is required' });
-        }
-
-        const appointmentId = req.params.id;
+        const appointmentId = Number(req.params.id);
 
         try {
-            const [apptRows] = await db.query(
-                `SELECT appointment_status, queue_status
-                 FROM appointments
-                 WHERE appointment_id = ?`,
-                [appointmentId]
-            );
-
-            if (apptRows.length === 0) {
-                return res.status(404).json({ message: 'Appointment not found' });
-            }
-            if (apptRows[0].appointment_status !== 'approved' || apptRows[0].queue_status !== 'ongoing') {
-                return res.status(409).json({ message: 'This appointment does not have an active session' });
-            }
-
             await db.query(
                 'UPDATE appointments SET dentist_note = ? WHERE appointment_id = ?',
                 [dentist_note, appointmentId]
             );
 
-            res.json({ message: 'Notes saved successfully' });
+            res.json({ message: 'Dentist notes saved successfully' });
         } catch (err) {
             console.error('Save dentist notes error:', err);
             res.status(500).json({ message: 'Internal Server Error' });
         }
     });
 
-    // POST /api/appointments/:id/xrays — upload one or more x-ray images for
-    // the currently ongoing session.
+    // POST /api/appointments/:id/xrays — upload X-ray images
     app.post('/api/appointments/:id/xrays',
         authenticateToken,
         async (req, res, next) => {
-            if (req.user.role !== 'employee') {
-                return res.status(403).json({ message: 'Only employees can upload X-rays' });
+            if (!['employee', 'admin'].includes(req.user.role)) {
+                return res.status(403).json({ message: 'Only authorized employees can upload X-rays' });
             }
 
-            const appointmentId = req.params.id;
+            const appointmentId = Number(req.params.id);
 
             try {
                 const [apptRows] = await db.query(
@@ -86,9 +188,6 @@ function registerPatientRecordsRoutes(app, db) {
 
                 if (apptRows.length === 0) {
                     return res.status(404).json({ message: 'Appointment not found' });
-                }
-                if (apptRows[0].appointment_status !== 'approved' || apptRows[0].queue_status !== 'ongoing') {
-                    return res.status(409).json({ message: 'This appointment does not have an active session' });
                 }
 
                 req.xrayPatientId = apptRows[0].patient_id;
@@ -104,7 +203,7 @@ function registerPatientRecordsRoutes(app, db) {
                 return res.status(400).json({ message: 'No X-ray files were uploaded' });
             }
 
-            const appointmentId = req.params.id;
+            const appointmentId = Number(req.params.id);
 
             try {
                 const created = [];
@@ -114,14 +213,12 @@ function registerPatientRecordsRoutes(app, db) {
                     let fileUrl;
 
                     if (isVercel) {
-                        // --- PRODUCTION (Vercel): Upload to Vercel Blob ---
                         const blob = await put(`xrays/${filename}`, file.buffer, {
                             access: 'public',
                             contentType: file.mimetype,
                         });
                         fileUrl = blob.url;
                     } else {
-                        // --- LOCAL DEVELOPMENT: Write to local disk ---
                         fs.mkdirSync(xrayUploadDir, { recursive: true });
                         const localPath = path.join(xrayUploadDir, filename);
                         fs.writeFileSync(localPath, file.buffer);
@@ -148,40 +245,28 @@ function registerPatientRecordsRoutes(app, db) {
         }
     );
 
-    // DELETE /api/xrays/:xrayId — remove an x-ray uploaded during the
-    // current, still-ongoing session.
+    // DELETE /api/xrays/:xrayId — delete an X-ray
     app.delete('/api/xrays/:xrayId', authenticateToken, async (req, res) => {
-        if (req.user.role !== 'employee') {
-            return res.status(403).json({ message: 'Only employees can delete X-rays' });
+        if (!['employee', 'admin'].includes(req.user.role)) {
+            return res.status(403).json({ message: 'Only authorized employees can delete X-rays' });
         }
 
-        const xrayId = req.params.xrayId;
+        const xrayId = Number(req.params.xrayId);
 
         try {
-            const [rows] = await db.query(
-                `SELECT x.file_url, a.appointment_status, a.queue_status
-                 FROM xrays x
-                          JOIN appointments a ON x.appointment_id = a.appointment_id
-                 WHERE x.xray_id = ?`,
-                [xrayId]
-            );
-
+            const [rows] = await db.query('SELECT file_url FROM xrays WHERE xray_id = ?', [xrayId]);
             if (rows.length === 0) {
                 return res.status(404).json({ message: 'X-ray not found' });
-            }
-            if (rows[0].appointment_status !== 'approved' || rows[0].queue_status !== 'ongoing') {
-                return res.status(409).json({ message: 'This appointment does not have an active session' });
             }
 
             await db.query('DELETE FROM xrays WHERE xray_id = ?', [xrayId]);
 
-            // Best-effort file cleanup supporting both Vercel Blob URLs and local files
             const fileUrl = rows[0].file_url;
             if (fileUrl.startsWith('http://') || fileUrl.startsWith('https://')) {
-                await del(fileUrl).catch(() => {}); // Delete from Vercel Blob
+                await del(fileUrl).catch(() => {});
             } else {
                 const filePath = path.join(__dirname, '..', fileUrl);
-                fs.unlink(filePath, () => {}); // Delete local disk file
+                fs.unlink(filePath, () => {});
             }
 
             res.json({ message: 'X-ray deleted successfully' });
@@ -191,37 +276,16 @@ function registerPatientRecordsRoutes(app, db) {
         }
     });
 
-    // PATCH /api/appointments/:id/complete — complete the currently ongoing
-    // appointment and move it to the patient's past visit history.
+    // PATCH /api/appointments/:id/complete — complete appointment
     app.patch('/api/appointments/:id/complete', authenticateToken, async (req, res) => {
         if (!['employee', 'admin'].includes(req.user.role)) {
             return res.status(403).json({ message: 'Not authorized' });
         }
 
         const { dentist_note } = req.body;
-        const appointmentId = req.params.id;
+        const appointmentId = Number(req.params.id);
 
         try {
-            const [apptRows] = await db.query(
-                `SELECT appointment_status, queue_status
-                 FROM appointments
-                 WHERE appointment_id = ?`,
-                [appointmentId]
-            );
-
-            if (apptRows.length === 0) {
-                return res.status(404).json({ message: 'Appointment not found' });
-            }
-
-            if (
-                apptRows[0].appointment_status !== 'approved' ||
-                apptRows[0].queue_status !== 'ongoing'
-            ) {
-                return res.status(409).json({
-                    message: 'This appointment does not have an active session'
-                });
-            }
-
             await db.query(
                 `UPDATE appointments
                  SET appointment_status = 'completed',
@@ -231,15 +295,10 @@ function registerPatientRecordsRoutes(app, db) {
                 [dentist_note || null, appointmentId]
             );
 
-            res.json({
-                message: 'Appointment completed successfully'
-            });
-
+            res.json({ message: 'Appointment completed successfully' });
         } catch (err) {
             console.error('Complete appointment error:', err);
-            res.status(500).json({
-                message: 'Internal Server Error'
-            });
+            res.status(500).json({ message: 'Internal Server Error' });
         }
     });
 }

@@ -8,10 +8,6 @@ function escapeHtml(value) {
 }
 
 const DAYS_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-const MONTHS_NAMES = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December'
-];
 
 // State
 let currentDoctor = null;
@@ -54,7 +50,7 @@ function getTodaySqlDate() {
 // ── Notice Modal ──────────────────────────────────────────────────────────
 function showNotice(message, { title = "Notice", type = "info" } = {}) {
     const modal = document.getElementById('noticeModal');
-    if (!modal) { console.log(title + ': ' + message); return; }
+    if (!modal) { alert(`${title}: ${message}`); return; }
 
     const iconWrap = document.getElementById('noticeIconWrap');
     const icon = document.getElementById('noticeIcon');
@@ -68,17 +64,16 @@ function showNotice(message, { title = "Notice", type = "info" } = {}) {
     };
     const s = styles[type] || styles.info;
 
-    iconWrap.className = `w-10 h-10 rounded-full flex items-center justify-center text-lg shrink-0 ${s.wrap}`;
-    icon.className = `fa-solid ${s.icon}`;
-    titleEl.textContent = title;
-    msgEl.textContent = message;
+    if (iconWrap) iconWrap.className = `w-10 h-10 rounded-full flex items-center justify-center text-lg shrink-0 ${s.wrap}`;
+    if (icon) icon.className = `fa-solid ${s.icon}`;
+    if (titleEl) titleEl.textContent = title;
+    if (msgEl) msgEl.textContent = message;
 
     modal.classList.remove('hidden');
 }
 
 function closeNoticeModal() {
-    const modal = document.getElementById('noticeModal');
-    if (modal) modal.classList.add('hidden');
+    document.getElementById('noticeModal')?.classList.add('hidden');
 }
 
 // ── Initialization ────────────────────────────────────────────────────────
@@ -92,17 +87,21 @@ function initSocketEvents() {
     if (typeof io !== 'function') return;
     const socket = io();
 
-    socket.on('payment-confirmed', () => {
-        loadDoctorAppointments();
+    // Re-fetch automatically when appointments are approved, queued, or paid
+    socket.on('appointment-updated', () => {
+        loadDoctorAppointments(currentDoctor?.user_id);
     });
 
-    socket.on('appointment-updated', () => {
-        loadDoctorAppointments();
+    socket.on('queue-updated', () => {
+        loadDoctorAppointments(currentDoctor?.user_id);
+    });
+
+    socket.on('payment-confirmed', () => {
+        loadDoctorAppointments(currentDoctor?.user_id);
     });
 }
 
 function initEventListeners() {
-    // Notice modal
     document.getElementById('noticeOkBtn')?.addEventListener('click', closeNoticeModal);
     document.getElementById('noticeModal')?.addEventListener('click', (e) => {
         if (e.target === document.getElementById('noticeModal')) closeNoticeModal();
@@ -122,12 +121,10 @@ function initEventListeners() {
 
     // Toggle shift timecards collapse
     document.getElementById('toggleShiftViewBtn')?.addEventListener('click', () => {
-        const grid = document.getElementById('weeklyShiftGrid');
-        if (!grid) return;
-        grid.classList.toggle('hidden');
+        document.getElementById('weeklyShiftGrid')?.classList.toggle('hidden');
     });
 
-    // Filter tabs
+    // Tab buttons (Today vs Future)
     const tabBtns = document.querySelectorAll('.schedTabBtn');
     tabBtns.forEach(btn => {
         btn.addEventListener('click', () => {
@@ -149,7 +146,7 @@ function initEventListeners() {
         applyFiltersAndRender();
     });
 
-    // Date picker filter
+    // Date filter
     const dateInput = document.getElementById('dateFilterInput');
     const clearDateBtn = document.getElementById('clearDateFilterBtn');
 
@@ -170,20 +167,13 @@ function initEventListeners() {
         });
     }
 
-    // Complete Treatment Modal
+    // Modal listeners
     document.getElementById('closeCompleteModal')?.addEventListener('click', closeCompleteModal);
     document.getElementById('cancelCompleteBtn')?.addEventListener('click', closeCompleteModal);
-    document.getElementById('completeModal')?.addEventListener('click', (e) => {
-        if (e.target === document.getElementById('completeModal')) closeCompleteModal();
-    });
     document.getElementById('completeTreatmentForm')?.addEventListener('submit', handleCompleteTreatmentSubmit);
 
-    // Receipt Modal
     document.getElementById('closeReceiptModal')?.addEventListener('click', closeReceiptModal);
     document.getElementById('closeReceiptBtn')?.addEventListener('click', closeReceiptModal);
-    document.getElementById('receiptModal')?.addEventListener('click', (e) => {
-        if (e.target === document.getElementById('receiptModal')) closeReceiptModal();
-    });
     document.getElementById('printReceiptBtn')?.addEventListener('click', printCurrentReceipt);
 }
 
@@ -202,7 +192,7 @@ async function loadInitialData() {
 
         updateDoctorHeader(currentDoctor);
 
-        // 2. Fetch all doctors list to populate selector (for Admin or multi-dentist clinics)
+        // 2. Fetch doctors list to populate selector (Admin/Staff view)
         const resAllDoctors = await fetch(`${API_BASE_URL}/api/doctors`, { headers: authHeaders() });
         if (resAllDoctors.ok) {
             allDoctorsList = await resAllDoctors.json();
@@ -224,7 +214,7 @@ async function loadInitialData() {
 
 function updateDoctorHeader(doc) {
     const headerEl = document.getElementById('doctorProfileHeader');
-    if (headerEl) {
+    if (headerEl && doc) {
         const staffCode = doc.public_id || doc.staff_code || `DOC-${doc.user_id}`;
         headerEl.innerHTML = `
             <span class="inline-flex items-center gap-1.5 font-extrabold text-[#667733]">
@@ -239,24 +229,23 @@ function updateDoctorHeader(doc) {
 function populateDentistSelector(doctors, activeDoc) {
     const wrapper = document.getElementById('dentistSelectorWrapper');
     const select = document.getElementById('dentistSelect');
-    if (!wrapper || !select || doctors.length <= 1) return;
+    if (!wrapper || !select || !doctors || doctors.length === 0) return;
 
     wrapper.classList.remove('hidden');
     select.innerHTML = doctors.map(d => `
-        <option value="${d.user_id}" ${d.user_id === activeDoc.user_id ? 'selected' : ''}>
+        <option value="${d.user_id}" ${d.user_id === activeDoc?.user_id ? 'selected' : ''}>
             Dr. ${escapeHtml(d.first_name)} ${escapeHtml(d.last_name)}
         </option>
     `).join('');
 }
 
-// ── Load Doctor Shifts & Timecards ─────────────────────────────────────────
+// ── Load Shifts & Timecards ───────────────────────────────────────────────
 async function loadDoctorSchedule(doctorId) {
     try {
         const res = await fetch(`${API_BASE_URL}/api/doctors/${doctorId}/schedule`, { headers: authHeaders() });
         if (res.ok) {
             weeklySchedules = await res.json();
         } else {
-            // Default shift preset (Mon-Sat on duty, Sun off)
             weeklySchedules = [1, 2, 3, 4, 5, 6].map(d => ({
                 day_of_week: d,
                 start_time: '08:00:00',
@@ -264,15 +253,14 @@ async function loadDoctorSchedule(doctorId) {
                 break_start: '12:00:00',
                 break_end: '13:00:00',
                 is_active: 1
-            }));
-            weeklySchedules.push({
+            })).concat([{
                 day_of_week: 0,
                 start_time: '08:00:00',
                 end_time: '17:00:00',
                 break_start: '12:00:00',
                 break_end: '13:00:00',
                 is_active: 0
-            });
+            }]);
         }
 
         renderWeeklyShiftGrid(weeklySchedules);
@@ -327,7 +315,7 @@ function renderWeeklyShiftGrid(schedules) {
 
                 <div class="pt-1.5 border-t border-black/5 text-[10px] text-gray-500 font-medium flex items-center gap-1">
                     <i class="fa-solid fa-circle-check ${isActive ? 'text-green-600' : 'text-gray-400'}"></i>
-                    <span>${isActive ? 'Available for online booking' : 'Off-duty day'}</span>
+                    <span>${isActive ? 'Available for booking' : 'Off-duty'}</span>
                 </div>
             </div>
         `;
@@ -337,13 +325,12 @@ function renderWeeklyShiftGrid(schedules) {
 function updateTopStats(schedules) {
     const today = new Date();
     const todayDayIdx = today.getDay();
-    const todaySched = schedules.find(s => s.day_of_week === todayDayIdx);
+    const todaySched = (schedules || []).find(s => s.day_of_week === todayDayIdx);
     const isTodayOn = todaySched && (todaySched.is_active === 1 || todaySched.is_active === true);
 
     const shiftTextEl = document.getElementById('todayShiftText');
     const breakTextEl = document.getElementById('todayBreakText');
     const statusBadgeEl = document.getElementById('todayStatusBadge');
-    const activeDaysEl = document.getElementById('activeDaysCountText');
 
     if (shiftTextEl) {
         if (isTodayOn) {
@@ -352,18 +339,13 @@ function updateTopStats(schedules) {
             if (statusBadgeEl) statusBadgeEl.innerHTML = '<span class="text-green-700 flex items-center gap-1"><i class="fa-solid fa-circle text-[8px] animate-pulse text-green-600"></i> On Duty Today</span>';
         } else {
             shiftTextEl.textContent = 'Day Off / Closed';
-            if (breakTextEl) breakTextEl.textContent = 'No clinic shift scheduled';
+            if (breakTextEl) breakTextEl.textContent = 'No duty shift scheduled';
             if (statusBadgeEl) statusBadgeEl.innerHTML = '<span class="text-gray-500">⚪ Off Duty Today</span>';
         }
     }
-
-    const activeDaysCount = schedules.filter(s => s.is_active === 1 || s.is_active === true).length;
-    if (activeDaysEl) {
-        activeDaysEl.textContent = `${activeDaysCount} Days / Week`;
-    }
 }
 
-// ── Load Approved Customer Bookings ────────────────────────────────────────
+// ── Load Approved & Completed Customer Bookings ────────────────────────────
 async function loadDoctorAppointments(doctorId) {
     const docId = doctorId || (currentDoctor ? currentDoctor.user_id : 1);
 
@@ -372,8 +354,7 @@ async function loadDoctorAppointments(doctorId) {
         if (res.ok) {
             allDoctorAppointments = await res.json();
         } else {
-            const resFallback = await fetch(`${API_BASE_URL}/api/doctor/my-appointments`, { headers: authHeaders() });
-            allDoctorAppointments = resFallback.ok ? await resFallback.json() : [];
+            allDoctorAppointments = [];
         }
 
         updateTabBadges();
@@ -389,14 +370,15 @@ async function loadDoctorAppointments(doctorId) {
 function updateTabBadges() {
     const todayStr = getTodaySqlDate();
 
+    // Counts both approved and completed appointments for today and future
     const todayCount = allDoctorAppointments.filter(a => {
         const aDate = (a.appointment_date || '').split('T')[0];
-        return aDate === todayStr && a.appointment_status === 'approved';
+        return aDate === todayStr;
     }).length;
 
     const futureCount = allDoctorAppointments.filter(a => {
         const aDate = (a.appointment_date || '').split('T')[0];
-        return aDate > todayStr && a.appointment_status === 'approved';
+        return aDate > todayStr;
     }).length;
 
     const tabTodayEl = document.getElementById('tabCountToday');
@@ -406,14 +388,10 @@ function updateTabBadges() {
     if (tabFutureEl) tabFutureEl.textContent = futureCount;
 
     const todayStatsEl = document.getElementById('todayApptCountText');
-    if (todayStatsEl) {
-        todayStatsEl.textContent = `${todayCount} Booked`;
-    }
+    if (todayStatsEl) todayStatsEl.textContent = `${todayCount} Booked`;
 
     const futureStatsEl = document.getElementById('futureApptCountText');
-    if (futureStatsEl) {
-        futureStatsEl.textContent = `${futureCount} Upcoming`;
-    }
+    if (futureStatsEl) futureStatsEl.textContent = `${futureCount} Upcoming`;
 }
 
 // ── Filter & Render Patient Bookings Schedule ──────────────────────────────
@@ -422,27 +400,25 @@ function applyFiltersAndRender() {
 
     filteredAppointments = allDoctorAppointments.filter(appt => {
         const apptDate = (appt.appointment_date || '').split('T')[0];
-        const status = (appt.appointment_status || '').toLowerCase();
 
-        // 1. Tab Filter: 'today' vs 'future' (defaulting to today if unknown)
+        // 1. Tab Filter
         let matchesTab = false;
         if (activeTab === 'future' || activeTab === 'upcoming') {
-            matchesTab = apptDate > todayStr && status === 'approved';
+            matchesTab = apptDate > todayStr;
         } else {
-            // Default: today
-            matchesTab = apptDate === todayStr && status === 'approved';
+            matchesTab = apptDate === todayStr;
         }
 
-        // 2. Specific Date Filter (if selected by user)
+        // 2. Specific Date Filter
         let matchesDate = true;
         if (currentDateFilter) {
             matchesDate = apptDate === currentDateFilter;
         }
 
         // 3. Search Filter
-        const patientName = `${appt.patient_first_name || ''} ${appt.patient_last_name || ''} ${appt.patient_name || ''}`.toLowerCase();
-        const service = (appt.service_label || appt.primary_service || appt.services || '').toLowerCase();
-        const pubId = String(appt.patient_public_id || appt.public_id || appt.appointment_id || '').toLowerCase();
+        const patientName = `${appt.patient_first_name || ''} ${appt.patient_last_name || ''}`.toLowerCase();
+        const service = (appt.service_label || '').toLowerCase();
+        const pubId = String(appt.patient_public_id || appt.appointment_id || '').toLowerCase();
         const phone = String(appt.patient_phone || '').toLowerCase();
 
         const matchesSearch = !currentSearch ||
@@ -479,12 +455,9 @@ function renderPatientAppointments() {
             ? new Date(appt.appointment_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
             : 'N/A';
 
-        const patientFullName = (appt.patient_first_name || appt.patient_last_name)
-            ? `${appt.patient_first_name || ''} ${appt.patient_last_name || ''}`.trim()
-            : (appt.patient_name || 'Patient');
-
-        const serviceTitle = escapeHtml(appt.service_label || appt.primary_service || appt.services || 'General Dental Treatment');
-        const rawAmount = Number(appt.amount || appt.service_price || appt.total_amount || 0);
+        const patientFullName = `${appt.patient_first_name || ''} ${appt.patient_last_name || ''}`.trim() || 'Patient';
+        const serviceTitle = escapeHtml(appt.service_label || 'General Dental Treatment');
+        const rawAmount = Number(appt.amount || appt.service_price || 0);
         const amountFormatted = `₱${rawAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
 
         const payStatus = (appt.payment_status || 'unpaid').toLowerCase();
@@ -493,24 +466,30 @@ function renderPatientAppointments() {
         let paymentBadge = '';
         if (payStatus === 'paid') {
             paymentBadge = `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-[#D7E3A5] text-[#1a281b] border border-[#667733]/30"><i class="fa-solid fa-circle-check mr-1 text-green-700"></i>PAID (${payMethod.toUpperCase()})</span>`;
-        } else if (payStatus === 'refunded') {
-            paymentBadge = `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-blue-100 text-blue-800 border border-blue-300">REFUNDED</span>`;
         } else {
-            paymentBadge = `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-gray-100 text-gray-700 border border-gray-300"><i class="fa-solid fa-coins mr-1 text-amber-600"></i>CASH IN CLINIC (UNPAID)</span>`;
+            paymentBadge = `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-gray-100 text-gray-700 border border-gray-300"><i class="fa-solid fa-coins mr-1 text-amber-600"></i>CASH IN CLINIC</span>`;
         }
 
         const isCompleted = (appt.appointment_status || '').toLowerCase() === 'completed';
 
+        // Queue status indicator badge
+        const queueStatus = (appt.queue_status || 'waiting').toLowerCase();
+        let queueBadge = '';
+        if (queueStatus === 'in_chair') {
+            queueBadge = `<span class="text-[10px] bg-amber-100 text-amber-800 font-extrabold px-2 py-0.5 rounded-full border border-amber-300 animate-pulse"><i class="fa-solid fa-chair mr-1"></i>IN CHAIR</span>`;
+        } else if (queueStatus === 'waiting') {
+            queueBadge = `<span class="text-[10px] bg-blue-50 text-blue-700 font-bold px-2 py-0.5 rounded-full border border-blue-200">WAITING</span>`;
+        }
+
         card.innerHTML = `
-            <!-- Left Info Block -->
             <div class="flex-1 min-w-0 flex flex-col gap-1.5">
                 <div class="flex flex-wrap items-center gap-2">
                     <span class="font-extrabold text-sm sm:text-base text-[#667733] font-mono flex items-center gap-1.5">
                         <i class="fa-regular fa-clock"></i> ${format12Hour(appt.time_slot)}
                     </span>
                     <span class="text-xs text-[#2A1001]/60 font-bold">&bull; ${scheduledDate}</span>
-                    <span class="text-[10px] bg-gray-100 text-gray-700 font-bold px-2 py-0.5 rounded-full">${appt.duration_minutes || 60} mins</span>
                     ${paymentBadge}
+                    ${queueBadge}
                     ${isCompleted ? '<span class="text-[10px] bg-green-100 text-green-800 font-extrabold px-2.5 py-0.5 rounded-full border border-green-300"><i class="fa-solid fa-check mr-1"></i>COMPLETED</span>' : ''}
                 </div>
 
@@ -518,7 +497,7 @@ function renderPatientAppointments() {
                     <h3 class="font-black text-base sm:text-lg text-[#2A1001] font-['Poppins']">
                         ${escapeHtml(patientFullName)}
                     </h3>
-                    <span class="text-xs text-[#2A1001]/60 font-semibold">(${escapeHtml(appt.patient_public_id || `ID: ${appt.patient_id || appt.appointment_id}`)})</span>
+                    <span class="text-xs text-[#2A1001]/60 font-semibold">(${escapeHtml(appt.patient_public_id || `ID: ${appt.patient_id}`)})</span>
                     ${appt.patient_phone ? `<span class="text-xs text-gray-600 font-bold"><i class="fa-solid fa-phone text-[10px] text-gray-400 ml-1"></i> ${escapeHtml(appt.patient_phone)}</span>` : ''}
                 </div>
 
@@ -541,7 +520,6 @@ function renderPatientAppointments() {
                 ` : ''}
             </div>
 
-            <!-- Right Action Buttons (Doctor Actions: Mark as Completed & Receipt) -->
             <div class="flex items-center gap-2 flex-wrap sm:flex-nowrap shrink-0 justify-end pt-2 lg:pt-0 border-t lg:border-t-0 border-[#2A1001]/10">
                 ${!isCompleted ? `
                     <button onclick="openCompleteModal(${appt.appointment_id})"
@@ -569,14 +547,11 @@ function openCompleteModal(appointmentId) {
     document.getElementById('completeAppointmentId').value = appointmentId;
     document.getElementById('dentistNotesText').value = appt.dentist_note || '';
 
-    const patientFullName = (appt.patient_first_name || appt.patient_last_name)
-        ? `${appt.patient_first_name || ''} ${appt.patient_last_name || ''}`.trim()
-        : (appt.patient_name || 'Patient');
-
+    const patientFullName = `${appt.patient_first_name || ''} ${appt.patient_last_name || ''}`.trim() || 'Patient';
     document.getElementById('completeModalPatientSummary').textContent =
-        `Patient: ${patientFullName} • Treatment: ${appt.service_label || appt.primary_service || 'Service'}`;
+        `Patient: ${patientFullName} • Treatment: ${appt.service_label || 'Service'}`;
 
-    document.getElementById('completeModal').classList.remove('hidden');
+    document.getElementById('completeModal')?.classList.remove('hidden');
 }
 
 function closeCompleteModal() {
@@ -590,7 +565,7 @@ async function handleCompleteTreatmentSubmit(e) {
     const saveBtn = document.getElementById('saveCompleteBtn');
 
     if (!notes) {
-        showNotice('Please write a brief clinical note or instruction before completing the treatment.', { title: 'Remarks Required', type: 'error' });
+        showNotice('Please write a brief clinical remark before completing the treatment.', { title: 'Remarks Required', type: 'error' });
         return;
     }
 
@@ -608,8 +583,8 @@ async function handleCompleteTreatmentSubmit(e) {
 
         if (res.ok) {
             closeCompleteModal();
-            showNotice('Treatment has been marked as completed. The patient has been notified and notes have been recorded.', { title: 'Treatment Completed', type: 'success' });
-            await loadDoctorAppointments();
+            showNotice('Treatment has been marked as completed! The patient has been notified.', { title: 'Treatment Completed', type: 'success' });
+            await loadDoctorAppointments(currentDoctor?.user_id);
         } else {
             const err = await res.json().catch(() => ({}));
             showNotice(err.message || 'Failed to complete appointment.', { title: 'Error', type: 'error' });
@@ -637,11 +612,8 @@ function openReceiptModalById(appointmentId) {
         ? new Date(appt.appointment_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
         : 'N/A';
 
-    const patientFullName = (appt.patient_first_name || appt.patient_last_name)
-        ? `${appt.patient_first_name || ''} ${appt.patient_last_name || ''}`.trim()
-        : (appt.patient_name || 'Valued Patient');
-
-    const rawAmount = Number(appt.amount || appt.service_price || appt.total_amount || 0);
+    const patientFullName = `${appt.patient_first_name || ''} ${appt.patient_last_name || ''}`.trim() || 'Valued Patient';
+    const rawAmount = Number(appt.amount || appt.service_price || 0);
     const amountFormatted = `₱${rawAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
     const receiptNo = `OR-${(appt.appointment_date || '').replace(/-/g, '')}-${appt.appointment_id}`;
     const status = (appt.appointment_status || '').toUpperCase();
@@ -694,15 +666,15 @@ function openReceiptModalById(appointmentId) {
                 <tbody>
                     <tr>
                         <td class="py-2.5">
-                            <p class="font-bold text-[#2A1001] text-sm">${escapeHtml(appt.service_label || appt.primary_service || 'Treatment')}</p>
-                            <p class="text-xs text-[#2A1001]/60">${escapeHtml(appt.patient_note || 'Standard dental clinic service & consultation')}</p>
+                            <p class="font-bold text-[#2A1001] text-sm">${escapeHtml(appt.service_label || 'Treatment')}</p>
+                            <p class="text-xs text-[#2A1001]/60">${escapeHtml(appt.patient_note || 'Standard dental consultation & treatment')}</p>
                         </td>
                         <td class="text-right py-2.5 font-extrabold text-[#2A1001] text-sm">${amountFormatted}</td>
                     </tr>
                 </tbody>
                 <tfoot>
                     <tr class="border-t-2 border-[#2A1001]/20 font-black text-sm sm:text-base">
-                        <td class="pt-3 text-[#2A1001]">Total Amount Due / Paid:</td>
+                        <td class="pt-3 text-[#2A1001]">Total Amount:</td>
                         <td class="pt-3 text-right text-[#667733]">${amountFormatted}</td>
                     </tr>
                 </tfoot>
@@ -711,13 +683,13 @@ function openReceiptModalById(appointmentId) {
 
         ${appt.dentist_note ? `
             <div class="p-3 bg-green-50 rounded-xl border border-green-200 text-xs text-green-900 shadow-inner">
-                <span class="font-bold block mb-1">Dentist Clinical Notes &amp; Treatment Summary:</span>
+                <span class="font-bold block mb-1">Dentist Remarks &amp; Instructions:</span>
                 <p class="italic">${escapeHtml(appt.dentist_note)}</p>
             </div>
         ` : ''}
     `;
 
-    document.getElementById('receiptModal').classList.remove('hidden');
+    document.getElementById('receiptModal')?.classList.remove('hidden');
 }
 
 function closeReceiptModal() {
@@ -728,9 +700,9 @@ function closeReceiptModal() {
 function printCurrentReceipt() {
     if (!selectedReceiptAppt) return;
     const a = selectedReceiptAppt;
-    const formattedAmount = `₱${Number(a.amount || a.service_price || a.total_amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
+    const formattedAmount = `₱${Number(a.amount || a.service_price || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
     const receiptNo = `OR-${(a.appointment_date || '').replace(/-/g, '')}-${a.appointment_id}`;
-    const patientName = `${a.patient_first_name || ''} ${a.patient_last_name || ''}`.trim() || a.patient_name || 'Valued Patient';
+    const patientName = `${a.patient_first_name || ''} ${a.patient_last_name || ''}`.trim() || 'Valued Patient';
     const dentistName = currentDoctor ? `Dr. ${currentDoctor.first_name} ${currentDoctor.last_name}` : 'Clinic Dentist';
 
     const printHtml = `
@@ -738,77 +710,33 @@ function printCurrentReceipt() {
     <html>
     <head>
         <meta charset="UTF-8">
-        <title>Official Receipt - ${escapeHtml(receiptNo)}</title>
+        <title>Receipt - ${escapeHtml(receiptNo)}</title>
         <style>
             @page { margin: 15mm; }
-            body { font-family: 'Helvetica Neue', Arial, sans-serif; color: #2A1001; font-size: 13px; line-height: 1.5; padding: 20px; }
-            .header { text-align: center; margin-bottom: 25px; border-bottom: 2px solid #667733; padding-bottom: 12px; }
-            .header h1 { margin: 0; font-size: 22px; color: #2A1001; }
-            .header p { margin: 2px 0; color: #666; font-size: 12px; }
-            .info-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; margin-top: 15px; }
-            .info-table th { background: #667733; color: white; text-align: left; padding: 8px; font-size: 12px; }
-            .info-table td { padding: 10px 8px; border-bottom: 1px solid #ddd; }
-            .total-row { font-weight: bold; font-size: 15px; }
-            .footer { margin-top: 40px; text-align: center; font-size: 11px; color: #888; border-top: 1px solid #ccc; padding-top: 10px; }
+            body { font-family: Arial, sans-serif; color: #2A1001; font-size: 13px; line-height: 1.5; padding: 20px; }
+            .header { text-align: center; margin-bottom: 20px; border-bottom: 2px solid #667733; padding-bottom: 10px; }
+            .header h1 { margin: 0; font-size: 20px; }
+            table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+            th { background: #667733; color: white; text-align: left; padding: 6px 8px; font-size: 11px; }
+            td { padding: 8px; border-bottom: 1px solid #ddd; }
         </style>
     </head>
     <body>
         <div class="header">
-            <h1>DENTAL CLINIC INC.</h1>
-            <p>Official Patient Appointment Receipt &amp; Statement of Service</p>
-            <p>Printed on: ${new Date().toLocaleDateString()}</p>
+            <h1>BUNGIPIN DENTAL CLINIC</h1>
+            <p>Official Patient Statement &amp; Receipt</p>
         </div>
-        <table style="width: 100%; margin-bottom: 20px;">
-            <tr>
-                <td><strong>Receipt No:</strong> ${escapeHtml(receiptNo)}</td>
-                <td style="text-align: right;"><strong>Date:</strong> ${escapeHtml(a.appointment_date)}</td>
-            </tr>
-            <tr>
-                <td><strong>Patient:</strong> ${escapeHtml(patientName)} (${escapeHtml(a.patient_public_id || `PAT-${a.appointment_id}`)})</td>
-                <td style="text-align: right;"><strong>Status:</strong> ${escapeHtml(a.appointment_status).toUpperCase()}</td>
-            </tr>
-            <tr>
-                <td><strong>Attending Dentist:</strong> ${escapeHtml(dentistName)}</td>
-                <td style="text-align: right;"><strong>Time Slot:</strong> ${escapeHtml(a.time_slot || 'N/A')}</td>
-            </tr>
-            <tr>
-                <td><strong>Payment Mode:</strong> ${escapeHtml((a.payment_method || 'Cash').toUpperCase())}</td>
-                <td style="text-align: right;"><strong>Payment Status:</strong> ${escapeHtml((a.payment_status || 'Unpaid').toUpperCase())}</td>
-            </tr>
-        </table>
-
-        <table class="info-table">
+        <p><strong>Receipt No:</strong> ${escapeHtml(receiptNo)} &bull; <strong>Date:</strong> ${escapeHtml(a.appointment_date)}</p>
+        <p><strong>Patient:</strong> ${escapeHtml(patientName)} &bull; <strong>Dentist:</strong> ${escapeHtml(dentistName)}</p>
+        <table>
             <thead>
-                <tr>
-                    <th>Service / Treatment Description</th>
-                    <th style="text-align: right;">Amount (PHP)</th>
-                </tr>
+                <tr><th>Description</th><th style="text-align:right;">Amount</th></tr>
             </thead>
             <tbody>
-                <tr>
-                    <td>
-                        <strong>${escapeHtml(a.service_label || a.primary_service || 'General Treatment')}</strong><br>
-                        <span style="font-size: 11px; color: #666;">${escapeHtml(a.patient_note || 'Standard consultation & treatment')}</span>
-                    </td>
-                    <td style="text-align: right; font-weight: bold;">${formattedAmount}</td>
-                </tr>
-                <tr class="total-row">
-                    <td style="text-align: right; padding-top: 15px;">Total Amount Due / Paid:</td>
-                    <td style="text-align: right; padding-top: 15px; color: #667733;">${formattedAmount}</td>
-                </tr>
+                <tr><td>${escapeHtml(a.service_label || 'Dental Treatment')}</td><td style="text-align:right;">${formattedAmount}</td></tr>
+                <tr><td style="font-weight:bold;text-align:right;">Total:</td><td style="font-weight:bold;text-align:right;color:#667733;">${formattedAmount}</td></tr>
             </tbody>
         </table>
-
-        ${a.dentist_note ? `
-            <div style="margin-top: 15px; padding: 10px; border: 1px dashed #aaa; border-radius: 6px; font-size: 11px;">
-                <strong>Dentist Clinical Notes:</strong> ${escapeHtml(a.dentist_note)}
-            </div>
-        ` : ''}
-
-        <div class="footer">
-            <p>Thank you for choosing our dental clinic for your oral healthcare!</p>
-            <p>This document serves as an electronic official receipt statement.</p>
-        </div>
     </body>
     </html>`;
 

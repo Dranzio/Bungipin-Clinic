@@ -1,7 +1,7 @@
 CREATE DATABASE IF NOT EXISTS defaultdb;
 USE defaultdb;
 
--- Drop Instances *
+-- Drop Instances
 DROP PROCEDURE IF EXISTS sp_get_all_patient_records;
 DROP PROCEDURE IF EXISTS sp_get_patient_record;
 DROP PROCEDURE IF EXISTS sp_get_employee_record;
@@ -35,9 +35,36 @@ CREATE TABLE users (
     sex             VARCHAR(10),
     role            ENUM('patient','employee','admin') NOT NULL,
     account_status  ENUM('active','suspended') NOT NULL DEFAULT 'active',
-    login_attempts   INT NOT NULL DEFAULT 0,
-    is_locked        BOOLEAN NOT NULL DEFAULT FALSE,
+    login_attempts  INT NOT NULL DEFAULT 0,
+    is_locked       BOOLEAN NOT NULL DEFAULT FALSE,
     created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE patient_profiles (
+    patient_id       INT PRIMARY KEY,
+    birthday         DATE,
+    secondary_email  VARCHAR(150),
+    address          VARCHAR(255),
+    address_street   VARCHAR(150),
+    address_barangay VARCHAR(100),
+    address_city     VARCHAR(100),
+    address_province VARCHAR(100),
+    pregnancy_status VARCHAR(30),
+    FOREIGN KEY (patient_id) REFERENCES users(user_id) ON DELETE CASCADE
+);
+
+CREATE TABLE employee_profiles (
+    employee_id   INT PRIMARY KEY,
+    staff_code    VARCHAR(30) UNIQUE,
+    position      VARCHAR(30),
+    birthday      DATE,
+    FOREIGN KEY (employee_id) REFERENCES users(user_id) ON DELETE CASCADE
+);
+
+CREATE TABLE admin_profiles (
+    admin_id          INT PRIMARY KEY,
+    permission_level  VARCHAR(30),
+    FOREIGN KEY (admin_id) REFERENCES users(user_id) ON DELETE CASCADE
 );
 
 -- Public ID Procedure
@@ -70,10 +97,6 @@ BEGIN
     )
     WHERE user_id = p_new_user_id;
 
-    -- Every user gets their matching profile row created immediately,
-    -- not left for some later step to create — patient_profiles etc.
-    -- all have nullable fields, so an empty row here is valid and
-    -- expected to be filled in later by the user.
     IF p_role = 'patient' THEN
         INSERT INTO patient_profiles (patient_id) VALUES (p_new_user_id);
     ELSEIF p_role = 'employee' THEN
@@ -83,35 +106,6 @@ BEGIN
     END IF;
 END$$
 DELIMITER ;
-
-CREATE TABLE patient_profiles (
-    patient_id       INT PRIMARY KEY,
-    birthday         DATE,
-    civil_status     VARCHAR(30),
-    secondary_email  VARCHAR(150),
-    address          VARCHAR(255),
-    address_street   VARCHAR(150),
-    address_barangay VARCHAR(100),
-    address_city     VARCHAR(100),
-    address_province VARCHAR(100),
-    pregnancy_status VARCHAR(30),
-    FOREIGN KEY (patient_id) REFERENCES users(user_id) ON DELETE CASCADE
-);
-
-CREATE TABLE employee_profiles (
-    employee_id   INT PRIMARY KEY,
-    staff_code    VARCHAR(30) UNIQUE,
-    position      VARCHAR(30),
-    birthday      DATE,
-    civil_status  VARCHAR(30),
-    FOREIGN KEY (employee_id) REFERENCES users(user_id) ON DELETE CASCADE
-);
-
-CREATE TABLE admin_profiles (
-    admin_id          INT PRIMARY KEY,
-    permission_level  VARCHAR(30),
-    FOREIGN KEY (admin_id) REFERENCES users(user_id) ON DELETE CASCADE
-);
 
 CREATE TABLE audit_logs (
     log_id        INT AUTO_INCREMENT PRIMARY KEY,
@@ -167,6 +161,7 @@ CREATE TABLE services (
     is_available  BOOLEAN NOT NULL DEFAULT TRUE
 );
 
+-- ================= APPOINTMENTS =================
 CREATE TABLE appointments (
     appointment_id      INT AUTO_INCREMENT PRIMARY KEY,
     patient_id          INT NOT NULL,
@@ -175,10 +170,14 @@ CREATE TABLE appointments (
     appointment_date    DATE NOT NULL,
     time_slot           TIME NOT NULL,
     appointment_status  ENUM('pending','approved','completed','cancelled') NOT NULL DEFAULT 'pending',
-    queue_status         ENUM('pending','waiting','ongoing','completed') NULL,
-    patient_note         VARCHAR(255),
-    dentist_note          VARCHAR(255),
-    created_at           TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    queue_status        ENUM('pending','waiting','ongoing','completed') NOT NULL DEFAULT 'pending',
+    reschedule_status   ENUM('none','requested','approved','declined') NOT NULL DEFAULT 'none',
+    requested_date      DATE NULL,
+    requested_time      TIME NULL,
+    reschedule_reason   VARCHAR(255) NULL,
+    patient_note        VARCHAR(255) NULL,
+    dentist_note        VARCHAR(255) NULL,
+    created_at          TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (patient_id)  REFERENCES patient_profiles(patient_id) ON DELETE CASCADE,
     FOREIGN KEY (employee_id) REFERENCES employee_profiles(employee_id) ON DELETE SET NULL,
     FOREIGN KEY (service_id)  REFERENCES services(service_id) ON DELETE RESTRICT,
@@ -257,6 +256,7 @@ CREATE TABLE password_resets (
     INDEX idx_token_hash (token_hash)
 );
 
+-- ================= PROCEDURES (WITH PATIENT_DOCUMENTS SUPPORT) =================
 DELIMITER $$
 CREATE PROCEDURE sp_get_patient_record(IN p_patient_id INT)
 BEGIN
@@ -269,7 +269,6 @@ BEGIN
         'birthday', pp.birthday,
         'email', u.email,
         'phone', u.phone,
-        'civil_status', pp.civil_status,
         'address', pp.address,
         'address_street', pp.address_street,
         'address_barangay', pp.address_barangay,
@@ -287,6 +286,10 @@ BEGIN
         'prescriptions', (
             SELECT COALESCE(JSON_ARRAYAGG(JSON_OBJECT('medication_name', medication_name, 'dosage', dosage)), JSON_ARRAY())
             FROM prescriptions WHERE patient_id = pp.patient_id
+        ),
+        'patient_documents', (
+            SELECT COALESCE(JSON_ARRAYAGG(JSON_OBJECT('document_id', document_id, 'file_url', file_url, 'uploaded_at', uploaded_at)), JSON_ARRAY())
+            FROM patient_documents WHERE patient_id = pp.patient_id
         ),
         'xrays', (
             SELECT COALESCE(JSON_ARRAYAGG(JSON_OBJECT('xray_id', xray_id, 'appointment_id', appointment_id, 'file_url', file_url)), JSON_ARRAY())
@@ -344,7 +347,6 @@ BEGIN
         'birthday', pp.birthday,
         'email', u.email,
         'phone', u.phone,
-        'civil_status', pp.civil_status,
         'address', pp.address,
         'address_street', pp.address_street,
         'address_barangay', pp.address_barangay,
@@ -362,6 +364,10 @@ BEGIN
         'prescriptions', (
             SELECT COALESCE(JSON_ARRAYAGG(JSON_OBJECT('medication_name', medication_name, 'dosage', dosage)), JSON_ARRAY())
             FROM prescriptions WHERE patient_id = pp.patient_id
+        ),
+        'patient_documents', (
+            SELECT COALESCE(JSON_ARRAYAGG(JSON_OBJECT('document_id', document_id, 'file_url', file_url, 'uploaded_at', uploaded_at)), JSON_ARRAY())
+            FROM patient_documents WHERE patient_id = pp.patient_id
         ),
         'xrays', (
             SELECT COALESCE(JSON_ARRAYAGG(JSON_OBJECT('xray_id', xray_id, 'appointment_id', appointment_id, 'file_url', file_url)), JSON_ARRAY())
@@ -420,8 +426,7 @@ BEGIN
         'sex', u.sex,
         'birthday', ep.birthday,
         'email', u.email,
-        'phone', u.phone,
-        'civil_status', ep.civil_status
+        'phone', u.phone
     ) AS employee_record
     FROM employee_profiles ep
     JOIN users u ON ep.employee_id = u.user_id
@@ -429,19 +434,18 @@ BEGIN
 END$$
 DELIMITER ;
 
--- Double Check
+-- ================= SEED DATA =================
 CALL sp_register_user('Maria', 'Santos', 'maria.santos@example.com', '09171234567', '$2b$10$PFUiFjV7FngVMIZ2u/chOOV3l.cVQ84nz4Os8DipZlw72yiqAKKJi', 'F', 'patient', @uid1);
 CALL sp_register_user('Juan', 'Dela Cruz', 'juan.delacruz@example.com', '09179876543', '$2b$10$PFUiFjV7FngVMIZ2u/chOOV3l.cVQ84nz4Os8DipZlw72yiqAKKJi', 'M', 'patient', @uid2);
 CALL sp_register_user('Ramon', 'Cruz', 'ramon.cruz@example.com', '09201112222', '$2b$10$PFUiFjV7FngVMIZ2u/chOOV3l.cVQ84nz4Os8DipZlw72yiqAKKJi', 'M', 'employee', @uid3);
 CALL sp_register_user('Liza', 'Tan', 'liza.tan@example.com', '09203334444', '$2b$10$PFUiFjV7FngVMIZ2u/chOOV3l.cVQ84nz4Os8DipZlw72yiqAKKJi', 'F', 'employee', @uid4);
 CALL sp_register_user('Carla', 'Reyes', 'carla.reyes@example.com', '09051119999', '$2b$10$PFUiFjV7FngVMIZ2u/chOOV3l.cVQ84nz4Os8DipZlw72yiqAKKJi', 'F', 'admin', @uid5);
 
+UPDATE patient_profiles SET birthday = '1990-04-12', address = '123 Mabini St, Quezon City', address_street = '123 Mabini St', address_city = 'Quezon City', address_province = 'Metro Manila' WHERE patient_id = 1;
+UPDATE patient_profiles SET birthday = '1985-11-02', address = '45 Rizal Ave, Manila', address_street = '45 Rizal Ave', address_city = 'Manila', address_province = 'Metro Manila' WHERE patient_id = 2;
 
-UPDATE patient_profiles SET birthday = '1990-04-12', civil_status = 'Single', address = '123 Mabini St, Quezon City', address_street = '123 Mabini St', address_city = 'Quezon City', address_province = 'Metro Manila' WHERE patient_id = 1;
-UPDATE patient_profiles SET birthday = '1985-11-02', civil_status = 'Married', address = '45 Rizal Ave, Manila', address_street = '45 Rizal Ave', address_city = 'Manila', address_province = 'Metro Manila' WHERE patient_id = 2;
-
-UPDATE employee_profiles SET staff_code = 'STF-2026-001', position = 'Dentist', birthday = '1985-06-10', civil_status = 'Married' WHERE employee_id = 3;
-UPDATE employee_profiles SET staff_code = 'STF-2026-002', position = 'Dentist', birthday = '1990-02-20', civil_status = 'Single' WHERE employee_id = 4;
+UPDATE employee_profiles SET staff_code = 'STF-2026-001', position = 'Dentist', birthday = '1985-06-10' WHERE employee_id = 3;
+UPDATE employee_profiles SET staff_code = 'STF-2026-002', position = 'Dentist', birthday = '1990-02-20' WHERE employee_id = 4;
 
 UPDATE admin_profiles SET permission_level = 'full_access' WHERE admin_id = 5;
 
@@ -451,9 +455,9 @@ INSERT INTO services (label, price, icon, is_available) VALUES
 ('Checkup', 500.00, 'checkup-icon', TRUE),
 ('Whitening', 3000.00, 'whitening-icon', TRUE);
 
-INSERT INTO appointments (patient_id, employee_id, service_id, appointment_date, time_slot, appointment_status, patient_note) VALUES
-(1, 3, 1, '2026-09-10', '10:00:00', 'approved', 'First-time patient'),
-(2, NULL, 2, '2026-09-12', '11:00:00', 'pending', NULL);
+INSERT INTO appointments (patient_id, employee_id, service_id, appointment_date, time_slot, appointment_status, queue_status, reschedule_status, patient_note) VALUES
+(1, 3, 1, '2026-09-10', '10:00:00', 'approved', 'completed', 'none', 'First-time patient'),
+(2, NULL, 2, '2026-09-12', '11:00:00', 'pending', 'pending', 'none', NULL);
 
 INSERT INTO payments (appointment_id, amount, payment_date, method, status) VALUES
 (1, 1500.00, '2026-09-10', 'card', 'paid');
@@ -467,9 +471,6 @@ INSERT INTO messages (sender_id, receiver_id, content, is_read) VALUES
 INSERT INTO notifications (user_id, type, title, message, appointment_id) VALUES
 (1, 'appointment_status', 'Appointment Approved', 'Your appointment on 2026-09-10 has been approved.', 1);
 
-INSERT INTO notifications (user_id, type, title, message, message_id) VALUES
-(1, 'new_message', 'New Message', 'You have a new message from Dr. Ramon Cruz.', 1);
-
 INSERT INTO doctor_schedules (employee_id, day_of_week, start_time, end_time, break_start, break_end, is_active) VALUES
 (4, 0, NULL, NULL, NULL, NULL, 0),
 (4, 1, '08:00:00', '17:00:00', '12:00:00', '13:00:00', 1),
@@ -478,12 +479,7 @@ INSERT INTO doctor_schedules (employee_id, day_of_week, start_time, end_time, br
 (4, 4, '08:00:00', '17:00:00', '12:00:00', '13:00:00', 1),
 (4, 5, '08:00:00', '17:00:00', '12:00:00', '13:00:00', 1),
 (4, 6, '08:00:00', '17:00:00', '12:00:00', '13:00:00', 1);
- 
--- ── Register Dr. Maria Gomez ─────────────────────────────────────────────
--- Not in the original seed data — added here as a third dentist to match
--- MOCK_SCHEDULES[3] (all days active, half-day Saturday, no Sunday).
--- Reuses the same demo password hash ('12345678', bcrypt) as your other
--- seed users for consistency — change this before using real accounts.
+
 CALL sp_register_user(
     'Maria', 'Gomez', 'maria.gomez@example.com', '09171112223',
     '$2b$10$PFUiFjV7FngVMIZ2u/chOOV3l.cVQ84nz4Os8DipZlw72yiqAKKJi',
@@ -491,8 +487,7 @@ CALL sp_register_user(
 );
  
 UPDATE employee_profiles SET staff_code = 'STF-2026-003', position = 'Dentist', birthday = '1988-09-03' WHERE employee_id = @uid6;
- 
--- Her schedule: Mon-Fri full day (8-5, lunch 12-1), Sat half-day (8-12, no break), off Sunday.
+
 INSERT INTO doctor_schedules (employee_id, day_of_week, start_time, end_time, break_start, break_end, is_active) VALUES
 (@uid6, 0, NULL, NULL, NULL, NULL, FALSE),
 (@uid6, 1, '08:00:00', '17:00:00', '12:00:00', '13:00:00', TRUE),
@@ -501,26 +496,3 @@ INSERT INTO doctor_schedules (employee_id, day_of_week, start_time, end_time, br
 (@uid6, 4, '08:00:00', '17:00:00', '12:00:00', '13:00:00', TRUE),
 (@uid6, 5, '08:00:00', '17:00:00', '12:00:00', '13:00:00', TRUE),
 (@uid6, 6, '08:00:00', '12:00:00', NULL, NULL, TRUE);
- 
--- Sanity check
-SELECT * FROM users WHERE email = 'maria.gomez@example.com';
-SELECT * FROM doctor_schedules WHERE employee_id = @uid6;
-
-CALL sp_get_all_patient_records();
-select * from users;
-select * from appointments;
-select a.first_name, b.civil_status  from users a INNER JOIN  employee_profiles b on a.user_id = b.employee_id;
-select * from payments;
-select a.appointment_id, s.label AS service_offered from appointments a INNER JOIN services s on a.service_id = s.service_id;
-
- SELECT email, login_attempts, is_locked FROM users WHERE email = 'juan.delacruz@example.com';
- 
- Select * from password_resets;
- 
- SELECT * FROM doctor_schedules WHERE employee_id = 4 ORDER BY day_of_week;
- 
- SELECT start_time, end_time, break_start, break_end, is_active
-			FROM doctor_schedules
-			WHERE employee_id = 3 AND day_of_week = 3
-            
-SELECT DATABASE() AS current_db, @@hostname AS host, @@port AS port, @@datadir AS data_dir;

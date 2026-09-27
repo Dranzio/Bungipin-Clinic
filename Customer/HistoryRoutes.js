@@ -1,14 +1,8 @@
 const authenticateToken = require('../authMiddleware');
 
-function registerHistoryRoutes(app, db) {
+function registerHistoryRoutes(app, db, io) {
 
-    // GET /api/appointments/mine — the logged-in patient's own appointments,
-    // shaped for History.js's card + receipt-modal rendering. Deliberately a
-    // different path from GET /api/appointments (registered in
-    // Employee/BookingRequest.js for staff) rather than branching on role
-    // inside that handler — Express only runs the first matching route for a
-    // given path/method, so reusing the same path here would mean patient
-    // requests never even reach a role check.
+    // ── 1. GET /api/appointments/mine — Patient's personal appointment history ──
     app.get('/api/appointments/mine', authenticateToken, async (req, res) => {
         if (req.user.role !== 'patient') {
             return res.status(403).json({ message: 'Only patients can view their own appointment history' });
@@ -24,6 +18,7 @@ function registerHistoryRoutes(app, db) {
                      a.created_at,
                      a.appointment_status,
                      a.dentist_note,
+                     a.patient_note,
                      a.reschedule_status,
                      a.requested_date,
                      a.requested_time,
@@ -38,11 +33,11 @@ function registerHistoryRoutes(app, db) {
                      u.email,
                      pp.address
                  FROM appointments a
-                          JOIN services s ON a.service_id = s.service_id
-                          JOIN users u ON a.patient_id = u.user_id
-                          JOIN patient_profiles pp ON a.patient_id = pp.patient_id
-                          LEFT JOIN payments pay ON a.appointment_id = pay.appointment_id
-                          LEFT JOIN users emp ON a.employee_id = emp.user_id
+                 JOIN services s ON a.service_id = s.service_id
+                 JOIN users u ON a.patient_id = u.user_id
+                 JOIN patient_profiles pp ON a.patient_id = pp.patient_id
+                 LEFT JOIN payments pay ON a.appointment_id = pay.appointment_id
+                 LEFT JOIN users emp ON a.employee_id = emp.user_id
                  WHERE a.patient_id = ?
                  ORDER BY a.appointment_date DESC, a.time_slot DESC`,
                 [req.user.user_id]
@@ -55,17 +50,14 @@ function registerHistoryRoutes(app, db) {
         }
     });
 
-    // PUT /api/appointments/:id/cancel — patient cancels their own
-    // still-pending appointment. Only allowed while pending, matching the
-    // Cancel button only being shown for pending appointments in History.html.
-    // Notifies every employee/admin, since there is no "receptionist" role
-    // and employee_id is still NULL at this stage.
+    // ── 2. PUT /api/appointments/:id/cancel — Patient Cancels Pending Appointment ──
     app.put('/api/appointments/:id/cancel', authenticateToken, async (req, res) => {
         if (req.user.role !== 'patient') {
             return res.status(403).json({ message: 'Not authorized' });
         }
 
         const appointmentId = req.params.id;
+        const { reason } = req.body;
         let connection;
 
         try {
@@ -90,9 +82,9 @@ function registerHistoryRoutes(app, db) {
                 return res.status(403).json({ message: 'Not authorized' });
             }
 
-            if (apptRows[0].appointment_status !== 'pending') {
+            if (apptRows[0].appointment_status !== 'pending' && apptRows[0].appointment_status !== 'approved') {
                 await connection.rollback();
-                return res.status(409).json({ message: 'Only pending appointments can be cancelled' });
+                return res.status(409).json({ message: 'Only active appointments can be cancelled' });
             }
 
             await connection.query(
@@ -105,7 +97,7 @@ function registerHistoryRoutes(app, db) {
             await connection.query(
                 `UPDATE payments
                  SET status = CASE
-                                  WHEN status = 'paid' THEN 'refunded'
+                                  WHEN status = 'paid' THEN 'refund_pending'
                                   ELSE status
                      END
                  WHERE appointment_id = ?`,
@@ -121,12 +113,17 @@ function registerHistoryRoutes(app, db) {
                     `INSERT INTO notifications
                          (user_id, type, title, message, appointment_id)
                      VALUES (?, 'appointment_cancelled', 'Appointment Cancelled',
-                             'A patient has cancelled a pending appointment.', ?)`,
-                    [member.user_id, appointmentId]
+                             ?, ?)`,
+                    [member.user_id, `A patient has cancelled an appointment.${reason ? ` Reason: ${reason}` : ''}`, appointmentId]
                 );
             }
 
             await connection.commit();
+
+            // Real-time broadcast to BookingRequest & Queue
+            if (io) {
+                io.emit('appointment-updated', { appointment_id: Number(appointmentId) });
+            }
 
             res.json({
                 message: 'Appointment cancelled successfully',
@@ -134,17 +131,11 @@ function registerHistoryRoutes(app, db) {
             });
 
         } catch (err) {
-            if (connection) {
-                await connection.rollback();
-            }
-
+            if (connection) await connection.rollback();
             console.error('Cancel appointment error:', err);
             res.status(500).json({ message: 'Internal Server Error' });
-
         } finally {
-            if (connection) {
-                connection.release();
-            }
+            if (connection) connection.release();
         }
     });
 
@@ -152,13 +143,7 @@ function registerHistoryRoutes(app, db) {
     const TIME_PATTERN = /^([01]\d|2[0-3]):([0-5]\d):([0-5]\d)$/;
     const RESCHEDULABLE_STATUSES = ['pending', 'approved'];
 
-    // GET /api/appointments/occupied/mine — every time slot the current
-    // patient already holds (across all their own non-cancelled
-    // appointments). Used only by the reschedule calendar to stop a patient
-    // from picking a slot they're already booked into themselves; it is not
-    // a dentist-availability check (the reschedule flow doesn't pin a
-    // dentist's schedule the way booking's /available-slots does — see
-    // History.js's fixed `clinicSlots` list).
+    // ── 3. GET /api/appointments/occupied/mine — Patient occupied slots ──
     app.get('/api/appointments/occupied/mine', authenticateToken, async (req, res) => {
         if (req.user.role !== 'patient') {
             return res.status(403).json({ message: 'Not authorized' });
@@ -179,11 +164,7 @@ function registerHistoryRoutes(app, db) {
         }
     });
 
-    // PATCH /api/appointments/:id/request-reschedule — patient proposes a new
-    // date/time. This only records the request; appointment_date/time_slot
-    // are left untouched until staff review and approve it elsewhere, which
-    // is why requested_date/requested_time are separate columns rather than
-    // overwriting the confirmed schedule outright.
+    // ── 4. PATCH /api/appointments/:id/request-reschedule — Patient Requests Reschedule ──
     app.patch('/api/appointments/:id/request-reschedule', authenticateToken, async (req, res) => {
         if (req.user.role !== 'patient') {
             return res.status(403).json({ message: 'Not authorized' });
@@ -200,14 +181,6 @@ function registerHistoryRoutes(app, db) {
         }
         if (!reschedule_reason || !reschedule_reason.trim()) {
             return res.status(400).json({ message: 'A reschedule reason is required' });
-        }
-        if (reschedule_reason.length > 255) {
-            return res.status(400).json({ message: 'Reschedule reason is too long' });
-        }
-
-        const requestedDateTime = new Date(`${requested_date}T${requested_time}`);
-        if (Number.isNaN(requestedDateTime.getTime()) || requestedDateTime <= new Date()) {
-            return res.status(400).json({ message: 'Requested date and time must be in the future' });
         }
 
         let connection;
@@ -239,6 +212,7 @@ function registerHistoryRoutes(app, db) {
                 return res.status(409).json({ message: 'Only pending or approved appointments can be rescheduled' });
             }
 
+            // Set reschedule_status = 'requested' without overwriting appointment_date
             await connection.query(
                 `UPDATE appointments
                  SET reschedule_status = 'requested',
@@ -265,23 +239,22 @@ function registerHistoryRoutes(app, db) {
 
             await connection.commit();
 
+            // Real-time broadcast to BookingRequest & Queue!
+            if (io) {
+                io.emit('appointment-updated', { appointment_id: Number(appointmentId) });
+            }
+
             res.json({
                 message: 'Your reschedule request has been submitted. Our clinic team will review and approve your request shortly.',
                 appointment_id: Number(appointmentId)
             });
 
         } catch (err) {
-            if (connection) {
-                await connection.rollback();
-            }
-
+            if (connection) await connection.rollback();
             console.error('Request reschedule error:', err);
             res.status(500).json({ message: 'Internal Server Error' });
-
         } finally {
-            if (connection) {
-                connection.release();
-            }
+            if (connection) connection.release();
         }
     });
 }

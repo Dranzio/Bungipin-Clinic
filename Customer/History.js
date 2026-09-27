@@ -328,9 +328,9 @@ function applyFiltersAndRender() {
     });
 
     if (currentSort === "recent") {
-        filteredAppointments.sort((a, b) => new Date(b.appointment_date) - new Date(a.appointment_date));
+        filteredAppointments.sort((a, b) => new Date(b.created_at) - new Date(a.appointment_date));
     } else if (currentSort === "oldest") {
-        filteredAppointments.sort((a, b) => new Date(a.appointment_date) - new Date(b.appointment_date));
+        filteredAppointments.sort((a, b) => new Date(a.created_at) - new Date(b.appointment_date));
     } else if (currentSort.includes('-')) {
         const [year, monthIndex] = currentSort.split('-').map(Number);
         filteredAppointments = filteredAppointments.filter(a => {

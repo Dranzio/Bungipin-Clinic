@@ -5,217 +5,270 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <!-- DENIED DIRECT PAGE ACCESS VIA URL -->
     <script src="../pageProtection.js"></script>
-    <title>Booking Request</title>
+    <title>Booking Request &amp; Reschedule Reviews</title>
     <link href="/output.css" rel="stylesheet">
+    <!-- Tailwind CDN Fallback for missing builds -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://kit.fontawesome.com/fc8c3f4103.js" crossorigin="anonymous"></script>
-    <script src="/Taskbar/Employee_Sidebar.js"></script>
-<!--    <script src="Messages.js"></script>-->
+    <script src="/socket.io/socket.io.js"></script>
 </head>
 
-<body class="min-h-screen bg-[#F3EFE4] relative flex flex-col md:flex-row text-[#2A1001]">
-<!-- SIDEBAR -->
-  <div id="sidebar-placeholder"></div>
+<body class="min-h-screen bg-[#F3EFE4] relative flex flex-col md:flex-row text-[#2A1001] font-sans antialiased">
+    <!-- SIDEBAR -->
+    <div id="sidebar-placeholder"></div>
     <script>
-      function syncContentOffset() {
-        const placeholder = document.getElementById('sidebar-placeholder');
-        const sidebar = Array.from(placeholder.children)
-          .find(el => !['SCRIPT', 'STYLE', 'LINK'].includes(el.tagName));
-        if (!sidebar) return;
+        function syncContentOffset() {
+            const placeholder = document.getElementById('sidebar-placeholder');
+            const sidebar = Array.from(placeholder?.children || [])
+                .find(el => !['SCRIPT', 'STYLE', 'LINK'].includes(el.tagName));
+            if (!sidebar) return;
 
-        const set = (el, prop, value) => { if (el.style[prop] !== value) el.style[prop] = value; };
+            const set = (el, prop, value) => { if (el.style[prop] !== value) el.style[prop] = value; };
 
-        const apply = () => {
-          const desktop = window.innerWidth >= 768;
-          set(placeholder, 'flexShrink', '0');
-          set(sidebar, 'position', desktop ? 'sticky' : 'relative');  
-          set(sidebar, 'top', desktop ? '0px' : 'auto');
-          set(sidebar, 'height', desktop ? '100vh' : '');
-          set(sidebar, 'overflowY', desktop ? 'auto' : '');           
-        };
+            const apply = () => {
+                const desktop = window.innerWidth >= 768;
+                set(placeholder, 'flexShrink', '0');
+                set(sidebar, 'position', desktop ? 'sticky' : 'relative');
+                set(sidebar, 'top', desktop ? '0px' : 'auto');
+                set(sidebar, 'height', desktop ? '100vh' : '');
+                set(sidebar, 'overflowY', desktop ? 'auto' : '');
+            };
 
-        window.addEventListener('resize', apply);
-        apply();
-      }
+            window.addEventListener('resize', apply);
+            apply();
+        }
 
         (async () => {
-          try {
-            const response = await fetch('/Taskbar/Employee_Task.html');
-            if (response.ok) {
-              const data = await response.text();
-              document.getElementById('sidebar-placeholder').innerHTML = data;
-              const currentPage = window.location.pathname.split("/").pop();
-              document.querySelectorAll('.nav-link').forEach(link => {
-                if (link.getAttribute('data-page') === currentPage) {
-                  link.classList.add('bg-[#FDFCE9]');
+            try {
+                let response = await fetch('/Taskbar/Employee_Task.html');
+                if (!response.ok) response = await fetch('/Taskbar/Admin_Task.html');
+                if (response.ok) {
+                    const data = await response.text();
+                    document.getElementById('sidebar-placeholder').innerHTML = data;
+                    const currentPage = window.location.pathname.split("/").pop();
+                    document.querySelectorAll('.nav-link').forEach(link => {
+                        if (link.getAttribute('data-page') === currentPage || link.getAttribute('href')?.includes(currentPage)) {
+                            link.classList.add('bg-[#FDFCE9]');
+                        }
+                    });
+                    if (typeof initSidebar === 'function') {
+                        initSidebar();
+                    }
+                    syncContentOffset();
                 }
-              });
-              if (typeof initSidebar === 'function') {
-                initSidebar();
-              }
-              syncContentOffset();
+            } catch (error) {
+                console.log('Sidebar fallback:', error);
             }
-          } catch (error) {
-            console.log('Sidebar fallback:', error);
-          }
         })();
-      </script>
+    </script>
 
-<div id="main-content" class="flex-1 min-w-0 md:min-h-0 md:overflow-y-auto">
-    <div class="flex justify-between items-start pt-5 pl-6 pr-4 md:pl-24 md:pr-8">
-        <h1 class="text-2xl sm:text-3xl md:text-5xl 2xl:text-[73px] pt-5 font-bold text-[#2A1001] font-['Poppins']">
-            Booking Request
-        </h1>
-        <img
+    <!-- Main Content Area -->
+    <div id="main-content" class="flex-1 min-w-0 md:min-h-0 md:overflow-y-auto flex flex-col">
+        
+        <!-- Header -->
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center pt-5 pl-4 pr-4 sm:pl-6 sm:pr-6 md:pl-20 md:pr-8 gap-4">
+            <div>
+                <h1 class="text-2xl sm:text-3xl md:text-5xl font-bold text-[#2A1001] font-['Poppins']">
+                    Booking Requests
+                </h1>
+                <p class="text-xs sm:text-sm text-[#2A1001]/70 mt-1">
+                    Review patient appointments, approve bookings, and manage customer reschedule requests.
+                </p>
+            </div>
+            <img
                 src="../assets/logowithtitle.png"
                 onerror="this.style.display='none'"
-                class="w-20 sm:w-24 md:w-28 h-auto object-contain shrink-0"
+                class="w-16 sm:w-20 md:w-28 h-auto object-contain shrink-0"
                 alt="Logo"/>
+        </div>
+
+         <hr class="border-t border-[#2A1001] mt-2 mb-6" />
+
+        <main class="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 md:px-12 pb-16 flex flex-col gap-6">
+
+            <!-- Search Bar (Centered, responsive) -->
+            <div class="flex w-full justify-center px-2">
+                <input
+                    type="text"
+                    id="searchInput"
+                    placeholder="Search patient, service, or ID..."
+                    class="h-10 sm:h-11 w-full max-w-md rounded-full border border-[#2A1001]/20 bg-white px-4 sm:px-5 outline-none focus:outline-none shadow-sm text-xs sm:text-sm font-semibold transition"
+                />
+            </div>
+
+            <!-- Filter Cards (Responsive Grid / Flex) -->
+            <div id="statusFilters" class="grid grid-cols-2 sm:flex sm:flex-wrap gap-2.5 sm:gap-4 mb-6 sm:mb-8 justify-center max-w-3xl mx-auto w-full px-2">
+
+                <!-- Pending Bookings Card Button -->
+                <button data-status="pending" class="filter-btn active-filter bg-[#F1B770] text-center px-4 sm:px-6 py-2.5 sm:py-3 rounded-2xl font-bold text-[#2A1001] shadow-md transition-all duration-200 ease-in-out hover:scale-105 hover:bg-[#FDFCE9] hover:shadow-xl active:scale-95 cursor-pointer outline-none scale-105">
+                    <span class="text-xs sm:text-sm block">Pending</span>
+                    <span class="block text-xl sm:text-2xl font-black mt-0.5" id="badgePending">0</span>
+                </button>
+
+                <!-- Reschedule Requests Card Button -->
+                <button data-status="reschedule_requested" class="filter-btn bg-[#F4F18F] text-center px-4 sm:px-6 py-2.5 sm:py-3 rounded-2xl font-bold text-[#2A1001] shadow-md transition-all duration-200 ease-in-out hover:scale-105 hover:bg-[#FDFCE9] hover:shadow-xl active:scale-95 cursor-pointer outline-none">
+                    <span class="text-xs sm:text-sm block">Reschedule</span>
+                    <span class="block text-xl sm:text-2xl font-black mt-0.5" id="badgeResched">0</span>
+                </button>
+
+                <!-- Approved Bookings Card Button -->
+                <button data-status="approved" class="filter-btn bg-[#BEF835] text-center px-4 sm:px-6 py-2.5 sm:py-3 rounded-2xl font-bold text-[#2A1001] shadow-md transition-all duration-200 ease-in-out hover:scale-105 hover:bg-[#FDFCE9] hover:shadow-xl active:scale-95 cursor-pointer outline-none">
+                    <span class="text-xs sm:text-sm block">Approved</span>
+                    <span class="block text-xl sm:text-2xl font-black mt-0.5" id="badgeApproved">0</span>
+                </button>
+
+                <!-- Show All Card Button -->
+                <button data-status="all" class="filter-btn bg-white border border-[#2A1001]/30 text-center px-4 sm:px-6 py-2.5 sm:py-3 rounded-2xl font-bold text-[#2A1001] shadow-md transition-all duration-200 ease-in-out hover:scale-105 hover:bg-[#FDFCE9] hover:shadow-xl active:scale-95 cursor-pointer outline-none">
+                    <span class="text-xs sm:text-sm block">Show All</span>
+                    <span class="block text-xl sm:text-2xl font-black mt-0.5" id="badgeAll">0</span>
+                </button>
+
+            </div>
+
+            <!-- Booking Cards Container -->
+            <div id="booking-container" class="space-y-4 w-full">
+                <!-- Cards injected dynamically via JS -->
+            </div>
+
+            <!-- Empty State Container -->
+            <div id="noBookingsState" class="hidden text-center py-16 bg-white/50 rounded-3xl border border-dashed border-[#2A1001]/20">
+                <i class="fa-solid fa-calendar-xmark text-4xl text-[#2A1001]/30 mb-3"></i>
+                <p class="text-base sm:text-lg font-bold text-[#2A1001]/80">No booking requests found</p>
+                <p class="text-xs text-[#2A1001]/50 mt-1">There are currently no appointments matching the selected filter or search keyword.</p>
+            </div>
+
+        </main>
     </div>
 
-    <main class="flex-1 w-full relative">
-
-    <hr class="border-t border-[#2A1001] mt-2 mb-6" />
-
-    <!-- Search input -->
-    <div class="flex w-full justify-center gap-3">
-        <input
-                type="text"
-                id="searchInput"
-                placeholder="Search by name..."
-                class="h-10 w-full max-w-md rounded-full border border-[#2A1001]/20 bg-white px-4 mb-6 outline-none"
-        />
-    </div>
-        <div id="statusFilters" class="flex flex-wrap gap-4 mb-8 justify-center">
-        <button data-status="pending" class="filterBtn bg-[#F1B770] text-center px-6 py-3 rounded-2xl font-bold text-[#2A1001] min-w-[110px] shadow-lg
-        transition-all duration-200 ease-in-out 
-        hover:scale-105 hover:bg-[#FDFCE9] hover:shadow-xl
-        active:scale-95 active:bg-[#FF9F2A]">
-            Pending
-        </button>
-        <button data-status="approved" class="filterBtn bg-[#BEF835] text-center px-6 py-3 rounded-2xl font-bold text-[#2A1001] min-w-[110px] shadow-lg
-        transition-all duration-200 ease-in-out 
-        hover:scale-105 hover:bg-[#FDFCE9] hover:shadow-xl
-        active:scale-95 active:bg-[#A6ED00]">
-            Approved
-        </button>
-        <button data-status="all" class="filterBtn bg-white border border-[#2A1001]/30 text-left px-6 py-3 rounded-2xl font-bold text-[#2A1001] min-w-[110px] shadow-lg
-        transition-all duration-200 ease-in-out 
-        hover:scale-105 hover:bg-[#FDFCE9] hover:shadow-xl
-        active:scale-95 active:bg-[#F9F9F9]">
-            Show All
-        </button>
-    </div>
-    <!-- booking cards -->
-    <div id="booking-container" class="space-y-4 mb-10 w-full md:w-[90%] mx-auto">
-        <!-- cards injected by JS -->
-    </div>
-
-    <!-- decline modal -->
-    <div id="declineModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div class="bg-[#F2F0EF] rounded-3xl p-6 sm:p-8 max-w-lg w-full border border-[#2A1001]/20 shadow-2xl relative">
-            <h3 class="text-xl font-bold text-[#2A1001] mb-2 font-['Poppins']">Decline Booking</h3>
-            <p id="declineModalText" class="text-sm text-[#2A1001]/80 mb-4">
+    <!-- ================= DECLINE / CANCEL MODAL ================= -->
+    <div id="declineModal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-[#F2F0EF] rounded-3xl p-6 sm:p-8 max-w-lg w-full border border-[#2A1001]/20 shadow-2xl relative my-auto">
+            <h3 class="text-xl font-bold text-[#2A1001] mb-2 font-['Poppins']" id="declineModalTitle">Decline Booking</h3>
+            <p id="declineModalText" class="text-xs sm:text-sm text-[#2A1001]/80 mb-4 leading-relaxed">
                 Are you sure you want to decline this booking request? This action cannot be undone.
             </p>
+
             <div id="paidWarning" class="hidden bg-amber-100 border-l-4 border-amber-500 text-amber-900 p-3 rounded-r-xl text-xs mb-4">
-                <i class="fa-solid fa-circle-exclamation mr-1"></i>
-                <strong>Notice:</strong> This patient has already paid online. Consider rescheduling instead of declining.
+                <i class="fa-solid fa-circle-exclamation mr-1 text-amber-700"></i>
+                <strong>Notice:</strong> This patient has already paid online. If declined, a refund will need to be processed. Consider contacting the patient or offering a reschedule.
             </div>
-            <div class="flex items-center justify-end gap-2 mt-6">
-                <button id="cancelDeclineBtn" class="px-4 py-2.5 text-sm font-semibold text-[#2A1001] bg-white border border-[#2A1001]/20 rounded-full hover:bg-gray-100 transition whitespace-nowrap">
+
+            <div class="flex items-center justify-end gap-2.5 mt-6 flex-wrap">
+                <button id="cancelDeclineBtn" type="button" class="px-5 py-2.5 text-xs sm:text-sm font-semibold text-[#2A1001] bg-white border border-[#2A1001]/20 rounded-full hover:bg-gray-100 transition cursor-pointer">
                     Cancel
                 </button>
-                <button id="rescheduleBtn" class="hidden px-4 py-2.5 text-sm font-semibold text-white bg-[#667733] rounded-full hover:bg-[#556022] transition flex flex-row items-center justify-center gap-2 whitespace-nowrap">
-                    <img src="../assets/calendarIcon.png" alt="resched" class="w-4 h-4 object-contain shrink-0 pointer-events-none" onerror="this.style.display='none'">
-                    <span>Reschedule Instead</span>
+                <button id="rescheduleInsteadBtn" type="button" class="hidden px-5 py-2.5 text-xs sm:text-sm font-bold text-white bg-[#667733] rounded-full hover:bg-[#556022] transition flex items-center gap-1.5 shadow-sm cursor-pointer active:scale-95">
+                    <i class="fa-solid fa-calendar-days text-xs"></i> Reschedule Instead
                 </button>
-                <button id="confirmDeclineBtn" class="px-4 py-2.5 text-sm font-semibold text-white bg-[#D9534F] rounded-full hover:bg-[#c9302c] transition whitespace-nowrap">
+                <button id="confirmDeclineBtn" type="button" class="px-5 py-2.5 text-xs sm:text-sm font-bold text-white bg-[#D9534F] rounded-full hover:bg-[#c9302c] transition shadow-sm cursor-pointer active:scale-95">
                     Confirm Decline
                 </button>
             </div>
         </div>
     </div>
-    <!--reschedule modal-->
-    <div id="rescheduleModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
-        <div class="bg-[#F3EFE4] rounded-3xl p-6 sm:p-8 relative max-w-4xl w-full shadow-2xl border-[3px] border-[#2A1001]/20 my-auto">
+
+    <!-- ================= DECLINE RESCHEDULE REQUEST MODAL ================= -->
+    <div id="declineRescheduleModal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-[#F2F0EF] rounded-3xl p-6 sm:p-8 max-w-lg w-full border border-[#2A1001]/20 shadow-2xl relative my-auto">
+            <h3 class="text-xl font-bold text-[#2A1001] mb-2 font-['Poppins']">Decline Reschedule Request</h3>
+            <p class="text-xs sm:text-sm text-[#2A1001]/80 mb-3" id="declineReschedModalSummary">
+                The appointment will keep its original confirmed schedule.
+            </p>
+
+            <div class="bg-white rounded-2xl p-4 border border-black/15 shadow-inner mb-4">
+                <label class="block text-xs font-bold text-[#2A1001] uppercase tracking-wide mb-1.5">
+                    Reason for Declining Reschedule (Optional)
+                </label>
+                <textarea
+                    id="declineReschedReasonInput"
+                    rows="3"
+                    placeholder="E.g. The requested slot is fully booked / dentist unavailable at requested time..."
+                    class="w-full rounded-xl border border-black/20 bg-gray-50 px-3 py-2 text-xs outline-none focus:ring-2 focus:ring-[#667733] focus:bg-white resize-none"
+                ></textarea>
+                <p class="text-[10px] text-gray-500 mt-1">This explanation will be sent to the patient's dashboard.</p>
+            </div>
+
+            <div class="flex items-center justify-end gap-2.5">
+                <button id="cancelDeclineReschedBtn" type="button" class="px-5 py-2.5 text-xs sm:text-sm font-semibold text-[#2A1001] bg-white border border-[#2A1001]/20 rounded-full hover:bg-gray-100 transition cursor-pointer">
+                    Cancel
+                </button>
+                <button id="confirmDeclineReschedBtn" type="button" class="px-5 py-2.5 text-xs sm:text-sm font-bold text-white bg-[#D9534F] rounded-full hover:bg-[#c9302c] transition shadow-sm cursor-pointer active:scale-95">
+                    Decline Reschedule Request
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= STAFF RESCHEDULE CALENDAR MODAL ================= -->
+    <div id="rescheduleModal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
+        <div class="bg-[#F3EFE4] rounded-3xl p-5 sm:p-8 relative max-w-4xl w-full shadow-2xl border-[3px] border-[#2A1001]/20 my-auto max-h-[94vh] flex flex-col">
 
             <!-- Close Button -->
-            <button id="closeRescheduleModal" class="absolute top-5 right-6 text-3xl font-extrabold text-[#382414] hover:opacity-60 transition leading-none">
+            <button id="closeRescheduleModal" class="absolute top-4 right-5 text-3xl font-extrabold text-[#382414] hover:opacity-60 transition leading-none cursor-pointer">
                 &times;
             </button>
 
-
-            <div class="mb-5 text-center">
-                <h2 class="text-2xl font-bold text-[#2A1001] font-['Poppins']" id="rescheduleModalTitle">
+            <div class="mb-4 text-center pr-6 pl-2">
+                <h2 class="text-xl sm:text-2xl font-bold text-[#2A1001] font-['Poppins']" id="rescheduleModalTitle">
                     Reschedule Appointment
                 </h2>
                 <p class="text-xs sm:text-sm text-[#2A1001]/70 mt-1" id="reschedulePatientSummary">
-                    Select a new date and available slot for the patient.
+                    Select a new date and available clinic slot for the patient.
                 </p>
             </div>
 
+            <!-- Calendar & Slots Container -->
+            <div class="flex-1 overflow-y-auto pr-1 flex flex-col gap-4">
+                <div class="flex flex-col-reverse lg:flex-row gap-4 sm:gap-6 items-center justify-center mt-1">
 
-            <div class="flex flex-col-reverse lg:flex-row gap-8 items-center justify-center mt-4">
-
-                <!-- Available slots panel-->
-                <div class="flex justify-center gap-6 sm:gap-8 bg-white/70 p-5 rounded-3xl border-2 border-[#2A1001]/20 shadow-sm w-full lg:w-auto">
-                    <!-- AM time -->
-                    <div class="flex flex-col w-36">
-                        <h4 class="font-bold text-sm text-[#2A1001] mb-3 text-center border-b pb-1 border-[#2A1001]/10">AM - Time</h4>
-                        <div id="amSlotsContainer" class="space-y-3 w-full"></div>
-                    </div>
-                    <!-- PM time -->
-                    <div class="flex flex-col w-36">
-                        <h4 class="font-bold text-sm text-[#2A1001] mb-3 text-center border-b pb-1 border-[#2A1001]/10">PM - Time</h4>
-                        <div id="pmSlotsContainer" class="space-y-3 w-full"></div>
-                    </div>
-                </div>
-
-                <!--Dynamic calendar -->
-                <div class="flex flex-col w-[410px] h-[360px] rounded-3xl border-[3.5px] border-black bg-white overflow-hidden shadow-lg shrink-0">
-
-                    <div class="flex justify-between items-center p-[10px] w-full h-15 bg-[#667733]">
-                        <div class="cursor-pointer text-[25px] bold text-[#D7E3A5] px-2 hover:text-white transition" id="prev">
-                            &lt;
+                    <!-- Available slots panel -->
+                    <div class="flex justify-center gap-3 sm:gap-6 bg-white/80 p-3.5 sm:p-4 rounded-2xl sm:rounded-3xl border-2 border-[#2A1001]/20 shadow-sm w-full lg:w-auto">
+                        <!-- AM time -->
+                        <div class="flex flex-col w-1/2 sm:w-36">
+                            <h4 class="font-bold text-xs sm:text-sm text-[#2A1001] mb-2 text-center border-b pb-1 border-[#2A1001]/10">
+                                <i class="fa-solid fa-sun text-amber-500 mr-1"></i> AM - Time
+                            </h4>
+                            <div id="amSlotsContainer" class="space-y-1.5 sm:space-y-2 w-full"></div>
                         </div>
-
-                        <!-- Display Month-Year -->
-                        <div id="month-year" class="text-[25px] bold text-[#D7E3A5]"></div>
-
-                        <div class="cursor-pointer text-[25px] bold text-[#D7E3A5] px-2 hover:text-white transition" id="next">
-                            &gt;
+                        <!-- PM time -->
+                        <div class="flex flex-col w-1/2 sm:w-36">
+                            <h4 class="font-bold text-xs sm:text-sm text-[#2A1001] mb-2 text-center border-b pb-1 border-[#2A1001]/10">
+                                <i class="fa-solid fa-moon text-indigo-600 mr-1"></i> PM - Time
+                            </h4>
+                            <div id="pmSlotsContainer" class="space-y-1.5 sm:space-y-2 w-full"></div>
                         </div>
                     </div>
 
-                    <!-- The days of the week -->
-                    <div class="grid grid-cols-7 gap-3 px-4 py-2 text-center text-[#2A1001] font-semibold text-sm">
-                        <div>Sun</div>
-                        <div>Mon</div>
-                        <div>Tue</div>
-                        <div>Wed</div>
-                        <div>Thu</div>
-                        <div>Fri</div>
-                        <div>Sat</div>
+                    <!-- Dynamic calendar -->
+                    <div class="flex flex-col w-full max-w-[350px] sm:max-w-[390px] h-[340px] rounded-2xl sm:rounded-3xl border-[3px] border-black bg-white overflow-hidden shadow-lg shrink-0">
+
+                        <div class="flex justify-between items-center px-3 py-2 w-full bg-[#667733] text-[#D7E3A5]">
+                            <div class="cursor-pointer text-xl font-bold px-2 hover:text-white transition" id="prev">&lt;</div>
+                            <div id="month-year" class="text-base sm:text-lg font-bold text-white"></div>
+                            <div class="cursor-pointer text-xl font-bold px-2 hover:text-white transition" id="next">&gt;</div>
+                        </div>
+
+                        <div class="grid grid-cols-7 gap-1 px-2 sm:px-3 py-1.5 text-center text-[#2A1001]/70 font-bold text-xs border-b">
+                            <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
+                        </div>
+
+                        <div class="grid grid-cols-7 gap-1 sm:gap-1.5 px-2 sm:px-3 py-2 place-items-center" id="days"></div>
                     </div>
 
-                    <!--days of the month grid -->
-                    <div class="grid grid-cols-7 gap-3 px-4 py-1 place-items-center" id="days"></div>
                 </div>
 
+                <!-- Selected schedule indicator -->
+                <p class="text-xs sm:text-sm text-[#2A1001] text-center font-medium bg-white/60 py-2 px-3 sm:px-4 rounded-full border border-black/10 mx-auto max-w-full break-words" id="selectedDateDisplay">
+                    No date selected yet.
+                </p>
             </div>
 
-            <!-- selected date and time indicator -->
-            <p class="text-sm text-[#2A1001] text-center font-medium mt-6" id="selectedDateDisplay">
-                No date selected yet.
-            </p>
-
-            <!--Confirmation Buttons -->
-            <div class="mt-4 flex flex-col sm:flex-row items-center justify-center gap-3">
-                <button id="cancelRescheduleModalBtn" class="w-full sm:w-auto px-6 py-2.5 text-sm font-semibold text-[#2A1001] bg-white border border-[#2A1001]/20 rounded-full hover:bg-gray-100 transition">
+            <!-- Confirmation Buttons -->
+            <div class="mt-4 pt-3 border-t border-[#2A1001]/10 flex flex-col sm:flex-row items-center justify-center gap-3 shrink-0">
+                <button id="cancelRescheduleModalBtn" type="button" class="w-full sm:w-auto px-6 py-2.5 text-xs sm:text-sm font-semibold text-[#2A1001] bg-white border border-[#2A1001]/20 rounded-full hover:bg-gray-100 transition cursor-pointer">
                     Cancel
                 </button>
-                <button id="confirmRescheduleBtn" disabled class="w-full sm:w-auto bg-[#667733] hover:bg-[#556022] transition text-white font-bold px-8 py-2.5 rounded-full shadow disabled:opacity-40 disabled:cursor-not-allowed">
+                <button id="confirmRescheduleBtn" disabled type="button" class="w-full sm:w-auto bg-[#667733] hover:bg-[#556022] transition text-white font-bold px-8 py-2.5 rounded-full shadow disabled:opacity-40 disabled:cursor-not-allowed text-xs sm:text-sm cursor-pointer active:scale-95">
                     Confirm Reschedule
                 </button>
             </div>
@@ -223,607 +276,801 @@
         </div>
     </div>
 
-</main>
-
-</div>
-
-<script>
-    // let bookings = [ //=============================REPLACE============================TEMPORARY!=================================================TEMPORARY!==================================================TEMPORARY!
-    //      { appointment_id: 9999, public_id: "9999", first_name: "Gary", last_name: "Velasco", service_label: "Checkup", appointment_date: "2026-09-25", time_slot: "09:00:00", created_at: "2026-09-20T18:00:00", payment_status: "paid" },
-    //        { appointment_id: 1827, public_id: "1827", first_name: "Andrew", last_name: "Philip Bogtae", service_label: "Cleaning", appointment_date: "2026-09-25", time_slot: "10:00:00", created_at: "2026-09-19T10:30:00", payment_status: null },
-    //        { appointment_id: 8172, public_id: "8172", first_name: "Venus", last_name: "Coleen Silvestre", service_label: "Pasta", appointment_date: "2026-09-20", time_slot: "14:00:00", created_at: "2026-09-19T08:00:00", payment_status: "paid" },
-    //        { appointment_id: 9182, public_id: "9182", first_name: "Lleyton", last_name: "Andrew Flores", service_label: "Consultation", appointment_date: "2026-09-18", time_slot: "09:00:00", created_at: "2026-09-17T09:15:00", payment_status: null },
-    //        { appointment_id: 9928, public_id: "9928", first_name: "Justine", last_name: "Penelophy Reolada", service_label: "Cleaning", appointment_date: "2026-09-14", time_slot: "15:00:00", created_at: "2026-08-30T16:45:00", payment_status: "paid" },
-    //        { appointment_id: 3452, public_id: "3452", first_name: "Maria", last_name: "Santos", service_label: "Whitening", appointment_date: "2026-09-22", time_slot: "09:00:00", created_at: "2026-09-19T14:10:00", payment_status: "paid" },
-    //        { appointment_id: 5621, public_id: "5621", first_name: "John", last_name: "Doe", service_label: "Cleaning", appointment_date: "2026-09-21", time_slot: "13:00:00", created_at: "2026-09-18T11:00:00", payment_status: null },
-    //        { appointment_id: 7890, public_id: "7890", first_name: "Sofia", last_name: "Reyes", service_label: "Whitening", appointment_date: "2026-09-23", time_slot: "11:00:00", created_at: "2026-09-19T18:30:00", payment_status: "paid" }
-    //    ];
-
-    //let bookings = []; ====================================== ADD THIS WHEN BACKEND
-    //let occupiedSlots = []; // Stores all taken slots from database ==============ADD WHEN BACKEND
-
-    let bookings = [];
-    let occupiedSlots = [];
-    let currentSearch = "";
-    let pendingDeclineId = null;
-    let pendingRescheduleId = null;
-    let approvedBookings = [];
-    let currentStatusFilter = "pending"; 
-
-    // Standard clinic slots schedule (AM and PM)
-    const clinicSlots = [
-        { id: "09:00:00", label: "9:00 AM - 10:00 AM" },
-        { id: "10:00:00", label: "10:00 AM - 11:00 AM" },
-        { id: "11:00:00", label: "11:00 AM - 12:00 PM" },
-        { id: "13:00:00", label: "1:00 PM - 2:00 PM" },
-        { id: "14:00:00", label: "2:00 PM - 3:00 PM" },
-        { id: "15:00:00", label: "3:00 PM - 4:00 PM" },
-        { id: "16:00:00", label: "4:00 PM - 5:00 PM" }
-    ];
-
-    // ---------------------------------------------------------------------
-    // XSS PROTECTION: escape any value before it is interpolated into an
-    // innerHTML template. Never interpolate patient-supplied fields
-    // (first_name, last_name, service_label, public_id, etc.) into
-    // innerHTML without passing them through this first.
-    // ---------------------------------------------------------------------
-    function escapeHtml(value) {
-        const div = document.createElement('div');
-        div.textContent = value === null || value === undefined ? '' : String(value);
-        return div.innerHTML;
-    }
-
-
-    // Calendar form elements
-    const monthYear = document.getElementById('month-year');
-    const daysContainer = document.getElementById('days');
-    const prevButton = document.getElementById('prev');
-    const nextButton = document.getElementById('next');
-
-    const months = [
-        'January', 'February', 'March', 'April', 'May', 'June', 'July',
-        'August', 'September', 'October', 'November', 'December'
-    ];
-
-    let currentDate = new Date();
-    let today = new Date();
-
-    let selectedDate = null;
-    let selectedDateFormatted = null; // YYYY-MM-DD
-    let selectedTime = null;    
-
-    //load bookings !!
-    async function loadBookingsFromDatabase() {
-        try {
-            const token = localStorage.getItem('userToken');
-            const response = await fetch('/api/appointments?status=pending', {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-            if (!response.ok) throw new Error(`Server error: ${response.status}`);
-            bookings = await response.json();
-            renderBookings();
-        } catch (error) {
-            console.error("Failed to load booking requests:", error);
-            if (bookings.length === 0) {
-                renderBookings();
-            }
-        }
-    }
-
-    async function loadApprovedBookings() {
-    try {
-        const token = localStorage.getItem('userToken');
-        const response = await fetch('/api/appointments?status=approved', {
-            method: 'GET',
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (!response.ok) throw new Error(`Server error: ${response.status}`);
-        approvedBookings = await response.json();
-        console.log('Approved bookings loaded:', approvedBookings); // temporary check
-    } catch (error) {
-        console.error("Failed to load approved bookings:", error);
-    }
-}
-
-
-    //load all occupied time slots !!
-    async function loadOccupiedSlotsFromDatabase() {
-        try {
-            const token = localStorage.getItem('userToken');
-            const response = await fetch('/api/appointments/occupied', {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-            if (!response.ok) throw new Error(`Server error: ${response.status}`);
-            occupiedSlots = await response.json();
-        } catch (error) {
-            console.error("Failed to load occupied slots:", error);
-        }
-    }
-
-    //It converts a 24-hour time format into a readable 12-hour format with AM/PM
-    function formatTime12h(timeStr) {
-        if (!timeStr) return "";
-        const [hours, minutes] = timeStr.split(":");
-        let h = parseInt(hours, 10);
-        const ampm = h >= 12 ? "PM" : "AM";
-        h = h % 12 || 12;
-        return `${h}:${minutes} ${ampm}`;
-    }
-
-    function isNew(submittedAt) {  //Checks if the booking was submitted within the last 24 hours
-        const hoursSince = (new Date() - new Date(submittedAt)) / (1000 * 60 * 60);
-        return hoursSince <= 24;
-    }
-
-        document.getElementById('statusFilters').addEventListener('click', function (e) {
-            const btn = e.target.closest('.filterBtn');
-            if (!btn) return;
-            currentStatusFilter = btn.dataset.status;
-            renderBookings();
-        });
-
-
- function getFiltered() {
-    const source = currentStatusFilter === "approved" ? approvedBookings
-                 : currentStatusFilter === "all" ? [...bookings, ...approvedBookings]
-                 : bookings; // pending
-
-    let filtered = source.filter(b =>
-        `${b.first_name} ${b.last_name}`.toLowerCase().includes(currentSearch.toLowerCase())
-    );
-
-    return filtered.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
-}
-
-//Render the booking cards
-function renderBookings() {
-    const container = document.getElementById('booking-container');
-    const filtered = getFiltered();
-
-    if (filtered.length === 0) { //if the system has no bookings it will display text
-        container.innerHTML = `<p class="text-center text-[#2A1001]/60 py-10">No booking requests found.</p>`;
-        return;
-    }
-
-    // NOTE: every patient-controlled field (public_id, first_name, last_name,
-    // service_label) is passed through escapeHtml() before being placed into
-    // the innerHTML template below, to prevent stored XSS.
-    container.innerHTML = filtered.map(b => `
-            <div class="flex flex-col md:flex-row md:items-center md:justify-between bg-white border border-[#2A1001]/10 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all duration-300 gap-4">
-                <div>
-                    <div class="flex items-center gap-2 mb-1">
-                        <span class="text-xs font-semibold text-[#2A1001]/60 uppercase tracking-wide">Patient ID: ${escapeHtml(b.public_id)}</span>
-                        ${isNew(b.created_at) ? '<span class="text-xs bg-green-100 text-green-700 font-semibold px-2 py-0.5 rounded-full">New</span>' : ''} 
-                        ${b.payment_method === 'online' ? '<span class="text-xs bg-blue-100 text-blue-700 font-semibold px-2 py-0.5 rounded-full">Paid Online</span>' : '<span class="text-xs bg-gray-100 text-[#2A1001]/70 font-semibold px-2 py-0.5 rounded-full">Cash</span>'}
-                    </div>
-                    <h3 class="text-lg font-bold text-[#2A1001] font-['Poppins']">${escapeHtml(b.first_name)} ${escapeHtml(b.last_name)}</h3>
-                    <p class="text-sm text-[#2A1001]/80 mt-0.5">
-                        <span class="font-medium text-[#667733]">${escapeHtml(b.service_label)}</span> • Requested for <strong>${escapeHtml(b.appointment_date)}</strong> at <strong>${escapeHtml(formatTime12h(b.time_slot))}</strong>
-                    </p>
+    <!-- ================= NOTICE MODAL ================= -->
+    <div id="noticeModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
+        <div class="bg-[#F2F0EF] rounded-3xl p-6 sm:p-7 w-full max-w-sm shadow-2xl border border-[#1a281b]/15 flex flex-col gap-4">
+            <div class="flex items-start gap-3">
+                <div id="noticeIconWrap" class="w-10 h-10 rounded-full flex items-center justify-center text-lg shrink-0 bg-[#EAF0DD] text-[#556022]">
+                    <i id="noticeIcon" class="fa-solid fa-circle-info"></i>
                 </div>
-                <div class="flex items-center gap-2 flex-wrap sm:flex-nowrap">
-                    ${b.appointment_status === 'approved' ? `
-                        <span class="px-4 py-2 text-sm font-bold text-[#667733]">
-                            Approved
-                        </span>
-                    ` : `
-                        <button class="declineBtn flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-[#D9534F] rounded-full hover:bg-[#c9302c] transition shadow-sm" data-id="${escapeHtml(b.appointment_id)}">
-                            <img src="../assets/closeIcon.png" alt="Decline" class="w-3.5 h-3.5 object-contain pointer-events-none" onerror="this.style.display='none'">
-                            <span>Decline</span>
-                        </button>
-                        <button class="rescheduleDirectBtn px-4 py-2 text-sm font-semibold text-[#2A1001] bg-[#D5C04D] rounded-full hover:bg-[#E1D282] transition flex items-center justify-center gap-1.5" data-id="${escapeHtml(b.appointment_id)}">
-                            <img src="../assets/calendarIcon.png" alt="resched" class="w-3.5 h-3.5 object-contain pointer-events-none" onerror="this.style.display='none'">
-                            <span>Reschedule</span>
-                        </button>
-                        <button class="acceptBtn flex items-center justify-center gap-2 px-5 py-2 text-sm font-semibold text-white bg-[#667733] rounded-full hover:bg-[#556022] transition shadow-sm" data-id="${escapeHtml(b.appointment_id)}">
-                            <img src="../assets/checkIcon.png" alt="Accept" class="w-3.5 h-3.5 object-contain pointer-events-none" onerror="this.style.display='none'">
-                            <span>Accept</span>
-                        </button>
-                    `}
+                <div class="flex flex-col gap-1 pt-0.5">
+                    <h3 id="noticeTitle" class="font-extrabold text-base sm:text-lg text-[#1a281b]">Notice</h3>
+                    <p id="noticeMessage" class="text-xs sm:text-sm text-gray-600 leading-relaxed"></p>
                 </div>
             </div>
-        `).join('');
-}
+            <div class="flex justify-end">
+                <button id="noticeOkBtn" class="bg-[#667733] hover:bg-[#556022] text-white font-bold text-xs sm:text-sm px-6 py-2.5 rounded-full transition cursor-pointer active:scale-95">
+                    OK
+                </button>
+            </div>
+        </div>
+    </div>
 
-    function renderCalendar(date) {
-        const year = date.getFullYear();
-        const month = date.getMonth();
-        const firstDay = new Date(year, month, 1).getDay();
-        const lastDay = new Date(year, month + 1, 0).getDate();
+    <!-- ================= COMBINED CLIENT JAVASCRIPT ================= -->
+    <script>
+        const API_BASE_URL = window.BACKEND_API_BASE_URL || '';
 
-        monthYear.textContent = `${months[month]} ${year}`;
-        daysContainer.innerHTML = '';
-        // Handles what happens when a specific calendar day is clicked
-        function handleDayClick(dayDiv, displayDateStr, sqlDateStr) {
-            dayDiv.addEventListener('click', function () {
-                //Remove highlight/selection styling from all other days
-                document.querySelectorAll('#days > div').forEach(d => {
-                    d.classList.remove('bg-[#D7E3A5]', 'border-2', 'border-[#2A1001]');
-                });
-                //Apply highlight styling to the clicked day
-                dayDiv.classList.add('bg-[#D7E3A5]', 'border-2', 'border-[#2A1001]');
+        function escapeHtml(value) {
+            const div = document.createElement('div');
+            div.textContent = value == null ? '' : String(value);
+            return div.innerHTML;
+        }
 
-                //Save the chosen date
-                selectedDate = displayDateStr;
-                selectedDateFormatted = sqlDateStr;
-                selectedTime = null; // Reset previously chosen time slot since date changed
+        const clinicSlots = [
+            { id: "08:00:00", label: "8:00 AM - 9:00 AM" },
+            { id: "09:00:00", label: "9:00 AM - 10:00 AM" },
+            { id: "10:00:00", label: "10:00 AM - 11:00 AM" },
+            { id: "11:00:00", label: "11:00 AM - 12:00 PM" },
+            { id: "13:00:00", label: "1:00 PM - 2:00 PM" },
+            { id: "14:00:00", label: "2:00 PM - 3:00 PM" },
+            { id: "15:00:00", label: "3:00 PM - 4:00 PM" },
+            { id: "16:00:00", label: "4:00 PM - 5:00 PM" }
+        ];
 
-                //Update the UI summary text and fetch available slots for this date
-                updateSummaryDisplay();
-                renderAvailableSlots(sqlDateStr);
+        const months = [
+            'January', 'February', 'March', 'April', 'May', 'June', 'July',
+            'August', 'September', 'October', 'November', 'December'
+        ];
+
+        let allBookings = [];
+        let occupiedSlots = [];
+        let currentSearch = "";
+        let currentStatusFilter = "pending"; // "pending", "reschedule_requested", "approved", "all"
+
+        let pendingDeclineApptId = null;
+        let pendingDeclineReschedApptId = null;
+        let pendingRescheduleApptId = null;
+
+        // Calendar State
+        let calCurrentDate = new Date();
+        const calToday = new Date();
+        let calSelectedDate = null;
+        let calSelectedDateFormatted = null; // YYYY-MM-DD
+        let calSelectedTime = null;
+
+        function authHeaders(json = false) {
+            const token = localStorage.getItem('userToken');
+            const headers = {};
+            if (token) headers['Authorization'] = `Bearer ${token}`;
+            if (json) headers['Content-Type'] = 'application/json';
+            return headers;
+        }
+
+        function formatTime12h(timeStr) {
+            if (!timeStr) return "";
+            const [hours, minutes] = timeStr.split(":");
+            let h = parseInt(hours, 10);
+            const ampm = h >= 12 ? "PM" : "AM";
+            h = h % 12 || 12;
+            return `${h}:${minutes || '00'} ${ampm}`;
+        }
+
+        function isNewBooking(submittedAt) {
+            if (!submittedAt) return false;
+            const hoursSince = (new Date() - new Date(submittedAt)) / (1000 * 60 * 60);
+            return hoursSince <= 24;
+        }
+
+        // ── Notice Modal ──────────────────────────────────────────────────────────
+        function showNotice(message, { title = "Notice", type = "info" } = {}) {
+            const modal = document.getElementById('noticeModal');
+            if (!modal) { alert(title + ': ' + message); return; }
+
+            const iconWrap = document.getElementById('noticeIconWrap');
+            const icon = document.getElementById('noticeIcon');
+            const titleEl = document.getElementById('noticeTitle');
+            const msgEl = document.getElementById('noticeMessage');
+
+            const styles = {
+                success: { wrap: 'bg-green-100 text-green-700', icon: 'fa-circle-check' },
+                error:   { wrap: 'bg-red-100 text-red-600',     icon: 'fa-circle-exclamation' },
+                info:    { wrap: 'bg-[#EAF0DD] text-[#556022]', icon: 'fa-circle-info' }
+            };
+            const s = styles[type] || styles.info;
+
+            iconWrap.className = `w-10 h-10 rounded-full flex items-center justify-center text-lg shrink-0 ${s.wrap}`;
+            icon.className = `fa-solid ${s.icon}`;
+            titleEl.textContent = title;
+            msgEl.textContent = message;
+
+            modal.classList.remove('hidden');
+        }
+
+        function closeNoticeModal() {
+            const modal = document.getElementById('noticeModal');
+            if (modal) modal.classList.add('hidden');
+        }
+
+        // ── Initialization ────────────────────────────────────────────────────────
+        document.addEventListener('DOMContentLoaded', () => {
+            initEventListeners();
+            initSocketEvents();
+            loadAllBookings();
+            loadOccupiedSlots();
+        });
+
+        function initSocketEvents() {
+            if (typeof io !== 'function') return;
+            const socket = io();
+
+            socket.on('payment-confirmed', () => {
+                loadAllBookings();
+            });
+
+            socket.on('appointment-updated', () => {
+                loadAllBookings();
+                loadOccupiedSlots();
+            });
+
+            socket.on('queue_updated', () => {
+                loadAllBookings();
             });
         }
 
-        //Get the total number of days in the previous month
-        const prevMonthLastDay = new Date(year, month, 0).getDate();
-        // Fill in the blank grid spaces at the start of the calendar with the trailing days of the previous month
-        //made prev months text white
-        for (let i = firstDay; i > 0; i--) {
-            const dayDiv = document.createElement('div');
-            dayDiv.classList.add('w-8', 'h-8', 'rounded-full', 'flex', 'items-center', 'justify-center', 'font-medium', 'text-[#fff]', 'cursor-default');
-            dayDiv.textContent = prevMonthLastDay - i + 1;
-            daysContainer.appendChild(dayDiv);
-        }
+        function initEventListeners() {
+            document.getElementById('noticeOkBtn')?.addEventListener('click', closeNoticeModal);
+            document.getElementById('noticeModal')?.addEventListener('click', (e) => {
+                if (e.target === document.getElementById('noticeModal')) closeNoticeModal();
+            });
 
-        // Loop through every day of the month
-        for (let i = 1; i <= lastDay; i++) {
-            const dayDiv = document.createElement('div');
-            // Add styles and hover effects to the day box
-            dayDiv.classList.add(
-                'w-8', 'h-8', 'rounded-full', 'flex', 'items-center', 'justify-center',
-                'font-medium', 'text-[#2A1001]', 'cursor-pointer', 'transition-colors',
-                'hover:bg-[#D7E3A5]', 'hover:rounded-full', 'hover:border-2',
-                'hover:border-[#2A1001]', 'hover:scale-[1.25]'
-            );
+            document.getElementById('refreshBtn')?.addEventListener('click', () => {
+                loadAllBookings();
+                loadOccupiedSlots();
+            });
 
-            //put numbers
-            dayDiv.textContent = i;
-            // Highlight if it is today's date
-            if (i === today.getDate() && month === today.getMonth() && year === today.getFullYear()) {
-                dayDiv.classList.add('today');
-            }
+            document.getElementById('searchInput')?.addEventListener('input', (e) => {
+                currentSearch = e.target.value.trim().toLowerCase();
+                renderBookings();
+            });
 
-            const displayStr = `${months[month]} ${i}, ${year}`;
-            const formattedMonth = String(month + 1).padStart(2, '0');
-            const formattedDay = String(i).padStart(2, '0');
-            const sqlStr = `${year}-${formattedMonth}-${formattedDay}`;
-
-            // Keep the day highlighted if it was selected by the user
-            if (selectedDateFormatted === sqlStr) {
-                dayDiv.classList.add('bg-[#D7E3A5]', 'border-2', 'border-[#2A1001]');
-            }
-
-            // Make the day clickable and put it on the calendar
-            handleDayClick(dayDiv, displayStr, sqlStr);
-            daysContainer.appendChild(dayDiv);
-        }
-    }
-
-
-    function renderAvailableSlots(dateStr) {
-        const amContainer = document.getElementById('amSlotsContainer');
-        const pmContainer = document.getElementById('pmSlotsContainer');
-        // Clear previous time slots
-        amContainer.innerHTML = '';
-        pmContainer.innerHTML = '';
-        // If no date is clicked yet, show a placeholder message
-        if (!dateStr) {
-            amContainer.innerHTML = '<p class="text-xs text-center text-gray-400 py-4">Select date</p>';
-            pmContainer.innerHTML = '<p class="text-xs text-center text-gray-400 py-4">Select date</p>';
-            return;
-        }
-        // this finds which time slots are already booked on this specific date —
-        // uses occupiedSlots (pending + approved) rather than bookings (pending
-        // only), so an already-approved appointment correctly blocks the slot too
-        const bookedSlotsOnDate = occupiedSlots
-            .filter(slot => {
-                const sDate = (slot.appointment_date || '').split('T')[0];
-                return sDate === dateStr && slot.appointment_id != pendingRescheduleId;
-            })
-            .map(b => b.time_slot);
-
-        // Loop through all available clinic time slots
-        clinicSlots.forEach(slot => {
-            const isBooked = bookedSlotsOnDate.includes(slot.id);
-            const isSelected = selectedTime === slot.id;
-
-            // Separate slots into AM and PM based on hour
-            const hour = parseInt(slot.id.split(':')[0], 10);
-            const isAM = hour < 12;
-
-            // Create a button for the time slot
-            const slotBtn = document.createElement('button');
-            slotBtn.type = 'button';
-
-            let baseClass = "w-full py-2.5 px-2 text-xs rounded-full border-[1.5px] transition text-center font-medium ";
-            // If the slot is already booked, make it red and disable it
-            if (isBooked) {
-                slotBtn.disabled = true;
-                slotBtn.className = baseClass + 'bg-[#FA8D8D] text-[#2A1001] border-gray-300 cursor-not-allowed';
-                slotBtn.textContent = slot.label;
-            } else {
-                //highlight green if selected by the user
-                slotBtn.className = baseClass + (isSelected
-                    ? 'bg-[#667733] text-white border-[#667733] font-bold shadow-inner'
-                    : 'bg-white text-[#2A1001] border-black hover:bg-[#D7E3A5]/40');
-                slotBtn.textContent = slot.label;
-                // When clicked, save the selected time and refresh the display
-                slotBtn.addEventListener('click', function () {
-                    selectedTime = slot.id;
-                    renderAvailableSlots(dateStr);
-                    updateSummaryDisplay();
-                });
-            }
-            // Put the button into either the AM or PM column container
-            if (isAM) {
-                amContainer.appendChild(slotBtn);
-            } else {
-                pmContainer.appendChild(slotBtn);
-            }
-        });
-    }
-
-    function updateSummaryDisplay() {
-        const display = document.getElementById('selectedDateDisplay');
-        const confirmBtn = document.getElementById('confirmRescheduleBtn');
-
-        //if both a date AND a time slot are selected
-        if (selectedDate && selectedTime) {
-            const slotObj = clinicSlots.find(s => s.id === selectedTime);
-            display.innerHTML = `Selected Schedule: <strong>${escapeHtml(selectedDate)}</strong> at <strong>${escapeHtml(slotObj ? slotObj.label : selectedTime)}</strong>`;
-            confirmBtn.disabled = false;
-            //Only a date is selected (missing time slot)
-        } else if (selectedDate) {
-            display.innerHTML = `Selected Date: <strong>${escapeHtml(selectedDate)}</strong> (Please choose an available AM or PM slot)`;
-            confirmBtn.disabled = true;
-            //Nothing is selected yet
-        } else {
-            display.textContent = 'No date selected yet.';
-            confirmBtn.disabled = true;
-        }
-    }
-
-    function openRescheduleModal(appointmentId) {
-        //Save the ID of the appointment that is about to reschedule
-        pendingRescheduleId = appointmentId;
-        //Find the correct booking details
-        const booking = bookings.find(b => b.appointment_id == appointmentId);
-        if (!booking) return;
-
-        // textContent is already safe (no HTML parsing) so this one is fine as-is
-        document.getElementById('rescheduleModalTitle').textContent =
-            `Reschedule Appointment - ${booking.first_name} ${booking.last_name}`;
-
-        // this one uses innerHTML for the <strong> tags, so patient fields must be escaped
-        document.getElementById('reschedulePatientSummary').innerHTML =
-            `Patient: <strong>${escapeHtml(booking.first_name)} ${escapeHtml(booking.last_name)}</strong> (${escapeHtml(booking.service_label)}) — Current: ${escapeHtml(booking.appointment_date)} at ${escapeHtml(formatTime12h(booking.time_slot))}`;
-
-        //Reset previously selected date and time slots
-        selectedDate = null;
-        selectedDateFormatted = null;
-        selectedTime = null;
-        //Draw the calendar and clear out the slot panels
-        renderCalendar(currentDate);
-        renderAvailableSlots(null);
-        updateSummaryDisplay();
-
-        document.getElementById('rescheduleModal').classList.remove('hidden');//make modal visible
-    }
-
-
-    function closeRescheduleModal() {
-        document.getElementById('rescheduleModal').classList.add('hidden');
-        pendingRescheduleId = null;
-    }
-    // Go to the previous month when the left arrow is clicked
-    prevButton.addEventListener('click', function () {
-        currentDate.setMonth(currentDate.getMonth() - 1);
-        renderCalendar(currentDate);
-    });
-    // Go to the next month when the right arrow is clicked
-    nextButton.addEventListener('click', function () {
-        currentDate.setMonth(currentDate.getMonth() + 1);
-        renderCalendar(currentDate);
-    });
-    //close modal when click x
-    document.getElementById('closeRescheduleModal').addEventListener('click', closeRescheduleModal);
-    // Close modal when clicking the 'Cancel' button
-    document.getElementById('cancelRescheduleModalBtn').addEventListener('click', closeRescheduleModal);
-    // Close modal if the user clicks outside of the modal box
-    document.getElementById('rescheduleModal').addEventListener('click', function (e) {
-        if (e.target === this) closeRescheduleModal();
-    });
-
-
-    // Confirm Reschedule ===========================================================================================================LOOOK REPLACE THIS
-    document.getElementById('confirmRescheduleBtn').addEventListener('click', async function () {
-        if (!selectedDateFormatted || !selectedTime || !pendingRescheduleId) {
-            alert('Please select both a Date and a Time Slot!');
-            return;
-        }
-
-        const booking = bookings.find(b => b.appointment_id == pendingRescheduleId);
-        if (!booking) return;
-
-        try {
-            const token = localStorage.getItem('userToken');
-
-            booking.appointment_date = selectedDateFormatted;
-            booking.time_slot = selectedTime;
-
-            alert(`Appointment for ${booking.first_name} ${booking.last_name} successfully rescheduled to ${selectedDate} at ${formatTime12h(selectedTime)}!`);
-
-            closeRescheduleModal();
-            renderBookings();
-
-        } catch (error) {
-            console.error(error);
-            alert("Could not reschedule appointment on the server.");
-        }
-    });
-
-    /* document.getElementById('confirmRescheduleBtn').addEventListener('click', async function () {===============================================================================!!!!!!!!
-    if (!selectedDateFormatted || !selectedTime || !pendingRescheduleId) {
-        alert('Please select both a Date and a Time Slot!');
-        return;
-    }
-    const booking = bookings.find(b => b.appointment_id == pendingRescheduleId);
-    if (!booking) return;
-    try {
-        const token = localStorage.getItem('userToken');
-        const response = await fetch(`/api/appointments/${pendingRescheduleId}/reschedule`, {
-            method: 'PATCH',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({
-                appointment_date: selectedDateFormatted,
-                time_slot: selectedTime
-            })
-        });
-        if (!response.ok) {
-            const err = await response.json();
-            throw new Error(err.message || 'Failed to reschedule appointment');
-        }
-        alert(`Appointment for ${booking.first_name} ${booking.last_name} successfully rescheduled! A notification was sent to their dashboard.`);
-
-        closeRescheduleModal();
-        // Re-fetch fresh data from database
-        await loadBookingsFromDatabase();
-        await loadOccupiedSlotsFromDatabase();
-    } catch (error) {
-        console.error("Reschedule error:", error);
-        alert("Could not reschedule appointment on the server: " + error.message);
-    }
-});
-*/
-
-    // Card button delegation
-    document.getElementById('booking-container').addEventListener('click', async function (e) {
-        const btn = e.target.closest('button');
-        if (!btn) return;
-        const id = btn.dataset.id;
-        if (!id) return;
-        const token = localStorage.getItem('userToken');
-
-        if (btn.classList.contains('rescheduleDirectBtn')) {
-            openRescheduleModal(id);
-            return;
-        }
-
-        if (btn.classList.contains('acceptBtn')) {
-            if (confirm('Approve this booking request?')) {
-                try {
-                    const response = await fetch(`/api/appointments/${id}/status`, {
-                        method: 'PATCH',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${token}`
-                        },
-                        body: JSON.stringify({ appointment_status: 'approved' })
+            // Filter button listeners matching Queue.html (no outline/ring lines)
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.addEventListener('click', function () {
+                    document.querySelectorAll('.filter-btn').forEach(b => {
+                        b.classList.remove('scale-105', 'shadow-2xl', 'active-filter');
                     });
-                    if (!response.ok) {
-                        const err = await response.json();
-                        throw new Error(err.message || 'Failed to approve appointment');
-                    }
-                    alert('Appointment approved successfully!');
-                    await loadBookingsFromDatabase();
-                    await loadOccupiedSlotsFromDatabase();
-                } catch (error) {
-                    console.error("Accept error:", error);
-                    alert("Could not accept booking: " + error.message);
+
+                    this.classList.add('scale-105', 'shadow-2xl', 'active-filter');
+
+                    currentStatusFilter = this.dataset.status;
+                    renderBookings();
+                });
+            });
+
+            document.getElementById('booking-container')?.addEventListener('click', handleCardActionClicks);
+
+            // Initial Decline Modal
+            document.getElementById('cancelDeclineBtn')?.addEventListener('click', closeDeclineModal);
+            document.getElementById('declineModal')?.addEventListener('click', (e) => {
+                if (e.target === document.getElementById('declineModal')) closeDeclineModal();
+            });
+            document.getElementById('confirmDeclineBtn')?.addEventListener('click', handleConfirmDecline);
+            document.getElementById('rescheduleInsteadBtn')?.addEventListener('click', () => {
+                const id = pendingDeclineApptId;
+                closeDeclineModal();
+                if (id) openRescheduleModal(id);
+            });
+
+            // Decline Reschedule Modal
+            document.getElementById('cancelDeclineReschedBtn')?.addEventListener('click', closeDeclineReschedModal);
+            document.getElementById('declineRescheduleModal')?.addEventListener('click', (e) => {
+                if (e.target === document.getElementById('declineRescheduleModal')) closeDeclineReschedModal();
+            });
+            document.getElementById('confirmDeclineReschedBtn')?.addEventListener('click', handleConfirmDeclineReschedule);
+
+            // Reschedule Calendar Modal
+            document.getElementById('closeRescheduleModal')?.addEventListener('click', closeRescheduleModal);
+            document.getElementById('cancelRescheduleModalBtn')?.addEventListener('click', closeRescheduleModal);
+            document.getElementById('rescheduleModal')?.addEventListener('click', (e) => {
+                if (e.target === document.getElementById('rescheduleModal')) closeRescheduleModal();
+            });
+            document.getElementById('prev')?.addEventListener('click', () => {
+                calCurrentDate.setMonth(calCurrentDate.getMonth() - 1);
+                renderCalendar(calCurrentDate);
+            });
+            document.getElementById('next')?.addEventListener('click', () => {
+                calCurrentDate.setMonth(calCurrentDate.getMonth() + 1);
+                renderCalendar(calCurrentDate);
+            });
+            document.getElementById('confirmRescheduleBtn')?.addEventListener('click', handleConfirmDirectReschedule);
+        }
+
+        async function loadAllBookings() {
+            try {
+                const res = await fetch(`${API_BASE_URL}/api/appointments?status=all`, { headers: authHeaders() });
+                if (res.ok) {
+                    allBookings = await res.json();
+                    updateBadges();
+                    renderBookings();
+                } else {
+                    console.error('Failed to load appointments:', res.status);
                 }
+            } catch (err) {
+                console.error('Network error loading bookings:', err);
             }
         }
 
-        if (btn.classList.contains('declineBtn')) {
-            pendingDeclineId = id;
-            const booking = bookings.find(b => b.appointment_id == id);
+        async function loadOccupiedSlots() {
+            try {
+                const res = await fetch(`${API_BASE_URL}/api/appointments/occupied`, { headers: authHeaders() });
+                if (res.ok) {
+                    occupiedSlots = await res.json();
+                }
+            } catch (err) {
+                console.error('Failed to load occupied slots:', err);
+            }
+        }
+
+        function updateBadges() {
+            const pendingCount = allBookings.filter(b => (b.appointment_status || '').toLowerCase() === 'pending').length;
+            const reschedCount = allBookings.filter(b => (b.reschedule_status || '').toLowerCase() === 'requested').length;
+            const approvedCount = allBookings.filter(b => (b.appointment_status || '').toLowerCase() === 'approved').length;
+
+            const bPending = document.getElementById('badgePending');
+            const bResched = document.getElementById('badgeResched');
+            const bApproved = document.getElementById('badgeApproved');
+            const bAll = document.getElementById('badgeAll');
+
+            if (bPending) bPending.textContent = pendingCount;
+            if (bResched) bResched.textContent = reschedCount;
+            if (bApproved) bApproved.textContent = approvedCount;
+            if (bAll) bAll.textContent = allBookings.length;
+        }
+
+        function getFilteredBookings() {
+            return allBookings.filter(b => {
+                const status = (b.appointment_status || '').toLowerCase();
+                const resched = (b.reschedule_status || '').toLowerCase();
+
+                let matchesStatus = false;
+                if (currentStatusFilter === 'pending') {
+                    matchesStatus = status === 'pending';
+                } else if (currentStatusFilter === 'reschedule_requested') {
+                    matchesStatus = resched === 'requested';
+                } else if (currentStatusFilter === 'approved') {
+                    matchesStatus = status === 'approved';
+                } else {
+                    matchesStatus = true; // All
+                }
+
+                const patientName = `${b.first_name || ''} ${b.last_name || ''}`.toLowerCase();
+                const service = (b.service_label || '').toLowerCase();
+                const pubId = String(b.public_id || b.appointment_id || '').toLowerCase();
+                const phone = String(b.patient_phone || '').toLowerCase();
+
+                const matchesSearch = !currentSearch ||
+                    patientName.includes(currentSearch) ||
+                    service.includes(currentSearch) ||
+                    pubId.includes(currentSearch) ||
+                    phone.includes(currentSearch);
+
+                return matchesStatus && matchesSearch;
+            });
+        }
+
+        function renderBookings() {
+            const container = document.getElementById('booking-container');
+            const emptyState = document.getElementById('noBookingsState');
+            if (!container) return;
+
+            const list = getFilteredBookings();
+
+            if (list.length === 0) {
+                container.innerHTML = '';
+                if (emptyState) emptyState.classList.remove('hidden');
+                return;
+            }
+
+            if (emptyState) emptyState.classList.add('hidden');
+
+            container.innerHTML = list.map(b => {
+                const id = b.appointment_id;
+                const status = (b.appointment_status || '').toLowerCase();
+                const reschedStatus = (b.reschedule_status || '').toLowerCase();
+                const hasReschedRequest = reschedStatus === 'requested' && b.requested_date;
+
+                const isNew = isNewBooking(b.created_at);
+                const isOnlinePaid = (b.payment_status || '').toLowerCase() === 'paid';
+                const patientFullName = `${escapeHtml(b.first_name || '')} ${escapeHtml(b.last_name || '')}`.trim() || 'Patient';
+                const publicId = escapeHtml(b.public_id || `ID: ${id}`);
+                const service = escapeHtml(b.service_label || 'Dental Treatment');
+                const scheduledDate = escapeHtml(b.appointment_date || 'TBD');
+                const scheduledTime = escapeHtml(formatTime12h(b.time_slot));
+
+                let dentistBadge = '';
+                if (status === 'approved' && (b.dentist_first_name || b.dentist_last_name)) {
+                    dentistBadge = `<span class="inline-flex items-center gap-1 text-xs font-bold text-[#667733] bg-[#ECF5E2] px-2.5 py-0.5 rounded-full border border-[#667733]/30"><i class="fa-solid fa-user-doctor"></i> Dr. ${escapeHtml(b.dentist_first_name || '')} ${escapeHtml(b.dentist_last_name || '')}</span>`;
+                }
+
+                // Reschedule Request Callout Banner
+                let reschedBanner = '';
+                if (hasReschedRequest) {
+                    const reqDateFormatted = new Date(b.requested_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                    const reqTimeFormatted = formatTime12h(b.requested_time);
+                    reschedBanner = `
+                        <div class="mt-3 p-3 sm:p-3.5 bg-amber-50 rounded-2xl border-2 border-amber-300 flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs text-amber-950 shadow-sm">
+                            <div class="flex items-start gap-2.5 min-w-0">
+                                <div class="w-8 h-8 rounded-xl bg-amber-200 text-amber-900 flex items-center justify-center text-sm shrink-0 font-bold mt-0.5">
+                                    <i class="fa-solid fa-clock-rotate-left"></i>
+                                </div>
+                                <div class="min-w-0">
+                                    <span class="font-extrabold uppercase tracking-wide text-amber-900 text-[10px] sm:text-[11px] block">
+                                        Customer Requested Reschedule
+                                    </span>
+                                    <p class="font-bold mt-0.5 text-xs sm:text-sm break-words">
+                                        Current: <span class="line-through text-gray-500">${scheduledDate} (${scheduledTime})</span> 
+                                        <span class="mx-1 text-amber-700 font-extrabold">&rarr;</span> 
+                                        <span class="text-green-800 bg-green-100 px-2 py-0.5 rounded-md font-extrabold inline-block mt-1 sm:mt-0">${reqDateFormatted} at ${reqTimeFormatted}</span>
+                                    </p>
+                                    ${b.reschedule_reason ? `<p class="italic text-amber-800 mt-1 font-semibold break-words">Reason: "${escapeHtml(b.reschedule_reason)}"</p>` : ''}
+                                </div>
+                            </div>
+                            <!-- Side Decision Buttons -->
+                            <div class="flex items-center gap-2 shrink-0 self-stretch sm:self-auto justify-end flex-wrap">
+                                <button class="approveReschedBtn flex-1 sm:flex-none bg-[#667733] hover:bg-[#556022] text-white text-xs font-bold px-3.5 py-2 rounded-full transition shadow-sm cursor-pointer active:scale-95 flex items-center justify-center gap-1.5" data-id="${id}" title="Agree to customer requested date and update appointment">
+                                    <i class="fa-solid fa-check text-xs"></i> Approve Reschedule
+                                </button>
+                                <button class="declineReschedBtn flex-1 sm:flex-none bg-[#D9534F] hover:bg-[#c9302c] text-white text-xs font-bold px-3 py-2 rounded-full transition shadow-sm cursor-pointer active:scale-95 flex items-center justify-center gap-1" data-id="${id}" title="Decline request and keep current confirmed date">
+                                    <i class="fa-solid fa-xmark text-xs"></i> Decline
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                }
+
+                // Action Buttons (Responsive flex layout)
+                let actionButtons = '';
+                if (hasReschedRequest) {
+                    actionButtons = `
+                        <button class="rescheduleDirectBtn w-full sm:w-auto px-4 py-2 text-xs font-bold text-[#2A1001] bg-[#D5C04D] rounded-full hover:bg-[#c6b242] transition flex items-center justify-center gap-1.5 shadow-sm cursor-pointer active:scale-95" data-id="${id}" title="Pick custom alternative slot">
+                            <i class="fa-solid fa-calendar-days text-xs"></i> Pick Other Slot
+                        </button>
+                    `;
+                } else if (status === 'pending') {
+                    actionButtons = `
+                        <button class="declineBtn flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3.5 py-2 text-xs font-bold text-white bg-[#D9534F] rounded-full hover:bg-[#c9302c] transition shadow-sm cursor-pointer active:scale-95" data-id="${id}">
+                            <i class="fa-solid fa-xmark text-xs"></i> Decline
+                        </button>
+                        <button class="rescheduleDirectBtn flex-1 sm:flex-none px-3.5 py-2 text-xs font-bold text-[#2A1001] bg-[#D5C04D] rounded-full hover:bg-[#c6b242] transition flex items-center justify-center gap-1.5 shadow-sm cursor-pointer active:scale-95" data-id="${id}">
+                            <i class="fa-solid fa-calendar-days text-xs"></i> Reschedule
+                        </button>
+                        <button class="acceptBtn w-full sm:w-auto flex items-center justify-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-[#667733] rounded-full hover:bg-[#556022] transition shadow-sm cursor-pointer active:scale-95" data-id="${id}">
+                            <i class="fa-solid fa-check text-xs"></i> Accept
+                        </button>
+                    `;
+                } else if (status === 'approved') {
+                    actionButtons = `
+                        <button class="rescheduleDirectBtn flex-1 sm:flex-none px-4 py-2 text-xs font-bold text-[#2A1001] bg-[#D5C04D] rounded-full hover:bg-[#c6b242] transition flex items-center justify-center gap-1.5 shadow-sm cursor-pointer active:scale-95" data-id="${id}" title="Adjust appointment date & time">
+                            <i class="fa-solid fa-calendar-days text-xs"></i> Reschedule
+                        </button>
+                        <button class="declineBtn flex-1 sm:flex-none px-4 py-2 text-xs font-bold text-[#D9534F] bg-white border border-[#D9534F]/30 hover:bg-red-50 rounded-full transition shadow-sm cursor-pointer active:scale-95 text-center" data-id="${id}" title="Cancel booking">
+                            Cancel Booking
+                        </button>
+                    `;
+                } else {
+                    actionButtons = `<span class="text-xs font-bold text-gray-500 uppercase">${status}</span>`;
+                }
+
+                return `
+                    <div class="flex flex-col bg-white border ${hasReschedRequest ? 'border-amber-400 ring-2 ring-amber-200' : 'border-[#2A1001]/10'} rounded-2xl sm:rounded-3xl p-4 sm:p-5 shadow-sm hover:shadow-md transition-all duration-300 gap-2">
+                        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                            <div class="flex-1 min-w-0">
+                                <div class="flex flex-wrap items-center gap-1.5 sm:gap-2 mb-1.5">
+                                    <span class="text-[11px] sm:text-xs font-bold text-[#2A1001]/60 uppercase tracking-wide">PATIENT ID: ${publicId}</span>
+                                    ${isNew ? '<span class="text-[9px] sm:text-[10px] bg-green-100 text-green-700 font-extrabold px-2 py-0.5 rounded-full border border-green-300">NEW</span>' : ''} 
+                                    ${isOnlinePaid ? '<span class="text-[9px] sm:text-[10px] bg-blue-100 text-blue-700 font-extrabold px-2 py-0.5 rounded-full border border-blue-300"><i class="fa-solid fa-credit-card mr-1"></i>PAID ONLINE</span>' : '<span class="text-[9px] sm:text-[10px] bg-gray-100 text-[#2A1001]/70 font-extrabold px-2 py-0.5 rounded-full"><i class="fa-solid fa-coins mr-1 text-amber-600"></i>CASH IN CLINIC</span>'}
+                                    ${status === 'approved' ? '<span class="text-[9px] sm:text-[10px] bg-[#D7E3A5] text-[#1a281b] font-black px-2.5 py-0.5 rounded-full border border-[#667733]/30">APPROVED</span>' : '<span class="text-[9px] sm:text-[10px] bg-[#F1B770] text-[#2A1001] font-black px-2.5 py-0.5 rounded-full">PENDING</span>'}
+                                    ${dentistBadge}
+                                </div>
+
+                                <h3 class="text-base sm:text-lg font-black text-[#2A1001] font-['Poppins'] flex items-center gap-2">
+                                    ${patientFullName}
+                                </h3>
+
+                                <p class="text-xs sm:text-sm text-[#2A1001]/80 mt-1">
+                                    <span class="font-extrabold text-[#667733]">${service}</span> &bull; Scheduled for <strong>${scheduledDate}</strong> at <strong>${scheduledTime}</strong>
+                                </p>
+
+                                ${b.patient_phone ? `<p class="text-xs text-gray-500 font-semibold mt-0.5"><i class="fa-solid fa-phone text-[10px] text-gray-400 mr-1"></i>${escapeHtml(b.patient_phone)}</p>` : ''}
+                            </div>
+
+                            <div class="flex items-center gap-2 flex-wrap sm:flex-nowrap shrink-0 justify-start sm:justify-end w-full lg:w-auto mt-2 lg:mt-0">
+                                ${actionButtons}
+                            </div>
+                        </div>
+
+                        ${reschedBanner}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // ── Card Button Click Handlers ─────────────────────────────────────────────
+        async function handleCardActionClicks(e) {
+            const btn = e.target.closest('button');
+            if (!btn) return;
+            const id = Number(btn.dataset.id);
+            if (!id) return;
+
+            // 1. Approve Reschedule Request
+            if (btn.classList.contains('approveReschedBtn')) {
+                const booking = allBookings.find(b => b.appointment_id === id);
+                const reqDate = booking ? booking.requested_date : 'the requested date';
+                const reqTime = booking ? formatTime12h(booking.requested_time) : 'time';
+
+                if (confirm(`Approve patient's reschedule request to ${reqDate} at ${reqTime}?`)) {
+                    await submitRescheduleReview(id, 'approve');
+                }
+                return;
+            }
+
+            // 2. Decline Reschedule Request
+            if (btn.classList.contains('declineReschedBtn')) {
+                openDeclineReschedModal(id);
+                return;
+            }
+
+            // 3. Direct Reschedule
+            if (btn.classList.contains('rescheduleDirectBtn')) {
+                openRescheduleModal(id);
+                return;
+            }
+
+            // 4. Accept Initial Booking
+            if (btn.classList.contains('acceptBtn')) {
+                if (confirm('Approve and confirm this booking request?')) {
+                    await submitAppointmentStatus(id, 'approved');
+                }
+                return;
+            }
+
+            // 5. Decline Initial Booking
+            if (btn.classList.contains('declineBtn')) {
+                openDeclineModal(id);
+                return;
+            }
+        }
+
+        async function submitRescheduleReview(appointmentId, action, declineReason = '') {
+            try {
+                const res = await fetch(`${API_BASE_URL}/api/appointments/${appointmentId}/reschedule-review`, {
+                    method: 'PATCH',
+                    headers: authHeaders(true),
+                    body: JSON.stringify({ action, decline_reason: declineReason })
+                });
+
+                const result = await res.json().catch(() => ({}));
+
+                if (res.ok) {
+                    showNotice(result.message || 'Reschedule review completed.', {
+                        title: action === 'approve' ? 'Reschedule Approved' : 'Reschedule Declined',
+                        type: action === 'approve' ? 'success' : 'info'
+                    });
+                    await loadAllBookings();
+                    await loadOccupiedSlots();
+                } else {
+                    showNotice(result.message || 'Failed to review reschedule.', { title: 'Error', type: 'error' });
+                }
+            } catch (err) {
+                console.error('Error submitting reschedule review:', err);
+                showNotice('Failed to communicate with the server.', { title: 'Error', type: 'error' });
+            }
+        }
+
+        async function submitAppointmentStatus(appointmentId, appointment_status) {
+            try {
+                const res = await fetch(`${API_BASE_URL}/api/appointments/${appointmentId}/status`, {
+                    method: 'PATCH',
+                    headers: authHeaders(true),
+                    body: JSON.stringify({ appointment_status })
+                });
+
+                const result = await res.json().catch(() => ({}));
+
+                if (res.ok) {
+                    showNotice(result.message || `Appointment ${appointment_status} successfully.`, { title: 'Success', type: 'success' });
+                    await loadAllBookings();
+                    await loadOccupiedSlots();
+                } else {
+                    showNotice(result.message || 'Failed to update appointment status.', { title: 'Error', type: 'error' });
+                }
+            } catch (err) {
+                console.error('Error updating status:', err);
+                showNotice('Failed to connect to server.', { title: 'Error', type: 'error' });
+            }
+        }
+
+        // Decline Initial Booking Modal
+        function openDeclineModal(id) {
+            pendingDeclineApptId = id;
+            const booking = allBookings.find(b => b.appointment_id === id);
             if (!booking) return;
 
-            // textContent is safe here — no HTML parsing occurs
+            const patientName = `${booking.first_name || ''} ${booking.last_name || ''}`.trim() || 'Patient';
             document.getElementById('declineModalText').textContent =
-                `Are you sure you want to decline the booking request from ${booking.first_name} ${booking.last_name}? This cannot be undone.`;
+                `Are you sure you want to decline the booking request from ${patientName}? This action cannot be undone.`;
 
             const paidWarning = document.getElementById('paidWarning');
-            const rescheduleBtn = document.getElementById('rescheduleBtn');
+            const reschedBtn = document.getElementById('rescheduleInsteadBtn');
 
-            if (booking.payment_status === 'paid') {
-                paidWarning.classList.remove('hidden');
-                rescheduleBtn.classList.remove('hidden');
+            if ((booking.payment_status || '').toLowerCase() === 'paid') {
+                paidWarning?.classList.remove('hidden');
+                reschedBtn?.classList.remove('hidden');
             } else {
-                paidWarning.classList.add('hidden');
-                rescheduleBtn.classList.add('hidden');
+                paidWarning?.classList.add('hidden');
+                reschedBtn?.classList.add('hidden');
             }
 
-            document.getElementById('declineModal').classList.remove('hidden');
+            document.getElementById('declineModal')?.classList.remove('hidden');
         }
-    });
 
-    document.getElementById('cancelDeclineBtn').addEventListener('click', () => {
-        pendingDeclineId = null;
-        document.getElementById('declineModal').classList.add('hidden');
-    });
+        function closeDeclineModal() {
+            document.getElementById('declineModal')?.classList.add('hidden');
+            pendingDeclineApptId = null;
+        }
 
-    document.getElementById('confirmDeclineBtn').addEventListener('click', async () => {
-        if (pendingDeclineId) {
-            try {
-                const token = localStorage.getItem('userToken');
-                const response = await fetch(`/api/appointments/${pendingDeclineId}/status`, {
-                    method: 'PATCH',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify({ appointment_status: 'cancelled' })
+        async function handleConfirmDecline() {
+            if (pendingDeclineApptId) {
+                const id = pendingDeclineApptId;
+                closeDeclineModal();
+                await submitAppointmentStatus(id, 'cancelled');
+            }
+        }
+
+        // Decline Reschedule Modal
+        function openDeclineReschedModal(id) {
+            pendingDeclineReschedApptId = id;
+            const booking = allBookings.find(b => b.appointment_id === id);
+            if (!booking) return;
+
+            const patientName = `${booking.first_name || ''} ${booking.last_name || ''}`.trim() || 'Patient';
+            document.getElementById('declineReschedModalSummary').innerHTML =
+                `Decline reschedule request for <strong>${escapeHtml(patientName)}</strong>. The appointment will remain active on <strong>${escapeHtml(booking.appointment_date)} at ${escapeHtml(formatTime12h(booking.time_slot))}</strong>.`;
+
+            document.getElementById('declineReschedReasonInput').value = '';
+            document.getElementById('declineRescheduleModal')?.classList.remove('hidden');
+        }
+
+        function closeDeclineReschedModal() {
+            document.getElementById('declineRescheduleModal')?.classList.add('hidden');
+            pendingDeclineReschedApptId = null;
+        }
+
+        async function handleConfirmDeclineReschedule() {
+            if (!pendingDeclineReschedApptId) return;
+            const id = pendingDeclineReschedApptId;
+            const reason = document.getElementById('declineReschedReasonInput')?.value.trim();
+            closeDeclineReschedModal();
+            await submitRescheduleReview(id, 'decline', reason);
+        }
+
+        // Direct Reschedule Calendar Modal
+        function openRescheduleModal(appointmentId) {
+            pendingRescheduleApptId = appointmentId;
+            const booking = allBookings.find(b => b.appointment_id === appointmentId);
+            if (!booking) return;
+
+            const patientName = `${booking.first_name || ''} ${booking.last_name || ''}`.trim() || 'Patient';
+            document.getElementById('rescheduleModalTitle').textContent = `Reschedule - ${patientName}`;
+            document.getElementById('reschedulePatientSummary').innerHTML =
+                `Patient: <strong>${escapeHtml(patientName)}</strong> (${escapeHtml(booking.service_label)}) &bull; Current: ${escapeHtml(booking.appointment_date)} at ${escapeHtml(formatTime12h(booking.time_slot))}`;
+
+            calSelectedDate = null;
+            calSelectedDateFormatted = null;
+            calSelectedTime = null;
+            calCurrentDate = new Date();
+
+            renderCalendar(calCurrentDate);
+            renderAvailableSlots(null);
+            updateCalendarSummary();
+
+            document.getElementById('rescheduleModal')?.classList.remove('hidden');
+        }
+
+        function closeRescheduleModal() {
+            document.getElementById('rescheduleModal')?.classList.add('hidden');
+            pendingRescheduleApptId = null;
+        }
+
+        function renderCalendar(date) {
+            const monthYear = document.getElementById('month-year');
+            const daysContainer = document.getElementById('days');
+            if (!monthYear || !daysContainer) return;
+
+            const year = date.getFullYear();
+            const month = date.getMonth();
+            const firstDay = new Date(year, month, 1).getDay();
+            const lastDay = new Date(year, month + 1, 0).getDate();
+
+            monthYear.textContent = `${months[month]} ${year}`;
+            daysContainer.innerHTML = '';
+
+            function handleDayClick(dayDiv, displayDateStr, sqlDateStr) {
+                dayDiv.addEventListener('click', function () {
+                    document.querySelectorAll('#days > div').forEach(d => {
+                        d.classList.remove('bg-[#667733]', 'text-white', 'border-2', 'border-[#2A1001]');
+                    });
+                    dayDiv.classList.add('bg-[#667733]', 'text-white');
+
+                    calSelectedDate = displayDateStr;
+                    calSelectedDateFormatted = sqlDateStr;
+                    calSelectedTime = null;
+
+                    updateCalendarSummary();
+                    renderAvailableSlots(sqlDateStr);
                 });
-                if (!response.ok) {
-                    const err = await response.json();
-                    throw new Error(err.message || 'Failed to decline appointment');
+            }
+
+            const prevMonthLastDay = new Date(year, month, 0).getDate();
+            for (let i = firstDay; i > 0; i--) {
+                const dayDiv = document.createElement('div');
+                dayDiv.className = 'w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center font-medium text-gray-300 select-none text-xs';
+                dayDiv.textContent = prevMonthLastDay - i + 1;
+                daysContainer.appendChild(dayDiv);
+            }
+
+            for (let i = 1; i <= lastDay; i++) {
+                const dayDiv = document.createElement('div');
+                const cellDate = new Date(year, month, i);
+                const isPast = cellDate < new Date(calToday.getFullYear(), calToday.getMonth(), calToday.getDate());
+
+                dayDiv.className = 'w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center font-bold text-xs text-[#2A1001] transition-all';
+                dayDiv.textContent = i;
+
+                if (isPast) {
+                    dayDiv.className = 'w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center font-medium text-gray-300 cursor-not-allowed select-none text-xs';
+                } else {
+                    dayDiv.classList.add('cursor-pointer', 'hover:bg-[#D7E3A5]', 'hover:scale-110');
                 }
-                await loadBookingsFromDatabase();
-                await loadOccupiedSlotsFromDatabase();
-            } catch (error) {
-                console.error("Decline error:", error);
-                alert("Could not decline booking: " + error.message);
+
+                if (i === calToday.getDate() && month === calToday.getMonth() && year === calToday.getFullYear()) {
+                    dayDiv.classList.add('border-2', 'border-[#667733]', 'bg-[#FDFCE9]');
+                }
+
+                const displayStr = `${months[month]} ${i}, ${year}`;
+                const formattedMonth = String(month + 1).padStart(2, '0');
+                const formattedDay = String(i).padStart(2, '0');
+                const sqlStr = `${year}-${formattedMonth}-${formattedDay}`;
+
+                if (calSelectedDateFormatted === sqlStr) {
+                    dayDiv.classList.add('bg-[#667733]', 'text-white');
+                }
+
+                if (!isPast) handleDayClick(dayDiv, displayStr, sqlStr);
+                daysContainer.appendChild(dayDiv);
             }
         }
-        pendingDeclineId = null;
-        document.getElementById('declineModal').classList.add('hidden');
-    });
 
-    // Close decline modal when clicking outside of the modal box
-    document.getElementById('declineModal').addEventListener('click', function (e) {
-        if (e.target === this) {
-            pendingDeclineId = null;
-            this.classList.add('hidden');
+        function renderAvailableSlots(dateStr) {
+            const amContainer = document.getElementById('amSlotsContainer');
+            const pmContainer = document.getElementById('pmSlotsContainer');
+            if (!amContainer || !pmContainer) return;
+
+            amContainer.innerHTML = '';
+            pmContainer.innerHTML = '';
+
+            if (!dateStr) {
+                amContainer.innerHTML = '<p class="text-[11px] text-center text-gray-400 py-3">Select date</p>';
+                pmContainer.innerHTML = '<p class="text-[11px] text-center text-gray-400 py-3">Select date</p>';
+                return;
+            }
+
+            const excludeId = pendingRescheduleApptId;
+            const bookedSlotsOnDate = occupiedSlots
+                .filter(slot => {
+                    const sDate = (slot.appointment_date || '').split('T')[0];
+                    return sDate === dateStr && slot.appointment_id != excludeId;
+                })
+                .map(b => b.time_slot);
+
+            clinicSlots.forEach(slot => {
+                const isBooked = bookedSlotsOnDate.includes(slot.id);
+                const isSelected = calSelectedTime === slot.id;
+
+                const hour = parseInt(slot.id.split(':')[0], 10);
+                const isAM = hour < 12;
+
+                const slotBtn = document.createElement('button');
+                slotBtn.type = 'button';
+
+                let baseClass = "w-full py-1.5 px-2 text-[11px] rounded-full border transition text-center font-bold ";
+                if (isBooked) {
+                    slotBtn.disabled = true;
+                    slotBtn.className = baseClass + 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed line-through';
+                    slotBtn.textContent = slot.label.split(' - ')[0];
+                } else {
+                    slotBtn.className = baseClass + (isSelected
+                        ? 'bg-[#667733] text-white border-[#667733] shadow-sm'
+                        : 'bg-white text-[#2A1001] border-black/20 hover:bg-[#D7E3A5]/40 cursor-pointer');
+                    slotBtn.textContent = slot.label;
+                    slotBtn.addEventListener('click', function () {
+                        calSelectedTime = slot.id;
+                        renderAvailableSlots(dateStr);
+                        updateCalendarSummary();
+                    });
+                }
+
+                if (isAM) {
+                    amContainer.appendChild(slotBtn);
+                } else {
+                    pmContainer.appendChild(slotBtn);
+                }
+            });
         }
-    });
 
-    document.getElementById('rescheduleBtn').addEventListener('click', () => {
-        const targetId = pendingDeclineId;
-        document.getElementById('declineModal').classList.add('hidden');
-        pendingDeclineId = null;
-        if (targetId) {
-            openRescheduleModal(targetId);
+        function updateCalendarSummary() {
+            const display = document.getElementById('selectedDateDisplay');
+            const confirmBtn = document.getElementById('confirmRescheduleBtn');
+            if (!display || !confirmBtn) return;
+
+            if (calSelectedDate && calSelectedTime) {
+                const slotObj = clinicSlots.find(s => s.id === calSelectedTime);
+                display.innerHTML = `New Schedule: <strong class="text-[#667733]">${escapeHtml(calSelectedDate)}</strong> at <strong class="text-[#667733]">${escapeHtml(slotObj ? slotObj.label : calSelectedTime)}</strong>`;
+                confirmBtn.disabled = false;
+            } else if (calSelectedDate) {
+                display.innerHTML = `Selected Date: <strong>${escapeHtml(calSelectedDate)}</strong> (Please choose an available AM or PM slot)`;
+                confirmBtn.disabled = true;
+            } else {
+                display.textContent = 'No date selected yet.';
+                confirmBtn.disabled = true;
+            }
         }
-    });
 
-    document.getElementById('searchInput').addEventListener('input', function () {
-        currentSearch = this.value;
-        renderBookings();
-    });
+        async function handleConfirmDirectReschedule() {
+            if (!calSelectedDateFormatted || !calSelectedTime || !pendingRescheduleApptId) {
+                showNotice('Please select both a date and a time slot.', { title: 'Incomplete Selection', type: 'error' });
+                return;
+            }
 
-    loadBookingsFromDatabase();
-    loadOccupiedSlotsFromDatabase();
-    loadApprovedBookings();
-</script>
+            const appointmentId = pendingRescheduleApptId;
+            const confirmBtn = document.getElementById('confirmRescheduleBtn');
+
+            if (confirmBtn) {
+                confirmBtn.disabled = true;
+                confirmBtn.textContent = 'Rescheduling...';
+            }
+
+            try {
+                const res = await fetch(`${API_BASE_URL}/api/appointments/${appointmentId}/reschedule`, {
+                    method: 'PATCH',
+                    headers: authHeaders(true),
+                    body: JSON.stringify({
+                        appointment_date: calSelectedDateFormatted,
+                        time_slot: calSelectedTime,
+                        reason: 'Rescheduled by Clinic Staff'
+                    })
+                });
+
+                const result = await res.json().catch(() => ({}));
+
+                if (res.ok) {
+                    closeRescheduleModal();
+                    showNotice(result.message || 'Appointment rescheduled successfully.', { title: 'Rescheduled', type: 'success' });
+                    await loadAllBookings();
+                    await loadOccupiedSlots();
+                } else {
+                    showNotice(result.message || 'Could not reschedule appointment.', { title: 'Error', type: 'error' });
+                }
+            } catch (err) {
+                console.error('Error rescheduling:', err);
+                showNotice('Failed to connect to server.', { title: 'Error', type: 'error' });
+            } finally {
+                if (confirmBtn) {
+                    confirmBtn.disabled = false;
+                    confirmBtn.textContent = 'Confirm Reschedule';
+                }
+            }
+        }
+    </script>
 </body>
 </html>
