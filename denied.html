@@ -34,7 +34,7 @@
       </p>
 
       <!-- Escape Hatch Button -->
-      <a id="login-btn" href="/LoginRegister/login.html"
+      <a id="login-btn" href="/LogInRegister/login.html"
          class="inline-block bg-[#667733] hover:bg-[#4a5c2f] text-white font-bold py-4 px-10 md:px-16 rounded-full shadow-lg transition-all duration-200 hover:scale-105 active:scale-95 mb-10 text-lg tracking-wide">
         Return to Login
       </a>
@@ -80,17 +80,14 @@
     const userRole = urlParams.get('role');
 
     const roleMessage = document.getElementById('role-message');
-    const dashboardBtn = document.getElementById('dashboard-btn');
+    const loginBtn = document.getElementById('login-btn');
 
     if (userRole === 'employee') {
       roleMessage.innerText = "This module requires Clinic Administrator privileges. You are currently logged in with standard Employee access.";
-      dashboardBtn.href = "/employee/dashboard.html";
     } else if (userRole === 'patient') {
       roleMessage.innerText = "This area is restricted to clinic staff only. You are currently logged in as a Patient.";
-      dashboardBtn.href = "/customer/dashboard.html";
     } else {
       roleMessage.innerText = "Please ensure you are logged into an account with the correct administrative permissions.";
-      dashboardBtn.href = "/LogInRegister/login.html";
     }
   </script>
 
