@@ -135,7 +135,7 @@
 
     loginForm.addEventListener('submit', async function (e) {
         e.preventDefault();
-        if (failedAttempts >= 3) return;
+        if (failedAttempts > 3) return;
         clearErrors();
 
         try {
@@ -153,7 +153,7 @@
             if (!response.ok) {
                 failedAttempts += 1;
 
-                if (response.status === 429 || failedAttempts >= 3) {
+                if (response.status === 429 || failedAttempts > 3) {
                     lockLogin();
                 } else if (response.status === 401) {
                     if (data.error === 'Email does not exist in the system.') {

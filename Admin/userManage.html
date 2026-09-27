@@ -10,6 +10,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://kit.fontawesome.com/fc8c3f4103.js" crossorigin="anonymous"></script>
     <script src="../Taskbar/Admin_Sidebar.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
 </head>
 
 <body class="min-h-screen md:h-screen md:overflow-hidden bg-[#F3EFE4] relative flex flex-col md:flex-row antialiased">
@@ -568,7 +569,7 @@
                     
                     <!-- button for reset; default is disabled unless user needs -->
                     <p id="loginResetMessage-${u.user_id}" class="text-xs font-semibold mt-1" role="status">
-                        ${u.login_locked ? '<span class="text-red-600">Login locked. Admin reset required.</span>' : '<span class="text-gray-400">Login session is active.</span>'}
+                        ${u.isLocked ? '<span class="text-red-600">Login locked. Admin reset required.</span>' : '<span class="text-gray-400">Login session is active.</span>'}
                     </p>
                 </div>
 
@@ -592,7 +593,7 @@
                     <!-- LOGIN ATTEMPT SECURITY -->
                     <!-- button display for session/login reset -->
                     <!-- button for reset; default is disabled unless user needs -->
-                    <button class="resetLoginBtn w-9 h-9 flex items-center justify-center rounded-lg bg-[#8A925F] hover:bg-[#707746] disabled:bg-gray-300 disabled:hover:bg-gray-300 disabled:cursor-not-allowed disabled:opacity-60 transition" data-id="${u.user_id}" title="${u.login_locked ? 'Reset login session' : 'No login reset needed'}" ${u.login_locked ? '' : 'disabled'}>
+                    <button class="resetLoginBtn w-9 h-9 flex items-center justify-center rounded-lg bg-[#8A925F] hover:bg-[#707746] disabled:bg-gray-300 disabled:hover:bg-gray-300 disabled:cursor-not-allowed disabled:opacity-60 transition" data-id="${u.user_id}" title="${u.isLocked ? 'Reset login session' : 'No login reset needed'}" ${u.isLocked ? '' : 'disabled'}>
                         <span aria-hidden="true">↻</span>
                     </button>
                 </div>
@@ -648,6 +649,19 @@
         if (btn.classList.contains('resetLoginBtn')) {
             try {
                 await resetLoginLock(id);
+
+                // find data from database/API
+                users = await getUsers();
+
+                // re-resnder UI with updated database states
+                renderUsers();
+
+                // display message for successful reset
+                const message = document.getElementById(`loginResetMessage-${id}`);
+                if (message) {
+                    message.innerHTML = '<span class="text-green-700">Login session reset successfully.</span>';
+                }
+
                 const user = users.find(item => Number(item.user_id) === Number(id));
                 if (user && user.email) {
                     localStorage.setItem('loginSessionReset', JSON.stringify({
@@ -655,19 +669,32 @@
                         resetAt: Date.now()
                     }));
                 }
-                const message = document.getElementById(`loginResetMessage-${id}`);
-                if (message) {
-                    message.innerHTML = '<span class="text-green-700">Login session reset successfully.</span>';
-                }
-                btn.disabled = true;
-                btn.title = 'No login reset needed';
             } catch (error) {
-                console.error('Failed to reset login session:', error);
-                const message = document.getElementById(`loginResetMessage-${id}`);
-                if (message) {
-                    message.innerHTML = `<span class="text-red-600">${escapeHtml(error.message)}</span>`;
-                }
+                console.error("Failed to reset login session:", error);
             }
+
+            // changed code for this part
+
+            //     const user = users.find(item => Number(item.user_id) === Number(id));
+            //     if (user && user.email) {
+            //         localStorage.setItem('loginSessionReset', JSON.stringify({
+            //             email: user.email.trim().toLowerCase(),
+            //             resetAt: Date.now()
+            //         }));
+            //     }
+            //     const message = document.getElementById(`loginResetMessage-${id}`);
+            //     if (message) {
+            //         message.innerHTML = '<span class="text-green-700">Login session reset successfully.</span>';
+            //     }
+            //     btn.disabled = true;
+            //     btn.title = 'No login reset needed';
+            // } catch (error) {
+            //     console.error('Failed to reset login session:', error);
+            //     const message = document.getElementById(`loginResetMessage-${id}`);
+            //     if (message) {
+            //         message.innerHTML = `<span class="text-red-600">${escapeHtml(error.message)}</span>`;
+            //     }
+            // }
         }
     });
 
@@ -1069,6 +1096,17 @@
         `;
         }
     })();
+
+    // socket listener
+    const socket = io();
+
+    socket.on('user-locked', (data) => {
+        const user = users.find(u => Number(u.user_id) === Number(data.userId));
+        if (user) {
+            user.isLocked = true;
+        }
+        renderUsers();
+    });
 </script>
 
 </body>

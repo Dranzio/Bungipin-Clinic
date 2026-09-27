@@ -14,15 +14,18 @@ const registerPatientRecordsRoutes = require("./Employee/PatientRecords");
 const registerMessagesRoutes = require("./MessagesRoutes");
 const authenticateToken = require("./authmiddleware");
 
+// show IO in routes
+const http = require('http');
+const { Server } = require('socket.io');
+
 // login limiter
 const errorHandler = require('./Utils/errorHandler');
-
+const rateLimit = require("express-rate-limit");
 const registerServiceRoutes = require("./Admin/ServiceRoutes");
 const registerUserManagementRoutes = require("./Admin/UserManage");
 
 // DENIED DIRECT PAGE ACESS VIA URL
 const registerDashboardRoutes = require("./Admin/DashboardRoutes");
-const rateLimit = require("express-rate-limit");
 
 
 // forgot + reset pass
@@ -30,26 +33,43 @@ const router = require('./userRoutes');
 
 const app = express();
 
-// login limiter
-const loginLimiter = rateLimit({
-    // CHANGE THIS TO ACTUAL VALUE LATER
-    windowMs: .5 * 60 * 1000,
-    max: 3,
-    standardHeaders: true,
-    legacyHeaders: false,
-    skipSuccessfulRequests: true,
-    message: {
-        error: "Too many attempts. Try again in 5 mins."
-    }
-});
+// show IO in routes
+const server = http.createServer(app);
+const io = new Server(server);
+
 app.use(express.json());
 app.use(cors());
 
 // forgot + reset pass
 app.use(express.urlencoded({ extended: false }));
+
+// rate limiter for login requests
+const loginLimit = rateLimit({
+    windowMs: 1 * 60 * 1000,
+    max: 5,
+    message: {
+        error: "Too many login attempts for this address, please try again later."
+    },
+    standardHeaders: true,
+    legacyHeaders: false
+});
+
+// make IO accessible in route files
+app.set('io', io);
+
+io.on('connection', (socket) => {
+    console.log('Connected to real-time updates');
+});
+
+server.listen(3000, () => {
+    console.log('Server running on port 3000');
+});
+
+// apply rate limiting to login route
+app.use('/api/auth/login', loginLimit);
+
 app.use('/api/user', router);
 
-app.use('/api/auth/login', loginLimiter);
 app.use('/api/auth', authRoutes);
 registerPatientProfileRoute(app, db);
 registerBookingRoute(app, db);
@@ -106,20 +126,25 @@ app.get('/contact.html', (req, res) => {
     res.sendFile(path.join(__dirname, 'WelcomePage', 'contact.html'));
 });
 
-app.get('/api/users', authenticateToken, async (req, res) => {
-    if (req.user.role !== 'admin') {
-        return res.status(403).json({ error: 'Admins only' });
-    }
-    try {
-        const [rows] = await db.query(
-            'SELECT user_id, public_id, first_name, last_name, email, phone, sex, role, account_status, created_at FROM users'
-        );
-        res.json(rows);
-    } catch (err) {
-        console.error('Databse Error', err);
-        res.status(500).json({error: "Internal Server Error"});
-    }
-});
+
+// MOVED THIS TO USERMANAGE.JS
+/**
+ * app.get('/api/users', authenticateToken, async (req, res) => {
+        if (req.user.role !== 'admin') {
+            return res.status(403).json({ error: 'Admins only' });
+        }
+        try {
+            const [rows] = await db.query(
+                'SELECT user_id, public_id, first_name, last_name, email, phone, sex, role, account_status, created_at, isLocked, loginAttempts FROM users'
+            );
+            res.json(rows);
+        } catch (err) {
+            console.error('Databse Error', err);
+            res.status(500).json({error: "Internal Server Error"});
+        }
+    });
+ */
+
 
 // DENIES DIRECT PAGE ACCESS VIA URL
 app.get('/api/patients', authenticateToken, async (req, res) => {
@@ -157,7 +182,7 @@ app.get('/api/patients/:id', authenticateToken, async (req, res) => {
     }
 });
 
-// send help
+// send help : global error handling middleware
 app.use(errorHandler);
 
 const PORT = 3000;
