@@ -14,20 +14,22 @@ function requireAdmin(req, res, next) {
 // One shape for every user the frontend receives (list, edit response).
 const USER_SELECT = `
     SELECT u.user_id, u.public_id, u.first_name, u.last_name, u.email, u.phone,
-           u.sex, u.role, u.account_status,
+           u.sex, u.role, u.account_status, u.isLocked, u.loginAttempts,
            ep.position, ep.staff_code,
            ap.permission_level
     FROM users u
-    LEFT JOIN employee_profiles ep ON ep.employee_id = u.user_id
-    LEFT JOIN admin_profiles ap ON ap.admin_id = u.user_id`;
+             LEFT JOIN employee_profiles ep ON ep.employee_id = u.user_id
+             LEFT JOIN admin_profiles ap ON ap.admin_id = u.user_id`;
 
 async function fetchUser(conn, userId) {
     const [rows] = await conn.query(`${USER_SELECT} WHERE u.user_id = ?`, [userId]);
 
     // LOGIN ATTEMPT SECURITY
-    // checks if the email of that user is locked for attempts
+    // isLocked/loginAttempts are the real, persisted lock state — the same
+    // columns auth.js checks on every login attempt. Just coerce the 0/1
+    // MySQL gives back for isLocked into a real boolean for the frontend.
     return rows[0]
-        ? { ...rows[0], isLocked : Boolean(loginAttempts.isLocked(rows[0].email)) }
+        ? { ...rows[0], isLocked: Boolean(rows[0].isLocked) }
         : null;
 }
 
@@ -35,24 +37,24 @@ function registerUserManagementRoutes(app, db) {
 
     // GET /api/users — powers the User Management list
     app.get('/api/users', authenticateToken, requireAdmin, async (req, res) => {
-    try {
-        const query = `
-            SELECT u.user_id, u.public_id, u.first_name, u.last_name, u.email, u.phone,
-                   u.sex, u.role, u.account_status, u.isLocked, u.loginAttempts, u.created_at,
-                   ep.position, ep.staff_code,
-                   ap.permission_level
-            FROM users u
-            LEFT JOIN employee_profiles ep ON ep.employee_id = u.user_id
-            LEFT JOIN admin_profiles ap ON ap.admin_id = u.user_id
-            ORDER BY u.user_id
-        `;
-        const [users] = await db.query(query);
-        res.json(users);
-    } catch (err) {
-        console.error('Error fetching users:', err);
-        res.status(500).json({ message: 'Internal Server Error' });
-    }
-});
+        try {
+            const query = `
+                SELECT u.user_id, u.public_id, u.first_name, u.last_name, u.email, u.phone,
+                       u.sex, u.role, u.account_status, u.isLocked, u.loginAttempts, u.created_at,
+                       ep.position, ep.staff_code,
+                       ap.permission_level
+                FROM users u
+                         LEFT JOIN employee_profiles ep ON ep.employee_id = u.user_id
+                         LEFT JOIN admin_profiles ap ON ap.admin_id = u.user_id
+                ORDER BY u.user_id
+            `;
+            const [users] = await db.query(query);
+            res.json(users);
+        } catch (err) {
+            console.error('Error fetching users:', err);
+            res.status(500).json({ message: 'Internal Server Error' });
+        }
+    });
 
 
     // changed code from this to the one above; revert if code breaks
@@ -75,7 +77,7 @@ function registerUserManagementRoutes(app, db) {
     // LOGIN ATTEMPT SECURITY
     // POST /api/users/:id/reset-login-lock — clear the server-side login lock.
     app.post('/api/users/:id/reset-login-lock', authenticateToken, requireAdmin, async (req, res) => {
-        
+
         // only active admin can access this
         const userId = Number(req.params.id);
         if (!Number.isInteger(userId)) {
@@ -94,7 +96,7 @@ function registerUserManagementRoutes(app, db) {
             );
 
             res.json({ message: 'Login session reset successfully', user_id: userId });
-        } catch (err) { 
+        } catch (err) {
             console.error('Login lock reset error:', err);
             res.status(500).json({ message: 'Internal Server Error' });
         }
