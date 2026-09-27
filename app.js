@@ -95,7 +95,7 @@ function requirePageRole(requiredRole) {
 // DENIES DIRECT PAGE VIA URL
 app.use('/uploads', authenticateToken, express.static(path.join(__dirname, 'uploads')));
 app.use('/assets', express.static(path.join(__dirname, 'assets')));
-app.use('/images', express.static(path.join(__dirname, 'images')));
+app.use('/assets', express.static(path.join(__dirname, 'images')));
 app.get('/output.css', (req, res) => {
     res.sendFile(path.join(__dirname, 'output.css'));
 });
@@ -184,13 +184,8 @@ app.get('/api/patients/:id', authenticateToken, async (req, res) => {
 // send help : global error handling middleware
 app.use(errorHandler);
 
-try {
-    const PORT = 3000;
-    app.listen(PORT, () => {
-        console.log(`Server is running on port ${PORT}`);
-    })
-} catch (e) {
-
+if (!process.env.VERCEL) {
+    server.listen(3000, () => console.log('Server running on port 3000'));
 }
 
 module.exports = app;
