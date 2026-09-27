@@ -6,7 +6,7 @@ function registerDoctorScheduleRoutes(app, db) {
     app.get('/api/doctors', authenticateToken, async (req, res) => {
         try {
             const [doctors] = await db.query(`
-                SELECT 
+                SELECT
                     u.user_id,
                     u.public_id,
                     u.first_name,
@@ -16,8 +16,8 @@ function registerDoctorScheduleRoutes(app, db) {
                     ep.position,
                     ep.staff_code
                 FROM users u
-                JOIN employee_profiles ep ON ep.employee_id = u.user_id
-                WHERE u.role = 'employee' 
+                         JOIN employee_profiles ep ON ep.employee_id = u.user_id
+                WHERE u.role = 'employee'
                   AND (ep.position = 'Dentist' OR ep.position LIKE '%Dentist%' OR ep.position IS NULL)
                   AND u.account_status = 'active'
                 ORDER BY u.first_name ASC, u.last_name ASC
@@ -33,7 +33,7 @@ function registerDoctorScheduleRoutes(app, db) {
     app.get('/api/doctor/my-profile', authenticateToken, async (req, res) => {
         try {
             const [[doc]] = await db.query(`
-                SELECT 
+                SELECT
                     u.user_id,
                     u.public_id,
                     u.first_name,
@@ -44,7 +44,7 @@ function registerDoctorScheduleRoutes(app, db) {
                     ep.position,
                     ep.staff_code
                 FROM users u
-                LEFT JOIN employee_profiles ep ON ep.employee_id = u.user_id
+                         LEFT JOIN employee_profiles ep ON ep.employee_id = u.user_id
                 WHERE u.user_id = ?
             `, [req.user.user_id]);
 
@@ -56,8 +56,12 @@ function registerDoctorScheduleRoutes(app, db) {
         }
     });
 
-    // ── 3. GET /api/doctors/:id/schedule — Weekly assigned duty shifts (doctor_schedules) ──
-    app.get('/api/doctors/:id/schedule', authenticateToken, async (req, res) => {
+    // ── 3. GET /api/doctor-schedule/:id/schedule — Weekly assigned duty shifts (doctor_schedules) ──
+    //     NOTE: intentionally a different path from Admin/UserManage.js's
+    //     GET /api/doctors/:id/schedule, which is admin-only (requireAdmin).
+    //     This one is for the dentist viewing their own weekly shifts and
+    //     is open to any authenticated user.
+    app.get('/api/doctor-schedule/:id/schedule', authenticateToken, async (req, res) => {
         const employeeId = Number(req.params.id);
         if (!Number.isInteger(employeeId)) {
             return res.status(400).json({ message: 'Invalid doctor/employee ID' });
@@ -86,8 +90,10 @@ function registerDoctorScheduleRoutes(app, db) {
         }
     });
 
-    // ── 4. PUT /api/doctors/:id/schedule — Save weekly shift timecards ──
-    app.put('/api/doctors/:id/schedule', authenticateToken, async (req, res) => {
+    // ── 4. PUT /api/doctor-schedule/:id/schedule — Save weekly shift timecards ──
+    //     NOTE: intentionally a different path from Admin/UserManage.js's
+    //     PUT /api/doctors/:id/schedule (admin-only).
+    app.put('/api/doctor-schedule/:id/schedule', authenticateToken, async (req, res) => {
         if (!['employee', 'admin'].includes(req.user.role)) {
             return res.status(403).json({ message: 'Not authorized' });
         }
@@ -184,8 +190,14 @@ function registerDoctorScheduleRoutes(app, db) {
         }
     });
 
-    // ── 6. PATCH /api/appointments/:id/complete — Mark as Completed with Clinical Notes ──
-    app.patch('/api/appointments/:id/complete', authenticateToken, async (req, res) => {
+    // ── 6. PATCH /api/doctor-schedule/appointments/:id/complete — Mark an approved
+    //     booking as Completed with Clinical Notes (Dentist Schedule page).
+    //     NOTE: intentionally a different path from PatientRecords.js's
+    //     PATCH /api/appointments/:id/complete, which requires an ongoing
+    //     queue session. This one just needs 'approved' — it's for closing
+    //     out any approved booking shown on the Dentist Schedule page,
+    //     whether or not a queue session was ever started.
+    app.patch('/api/doctor-schedule/appointments/:id/complete', authenticateToken, async (req, res) => {
         if (!['employee', 'admin'].includes(req.user.role)) {
             return res.status(403).json({ message: 'Not authorized' });
         }

@@ -13,6 +13,7 @@ const registerQueueRoutes = require("./Employee/QueueRoutes");
 const registerPatientRecordsRoutes = require("./Employee/PatientRecords");
 const registerMessagesRoutes = require("./MessagesRoutes");
 const authenticateToken = require("./authMiddleware");
+const registerDoctorScheduleRoutes = require('./Employee/doctorScheduleRoutes');
 
 // show IO in routes
 const http = require('http');
@@ -79,6 +80,7 @@ registerServiceRoutes(app, db);
 registerUserManagementRoutes(app, db);
 registerAdminProfileRoute(app, db);
 registerDashboardRoutes(app, db);
+registerDoctorScheduleRoutes(app, db);
 
 // DENIES DIRECT PAGE VIA URL
 function requirePageRole(requiredRole) {

@@ -252,7 +252,7 @@ function populateDentistSelector(doctors, activeDoc) {
 // ── Load Doctor Shifts & Timecards ─────────────────────────────────────────
 async function loadDoctorSchedule(doctorId) {
     try {
-        const res = await fetch(`${API_BASE_URL}/api/doctors/${doctorId}/schedule`, { headers: authHeaders() });
+        const res = await fetch(`${API_BASE_URL}/api/doctor-schedule/${doctorId}/schedule`, { headers: authHeaders() });
         if (res.ok) {
             weeklySchedules = await res.json();
         } else {
@@ -303,13 +303,13 @@ function renderWeeklyShiftGrid(schedules) {
 
         return `
             <div class="rounded-2xl p-4 border transition-all flex flex-col justify-between shadow-sm ${
-                isActive ? 'bg-[#F9F8F3] border-[#2A1001]/15 hover:border-[#667733]' : 'bg-gray-100/70 border-gray-200 opacity-60'
-            }">
+            isActive ? 'bg-[#F9F8F3] border-[#2A1001]/15 hover:border-[#667733]' : 'bg-gray-100/70 border-gray-200 opacity-60'
+        }">
                 <div class="flex justify-between items-center pb-2 border-b border-[#2A1001]/10">
                     <h4 class="font-extrabold text-sm text-[#2A1001]">${DAYS_NAMES[dayIdx]}</h4>
                     <span class="text-[10px] font-black px-2 py-0.5 rounded-full ${
-                        isActive ? 'bg-[#D7E3A5] text-[#2c3e2b] border border-[#667733]/30' : 'bg-gray-200 text-gray-500'
-                    }">
+            isActive ? 'bg-[#D7E3A5] text-[#2c3e2b] border border-[#667733]/30' : 'bg-gray-200 text-gray-500'
+        }">
                         ${isActive ? 'ON DUTY' : 'DAY OFF'}
                     </span>
                 </div>
@@ -600,7 +600,7 @@ async function handleCompleteTreatmentSubmit(e) {
     }
 
     try {
-        const res = await fetch(`${API_BASE_URL}/api/appointments/${appointmentId}/complete`, {
+        const res = await fetch(`${API_BASE_URL}/api/doctor-schedule/appointments/${appointmentId}/complete`, {
             method: 'PATCH',
             headers: authHeaders(true),
             body: JSON.stringify({ dentist_note: notes })
