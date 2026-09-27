@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <!-- DENIED DIRECT PAGE ACCESS VIA URL -->
     <script src="../pageProtection.js"></script>
-    <title>Book Dental Appointment</title>
+    <title>Booking Dental Appointment</title>
     <link rel="stylesheet" href="../output.css">
     <!-- Tailwind CDN Fallback for missing builds -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -68,7 +68,7 @@
         <!-- Header -->
         <div class="flex justify-between items-start pt-5 pl-6 pr-4 md:pl-24 md:pr-8">
             <h1 class="text-2xl sm:text-3xl md:text-5xl 2xl:text-[73px] pt-5 font-bold text-[#2A1001] font-['Poppins']">
-                Book Appointment
+                Booking Appointment
             </h1>
             <img
                 src="../assets/logowithtitle.png"
@@ -78,12 +78,12 @@
         <hr class="border-t border-[#2A1001] mt-2 mb-6" />
 
         <div class="p-4 sm:p-6 md:p-10 flex justify-center items-start">
-            <form id="booking-form" class="w-full max-w-5xl flex flex-col items-center gap-8">
+            <form id="booking-form" novalidate class="w-full max-w-5xl flex flex-col items-center gap-8">
 
                 <!-- Hidden Selected Fields -->
-                <input type="hidden" id="selected-date" name="appointment_date" required>
-                <input type="hidden" id="selected-time" name="time_slot" required>
-                <input type="hidden" id="selected-end-time" name="end_time_slot" required>
+                <input type="hidden" id="selected-date" name="appointment_date">
+                <input type="hidden" id="selected-time" name="time_slot">
+                <input type="hidden" id="selected-end-time" name="end_time_slot">
                 <input type="hidden" id="selected-doctor-id" name="doctor_id">
 
                 <!-- 1. Dentist Selection (Choose 1 Doctor) -->
@@ -190,119 +190,104 @@
                     </div>
                 </div>
 
-                <!-- Review and Submit Booking -->
+        <!-- Review and Submit Booking -->
                 <div class="flex justify-center">
                     <button type="submit" id="submit-btn" class="bg-[#D5C04D] hover:bg-[#c4b03f] text-[#2A1001] font-black text-xl px-14 py-3.5 rounded-full shadow-lg active:scale-95 transition transform cursor-pointer">
                         Review Booking &amp; Pay
                     </button>
                 </div>
+            </form> <!-- MOVED HERE -->
+            
+        </div>
+    </div>
+</div>
 
-                <!-- ================= APPOINTMENT SUMMARY RECEIPT MODAL ================= -->
-                <div id="receipt-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center hidden z-50 p-4">
-                    <div class="bg-white rounded-3xl border-2 border-black w-full max-w-lg p-6 flex flex-col gap-4 relative shadow-2xl max-h-[92vh] overflow-y-auto">
-                        <!-- Close Button -->
-                        <button type="button" id="close-modal" class="absolute top-4 right-4 w-8 h-8 flex items-center justify-center font-bold text-lg bg-gray-100 rounded-full border border-black cursor-pointer hover:bg-gray-200">
-                            &times;
-                        </button>
-                        
-                        <div class="flex items-center gap-3 border-b pb-3">
-                            <img src="../assets/logowithtitle.png" class="w-12 h-auto object-contain" alt="Clinic Logo"/>
-                            <div>
-                                <h2 class="font-extrabold text-xl text-[#2c3e2b]">Appointment Summary &amp; Bill</h2>
-                                <p class="text-xs text-[#2c3e2b]/60">Review your selected services, schedule, and payment</p>
-                            </div>
-                        </div>
+<!-- ================= APPOINTMENT SUMMARY RECEIPT MODAL ================= -->
+<div id="receipt-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center hidden z-50 p-4">
+    <div class="bg-white rounded-[30px] w-full max-w-lg p-6 sm:p-8 flex flex-col gap-4 relative shadow-xl border-2 border-black/10 max-h-[92vh] overflow-y-auto">
 
-                        <!-- Itemized Summary Content -->
-                        <div id="receipt-content" class="text-[#2c3e2b] flex flex-col gap-3 border-2 border-black p-4 rounded-2xl bg-[#FDFCE9] text-sm">
-                            <!-- Injected dynamically -->
-                        </div>
+        <button type="button" id="close-modal" class="absolute top-5 right-5 w-8 h-8 flex items-center justify-center text-2xl font-extrabold text-[#382414]/60 hover:text-[#382414] hover:bg-gray-100 rounded-full transition leading-none cursor-pointer">&times;</button>
 
-                        <!-- Payment Method Action Buttons -->
-                        <div class="flex flex-col gap-2 mt-2">
-                            <p class="text-xs font-bold text-[#2A1001] uppercase tracking-wide">Choose Payment Mode:</p>
-                            <div class="flex gap-3">
-                                <button type="button" id="pay-online-btn" class="flex-1 py-3 bg-[#667733] hover:bg-[#556022] text-white font-bold rounded-xl border-2 border-black cursor-pointer transition shadow-md active:scale-95 flex items-center justify-center gap-2 text-sm">
-                                    <i class="fa-solid fa-wallet"></i> Pay Online (PH Channels)
-                                </button>
-                                <button type="button" id="pay-cash-btn" class="flex-1 py-3 bg-[#D3DCBE] hover:bg-[#c2ccab] text-[#2A1001] font-bold rounded-xl border-2 border-black cursor-pointer transition shadow-sm active:scale-95 flex items-center justify-center gap-2 text-sm">
-                                    <i class="fa-solid fa-money-bill-wave"></i> Pay in Clinic (Cash)
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+        <div class="flex items-center gap-3 border-b border-black/10 pb-4">
+            <img src="../assets/logowithtitle.png" class="w-12 h-auto object-contain" alt="Clinic Logo"/>
+            <div>
+                <h2 class="font-extrabold text-xl text-[#2c3e2b]">Appointment Summary &amp; Bill</h2>
+                <p class="text-xs text-[#2c3e2b]/60">Review your selected services, schedule, and payment</p>
+            </div>
+        </div>
 
-                <!-- ================= PHILIPPINES ONLINE PAYMENT MODAL ================= -->
-                <div id="online-payment-modal" class="fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center hidden z-[60] p-4">
-                    <div class="bg-[#F8F7F0] rounded-3xl border-2 border-black w-full max-w-xl p-5 sm:p-7 flex flex-col gap-4 relative shadow-2xl max-h-[94vh] overflow-y-auto">
-                        
-                        <!-- Close Button -->
-                        <button type="button" id="close-online-payment-btn" class="absolute top-4 right-4 w-8 h-8 flex items-center justify-center font-bold text-lg bg-white rounded-full border border-black cursor-pointer hover:bg-gray-100">
-                            &times;
-                        </button>
+        <!-- Itemized Summary Content -->
+        <div id="receipt-content" class="text-[#2c3e2b] flex flex-col gap-3 border border-black/10 p-4 rounded-2xl bg-[#FDFCE9] text-sm">
+            <!-- Injected dynamically -->
+        </div>
 
-                        <div class="flex items-center justify-between border-b border-black/10 pb-3">
-                            <div>
-                                <h2 class="font-extrabold text-xl text-[#2A1001] flex items-center gap-2">
-                                    <i class="fa-solid fa-shield-halved text-[#667733]"></i> Philippine Online Payment
-                                </h2>
-                                <p class="text-xs text-[#2A1001]/60">Select your preferred e-wallet, digital bank, or card</p>
-                            </div>
-                            <div class="text-right">
-                                <span class="text-[10px] uppercase font-bold text-[#2A1001]/60">Total to Pay:</span>
-                                <p id="onlinePayAmountText" class="font-black text-lg text-[#667733]">₱0.00</p>
-                            </div>
-                        </div>
+        <!-- Payment Method Action Buttons -->
+        <div class="flex flex-col gap-2 mt-1">
+            <p class="text-xs font-bold text-[#2A1001]/50 uppercase tracking-wider text-center">Choose Payment Mode</p>
+            <div class="flex gap-3">
+                <button type="button" id="pay-online-btn" class="flex-1 py-3 bg-[#667733] hover:bg-[#556022] text-white font-bold rounded-full shadow-md active:scale-95 transition transform flex items-center justify-center gap-2 text-sm cursor-pointer">
+                    <i class="fa-solid fa-wallet"></i> Pay Online
+                </button>
+                <button type="button" id="pay-cash-btn" class="flex-1 py-3 bg-[#D3DCBE] hover:bg-[#c2ccab] text-[#2A1001] font-bold rounded-full shadow-sm active:scale-95 transition transform flex items-center justify-center gap-2 text-sm cursor-pointer">
+                    <i class="fa-solid fa-money-bill-wave"></i> Pay in Clinic (Cash)
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 
-                        <!-- Philippine Channels Tabs -->
-                        <div class="grid grid-cols-3 sm:grid-cols-6 gap-2" id="channelSelector">
-                            <!-- GCash -->
-                            <button type="button" data-channel="gcash" class="channel-tab-btn bg-white border-2 border-[#005CEE] text-[#005CEE] rounded-xl p-2 flex flex-col items-center justify-center gap-1 font-bold text-xs shadow-sm hover:scale-105 transition active:scale-95 cursor-pointer">
-                                <span class="font-black text-sm">GCash</span>
-                                <span class="text-[9px] text-gray-500">E-Wallet</span>
-                            </button>
-                            <!-- Maya -->
-                            <button type="button" data-channel="maya" class="channel-tab-btn bg-white border-2 border-black text-gray-800 rounded-xl p-2 flex flex-col items-center justify-center gap-1 font-bold text-xs shadow-sm hover:scale-105 transition active:scale-95 cursor-pointer">
-                                <span class="font-black text-sm text-green-600">Maya</span>
-                                <span class="text-[9px] text-gray-500">E-Wallet</span>
-                            </button>
-                            <!-- GoTyme Bank -->
-                            <button type="button" data-channel="gotyme" class="channel-tab-btn bg-white border-2 border-black text-gray-800 rounded-xl p-2 flex flex-col items-center justify-center gap-1 font-bold text-xs shadow-sm hover:scale-105 transition active:scale-95 cursor-pointer">
-                                <span class="font-black text-sm text-purple-700">GoTyme</span>
-                                <span class="text-[9px] text-gray-500">Digital Bank</span>
-                            </button>
-                            <!-- ShopeePay / GrabPay -->
-                            <button type="button" data-channel="ewallet" class="channel-tab-btn bg-white border-2 border-black text-gray-800 rounded-xl p-2 flex flex-col items-center justify-center gap-1 font-bold text-xs shadow-sm hover:scale-105 transition active:scale-95 cursor-pointer">
-                                <span class="font-black text-xs text-orange-600">Shopee/Grab</span>
-                                <span class="text-[9px] text-gray-500">E-Wallet</span>
-                            </button>
-                            <!-- Debit / Credit Card -->
-                            <button type="button" data-channel="card" class="channel-tab-btn bg-white border-2 border-black text-gray-800 rounded-xl p-2 flex flex-col items-center justify-center gap-1 font-bold text-xs shadow-sm hover:scale-105 transition active:scale-95 cursor-pointer">
-                                <i class="fa-solid fa-credit-card text-sm text-blue-700"></i>
-                                <span class="text-[10px] font-bold">Card</span>
-                            </button>
-                            <!-- QR Ph Standard -->
-                            <button type="button" data-channel="qrph" class="channel-tab-btn bg-white border-2 border-black text-gray-800 rounded-xl p-2 flex flex-col items-center justify-center gap-1 font-bold text-xs shadow-sm hover:scale-105 transition active:scale-95 cursor-pointer">
-                                <i class="fa-solid fa-qrcode text-sm text-red-600"></i>
-                                <span class="text-[10px] font-bold">QR Ph</span>
-                            </button>
-                        </div>
+             <!-- ================= PHILIPPINES ONLINE PAYMENT MODAL ================= -->
+<div id="online-payment-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center hidden z-[60] p-4">
+    <div class="bg-white rounded-[30px] w-full max-w-xl p-6 sm:p-8 flex flex-col gap-4 relative shadow-xl border-2 border-black/10 max-h-[92vh] overflow-y-auto">
 
-                        <!-- Dynamic Channel Form & Details Box -->
-                        <div id="channelContentBox" class="bg-white rounded-2xl border-2 border-black/15 p-4 sm:p-5 flex flex-col gap-3">
-                            <!-- Injected by JavaScript based on active channel tab -->
-                        </div>
+        <button type="button" id="close-online-payment-btn" class="absolute top-5 right-5 w-8 h-8 flex items-center justify-center text-2xl font-extrabold text-[#382414]/60 hover:text-[#382414] hover:bg-gray-100 rounded-full transition leading-none cursor-pointer">&times;</button>
 
-                        <!-- Submit Final Online Payment & Booking -->
-                        <div class="flex gap-3 mt-1">
-                            <button type="button" id="submitOnlineBookingBtn" class="flex-1 py-3.5 bg-[#667733] hover:bg-[#556022] text-white font-extrabold text-base rounded-full border-2 border-black cursor-pointer transition shadow-lg active:scale-95 flex items-center justify-center gap-2">
-                                <i class="fa-solid fa-check-circle"></i> Confirm &amp; Finalize Booking
-                            </button>
-                        </div>
+        <div class="flex items-center gap-3 border-b border-black/10 pb-4">
+            <div class="w-12 h-12 rounded-full bg-[#D7E3A5] flex items-center justify-center text-xl text-[#667733] shrink-0">
+                <i class="fa-solid fa-shield-halved"></i>
+            </div>
+            <div>
+                <h2 class="font-extrabold text-xl text-[#2c3e2b]">Secure Online Payment</h2>
+                <p class="text-xs text-[#2c3e2b]/60">Total Amount: <span id="onlinePayAmountText" class="font-bold text-amber-700">₱0.00</span></p>
+            </div>
+        </div>
 
-                    </div>
-                </div>
+        <!-- Philippine Channels Tabs -->
+        <div class="grid grid-cols-3 sm:grid-cols-6 gap-2" id="channelSelector">
+            <button type="button" data-channel="gcash" class="channel-tab-btn bg-[#D7E3A5]/20 border-2 border-[#667733] ring-2 ring-[#667733] text-[#005CEE] rounded-xl p-2 flex flex-col items-center justify-center gap-1 font-bold text-xs shadow-sm hover:scale-105 transition active:scale-95 cursor-pointer">
+                <span class="font-black text-sm">GCash</span>
+                <span class="text-[9px] text-gray-500">E-Wallet</span>
+            </button>
+            <button type="button" data-channel="maya" class="channel-tab-btn bg-white border-2 border-[#2A1001]/10 text-gray-800 rounded-xl p-2 flex flex-col items-center justify-center gap-1 font-bold text-xs shadow-sm hover:scale-105 transition active:scale-95 cursor-pointer">
+                <span class="font-black text-sm text-green-600">Maya</span>
+                <span class="text-[9px] text-gray-500">E-Wallet</span>
+            </button>
+            <button type="button" data-channel="gotyme" class="channel-tab-btn bg-white border-2 border-[#2A1001]/10 text-gray-800 rounded-xl p-2 flex flex-col items-center justify-center gap-1 font-bold text-xs shadow-sm hover:scale-105 transition active:scale-95 cursor-pointer">
+                <span class="font-black text-sm text-purple-700">GoTyme</span>
+                <span class="text-[9px] text-gray-500">Digital Bank</span>
+            </button>
+            <button type="button" data-channel="paypal" class="channel-tab-btn bg-white border-2 border-[#2A1001]/10 text-gray-800 rounded-xl p-2 flex flex-col items-center justify-center gap-1 font-bold text-xs shadow-sm hover:scale-105 transition active:scale-95 cursor-pointer">
+                <i class="fa-brands fa-paypal text-sm text-[#003087]"></i>
+                <span class="text-[10px] font-bold">PayPal</span>
+            </button>
+            <button type="button" data-channel="card" class="channel-tab-btn bg-white border-2 border-[#2A1001]/10 text-gray-800 rounded-xl p-2 flex flex-col items-center justify-center gap-1 font-bold text-xs shadow-sm hover:scale-105 transition active:scale-95 cursor-pointer">
+                <i class="fa-solid fa-credit-card text-sm text-blue-700"></i>
+                <span class="text-[10px] font-bold">Card</span>
+            </button>
+        </div>
+
+        <!-- Dynamic Channel Content Box -->
+        <div id="channelContentBox" class="w-full bg-[#FDFCE9] border border-black/10 p-4 rounded-2xl min-h-[160px]">
+            <!-- Content injected by JS renderChannelContent() -->
+        </div>
+
+        <button type="button" id="submitOnlineBookingBtn" class="w-full py-3.5 bg-[#D5C04D] hover:bg-[#c4b03f] text-[#2A1001] font-black text-lg rounded-full shadow-md active:scale-95 transition transform flex items-center justify-center gap-2 cursor-pointer">
+            <i class="fa-solid fa-check-circle"></i> Confirm &amp; Finalize Booking
+        </button>
+    </div>
+</div>
+
+    
 
             </form>
             
@@ -311,14 +296,47 @@
 </div>
 
 <div id="validation-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center hidden z-[70] p-4">
-    <div class="bg-white rounded-3xl border-2 border-black w-full max-w-sm p-6 flex flex-col items-center gap-3 text-center shadow-2xl">
-        <div class="w-14 h-14 rounded-full bg-amber-50 border-2 border-amber-400 flex items-center justify-center">
+    <div class="bg-white rounded-[30px] w-full max-w-sm p-8 flex flex-col items-center gap-3 text-center shadow-xl border-2 border-black/10">
+        <div class="w-14 h-14 rounded-full bg-amber-50 flex items-center justify-center">
             <i class="fa-solid fa-triangle-exclamation text-amber-500 text-2xl"></i>
         </div>
         <h2 class="font-extrabold text-lg text-[#2A1001]">Incomplete Booking</h2>
-        <p id="validation-modal-text" class="text-sm text-[#2A1001]/70"></p>
-        <button type="button" id="validation-modal-ok" class="mt-2 w-full py-2.5 bg-[#667733] hover:bg-[#556022] text-white font-bold rounded-full border-2 border-black cursor-pointer transition">
+        <p id="validation-modal-text" class="text-sm text-[#2A1001]/70 leading-relaxed"></p>
+        <button type="button" id="validation-modal-ok" class="mt-2 w-full py-2.5 bg-[#667733] hover:bg-[#556022] text-white font-bold rounded-full shadow-md active:scale-95 transition cursor-pointer">
             Okay, Got It
+        </button>
+    </div>
+</div>
+<div id="cash-confirm-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center hidden z-[70] p-4">
+    <div class="bg-white rounded-[30px] border-2 border-black/10 w-full max-w-sm p-8 flex flex-col items-center gap-3 text-center shadow-xl">
+        <div class="w-14 h-14 rounded-full bg-[#D7E3A5] flex items-center justify-center">
+            <i class="fa-solid fa-money-bill-wave text-[#667733] text-2xl"></i>
+        </div>
+        <h2 class="font-extrabold text-lg text-[#2A1001]">Confirm Cash Payment</h2>
+        <p class="text-sm text-[#2A1001]/70 leading-relaxed">Confirm booking this appointment with In-Clinic Cash payment?</p>
+        <div class="flex gap-3 w-full mt-2">
+            <button type="button" id="cash-confirm-cancel" class="flex-1 py-2.5 bg-white border border-[#2A1001]/20 hover:bg-[#F3EFE4] text-[#2A1001] font-semibold rounded-full transition cursor-pointer">Cancel</button>
+            <button type="button" id="cash-confirm-ok" class="flex-1 py-2.5 bg-[#667733] hover:bg-[#556022] text-white font-bold rounded-full shadow-md active:scale-95 transition cursor-pointer">Yes, Confirm</button>
+        </div>
+    </div>
+</div>
+<!-- ================= BOOKING SUCCESS MODAL ================= -->
+<div id="success-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center hidden z-[80] p-4">
+    <div class="bg-white rounded-[30px] w-full max-w-sm p-8 flex flex-col items-center gap-3 text-center shadow-xl border-2 border-black/10">
+        <div class="w-16 h-16 rounded-full bg-[#D7E3A5] flex items-center justify-center">
+            <i class="fa-solid fa-check text-[#667733] text-3xl"></i>
+        </div>
+        <h2 class="font-extrabold text-xl text-[#2A1001] mt-1">Booking Confirmed!</h2>
+        <p id="success-modal-text" class="text-sm text-[#2A1001]/70 leading-relaxed">
+            Your appointment has been successfully booked. A confirmation has been sent to your email.
+        </p>
+
+        <div id="success-modal-details" class="w-full bg-[#FDFCE9] border border-black/10 rounded-2xl p-4 text-sm text-left flex flex-col gap-1.5 mt-1">
+            <!-- Injected dynamically: date, time, doctor, services, amount -->
+        </div>
+
+        <button type="button" id="success-modal-ok" class="mt-2 w-full py-2.5 bg-[#667733] hover:bg-[#556022] text-white font-bold rounded-full shadow-md active:scale-95 transition cursor-pointer">
+            Done
         </button>
     </div>
 </div>
