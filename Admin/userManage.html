@@ -14,7 +14,6 @@
 </head>
 
 <body class="min-h-screen md:h-screen md:overflow-hidden bg-[#F3EFE4] relative flex flex-col md:flex-row antialiased">
-
 <!-- SIDEBAR -->
 <div id="sidebar-placeholder"></div>
 <script>
@@ -84,8 +83,8 @@
                 <input
                         type="text"
                         id="searchInput"
-                        placeholder="Search by name..."
-                        class="h-11 flex-1 min-w-[200px] max-w-sm rounded-full border border-[#2A1001]/20 bg-white px-4 outline-none"
+                        placeholder="Search by name, email, or ID..."
+                        class="h-11 flex-1 min-w-[200px] max-w-sm rounded-full border border-[#2A1001]/20 bg-white px-4 outline-none text-sm font-semibold"
                 />
 
                 <div class="relative">
@@ -98,7 +97,7 @@
                     <div class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[#2A1001]">▾</div>
                 </div>
 
-                <button id="createAccountBtn" class="h-11 shrink-0 px-6 rounded-full bg-[#D5C04D] hover:bg-[#c2ad3c] transition text-[#2A1001] font-bold">
+                <button id="createAccountBtn" class="h-11 shrink-0 px-6 rounded-full bg-[#D5C04D] hover:bg-[#c2ad3c] transition text-[#2A1001] font-bold cursor-pointer">
                     + Create New Account
                 </button>
             </div>
@@ -115,7 +114,7 @@
     <!-- =====Edit account modal===== -->
     <div id="editModal" class="hidden fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
         <div class="bg-white rounded-3xl w-full max-w-md p-6 md:p-8 relative">
-            <button id="closeEditModal" type="button" class="absolute top-4 right-4 text-2xl font-bold text-[#2A1001] hover:opacity-60">&times;</button>
+            <button id="closeEditModal" type="button" class="absolute top-4 right-4 text-2xl font-bold text-[#2A1001] hover:opacity-60 cursor-pointer">&times;</button>
             <h2 class="text-xl font-bold text-[#2A1001] font-['Poppins'] mb-6">Edit Account</h2>
 
             <!-- Wrap inputs in a form for native HTML validation -->
@@ -127,7 +126,7 @@
                         <label class="block text-xs font-bold text-[#2A1001] uppercase mb-1">First Name</label>
                         <div class="relative">
                             <input type="text" id="editFirstName" readonly required class="w-full h-10 pl-4 pr-10 rounded-full border border-[#2A1001]/20 outline-none cursor-default focus:cursor-text text-[#2A1001]" />
-                            <button type="button" class="unlockBtn absolute right-1.5 top-1/2 -translate-y-1/2 w-7 h-7 bg-white rounded-full flex items-center justify-center shadow-[0_1px_4px_rgba(0,0,0,0.15)] border border-gray-100 hover:bg-gray-50 transition" data-target="editFirstName">
+                            <button type="button" class="unlockBtn absolute right-1.5 top-1/2 -translate-y-1/2 w-7 h-7 bg-white rounded-full flex items-center justify-center shadow-[0_1px_4px_rgba(0,0,0,0.15)] border border-gray-100 hover:bg-gray-50 transition cursor-pointer" data-target="editFirstName">
                                 <img src="../assets/editIcon.png" class="w-3.5 h-3.5 object-contain opacity-80" alt="Edit">
                             </button>
                         </div>
@@ -136,7 +135,7 @@
                         <label class="block text-xs font-bold text-[#2A1001] uppercase mb-1">Last Name</label>
                         <div class="relative">
                             <input type="text" id="editLastName" readonly required class="w-full h-10 pl-4 pr-10 rounded-full border border-[#2A1001]/20 outline-none cursor-default focus:cursor-text text-[#2A1001]" />
-                            <button type="button" class="unlockBtn absolute right-1.5 top-1/2 -translate-y-1/2 w-7 h-7 bg-white rounded-full flex items-center justify-center shadow-[0_1px_4px_rgba(0,0,0,0.15)] border border-gray-100 hover:bg-gray-50 transition" data-target="editLastName">
+                            <button type="button" class="unlockBtn absolute right-1.5 top-1/2 -translate-y-1/2 w-7 h-7 bg-white rounded-full flex items-center justify-center shadow-[0_1px_4px_rgba(0,0,0,0.15)] border border-gray-100 hover:bg-gray-50 transition cursor-pointer" data-target="editLastName">
                                 <img src="../assets/editIcon.png" class="w-3.5 h-3.5 object-contain opacity-80" alt="Edit">
                             </button>
                         </div>
@@ -147,7 +146,7 @@
                     <label class="block text-xs font-bold text-[#2A1001] uppercase mb-1">Email</label>
                     <div class="relative">
                         <input type="email" id="editEmail" readonly required class="w-full h-10 pl-4 pr-10 rounded-full border border-[#2A1001]/20 outline-none cursor-default focus:cursor-text text-[#2A1001]" />
-                        <button type="button" class="unlockBtn absolute right-1.5 top-1/2 -translate-y-1/2 w-7 h-7 bg-white rounded-full flex items-center justify-center shadow-[0_1px_4px_rgba(0,0,0,0.15)] border border-gray-100 hover:bg-gray-50 transition" data-target="editEmail">
+                        <button type="button" class="unlockBtn absolute right-1.5 top-1/2 -translate-y-1/2 w-7 h-7 bg-white rounded-full flex items-center justify-center shadow-[0_1px_4px_rgba(0,0,0,0.15)] border border-gray-100 hover:bg-gray-50 transition cursor-pointer" data-target="editEmail">
                             <img src="../assets/editIcon.png" class="w-3.5 h-3.5 object-contain opacity-80" alt="Edit">
                         </button>
                     </div>
@@ -159,7 +158,7 @@
                         <input type="tel" id="editPhone" pattern="^09\d{9}$" maxlength="11" readonly required class="w-full h-10 pl-4 pr-10 rounded-full border border-[#2A1001]/20 outline-none cursor-default focus:cursor-text text-[#2A1001]"
                                oninvalid="this.setCustomValidity('Phone number must be exactly 11 digits and start with 09.')"
                                oninput="this.setCustomValidity(''); this.value = this.value.replace(/\D/g, '').slice(0, 11);" />
-                        <button type="button" class="unlockBtn absolute right-1.5 top-1/2 -translate-y-1/2 w-7 h-7 bg-white rounded-full flex items-center justify-center shadow-[0_1px_4px_rgba(0,0,0,0.15)] border border-gray-100 hover:bg-gray-50 transition" data-target="editPhone">
+                        <button type="button" class="unlockBtn absolute right-1.5 top-1/2 -translate-y-1/2 w-7 h-7 bg-white rounded-full flex items-center justify-center shadow-[0_1px_4px_rgba(0,0,0,0.15)] border border-gray-100 hover:bg-gray-50 transition cursor-pointer" data-target="editPhone">
                             <img src="../assets/editIcon.png" class="w-3.5 h-3.5 object-contain opacity-80" alt="Edit">
                         </button>
                     </div>
@@ -177,7 +176,7 @@
                             <option value="Dentist">Dentist</option>
                             <option value="Receptionist">Receptionist</option>
                         </select>
-                        <button type="button" class="unlockBtn absolute right-1.5 top-1/2 -translate-y-1/2 w-7 h-7 bg-white rounded-full flex items-center justify-center shadow-[0_1px_4px_rgba(0,0,0,0.15)] border border-gray-100 hover:bg-gray-50 transition z-10" data-target="editPosition">
+                        <button type="button" class="unlockBtn absolute right-1.5 top-1/2 -translate-y-1/2 w-7 h-7 bg-white rounded-full flex items-center justify-center shadow-[0_1px_4px_rgba(0,0,0,0.15)] border border-gray-100 hover:bg-gray-50 transition z-10 cursor-pointer" data-target="editPosition">
                             <img src="../assets/editIcon.png" class="w-3.5 h-3.5 object-contain opacity-80" alt="Edit">
                         </button>
                     </div>
@@ -190,19 +189,68 @@
                             <option value="Super Admin">Super Admin</option>
                             <option value="Regular Admin">Regular Admin</option>
                         </select>
-                        <button type="button" class="unlockBtn absolute right-1.5 top-1/2 -translate-y-1/2 w-7 h-7 bg-white rounded-full flex items-center justify-center shadow-[0_1px_4px_rgba(0,0,0,0.15)] border border-gray-100 hover:bg-gray-50 transition z-10" data-target="editPermission">
+                        <button type="button" class="unlockBtn absolute right-1.5 top-1/2 -translate-y-1/2 w-7 h-7 bg-white rounded-full flex items-center justify-center shadow-[0_1px_4px_rgba(0,0,0,0.15)] border border-gray-100 hover:bg-gray-50 transition z-10 cursor-pointer" data-target="editPermission">
                             <img src="../assets/editIcon.png" class="w-3.5 h-3.5 object-contain opacity-80" alt="Edit">
                         </button>
                     </div>
                 </div>
 
                 <div class="flex justify-center">
-                    <button type="submit" id="saveEditBtn" class="bg-[#667733] hover:bg-[#556022] transition text-white font-bold px-8 py-2.5 rounded-full">
+                    <button type="submit" id="saveEditBtn" class="bg-[#667733] hover:bg-[#556022] transition text-white font-bold px-8 py-2.5 rounded-full cursor-pointer">
                         Save Changes
                     </button>
                 </div>
                 <div id="editSuccessMessage" class="hidden text-center mt-3 p-3 w-full bg-green-100 border border-green-400 text-green-800 rounded-2xl font-poppins text-sm">
                     Changes saved successfully!
+                </div>
+            </form>
+        </div>
+    </div>
+
+
+    <!-- ===== POLISHED DOCTOR SCHEDULE TIMECARD MODAL ===== -->
+  <div id="doctorScheduleModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-[32px] w-full max-w-4xl p-6 sm:p-8 relative max-h-[92vh] overflow-y-auto shadow-2xl border-2 border-black/10">
+            <!-- Close Button -->
+            <button id="closeDoctorScheduleModal" type="button" class="absolute top-5 right-6 text-3xl font-extrabold text-[#2A1001] hover:opacity-60 transition leading-none cursor-pointer">&times;</button>
+            
+            <!-- Modal Title & Doctor Info -->
+            <div class="flex items-center gap-3.5 border-b border-black/10 pb-4 mb-5">
+                <div class="w-12 h-12 rounded-2xl bg-[#667733] text-white flex items-center justify-center text-xl shrink-0 shadow-sm">
+                    <i class="fa-solid fa-calendar-week"></i>
+                </div>
+                <div>
+                    <h2 class="text-xl sm:text-2xl font-black text-[#2A1001] font-['Poppins']">Dentist Schedule &amp; Timecards</h2>
+                    <p id="scheduleDoctorName" class="text-xs font-bold text-[#667733] mt-0.5">Doctor Shift Configuration</p>
+                </div>
+            </div>
+
+    
+
+            <!-- Schedule Form -->
+            <form id="doctorScheduleForm">
+                <input type="hidden" id="scheduleDoctorId" />
+
+                <!-- Table Header for Grid Rows -->
+                <div class="hidden sm:grid grid-cols-12 gap-2 pb-2 text-[11px] font-black uppercase text-[#2A1001]/60 px-3">
+                    <div class="col-span-3">Day &amp; Status</div>
+                    <div class="col-span-5">Operating Shift Hours</div>
+                    <div class="col-span-4">Lunch Break Hours</div>
+                </div>
+
+                <!-- Day Schedule Rows Container -->
+                <div class="flex flex-col gap-2.5" id="weeklyScheduleRows">
+                    <!-- Injected dynamically for Monday to Sunday -->
+                </div>
+
+                <!-- Form Action Buttons -->
+                <div class="flex justify-center sm:justify-end gap-3 mt-6 pt-4 border-t border-black/10">
+                    <button type="button" id="cancelScheduleBtn" class="bg-white border border-[#2A1001]/20 hover:bg-[#e8e2d0] text-[#2A1001] font-bold px-6 py-2.5 rounded-full transition cursor-pointer text-sm">
+                        Cancel
+                    </button>
+                    <button type="submit" id="saveScheduleBtn" class="bg-[#667733] hover:bg-[#556022] transition text-white font-black px-8 py-2.5 rounded-full shadow-md cursor-pointer text-sm flex items-center gap-2">
+                        <i class="fa-solid fa-floppy-disk"></i> Save Doctor Schedule
+                    </button>
                 </div>
             </form>
         </div>
@@ -215,8 +263,8 @@
             <h2 class="text-xl font-bold text-[#2A1001] font-['Poppins'] mb-2" id="statusModalTitle">Disable Account?</h2>
             <p class="text-sm text-[#2A1001]/70 mb-6" id="statusModalText"></p>
             <div class="flex justify-center gap-3">
-                <button id="cancelStatusBtn" class="px-6 py-2 rounded-full font-semibold text-[#2A1001] bg-white border border-[#2A1001]/20 hover:bg-[#e8e2d0] transition">Cancel</button>
-                <button id="confirmStatusBtn" class="px-6 py-2 rounded-full font-semibold text-white bg-[#D9534F] hover:bg-[#c9302c] transition">Confirm</button>
+                <button id="cancelStatusBtn" class="px-6 py-2 rounded-full font-semibold text-[#2A1001] bg-white border border-[#2A1001]/20 hover:bg-[#e8e2d0] transition cursor-pointer">Cancel</button>
+                <button id="confirmStatusBtn" class="px-6 py-2 rounded-full font-semibold text-white bg-[#D9534F] hover:bg-[#c9302c] transition cursor-pointer">Confirm</button>
             </div>
         </div>
     </div>
@@ -228,8 +276,8 @@
             <h2 class="text-xl font-bold text-[#2A1001] font-['Poppins'] mb-2">Delete Account?</h2>
             <p class="text-sm text-[#2A1001]/70 mb-6" id="deleteModalText"></p>
             <div class="flex justify-center gap-3">
-                <button id="cancelDeleteBtn" class="px-6 py-2 rounded-full font-semibold text-[#2A1001] bg-white border border-[#2A1001]/20 hover:bg-[#e8e2d0] transition">Cancel</button>
-                <button id="confirmDeleteBtn" class="px-6 py-2 rounded-full font-semibold text-white bg-[#D9534F] hover:bg-[#c9302c] transition">Yes, Delete</button>
+                <button id="cancelDeleteBtn" class="px-6 py-2 rounded-full font-semibold text-[#2A1001] bg-white border border-[#2A1001]/20 hover:bg-[#e8e2d0] transition cursor-pointer">Cancel</button>
+                <button id="confirmDeleteBtn" class="px-6 py-2 rounded-full font-semibold text-white bg-[#D9534F] hover:bg-[#c9302c] transition cursor-pointer">Yes, Delete</button>
             </div>
         </div>
     </div>
@@ -238,7 +286,7 @@
     <!-- =======create account modal========== -->
     <div id="createModal" class="hidden fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
         <div class="bg-white rounded-3xl w-full max-w-md p-6 md:p-8 relative max-h-[90vh] overflow-y-auto">
-            <button id="closeCreateModal" type="button" class="absolute top-4 right-4 text-2xl font-bold text-[#2A1001] hover:opacity-60">&times;</button>
+            <button id="closeCreateModal" type="button" class="absolute top-4 right-4 text-2xl font-bold text-[#2A1001] hover:opacity-60 cursor-pointer">&times;</button>
             <h2 class="text-xl font-bold text-[#2A1001] font-['Poppins'] mb-6">Create New Account</h2>
 
             <!-- Wrap inputs in a form to trigger native HTML validation -->
@@ -246,22 +294,22 @@
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                     <div>
                         <label class="block text-xs font-bold text-[#2A1001] uppercase mb-1">First Name</label>
-                        <input type="text" id="newFirstName" required class="w-full h-10 px-4 rounded-full border border-[#2A1001]/20 outline-none" />
+                        <input type="text" id="newFirstName" required class="w-full h-10 px-4 rounded-full border border-[#2A1001]/20 outline-none text-sm font-semibold" />
                     </div>
                     <div>
                         <label class="block text-xs font-bold text-[#2A1001] uppercase mb-1">Last Name</label>
-                        <input type="text" id="newLastName" required class="w-full h-10 px-4 rounded-full border border-[#2A1001]/20 outline-none" />
+                        <input type="text" id="newLastName" required class="w-full h-10 px-4 rounded-full border border-[#2A1001]/20 outline-none text-sm font-semibold" />
                     </div>
                 </div>
 
                 <div class="mb-4">
                     <label class="block text-xs font-bold text-[#2A1001] uppercase mb-1">Email</label>
-                    <input type="email" id="newEmail" required class="w-full h-10 px-4 rounded-full border border-[#2A1001]/20 outline-none" />
+                    <input type="email" id="newEmail" required class="w-full h-10 px-4 rounded-full border border-[#2A1001]/20 outline-none text-sm font-semibold" />
                 </div>
 
                 <div class="mb-4">
                     <label class="block text-xs font-bold text-[#2A1001] uppercase mb-1">Phone</label>
-                    <input type="tel" id="newPhone" pattern="^09\d{9}$" maxlength="11" required class="w-full h-10 px-4 rounded-full border border-[#2A1001]/20 outline-none" placeholder="09171234567"
+                    <input type="tel" id="newPhone" pattern="^09\d{9}$" maxlength="11" required class="w-full h-10 px-4 rounded-full border border-[#2A1001]/20 outline-none text-sm font-semibold" placeholder="09171234567"
                            oninvalid="this.setCustomValidity('Phone number must be exactly 11 digits and start with 09.')"
                            oninput="this.setCustomValidity(''); this.value = this.value.replace(/\D/g, '').slice(0, 11);" />
                 </div>
@@ -269,7 +317,7 @@
                 <div class="grid grid-cols-2 gap-4 mb-4">
                     <div>
                         <label class="block text-xs font-bold text-[#2A1001] uppercase mb-1">Sex</label>
-                        <div class="flex items-center gap-6 h-10 px-4 rounded-full bg-white">
+                        <div class="flex items-center gap-6 h-10 px-4 rounded-full bg-white border border-[#2A1001]/20">
                             <label class="flex items-center gap-2 text-sm text-[#2A1001] font-medium cursor-pointer">
                                 <input type="radio" name="newSex" value="M" checked class="w-4 h-4 accent-[#2A1001]" /> Male
                             </label>
@@ -280,7 +328,7 @@
                     </div>
                     <div>
                         <label class="block text-xs font-bold text-[#2A1001] uppercase mb-1">Role</label>
-                        <select id="newRole" class="w-full h-10 px-4 rounded-full border border-[#2A1001]/20 outline-none cursor-pointer">
+                        <select id="newRole" class="w-full h-10 px-4 rounded-full border border-[#2A1001]/20 outline-none cursor-pointer text-sm font-semibold">
                             <option value="employee">Employee</option>
                             <option value="admin">Admin</option>
                         </select>
@@ -289,7 +337,7 @@
 
                 <div id="newPositionWrapper" class="mb-4 hidden">
                     <label class="block text-xs font-bold text-[#2A1001] uppercase mb-1">Position</label>
-                    <select id="newPosition" class="w-full h-10 px-4 rounded-full border border-[#2A1001]/20 outline-none cursor-pointer">
+                    <select id="newPosition" class="w-full h-10 px-4 rounded-full border border-[#2A1001]/20 outline-none cursor-pointer text-sm font-semibold">
                         <option value="Dentist">Dentist</option>
                         <option value="Receptionist">Receptionist</option>
                     </select>
@@ -297,7 +345,7 @@
 
                 <div id="newPermissionWrapper" class="mb-4 hidden">
                     <label class="block text-xs font-bold text-[#2A1001] uppercase mb-1">Permission Level</label>
-                    <select id="newPermission" class="w-full h-10 px-4 rounded-full border border-[#2A1001]/20 outline-none cursor-pointer">
+                    <select id="newPermission" class="w-full h-10 px-4 rounded-full border border-[#2A1001]/20 outline-none cursor-pointer text-sm font-semibold">
                         <option value="Super Admin">Super Admin</option>
                         <option value="Regular Admin">Regular Admin</option>
                     </select>
@@ -305,15 +353,15 @@
 
                 <div class="mb-6">
                     <label class="block text-xs font-bold text-[#2A1001] uppercase mb-1">Temporary Password</label>
-                    <input type="text" id="newPassword" disabled value="Auto-generated (matches system ID)" class="w-full h-10 px-4 rounded-full border border-[#2A1001]/20 outline-none bg-gray-100 text-gray-500 font-medium" />
+                    <input type="text" id="newPassword" disabled value="Auto-generated (matches system ID)" class="w-full h-10 px-4 rounded-full border border-[#2A1001]/20 outline-none bg-gray-100 text-gray-500 font-medium text-xs" />
                     <p class="text-[11px] text-[#2A1001]/50 mt-1">The user will use their assigned ID to log in. They must change it upon first login.</p>
                 </div>
 
                 <div class="flex justify-center gap-2">
-                    <button type="submit" id="saveCreateBtn" disabled class="bg-[#667733] hover:bg-[#556022] disabled:bg-gray-400 disabled:hover:bg-gray-400 disabled:cursor-not-allowed disabled:opacity-70 transition text-white font-bold px-8 py-2.5 rounded-full">
+                    <button type="submit" id="saveCreateBtn" disabled class="bg-[#667733] hover:bg-[#556022] disabled:bg-gray-400 disabled:hover:bg-gray-400 disabled:cursor-not-allowed disabled:opacity-70 transition text-white font-bold px-8 py-2.5 rounded-full cursor-pointer">
                         Create Account
                     </button>
-                    <button type="button" id="userClearBtn" disabled class="bg-[#667733] hover:bg-[#556022] disabled:bg-gray-400 disabled:hover:bg-gray-400 disabled:cursor-not-allowed disabled:opacity-70 transition text-white font-bold px-8 py-2.5 rounded-full">
+                    <button type="button" id="userClearBtn" disabled class="bg-[#667733] hover:bg-[#556022] disabled:bg-gray-400 disabled:hover:bg-gray-400 disabled:cursor-not-allowed disabled:opacity-70 transition text-white font-bold px-8 py-2.5 rounded-full cursor-pointer">
                         Clear
                     </button>
                 </div>
@@ -330,10 +378,6 @@
 
 <script>
 
-    // Escapes any user-supplied text before it's dropped into innerHTML.
-    // first_name/last_name/email/public_id all originate from the users
-    // table, and patients set those themselves via /api/auth/register, so
-    // they must never be trusted as HTML.
     function escapeHtml(str) {
         return String(str ?? '').replace(/[&<>"']/g, ch => ({
             '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
@@ -345,6 +389,8 @@
     let currentRole = "All";
     let pendingStatusId = null;
     let pendingDeleteId = null;
+
+    const DAYS_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
     async function getUsers() {
         const token = localStorage.getItem('userToken');
@@ -461,8 +507,6 @@
         return result;
     }
 
-    // LOGIN ATTEMPT SECURITY
-    // admin unlocks locked users (if email exists in system)
     async function resetLoginLock(userId) {
         const token = localStorage.getItem('userToken');
         const response = await fetch(`/api/users/${userId}/reset-login-lock`, {
@@ -506,11 +550,10 @@
     }
 
     function displayName(u) {
-        const prefix = u.position === 'Dentist' ? 'Dr. ' : ''; //when the position is dentist they have Dr in their name
+        const prefix = u.position === 'Dentist' ? 'Dr. ' : '';
         return `${prefix}${u.first_name} ${u.last_name}`;
     }
 
-    //filters the list of users based on what you are searching for and what role is selected
     function getFiltered() {
         return users.filter(u => {
             const matchesRole = currentRole === 'All' || u.role === currentRole;
@@ -519,7 +562,6 @@
         });
     }
 
-    //forda card render with content
     function renderUsers() {
         const container = document.getElementById('user-container');
 
@@ -550,14 +592,18 @@
         }
 
         filteredUsers.forEach(u => {
+            const isDentist = u.position === 'Dentist';
+
             container.insertAdjacentHTML('beforeend', `
-            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between bg-white rounded-2xl p-5 shadow-sm hover:shadow-md transition-all duration-300 gap-4">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between bg-white rounded-2xl p-5 shadow-sm hover:shadow-md transition-all duration-300 gap-4 border border-black/5">
                 <div class="flex items-center gap-4">
 
                     <img src="../assets/userIcon.png" alt="User" class="w-12 h-12 object-contain" />
 
                     <div>
-                        <h3 class="font-bold text-[#2A1001] text-lg">${escapeHtml(displayName(u))}</h3>
+                        <h3 class="font-bold text-[#2A1001] text-lg flex items-center gap-2">
+                            ${escapeHtml(displayName(u))}
+                        </h3>
                         <p class="text-xs text-[#2A1001]/50">${escapeHtml(u.public_id || '')}</p>
                     </div>
                 </div>
@@ -567,18 +613,24 @@
                     <p class="text-sm text-[#2A1001]/70">${escapeHtml(u.email || '')}</p>
                     ${u.account_status === 'suspended' ? '<span class="text-xs font-bold text-red-600">Account Disabled</span>' : ''}
                     
-                    <!-- button for reset; default is disabled unless user needs -->
                     <p id="loginResetMessage-${u.user_id}" class="text-xs font-semibold mt-1" role="status">
                         ${u.isLocked ? '<span class="text-red-600">Login locked. Admin reset required.</span>' : '<span class="text-gray-400">Login session is active.</span>'}
                     </p>
                 </div>
 
                 <div class="flex items-center gap-2">
-                    <button class="editBtn w-9 h-9 flex items-center justify-center rounded-lg bg-[#D5C04D] hover:bg-[#c2ad3c] transition" data-id="${u.user_id}" title="Edit">
+                    <!-- Added Doctor Schedule button if user is Dentist -->
+                    ${isDentist ? `
+                    <button class="scheduleBtn w-9 h-9 flex items-center justify-center rounded-lg bg-[#667733] hover:bg-[#556022] transition text-white shadow-sm cursor-pointer" data-id="${u.user_id}" title="Manage Doctor Schedule">
+                        <i class="fa-solid fa-calendar-days text-sm"></i>
+                    </button>
+                    ` : ''}
+
+                    <button class="editBtn w-9 h-9 flex items-center justify-center rounded-lg bg-[#D5C04D] hover:bg-[#c2ad3c] transition shadow-sm cursor-pointer" data-id="${u.user_id}" title="Edit">
                         <img src="../assets/editIcon.png" alt="Edit" class="w-5 h-5 object-contain" />
                     </button>
 
-                    <button class="statusBtn w-9 h-9 flex items-center justify-center rounded-lg bg-[#D9534F] hover:bg-[#c9302c] transition" data-id="${u.user_id}" title="${u.account_status === 'active' ? 'Disable' : 'Enable'}">
+                    <button class="statusBtn w-9 h-9 flex items-center justify-center rounded-lg bg-[#D9534F] hover:bg-[#c9302c] transition shadow-sm cursor-pointer" data-id="${u.user_id}" title="${u.account_status === 'active' ? 'Disable' : 'Enable'}">
                         ${
                 u.account_status === 'active'
                     ? '<img src="../assets/closeIcon.png" alt="Disable" class="w-5 h-5 object-contain" />'
@@ -586,14 +638,12 @@
             }
                     </button>
 
-                    <button class="deleteBtn w-9 h-9 flex items-center justify-center rounded-lg bg-[#D9534F] hover:bg-[#c9302c] transition" data-id="${u.user_id}" title="Delete">
+                    <button class="deleteBtn w-9 h-9 flex items-center justify-center rounded-lg bg-[#D9534F] hover:bg-[#c9302c] transition shadow-sm cursor-pointer" data-id="${u.user_id}" title="Delete">
                         <img src="../assets/trashIcon.png" alt="Delete" class="w-5 h-5 object-contain" />
                     </button>
 
                     <!-- LOGIN ATTEMPT SECURITY -->
-                    <!-- button display for session/login reset -->
-                    <!-- button for reset; default is disabled unless user needs -->
-                    <button class="resetLoginBtn w-9 h-9 flex items-center justify-center rounded-lg bg-[#8A925F] hover:bg-[#707746] disabled:bg-gray-300 disabled:hover:bg-gray-300 disabled:cursor-not-allowed disabled:opacity-60 transition" data-id="${u.user_id}" title="${u.isLocked ? 'Reset login session' : 'No login reset needed'}" ${u.isLocked ? '' : 'disabled'}>
+                    <button class="resetLoginBtn w-9 h-9 flex items-center justify-center rounded-lg bg-[#8A925F] hover:bg-[#707746] disabled:bg-gray-300 disabled:hover:bg-gray-300 disabled:cursor-not-allowed disabled:opacity-60 transition shadow-sm cursor-pointer text-white font-bold" data-id="${u.user_id}" title="${u.isLocked ? 'Reset login session' : 'No login reset needed'}" ${u.isLocked ? '' : 'disabled'}>
                         <span aria-hidden="true">↻</span>
                     </button>
                 </div>
@@ -602,15 +652,17 @@
         });
     }
 
-    //This handles clicks inside the user list. it is event delegation since there are multiple
-    // LOGIN ATTEMPT SECURITY
-    // changed to async function for resetLoginLock() function
     document.getElementById('user-container').addEventListener('click', async function (e) {
         const btn = e.target.closest('button');
         if (!btn) return;
 
         const id = btn.dataset.id;
         if (!id) return;
+
+        if (btn.classList.contains('scheduleBtn')) {
+            openDoctorScheduleModal(id);
+            return;
+        }
 
         if (btn.classList.contains('editBtn')) {
             openEditModal(id);
@@ -645,18 +697,12 @@
             document.getElementById('deleteModal').classList.remove('hidden');
         }
 
-        // first retrieves the id of locked user to show login session is reset for user
         if (btn.classList.contains('resetLoginBtn')) {
             try {
                 await resetLoginLock(id);
-
-                // find data from database/API
                 users = await getUsers();
-
-                // re-resnder UI with updated database states
                 renderUsers();
 
-                // display message for successful reset
                 const message = document.getElementById(`loginResetMessage-${id}`);
                 if (message) {
                     message.innerHTML = '<span class="text-green-700">Login session reset successfully.</span>';
@@ -672,33 +718,154 @@
             } catch (error) {
                 console.error("Failed to reset login session:", error);
             }
-
-            // changed code for this part
-
-            //     const user = users.find(item => Number(item.user_id) === Number(id));
-            //     if (user && user.email) {
-            //         localStorage.setItem('loginSessionReset', JSON.stringify({
-            //             email: user.email.trim().toLowerCase(),
-            //             resetAt: Date.now()
-            //         }));
-            //     }
-            //     const message = document.getElementById(`loginResetMessage-${id}`);
-            //     if (message) {
-            //         message.innerHTML = '<span class="text-green-700">Login session reset successfully.</span>';
-            //     }
-            //     btn.disabled = true;
-            //     btn.title = 'No login reset needed';
-            // } catch (error) {
-            //     console.error('Failed to reset login session:', error);
-            //     const message = document.getElementById(`loginResetMessage-${id}`);
-            //     if (message) {
-            //         message.innerHTML = `<span class="text-red-600">${escapeHtml(error.message)}</span>`;
-            //     }
-            // }
         }
     });
 
-    function roleLabel(u) {//show positions based on roles
+    // ── DOCTOR SCHEDULE MODAL LOGIC & PRESETS ──
+    async function openDoctorScheduleModal(doctorId) {
+        const doc = users.find(u => u.user_id == doctorId);
+        if (!doc) return;
+
+        document.getElementById('scheduleDoctorId').value = doctorId;
+        document.getElementById('scheduleDoctorName').textContent = `Weekly clinic duty for ${displayName(doc)}`;
+
+        const rowsContainer = document.getElementById('weeklyScheduleRows');
+        rowsContainer.innerHTML = '<p class="text-center py-8 text-gray-500 font-bold"><i class="fa-solid fa-spinner fa-spin mr-2"></i>Loading doctor schedule...</p>';
+        document.getElementById('doctorScheduleModal').classList.remove('hidden');
+
+        try {
+            const token = localStorage.getItem('userToken');
+            const res = await fetch(`/api/doctors/${doctorId}/schedule`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const existingSchedules = res.ok ? await res.json() : [];
+            const daysOrder = [1, 2, 3, 4, 5, 6, 0]; // Mon, Tue, Wed, Thu, Fri, Sat, Sun
+
+            rowsContainer.innerHTML = daysOrder.map(dayIdx => {
+                const sched = existingSchedules.find(s => s.day_of_week === dayIdx) || {
+                    day_of_week: dayIdx,
+                    start_time: '08:00:00',
+                    end_time: '17:00:00',
+                    break_start: '12:00:00',
+                    break_end: '13:00:00',
+                    is_active: dayIdx !== 0 ? 1 : 0
+                };
+
+                const isActive = sched.is_active === 1 || sched.is_active === true;
+
+                return `
+                <div class="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center p-3 rounded-2xl border transition-all ${isActive ? 'bg-[#F9F8F3] border-[#2A1001]/15 shadow-sm' : 'bg-gray-100 border-gray-200 opacity-60'}" data-day="${dayIdx}">
+                    
+                    <!-- Day Checkbox & Badge -->
+                    <div class="col-span-1 sm:col-span-3 flex items-center justify-between sm:justify-start gap-2.5">
+                        <label class="flex items-center gap-2 cursor-pointer select-none">
+                            <input type="checkbox" class="day-active-check w-4 h-4 accent-[#667733] cursor-pointer" ${isActive ? 'checked' : ''}>
+                            <span class="font-extrabold text-sm text-[#2A1001]">${DAYS_NAMES[dayIdx]}</span>
+                        </label>
+                        <span class="status-tag text-[10px] font-black px-2 py-0.5 rounded-full ${isActive ? 'bg-[#D7E3A5] text-[#2c3e2b]' : 'bg-gray-200 text-gray-500'}">
+                            ${isActive ? 'ON DUTY' : 'OFF'}
+                        </span>
+                    </div>
+
+                    <!-- Shift Time Inputs -->
+                    <div class="col-span-1 sm:col-span-5 flex items-center gap-1.5 schedule-inputs ${isActive ? '' : 'pointer-events-none opacity-40'}">
+                        <span class="text-[11px] font-bold text-gray-600 sm:hidden">Shift:</span>
+                        <input type="time" class="start-time-input flex-1 bg-white border border-[#2A1001]/20 rounded-xl px-2.5 py-1.5 font-bold text-xs text-[#2A1001] outline-none shadow-inner" value="${sched.start_time.slice(0, 5)}">
+                        <span class="text-xs font-bold text-[#2A1001]/60">to</span>
+                        <input type="time" class="end-time-input flex-1 bg-white border border-[#2A1001]/20 rounded-xl px-2.5 py-1.5 font-bold text-xs text-[#2A1001] outline-none shadow-inner" value="${sched.end_time.slice(0, 5)}">
+                    </div>
+
+                    <!-- Lunch Break Inputs -->
+                    <div class="col-span-1 sm:col-span-4 flex items-center gap-1.5 schedule-inputs ${isActive ? '' : 'pointer-events-none opacity-40'}">
+                        <span class="text-[11px] font-bold text-gray-600 sm:hidden">Lunch:</span>
+                        <input type="time" class="break-start-input flex-1 bg-white border border-[#2A1001]/20 rounded-xl px-2.5 py-1.5 font-bold text-xs text-[#2A1001] outline-none shadow-inner" value="${(sched.break_start || '12:00:00').slice(0, 5)}">
+                        <span class="text-xs font-bold text-[#2A1001]/60">to</span>
+                        <input type="time" class="break-end-input flex-1 bg-white border border-[#2A1001]/20 rounded-xl px-2.5 py-1.5 font-bold text-xs text-[#2A1001] outline-none shadow-inner" value="${(sched.break_end || '13:00:00').slice(0, 5)}">
+                    </div>
+                </div>
+                `;
+            }).join('');
+
+            // Toggle active checkbox handler
+            rowsContainer.querySelectorAll('.day-active-check').forEach(chk => {
+                chk.addEventListener('change', function() {
+                    const row = this.closest('[data-day]');
+                    const inputs = row.querySelectorAll('.schedule-inputs');
+                    const statusTag = row.querySelector('.status-tag');
+                    
+                    if (this.checked) {
+                        row.className = 'grid grid-cols-1 sm:grid-cols-12 gap-3 items-center p-3 rounded-2xl border transition-all bg-[#F9F8F3] border-[#2A1001]/15 shadow-sm';
+                        statusTag.className = 'status-tag text-[10px] font-black px-2 py-0.5 rounded-full bg-[#D7E3A5] text-[#2c3e2b]';
+                        statusTag.textContent = 'ON DUTY';
+                        inputs.forEach(i => { i.classList.remove('opacity-40', 'pointer-events-none'); });
+                    } else {
+                        row.className = 'grid grid-cols-1 sm:grid-cols-12 gap-3 items-center p-3 rounded-2xl border transition-all bg-gray-100 border-gray-200 opacity-60';
+                        statusTag.className = 'status-tag text-[10px] font-black px-2 py-0.5 rounded-full bg-gray-200 text-gray-500';
+                        statusTag.textContent = 'OFF';
+                        inputs.forEach(i => { i.classList.add('opacity-40', 'pointer-events-none'); });
+                    }
+                });
+            });
+
+        } catch (err) {
+            rowsContainer.innerHTML = `<p class="text-center py-4 text-red-600 font-bold">${err.message}</p>`;
+        }
+    }
+
+   
+   
+
+    document.getElementById('closeDoctorScheduleModal').addEventListener('click', () => {
+        document.getElementById('doctorScheduleModal').classList.add('hidden');
+    });
+
+    document.getElementById('cancelScheduleBtn').addEventListener('click', () => {
+        document.getElementById('doctorScheduleModal').classList.add('hidden');
+    });
+
+    document.getElementById('doctorScheduleForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const doctorId = document.getElementById('scheduleDoctorId').value;
+        const rows = document.querySelectorAll('#weeklyScheduleRows > div');
+
+        const schedules = Array.from(rows).map(r => {
+            const dayOfWeek = parseInt(r.dataset.day, 10);
+            const isActive = r.querySelector('.day-active-check').checked;
+            const startTime = r.querySelector('.start-time-input').value + ':00';
+            const endTime = r.querySelector('.end-time-input').value + ':00';
+            const breakStart = r.querySelector('.break-start-input').value + ':00';
+            const breakEnd = r.querySelector('.break-end-input').value + ':00';
+
+            return {
+                day_of_week: dayOfWeek,
+                start_time: startTime,
+                end_time: endTime,
+                break_start: breakStart,
+                break_end: breakEnd,
+                slot_interval_minutes: 30,
+                is_active: isActive ? 1 : 0
+            };
+        });
+
+        try {
+            const token = localStorage.getItem('userToken');
+            const res = await fetch(`/api/doctors/${doctorId}/schedule`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ schedules })
+            });
+            if (!res.ok) throw new Error('Failed to update doctor schedule');
+            alert('Doctor schedule saved successfully! Booking time slots will immediately adapt to this schedule.');
+            document.getElementById('doctorScheduleModal').classList.add('hidden');
+        } catch (err) {
+            alert('Error updating schedule: ' + err.message);
+        }
+    });
+
+    function roleLabel(u) {
         if (u.role === 'employee' && u.position) return u.position;
         if (u.role === 'admin' && u.permission_level) return u.permission_level;
         return u.role.charAt(0).toUpperCase() + u.role.slice(1);
@@ -765,7 +932,6 @@
         }
     });
 
-    //for edit modal
     document.getElementById('editAccountForm').addEventListener('submit', async function (e) {
         e.preventDefault();
 
@@ -814,7 +980,6 @@
         }
     });
 
-    //for the edit lock and unlock
     document.addEventListener('click', function(e) {
         const unlockBtn = e.target.closest('.unlockBtn');
 
@@ -836,12 +1001,12 @@
         }
     });
 
-    document.getElementById('cancelStatusBtn').addEventListener('click', () => {// When the Cancel button is clicked close the status modal
+    document.getElementById('cancelStatusBtn').addEventListener('click', () => {
         pendingStatusId = null;
         document.getElementById('statusModal').classList.add('hidden');
     });
 
-    document.getElementById('confirmStatusBtn').addEventListener('click', async () => {// When the Confirm button is clicked, toggle the user's active/suspended status, refresh the list, and close the modal
+    document.getElementById('confirmStatusBtn').addEventListener('click', async () => {
         if (!pendingStatusId) return;
 
         const userId = pendingStatusId;
@@ -858,19 +1023,19 @@
         }
     });
 
-    document.getElementById('statusModal').addEventListener('click', function (e) {// When clicking on the dark background outside the modal box, close the status modal
+    document.getElementById('statusModal').addEventListener('click', function (e) {
         if (e.target === this) {
             pendingStatusId = null;
             this.classList.add('hidden');
         }
     });
 
-    document.getElementById('cancelDeleteBtn').addEventListener('click', () => {// When the Cancel button is clicked close the status modal
+    document.getElementById('cancelDeleteBtn').addEventListener('click', () => {
         pendingDeleteId = null;
         document.getElementById('deleteModal').classList.add('hidden');
     });
 
-    document.getElementById('confirmDeleteBtn').addEventListener('click', async () => {// When the Confirm button is clicked, permanently delete the user
+    document.getElementById('confirmDeleteBtn').addEventListener('click', async () => {
         if (!pendingDeleteId) return;
 
         const userId = pendingDeleteId;
@@ -887,22 +1052,18 @@
         }
     });
 
-    document.getElementById('deleteModal').addEventListener('click', function (e) {//when we click outside the modal close it
+    document.getElementById('deleteModal').addEventListener('click', function (e) {
         if (e.target === this) {
             pendingDeleteId = null;
             this.classList.add('hidden');
         }
     });
 
-    ///create account
-
     const createAccountForm = document.getElementById('createAccountForm');
     const saveCreateBtn = document.getElementById('saveCreateBtn');
     const userClearBtn = document.getElementById('userClearBtn');
 
     function checkForm() {
-
-        // These are the fields that must be filled before Create Account is enabled.
         const requiredFields = createAccountForm.querySelectorAll(
             'input[required]:not([type="radio"]), select[required]'
         );
@@ -917,7 +1078,6 @@
             }
         });
 
-        // Check the Sex radio buttons separately.
         const sexSelected = createAccountForm.querySelector(
             'input[name="newSex"]:checked'
         );
@@ -926,11 +1086,8 @@
             allFilled = false;
         }
 
-        // Create Account
         saveCreateBtn.disabled = !allFilled;
 
-
-        // Clear should ONLY check these four fields.
         const clearFields = [
             document.getElementById('newFirstName'),
             document.getElementById('newLastName'),
@@ -942,7 +1099,6 @@
             return field.value.trim() !== '';
         });
 
-        // Clear
         userClearBtn.disabled = !somethingFilled;
     }
 
@@ -1097,16 +1253,17 @@
         }
     })();
 
-    // socket listener
-    const socket = io();
+    const socket = (typeof io === 'function') ? io() : null;
 
-    socket.on('user-locked', (data) => {
-        const user = users.find(u => Number(u.user_id) === Number(data.userId));
-        if (user) {
-            user.isLocked = true;
-        }
-        renderUsers();
-    });
+    if (socket) {
+        socket.on('user-locked', (data) => {
+            const user = users.find(u => Number(u.user_id) === Number(data.userId));
+            if (user) {
+                user.isLocked = true;
+            }
+            renderUsers();
+        });
+    }
 </script>
 
 </body>

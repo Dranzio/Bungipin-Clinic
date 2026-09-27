@@ -1,9 +1,520 @@
-document.addEventListener('DOMContentLoaded', function () {
-    // Calendar rendering only — service selection, time slot selection, the
-    // receipt modal, and the actual booking submission all live in the
-    // inline <script> in Booking.html. This file used to duplicate all of
-    // that too, which caused two separate POST requests per booking.
+//MOCK TEST
+const MOCK_SCHEDULES = {
+    1: [ // Dr. Ramon Cruz — Mon-Sat 8-5, lunch 12-1
+        { day_of_week: 0, is_active: 0 },
+        { day_of_week: 1, start_time: '08:00:00', end_time: '17:00:00', break_start: '12:00:00', break_end: '13:00:00', is_active: 1 },
+        { day_of_week: 2, start_time: '08:00:00', end_time: '17:00:00', break_start: '12:00:00', break_end: '13:00:00', is_active: 1 },
+        { day_of_week: 3, start_time: '08:00:00', end_time: '17:00:00', break_start: '12:00:00', break_end: '13:00:00', is_active: 1 },
+        { day_of_week: 4, start_time: '08:00:00', end_time: '17:00:00', break_start: '12:00:00', break_end: '13:00:00', is_active: 1 },
+        { day_of_week: 5, start_time: '08:00:00', end_time: '17:00:00', break_start: '12:00:00', break_end: '13:00:00', is_active: 1 },
+        { day_of_week: 6, start_time: '08:00:00', end_time: '17:00:00', break_start: '12:00:00', break_end: '13:00:00', is_active: 1 }
+    ],
+    2: [ // Dr. Liza Tan — Mon-Fri 9-6, lunch 12-1
+        { day_of_week: 0, is_active: 0 },
+        { day_of_week: 1, start_time: '09:00:00', end_time: '18:00:00', break_start: '12:00:00', break_end: '13:00:00', is_active: 1 },
+        { day_of_week: 2, start_time: '09:00:00', end_time: '18:00:00', break_start: '12:00:00', break_end: '13:00:00', is_active: 1 },
+        { day_of_week: 3, start_time: '09:00:00', end_time: '18:00:00', break_start: '12:00:00', break_end: '13:00:00', is_active: 1 },
+        { day_of_week: 4, start_time: '09:00:00', end_time: '18:00:00', break_start: '12:00:00', break_end: '13:00:00', is_active: 1 },
+        { day_of_week: 5, start_time: '09:00:00', end_time: '18:00:00', break_start: '12:00:00', break_end: '13:00:00', is_active: 1 },
+        { day_of_week: 6, is_active: 0 }
+    ],
+    3: [ // Dr. Maria Gomez — All days, half-day Saturday
+        { day_of_week: 0, is_active: 0 },
+        { day_of_week: 1, start_time: '08:00:00', end_time: '17:00:00', break_start: '12:00:00', break_end: '13:00:00', is_active: 1 },
+        { day_of_week: 2, start_time: '08:00:00', end_time: '17:00:00', break_start: '12:00:00', break_end: '13:00:00', is_active: 1 },
+        { day_of_week: 3, start_time: '08:00:00', end_time: '17:00:00', break_start: '12:00:00', break_end: '13:00:00', is_active: 1 },
+        { day_of_week: 4, start_time: '08:00:00', end_time: '17:00:00', break_start: '12:00:00', break_end: '13:00:00', is_active: 1 },
+        { day_of_week: 5, start_time: '08:00:00', end_time: '17:00:00', break_start: '12:00:00', break_end: '13:00:00', is_active: 1 },
+        { day_of_week: 6, start_time: '08:00:00', end_time: '12:00:00', is_active: 1 } // half-day, no lunch break needed
+    ]
+};
 
+function timeStrToMinutes(t) {
+    const [h, m] = t.split(':').map(Number);
+    return h * 60 + m;
+}
+
+// ── BOOKING CONTROLLER (Dynamic Doctor Schedules, Slots & Philippine Payments) ─────────
+const API_BASE_URL = window.BACKEND_API_BASE_URL || '';
+
+function escapeHtml(value) {
+    const div = document.createElement('div');
+    div.textContent = value == null ? '' : String(value);
+    return div.innerHTML;
+}
+
+// ── State Management ────────────────────────────────────────────────────────
+let availableServices = [];
+let availableDoctors  = [];
+let selectedServices  = []; // Array of { service_id, label, price, duration_minutes }
+let selectedDoctorId  = null;
+let selectedDateValue = '';
+let selectedStartTime = '';
+let selectedEndTime   = '';
+let currentPaymentChannel = 'gcash';
+
+// Fallback duration estimator
+function getEstimatedDuration(service) {
+    if (service.duration_minutes) return Number(service.duration_minutes);
+    const lbl = String(service.label || '').toLowerCase();
+    if (lbl.includes('clean') || lbl.includes('prophylaxis')) return 45;
+    if (lbl.includes('whiten')) return 60;
+    if (lbl.includes('root') || lbl.includes('canal')) return 90;
+    if (lbl.includes('extract') || lbl.includes('surgery')) return 45;
+    if (lbl.includes('pasta') || lbl.includes('filling')) return 30;
+    if (lbl.includes('check') || lbl.includes('consult')) return 30;
+    return 30;
+}
+
+function formatDuration(minutes) {
+    if (!minutes || minutes <= 0) return '0 mins';
+    const hrs = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    if (hrs > 0 && mins > 0) return `${hrs} hr ${mins} mins`;
+    if (hrs > 0) return `${hrs} hr${hrs > 1 ? 's' : ''}`;
+    return `${mins} mins`;
+}
+
+function format12Hour(timeStr) {
+    if (!timeStr) return '';
+    const [hStr, mStr] = timeStr.split(':');
+    let h = parseInt(hStr, 10);
+    const m = mStr || '00';
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    h = h % 12;
+    h = h ? h : 12;
+    return `${h}:${m} ${ampm}`;
+}
+
+function calculateEndTime(startTimeStr, durationMinutes) {
+    const [h, m] = startTimeStr.split(':').map(Number);
+    const totalMinutes = h * 60 + m + durationMinutes;
+    const endH = Math.floor(totalMinutes / 60);
+    const endM = totalMinutes % 60;
+    return `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}:00`;
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    initCalendar();
+    initDoctorSelection();
+    loadServices();
+    loadDoctors();
+    initBookingForm();
+    initPaymentChannels();
+});
+
+// ── 1. Load Services from Database ──────────────────────────────────────────
+async function loadServices() {
+    const serviceGrid = document.getElementById('service-grid');
+    if (!serviceGrid) return;
+
+    serviceGrid.innerHTML = '<p class="col-span-full text-center font-bold text-[#2c3e2b] py-8"><i class="fa-solid fa-spinner fa-spin mr-2"></i>Loading clinic services...</p>';
+
+    try {
+        const token = localStorage.getItem('userToken');
+        const response = await fetch(`${API_BASE_URL}/api/services`, {
+            headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            availableServices = data.filter(s => s.is_available !== false && s.is_available !== 0);
+            renderServiceCards(availableServices);
+        } else {
+            throw new Error("Unable to fetch services");
+        }
+    } catch (err) {
+        console.warn("Using sample services fallback:", err);
+        availableServices = [
+            { service_id: 1, label: 'Dental Checkup & Consultation', price: 500, duration_minutes: 30, icon: '../assets/Checkup.png' },
+            { service_id: 2, label: 'Oral Prophylaxis (Cleaning)', price: 1500, duration_minutes: 45, icon: '../assets/cleaning.png' },
+            { service_id: 3, label: 'Composite Tooth Filling (Pasta)', price: 1200, duration_minutes: 30, icon: '../assets/pasta.png' },
+            { service_id: 4, label: 'Laser Teeth Whitening', price: 4500, duration_minutes: 60, icon: '../assets/whitening.png' },
+            { service_id: 5, label: 'Tooth Extraction', price: 1800, duration_minutes: 45, icon: '../assets/logo.png' },
+            { service_id: 6, label: 'Root Canal Therapy', price: 6500, duration_minutes: 90, icon: '../assets/logo.png' }
+        ];
+        renderServiceCards(availableServices);
+    }
+}
+
+function fallbackIcon(label) {
+    const l = String(label).toLowerCase();
+    if (l.includes('clean') || l.includes('prophylaxis')) return '../assets/cleaning.png';
+    if (l.includes('pasta') || l.includes('filling')) return '../assets/pasta.png';
+    if (l.includes('check') || l.includes('consult')) return '../assets/Checkup.png';
+    if (l.includes('whiten')) return '../assets/whitening.png';
+    return '../assets/logowithtitle.png';
+}
+
+function renderServiceCards(services) {
+    const serviceGrid = document.getElementById('service-grid');
+    if (!serviceGrid) return;
+    serviceGrid.innerHTML = '';
+
+    services.forEach(service => {
+        const isSelected = selectedServices.some(s => s.service_id == service.service_id);
+        const card = document.createElement('div');
+        const duration = getEstimatedDuration(service);
+        
+        card.className = `flex flex-col w-full max-w-[240px] h-[270px] justify-between items-center text-center rounded-2xl border-2 transition-all duration-200 cursor-pointer p-4 relative shadow-sm hover:scale-[1.02] ${
+            isSelected ? 'bg-[#D7E3A5] border-[#667733] ring-2 ring-[#667733]' : 'bg-white border-black hover:bg-[#F7F5EE]'
+        }`;
+        
+        card.dataset.serviceId = service.service_id;
+
+        const imgSrc = (service.icon && (/^(\/|https?:\/\/|\.\.\/assets\/)/.test(service.icon)))
+            ? service.icon
+            : fallbackIcon(service.label);
+
+        card.innerHTML = `
+            <!-- Selection Checkmark Badge -->
+            <div class="absolute top-2.5 right-2.5 w-6 h-6 rounded-full border-2 border-black flex items-center justify-center ${isSelected ? 'bg-[#667733] text-white' : 'bg-white text-transparent'}">
+                <i class="fa-solid fa-check text-xs"></i>
+            </div>
+
+            <!-- Duration Tag -->
+            <div class="absolute top-2.5 left-2.5 bg-amber-100 border border-amber-500/30 text-amber-900 text-[10px] font-extrabold px-2 py-0.5 rounded-full flex items-center gap-1">
+                <i class="fa-regular fa-clock text-[9px]"></i> ${duration}m
+            </div>
+
+            <h3 class="font-extrabold text-sm sm:text-base break-words text-[#2A1001] line-clamp-2 px-2 mt-5">
+                ${escapeHtml(service.label)}
+            </h3>
+
+            <img src="${imgSrc}" class="w-16 h-16 object-contain my-1" alt="${escapeHtml(service.label)}" onerror="this.src='../assets/logowithtitle.png'">
+
+            <div class="w-full pt-2 border-t border-[#2A1001]/10 flex justify-between items-center px-2">
+                <span class="text-[10px] font-bold text-[#2A1001]/60 uppercase">Price:</span>
+                <span class="font-black text-sm text-[#2A1001]">₱${Number(service.price).toLocaleString()}</span>
+            </div>
+        `;
+
+        card.addEventListener('click', () => toggleServiceSelection(service));
+        serviceGrid.appendChild(card);
+    });
+
+    updateLiveCalculations();
+}
+
+function toggleServiceSelection(service) {
+    const index = selectedServices.findIndex(s => s.service_id == service.service_id);
+    const duration = getEstimatedDuration(service);
+
+    if (index > -1) {
+        selectedServices.splice(index, 1);
+    } else {
+        selectedServices.push({
+            service_id: service.service_id,
+            label: service.label,
+            price: Number(service.price || 0),
+            duration_minutes: duration
+        });
+    }
+    renderServiceCards(availableServices);
+
+    // Refresh dynamic slots if doctor and date are active
+    if (selectedDoctorId && selectedDateValue) {
+        fetchAvailableSlotsForDoctor(selectedDoctorId, selectedDateValue);
+    }
+}
+
+function updateLiveCalculations() {
+    const totalAmount = selectedServices.reduce((sum, s) => sum + s.price, 0);
+   const totalMinutes = selectedServices.reduce((sum, s) => sum + (s.duration_minutes || 30), 0);
+
+    const displayTotal = document.getElementById('liveTotalDisplay');
+    const displayDuration = document.getElementById('liveDurationDisplay');
+    const onlineAmountText = document.getElementById('onlinePayAmountText');
+
+    if (displayTotal) displayTotal.textContent = `₱${totalAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
+    if (onlineAmountText) onlineAmountText.textContent = `₱${totalAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
+    if (displayDuration) displayDuration.textContent = formatDuration(totalMinutes);
+
+    const slotInfoBadge = document.getElementById('slotInfoBadge');
+    if (slotInfoBadge) {
+        slotInfoBadge.textContent = `Est. Session Window: ${formatDuration(totalMinutes)}`;
+    }
+}
+
+// ── 2. Load Attending Dentists ──────────────────────────────────────────────
+async function loadDoctors() {
+    const doctorSelect = document.getElementById('doctorSelect');
+    if (!doctorSelect) return;
+
+    try {
+        const token = localStorage.getItem('userToken');
+        const response = await fetch(`${API_BASE_URL}/api/doctors`, {
+            headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+        });
+
+        if (response.ok) {
+            availableDoctors = await response.json();
+            populateDoctorDropdown(availableDoctors);
+        } else {
+            throw new Error();
+        }
+    } catch {
+        availableDoctors = [
+            { 
+                doctor_id: 1, 
+                name: 'Dr. Ramon Cruz', 
+                position: 'Dentist'
+            },
+            { 
+                doctor_id: 2, 
+                name: 'Dr. Liza Tan', 
+                position: 'Dentist'
+            },
+            { 
+                doctor_id: 3, 
+                name: 'Dr. Maria Gomez', 
+                position: 'Dentist'
+            }
+        ];
+        populateDoctorDropdown(availableDoctors);
+    }
+}
+
+function populateDoctorDropdown(doctors) {
+    const doctorSelect = document.getElementById('doctorSelect');
+    if (!doctorSelect) return;
+
+    doctorSelect.innerHTML = '<option value="" disabled selected>-- Select Your Attending Dentist --</option>';
+    doctors.forEach(doc => {
+        const opt = document.createElement('option');
+        opt.value = doc.doctor_id;
+        opt.textContent = `${doc.name}`;
+        doctorSelect.appendChild(opt);
+    });
+
+    if (doctors.length > 0) {
+        doctorSelect.selectedIndex = 1;
+        selectedDoctorId = Number(doctors[0].doctor_id);
+        const docInput = document.getElementById('selected-doctor-id');
+        if (docInput) docInput.value = selectedDoctorId;
+    }
+}
+
+function initDoctorSelection() {
+    const doctorSelect = document.getElementById('doctorSelect');
+    if (!doctorSelect) return;
+
+    doctorSelect.addEventListener('change', (e) => {
+        selectedDoctorId = e.target.value ? Number(e.target.value) : null;
+        const docInput = document.getElementById('selected-doctor-id');
+        if (docInput) docInput.value = selectedDoctorId || '';
+        
+        if (selectedDateValue) {
+            fetchAvailableSlotsForDoctor(selectedDoctorId, selectedDateValue);
+        }
+    });
+}
+
+// ── 3. Dynamic Time Slots Fetcher & Generator ───────────────────────────────
+async function fetchAvailableSlotsForDoctor(doctorId, dateString) {
+    const container = document.getElementById('timeSlotsContainer');
+    if (!container) return;
+
+    const totalMinutes = selectedServices.reduce((sum, s) => sum + (s.duration_minutes || 30), 0) || 30;
+
+    container.innerHTML = `
+        <div class="bg-white border border-black/10 rounded-2xl p-6 text-center text-gray-600">
+            <i class="fa-solid fa-spinner fa-spin text-xl text-[#667733] mb-2 block"></i>
+            Loading doctor schedule and available slots for ${escapeHtml(dateString)}...
+        </div>
+    `;
+
+    try {
+        const token = localStorage.getItem('userToken');
+        const response = await fetch(`${API_BASE_URL}/api/doctors/${doctorId}/available-slots?date=${dateString}&duration=${totalMinutes}`, {
+            headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            if (!data.is_working_day || !data.slots || data.slots.length === 0) {
+                renderNoSlotsMessage(container, data.message || 'Dentist has no active duty on this day.');
+            } else {
+                renderDynamicSlots(container, data.slots, totalMinutes);
+            }
+        } else {
+            throw new Error();
+        }
+    } catch {
+        // Local Fallback Slot Generator
+        generateLocalSlots(container, doctorId, dateString, totalMinutes);
+    }
+}
+
+function renderNoSlotsMessage(container, msg) {
+    container.innerHTML = `
+        <div class="bg-amber-50 border border-amber-300 rounded-2xl p-6 text-center text-amber-900">
+            <i class="fa-solid fa-calendar-xmark text-2xl text-amber-600 mb-2 block"></i>
+            <p class="font-bold text-sm">${escapeHtml(msg)}</p>
+            <p class="text-xs text-amber-800/80 mt-1">Please select another date on the calendar or choose a different dentist.</p>
+        </div>
+    `;
+    selectedStartTime = '';
+    selectedEndTime = '';
+    document.getElementById('selected-time').value = '';
+    document.getElementById('selected-end-time').value = '';
+}
+
+function generateLocalSlots(container, doctorId, dateString, durationMinutes) {
+    const targetDate = new Date(`${dateString}T00:00:00`);
+    const dayOfWeek = targetDate.getDay(); // 0 = Sunday ... 6 = Saturday
+
+    const doctorSchedule = MOCK_SCHEDULES[Number(doctorId)];
+    const daySched = doctorSchedule
+        ? doctorSchedule.find(s => s.day_of_week === dayOfWeek)
+        : null;
+
+    const isActive = daySched && (daySched.is_active === 1 || daySched.is_active === true);
+
+    if (!isActive) {
+        const dayName = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][dayOfWeek];
+        renderNoSlotsMessage(container, `Dentist is not on duty on ${dayName}s.`);
+        return;
+    }
+
+    const startMins = timeStrToMinutes(daySched.start_time);
+    const endMins   = timeStrToMinutes(daySched.end_time);
+    const hasBreak  = !!(daySched.break_start && daySched.break_end);
+    const breakStart = hasBreak ? timeStrToMinutes(daySched.break_start) : null;
+    const breakEnd   = hasBreak ? timeStrToMinutes(daySched.break_end) : null;
+    const step = 30; // 30 min intervals
+
+    const slots = [];
+    const now = new Date();
+    const isToday = targetDate.toDateString() === now.toDateString();
+
+    for (let cur = startMins; cur + durationMinutes <= endMins; cur += step) {
+        const sM = cur;
+        const eM = cur + durationMinutes;
+
+        const startH = Math.floor(sM / 60);
+        const startMin = sM % 60;
+        const endH = Math.floor(eM / 60);
+        const endMin = eM % 60;
+
+        const timeSlotStr = `${String(startH).padStart(2, '0')}:${String(startMin).padStart(2, '0')}:00`;
+        const endTimeStr = `${String(endH).padStart(2, '0')}:${String(endMin).padStart(2, '0')}:00`;
+
+        let isAvailable = true;
+        let reason = 'Available';
+
+        if (hasBreak && sM < breakEnd && eM > breakStart) {
+            isAvailable = false;
+            reason = 'Doctor Lunch Break';
+        }
+
+        if (isAvailable && isToday) {
+            const slotDateTime = new Date(`${dateString}T${timeSlotStr}`);
+            if (slotDateTime <= now) {
+                isAvailable = false;
+                reason = 'Past Time';
+            }
+        }
+
+        slots.push({ time_slot: timeSlotStr, end_time_slot: endTimeStr, is_available: isAvailable, reason });
+    }
+
+    if (slots.length === 0) {
+        renderNoSlotsMessage(container, 'No bookable slots fit within this doctor\'s shift for the selected treatment duration.');
+        return;
+    }
+
+    renderDynamicSlots(container, slots, durationMinutes);
+}
+
+function renderDynamicSlots(container, slots, durationMinutes) {
+    container.innerHTML = '';
+
+    const amSlots = slots.filter(s => {
+        const h = parseInt(s.time_slot.split(':')[0], 10);
+        return h < 12;
+    });
+
+    const pmSlots = slots.filter(s => {
+        const h = parseInt(s.time_slot.split(':')[0], 10);
+        return h >= 12;
+    });
+
+    const durationLabel = formatDuration(durationMinutes);
+
+    container.innerHTML = `
+        <div class="flex flex-col sm:flex-row gap-4 justify-between w-full">
+            <!-- AM Morning Column -->
+            <div class="flex-1 flex flex-col gap-2.5">
+                <h3 class="font-extrabold text-xs text-[#2A1001] uppercase tracking-wider flex items-center gap-1.5 pb-1 border-b border-[#2A1001]/10">
+                    <i class="fa-solid fa-sun text-amber-500"></i> Morning (AM)
+                </h3>
+                <div class="flex flex-col gap-2" id="amSlotsList">
+                    ${amSlots.length === 0 ? '<p class="text-xs text-gray-400 italic py-2">No morning slots available.</p>' : ''}
+                </div>
+            </div>
+
+            <!-- PM Afternoon Column -->
+            <div class="flex-1 flex flex-col gap-2.5">
+                <h3 class="font-extrabold text-xs text-[#2A1001] uppercase tracking-wider flex items-center gap-1.5 pb-1 border-b border-[#2A1001]/10">
+                    <i class="fa-solid fa-moon text-indigo-600"></i> Afternoon (PM)
+                </h3>
+                <div class="flex flex-col gap-2" id="pmSlotsList">
+                    ${pmSlots.length === 0 ? '<p class="text-xs text-gray-400 italic py-2">No afternoon slots available.</p>' : ''}
+                </div>
+            </div>
+        </div>
+    `;
+
+    const amList = document.getElementById('amSlotsList');
+    const pmList = document.getElementById('pmSlotsList');
+
+function createSlotBtn(slot) {
+    const isSelected = selectedStartTime === slot.time_slot;
+    const btn = document.createElement('div');
+    
+    btn.dataset.time = slot.time_slot;
+    btn.dataset.endTime = slot.end_time_slot;
+    btn.dataset.disabled = slot.is_available ? 'false' : 'true';
+
+    if (slot.is_available) {
+        btn.className = `time-slot-btn flex flex-col w-full py-2.5 px-3 rounded-2xl border-2 items-center justify-center text-center font-bold text-xs transition active:scale-95 cursor-pointer shadow-sm ${
+            isSelected
+                ? 'bg-[#667733] border-[#667733] text-white ring-2 ring-offset-2 ring-[#667733]'
+                : 'bg-white border-black text-[#2A1001] hover:bg-[#F0F5DE]'
+        }`;
+        btn.innerHTML = `
+            <span class="text-sm font-extrabold flex items-center gap-1.5">
+                ${isSelected ? '<i class="fa-solid fa-circle-check"></i>' : ''}
+                ${format12Hour(slot.time_slot)}
+            </span>
+            <span class="text-[10px] font-semibold mt-0.5 ${isSelected ? 'text-white/80' : 'text-gray-600'}">until ${format12Hour(slot.end_time_slot)} (${durationLabel})</span>
+        `;
+
+        btn.addEventListener('click', () => {
+            selectedStartTime = slot.time_slot;
+            selectedEndTime = slot.end_time_slot;
+            document.getElementById('selected-time').value = selectedStartTime;
+            document.getElementById('selected-end-time').value = selectedEndTime;
+            // Re-render so exactly one slot shows the solid selected state
+            renderDynamicSlots(container, slots, durationMinutes);
+        });
+    } else {
+        btn.className = 'flex flex-col w-full py-2 px-3 bg-gray-100 rounded-2xl border border-gray-200 items-center justify-center text-center text-gray-400 text-xs cursor-not-allowed opacity-60 select-none';
+        btn.innerHTML = `
+            <span class="text-xs font-semibold line-through">${format12Hour(slot.time_slot)}</span>
+            <span class="text-[9px] text-gray-400 font-medium">${escapeHtml(slot.reason || 'Unavailable')}</span>
+        `;
+    }
+
+    return btn;
+}
+    amSlots.forEach(s => amList.appendChild(createSlotBtn(s)));
+    pmSlots.forEach(s => pmList.appendChild(createSlotBtn(s)));
+}
+
+// ── 4. Calendar Logic ───────────────────────────────────────────────────────
+function initCalendar() {
     const monthYear = document.getElementById('month-year');
     const daysContainer = document.getElementById('days');
     const prevButton = document.getElementById('prev');
@@ -19,7 +530,6 @@ document.addEventListener('DOMContentLoaded', function () {
     let currentDate = new Date();
     let today = new Date();
 
-    // no past dates
     function isPastDate(dateString) {
         const selectedDay = new Date(`${dateString}T00:00:00`);
         const currentDay = new Date();
@@ -27,35 +537,11 @@ document.addEventListener('DOMContentLoaded', function () {
         return selectedDay < currentDay;
     }
 
-    window.updateBookingTimeSlots = function (dateString) {
-        const selectedDay = new Date(`${dateString}T00:00:00`);
-        const currentTime = new Date();
-        const isToday = selectedDay.toDateString() === currentTime.toDateString();
-
-        document.querySelectorAll('[data-time]').forEach(slot => {
-            const slotDate = new Date(`${dateString}T${slot.dataset.time}`);
-            const unavailable = isToday && slotDate <= currentTime;
-            slot.dataset.disabled = unavailable ? 'true' : 'false';
-            slot.classList.toggle('bg-gray-200', unavailable);
-            slot.classList.toggle('text-gray-400', unavailable);
-            slot.classList.toggle('border-gray-300', unavailable);
-            slot.classList.toggle('cursor-not-allowed', unavailable);
-            slot.classList.toggle('cursor-pointer', !unavailable);
-            slot.classList.toggle('hover:bg-[#D7E3A5]', !unavailable);
-            slot.classList.toggle('hover:scale-[1.035]', !unavailable);
-            slot.setAttribute('aria-disabled', unavailable ? 'true' : 'false');
-            // no past dates
-            if (unavailable && slot.classList.contains('bg-[#D7E3A5]')) {
-                slot.classList.remove('bg-[#D7E3A5]');
-                document.getElementById('selected-time').value = '';
-            }
+    if (PNote && CurrentCount) {
+        PNote.addEventListener('input', function () {
+            CurrentCount.textContent = this.value.length;
         });
-    };
-
-    PNote.addEventListener('input', function () {
-        const currentLength = PNote.value.length;
-        CurrentCount.textContent = currentLength;
-    });
+    }
 
     function renderCalendar(date) {
         const year = date.getFullYear();
@@ -63,75 +549,452 @@ document.addEventListener('DOMContentLoaded', function () {
         const firstDay = new Date(year, month, 1).getDay();
         const lastDay = new Date(year, month + 1, 0).getDate();
 
-        monthYear.textContent = `${months[month]} ${year}`;
+        if (monthYear) monthYear.textContent = `${months[month]} ${year}`;
+        if (!daysContainer) return;
         daysContainer.innerHTML = '';
-
-        function handleDayClick(dayDiv, sqlDateStr) {
-            // no past dates
-            if (isPastDate(sqlDateStr)) return;
-
-            dayDiv.addEventListener('click', function () {
-                document.querySelectorAll('#days > div').forEach(d => {
-                    d.classList.remove('bg-[#D7E3A5]', 'border-1', 'border-[#2A1001]');
-                });
-                dayDiv.classList.add('bg-[#D7E3A5]', 'border-2', 'border-[#2A1001]');
-
-                // This line was missing before — nothing wrote into the hidden
-                // input the inline script's submit handler actually reads from,
-                // so the selected date silently never made it into the payload.
-                document.getElementById('selected-date').value = sqlDateStr;
-                // no past dates
-                window.updateBookingTimeSlots(sqlDateStr);
-            });
-        }
 
         const prevMonthLastDay = new Date(year, month, 0).getDate();
         for (let i = firstDay; i > 0; i--) {
             const dayDiv = document.createElement('div');
-            dayDiv.classList.add('w-8', 'h-8', 'rounded-full', 'flex', 'items-center', 'justify-center', 'font-medium', 'text-[#fff]', 'cursor-default');
+            dayDiv.className = 'w-9 h-9 rounded-full flex items-center justify-center font-medium text-gray-300 select-none';
             dayDiv.textContent = prevMonthLastDay - i + 1;
             daysContainer.appendChild(dayDiv);
         }
 
         for (let i = 1; i <= lastDay; i++) {
             const dayDiv = document.createElement('div');
-            dayDiv.classList.add(
-                'w-8', 'h-8', 'rounded-full', 'flex', 'items-center', 'justify-center',
-                'font-medium', 'text-[#2A1001]', 'cursor-pointer', 'transition-colors',
-                'hover:bg-[#D7E3A5]', 'hover:rounded-full', 'hover:border-1',
-                'hover:border-[#2A1001]', 'hover:scale-[1.25]'
-            );
-
+            dayDiv.className = 'w-9 h-9 rounded-full flex items-center justify-center font-bold text-xs sm:text-sm text-[#2A1001] cursor-pointer transition-all hover:bg-[#D7E3A5] hover:scale-110';
             dayDiv.textContent = i;
+
             if (i === today.getDate() && month === today.getMonth() && year === today.getFullYear()) {
-                dayDiv.classList.add('today');
+                dayDiv.classList.add('border-2', 'border-[#667733]', 'bg-[#FDFCE9]');
             }
 
             const formattedMonth = String(month + 1).padStart(2, '0');
             const formattedDay = String(i).padStart(2, '0');
-            const sqlStr = `${year}-${formattedMonth}-${formattedDay}`;
+            const sqlDateStr = `${year}-${formattedMonth}-${formattedDay}`;
 
-            // no past dates
-            if (isPastDate(sqlStr)) {
-                dayDiv.classList.remove('text-[#2A1001]', 'cursor-pointer', 'transition-colors', 'hover:bg-[#D7E3A5]', 'hover:rounded-full', 'hover:border-1', 'hover:border-[#2A1001]', 'hover:scale-[1.25]');
-                dayDiv.classList.add('bg-gray-200', 'text-gray-400', 'cursor-not-allowed', 'select-none');
-                dayDiv.setAttribute('aria-disabled', 'true');
+            if (isPastDate(sqlDateStr)) {
+                dayDiv.className = 'w-9 h-9 rounded-full flex items-center justify-center font-medium text-xs sm:text-sm bg-gray-100 text-gray-400 cursor-not-allowed select-none';
+            } else {
+                dayDiv.addEventListener('click', () => {
+                    document.querySelectorAll('#days > div').forEach(d => d.classList.remove('bg-[#667733]', 'text-white'));
+                    dayDiv.classList.add('bg-[#667733]', 'text-white');
+                    
+                    selectedDateValue = sqlDateStr;
+                    document.getElementById('selected-date').value = selectedDateValue;
+                    if (selectedDoctorId) {
+                        fetchAvailableSlotsForDoctor(selectedDoctorId, selectedDateValue);
+                    }
+                });
             }
 
-            handleDayClick(dayDiv, sqlStr);
             daysContainer.appendChild(dayDiv);
         }
     }
 
-    prevButton.addEventListener('click', function () {
-        currentDate.setMonth(currentDate.getMonth() - 1);
-        renderCalendar(currentDate);
-    });
-
-    nextButton.addEventListener('click', function () {
-        currentDate.setMonth(currentDate.getMonth() + 1);
-        renderCalendar(currentDate);
-    });
+    if (prevButton) prevButton.addEventListener('click', () => { currentDate.setMonth(currentDate.getMonth() - 1); renderCalendar(currentDate); });
+    if (nextButton) nextButton.addEventListener('click', () => { currentDate.setMonth(currentDate.getMonth() + 1); renderCalendar(currentDate); });
 
     renderCalendar(currentDate);
-});
+}
+
+// ── 5. Philippine Payment Channels Controller ───────────────────────────────
+function initPaymentChannels() {
+    const tabs = document.querySelectorAll('.channel-tab-btn');
+    tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            const channel = tab.dataset.channel;
+            currentPaymentChannel = channel;
+            
+            tabs.forEach(t => {
+                t.classList.remove('border-[#667733]', 'bg-[#D7E3A5]/20', 'ring-2', 'ring-[#667733]');
+                t.classList.add('border-black');
+            });
+            tab.classList.remove('border-black');
+            tab.classList.add('border-[#667733]', 'bg-[#D7E3A5]/20', 'ring-2', 'ring-[#667733]');
+
+            renderChannelContent(channel);
+        });
+    });
+
+    renderChannelContent('gcash');
+}
+
+function renderChannelContent(channel) {
+    const box = document.getElementById('channelContentBox');
+    if (!box) return;
+
+    const totalAmount = selectedServices.reduce((sum, s) => sum + s.price, 0);
+    const refNumber = 'TXN-' + Math.floor(10000000 + Math.random() * 90000000);
+
+    if (channel === 'gcash') {
+        box.innerHTML = `
+            <div class="flex flex-col sm:flex-row items-center gap-4">
+                <div class="bg-blue-50 border-2 border-[#005CEE]/40 rounded-2xl p-3 flex flex-col items-center justify-center shrink-0">
+                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=GCASH_PAYMENT_${refNumber}_${totalAmount}" class="w-32 h-32 rounded-lg border border-black/10 shadow-sm" alt="GCash QR">
+                    <span class="text-[10px] font-black text-[#005CEE] mt-1.5 uppercase tracking-wider">Scan via GCash App</span>
+                </div>
+                <div class="flex-1 flex flex-col gap-2.5 w-full">
+                    <div class="bg-[#005CEE]/10 p-2.5 rounded-xl border border-[#005CEE]/30 text-xs text-[#005CEE] font-bold">
+                        <i class="fa-solid fa-mobile-screen mr-1"></i> Merchant: <strong>DENTAL CLINIC INC.</strong><br>
+                        <span>GCash No: <strong>0917-888-DENT (3368)</strong></span>
+                    </div>
+                    <div>
+                        <label class="text-xs font-bold text-[#2A1001] block mb-1">Your GCash Mobile No. <span class="text-red-500">*</span></label>
+                        <input type="tel" id="gcash-mobile" placeholder="09XX XXX XXXX" maxlength="13" class="w-full bg-gray-50 border border-black/20 rounded-xl px-3 py-2 text-sm font-semibold outline-none focus:ring-2 focus:ring-[#005CEE]" required>
+                    </div>
+                    <div>
+                        <label class="text-xs font-bold text-[#2A1001] block mb-1">GCash Reference No.:</label>
+                        <input type="text" id="gcash-ref" value="${refNumber}" class="w-full bg-gray-50 border border-black/20 rounded-xl px-3 py-2 text-sm font-semibold outline-none text-gray-700">
+                    </div>
+                </div>
+            </div>
+        `;
+    } else if (channel === 'maya') {
+        box.innerHTML = `
+            <div class="flex flex-col sm:flex-row items-center gap-4">
+                <div class="bg-emerald-50 border-2 border-green-600/40 rounded-2xl p-3 flex flex-col items-center justify-center shrink-0">
+                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=MAYA_PAYMENT_${refNumber}_${totalAmount}" class="w-32 h-32 rounded-lg border border-black/10 shadow-sm" alt="Maya QR">
+                    <span class="text-[10px] font-black text-green-700 mt-1.5 uppercase tracking-wider">Scan via Maya App</span>
+                </div>
+                <div class="flex-1 flex flex-col gap-2.5 w-full">
+                    <div class="bg-green-50 p-2.5 rounded-xl border border-green-600/30 text-xs text-green-800 font-bold">
+                        <i class="fa-solid fa-wallet mr-1"></i> Maya Business Merchant: <strong>DENTAL CLINIC</strong><br>
+                        <span>Account: <strong>@dentalclinicph</strong></span>
+                    </div>
+                    <div>
+                        <label class="text-xs font-bold text-[#2A1001] block mb-1">Your Maya Mobile No. <span class="text-red-500">*</span></label>
+                        <input type="tel" id="maya-mobile" placeholder="09XX XXX XXXX" maxlength="13" class="w-full bg-gray-50 border border-black/20 rounded-xl px-3 py-2 text-sm font-semibold outline-none focus:ring-2 focus:ring-green-600" required>
+                    </div>
+                    <div>
+                        <label class="text-xs font-bold text-[#2A1001] block mb-1">Maya Reference Code:</label>
+                        <input type="text" id="maya-ref" value="${refNumber}" class="w-full bg-gray-50 border border-black/20 rounded-xl px-3 py-2 text-sm font-semibold outline-none text-gray-700">
+                    </div>
+                </div>
+            </div>
+        `;
+    } else if (channel === 'gotyme') {
+        box.innerHTML = `
+            <div class="flex flex-col gap-3">
+                <div class="bg-purple-50 p-3 rounded-xl border border-purple-700/30 flex items-center justify-between">
+                    <div>
+                        <p class="text-xs font-bold text-purple-900">GoTyme Digital Bank Transfer</p>
+                        <p class="text-xs text-purple-700">Account No: <strong>0123-4567-8910</strong> (Dental Clinic)</p>
+                    </div>
+                    <span class="bg-purple-700 text-white font-black text-xs px-2.5 py-1 rounded-full">GoTyme Bank</span>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    <div>
+                        <label class="text-xs font-bold text-[#2A1001] block mb-1">Account Holder Name: <span class="text-red-500">*</span></label>
+                        <input type="text" id="gotyme-name" placeholder="Juan Dela Cruz" class="w-full bg-gray-50 border border-black/20 rounded-xl px-3 py-2 text-sm font-semibold outline-none focus:ring-2 focus:ring-purple-700" required>
+                    </div>
+                    <div>
+                        <label class="text-xs font-bold text-[#2A1001] block mb-1">Card Last 4 Digits: <span class="text-red-500">*</span></label>
+                        <input type="text" id="gotyme-account" placeholder="XXXX" maxlength="4" class="w-full bg-gray-50 border border-black/20 rounded-xl px-3 py-2 text-sm font-semibold outline-none focus:ring-2 focus:ring-purple-700" required>
+                    </div>
+                </div>
+            </div>
+        `;
+    } else if (channel === 'ewallet') {
+        box.innerHTML = `
+            <div class="flex flex-col gap-3">
+                <div>
+                    <label class="text-xs font-bold text-[#2A1001] block mb-1">Select Philippine E-Wallet: <span class="text-red-500">*</span></label>
+                    <select id="ewallet-provider" class="w-full bg-gray-50 border border-black/20 rounded-xl px-3 py-2 text-sm font-semibold outline-none focus:ring-2 focus:ring-[#667733]">
+                        <option value="ShopeePay">ShopeePay (SeaMoney)</option>
+                        <option value="GrabPay">GrabPay Philippines</option>
+                        <option value="CoinsPH">Coins.ph</option>
+                        <option value="PalawanPay">PalawanPay</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-[#2A1001] block mb-1">Registered Mobile Number: <span class="text-red-500">*</span></label>
+                    <input type="tel" id="ewallet-mobile" placeholder="09XX XXX XXXX" maxlength="13" class="w-full bg-gray-50 border border-black/20 rounded-xl px-3 py-2 text-sm font-semibold outline-none focus:ring-2 focus:ring-[#667733]" required>
+                </div>
+            </div>
+        `;
+    } else if (channel === 'card') {
+        box.innerHTML = `
+            <div class="flex flex-col gap-3">
+                <div class="flex items-center justify-between bg-blue-50/60 p-2 rounded-xl border border-blue-200 text-xs text-blue-900 font-semibold">
+                    <span><i class="fa-solid fa-lock text-green-600 mr-1"></i> 256-bit Encrypted Card Payment</span>
+                    <span class="flex gap-1.5 text-base text-gray-700">
+                        <i class="fa-brands fa-cc-visa text-blue-700"></i>
+                        <i class="fa-brands fa-cc-mastercard text-orange-600"></i>
+                        <i class="fa-regular fa-credit-card text-emerald-600"></i>
+                    </span>
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-[#2A1001] block mb-1">Cardholder Full Name: <span class="text-red-500">*</span></label>
+                    <input type="text" id="card-name" placeholder="JUAN DELA CRUZ" class="w-full uppercase bg-gray-50 border border-black/20 rounded-xl px-3 py-2 text-sm font-semibold outline-none focus:ring-2 focus:ring-[#667733]" required>
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-[#2A1001] block mb-1">Card Number (Visa / Mastercard / BancNet): <span class="text-red-500">*</span></label>
+                    <input type="text" id="card-number" placeholder="4111 2222 3333 4444" maxlength="19" class="w-full bg-gray-50 border border-black/20 rounded-xl px-3 py-2 text-sm font-semibold outline-none focus:ring-2 focus:ring-[#667733]" required>
+                </div>
+                <div class="grid grid-cols-2 gap-2.5">
+                    <div>
+                        <label class="text-xs font-bold text-[#2A1001] block mb-1">Expiry (MM/YY): <span class="text-red-500">*</span></label>
+                        <input type="text" id="card-expiry" placeholder="12/28" maxlength="5" class="w-full bg-gray-50 border border-black/20 rounded-xl px-3 py-2 text-sm font-semibold outline-none focus:ring-2 focus:ring-[#667733]" required>
+                    </div>
+                    <div>
+                        <label class="text-xs font-bold text-[#2A1001] block mb-1">CVV / CVC: <span class="text-red-500">*</span></label>
+                        <input type="password" id="card-cvv" placeholder="•••" maxlength="4" class="w-full bg-gray-50 border border-black/20 rounded-xl px-3 py-2 text-sm font-semibold outline-none focus:ring-2 focus:ring-[#667733]" required>
+                    </div>
+                </div>
+            </div>
+        `;
+    } else if (channel === 'qrph') {
+        box.innerHTML = `
+            <div class="flex flex-col sm:flex-row items-center gap-4">
+                <div class="bg-red-50 border-2 border-red-600/40 rounded-2xl p-3 flex flex-col items-center justify-center shrink-0">
+                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=QRPH_BSP_${refNumber}_${totalAmount}" class="w-32 h-32 rounded-lg border border-black/10 shadow-sm" alt="QR Ph Standard">
+                    <span class="text-[10px] font-black text-red-700 mt-1.5 uppercase tracking-wider">BSP QR Ph Standard</span>
+                </div>
+                <div class="flex-1 flex flex-col gap-2 w-full">
+                    <p class="text-xs font-bold text-[#2A1001]">Pay using any Philippine Bank or Fintech App:</p>
+                    <div class="flex flex-wrap gap-1.5 text-[10px] font-extrabold text-gray-700">
+                        <span class="bg-gray-100 border border-black/15 px-2 py-0.5 rounded-md">BDO</span>
+                        <span class="bg-gray-100 border border-black/15 px-2 py-0.5 rounded-md">BPI</span>
+                        <span class="bg-gray-100 border border-black/15 px-2 py-0.5 rounded-md">UnionBank</span>
+                        <span class="bg-gray-100 border border-black/15 px-2 py-0.5 rounded-md">Metrobank</span>
+                        <span class="bg-gray-100 border border-black/15 px-2 py-0.5 rounded-md">Landbank</span>
+                        <span class="bg-gray-100 border border-black/15 px-2 py-0.5 rounded-md">RCBC</span>
+                        <span class="bg-gray-100 border border-black/15 px-2 py-0.5 rounded-md">GCash</span>
+                        <span class="bg-gray-100 border border-black/15 px-2 py-0.5 rounded-md">Maya</span>
+                    </div>
+                    <div class="mt-1">
+                        <label class="text-xs font-bold text-[#2A1001] block mb-1">Your Bank / App Name: <span class="text-red-500">*</span></label>
+                        <input type="text" id="qrph-bank" placeholder="e.g., BDO Online / BPI" class="w-full bg-gray-50 border border-black/20 rounded-xl px-3 py-2 text-sm font-semibold outline-none focus:ring-2 focus:ring-red-600" required>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+}
+
+// ── 6. Modal & Booking Workflow ─────────────────────────────────────────────
+function initBookingForm() {
+    const bookingForm          = document.getElementById('booking-form');
+    const receiptModal         = document.getElementById('receipt-modal');
+    const closeModalBtn        = document.getElementById('close-modal');
+    const receiptContent       = document.getElementById('receipt-content');
+    const payOnlineBtn         = document.getElementById('pay-online-btn');
+    const payCashBtn           = document.getElementById('pay-cash-btn');
+    const onlinePaymentModal   = document.getElementById('online-payment-modal');
+    const closeOnlinePaymentBtn= document.getElementById('close-online-payment-btn');
+    const submitOnlineBookingBtn = document.getElementById('submitOnlineBookingBtn');
+
+    if (!bookingForm) return;
+
+       bookingForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+
+        if (!selectedDoctorId) {
+            showValidationModal('Please select an attending dentist before continuing.', document.getElementById('doctorSelect'));
+            return;
+        }
+        if (selectedServices.length === 0) {
+            showValidationModal('Please select at least one dental treatment.');
+            return;
+        }
+        if (!selectedDateValue) {
+            showValidationModal('Please pick an appointment date on the calendar.');
+            return;
+        }
+        if (!selectedStartTime) {
+            showValidationModal('Please select an available starting time slot.');
+            return;
+        }
+
+        const noteVal = document.getElementById('PNote')?.value.trim() || 'None';
+        const docObj  = availableDoctors.find(d => d.doctor_id == selectedDoctorId);
+        const doctorName = docObj ? docObj.name : 'Attending Dentist';
+        const totalAmount = selectedServices.reduce((sum, s) => sum + s.price, 0);
+        const totalMinutes = selectedServices.reduce((sum, s) => sum + (s.duration_minutes || 30), 0);
+
+        const servicesListHtml = selectedServices.map(s => `
+            <div class="flex justify-between items-center py-1.5 text-xs sm:text-sm border-b border-black/10">
+                <div>
+                    <span class="font-bold text-[#2A1001]">${escapeHtml(s.label)}</span>
+                    <span class="text-[10px] text-gray-500 ml-1.5">(${s.duration_minutes || 30}m)</span>
+                </div>
+                <span class="font-black text-[#2A1001]">₱${s.price.toLocaleString()}</span>
+            </div>
+        `).join('');
+
+        receiptContent.innerHTML = `
+            <div class="grid grid-cols-2 gap-2 pb-2 border-b border-black/15 text-xs sm:text-sm">
+                <p><span class="font-bold text-[#2A1001]/60">Date:</span> <strong>${escapeHtml(selectedDateValue)}</strong></p>
+                <p><span class="font-bold text-[#2A1001]/60">Schedule:</span> <strong>${format12Hour(selectedStartTime)} – ${format12Hour(selectedEndTime)}</strong></p>
+                <p><span class="font-bold text-[#2A1001]/60">Est. Duration:</span> <strong>${formatDuration(totalMinutes)}</strong></p>
+                <p><span class="font-bold text-[#2A1001]/60">Attending Dentist:</span> <strong>${escapeHtml(doctorName)}</strong></p>
+            </div>
+
+            <div class="flex flex-col gap-1 my-1">
+                <p class="font-extrabold text-xs uppercase text-[#2A1001]/70">Selected Treatments (${selectedServices.length}):</p>
+                ${servicesListHtml}
+            </div>
+
+            <div class="flex justify-between items-center pt-2 border-t-2 border-black/20 text-base font-black text-[#667733]">
+                <span>Total Amount Due:</span>
+                <span>₱${totalAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
+            </div>
+
+            <div class="bg-white/80 p-2.5 rounded-xl border border-black/10 text-xs mt-1">
+                <span class="font-bold">Patient Note:</span>
+                <p class="italic text-[#2A1001]/80">${escapeHtml(noteVal)}</p>
+            </div>
+        `;
+
+        receiptModal.classList.remove('hidden');
+    });
+
+    if (closeModalBtn) {
+        closeModalBtn.addEventListener('click', () => {
+            receiptModal.classList.add('hidden');
+        });
+    }
+
+    if (payOnlineBtn) {
+        payOnlineBtn.addEventListener('click', () => {
+            receiptModal.classList.add('hidden');
+            renderChannelContent(currentPaymentChannel);
+            onlinePaymentModal.classList.remove('hidden');
+        });
+    }
+
+    if (closeOnlinePaymentBtn) {
+        closeOnlinePaymentBtn.addEventListener('click', () => {
+            onlinePaymentModal.classList.add('hidden');
+            receiptModal.classList.remove('hidden');
+        });
+    }
+
+    if (payCashBtn) {
+        payCashBtn.addEventListener('click', () => {
+            if (confirm("Confirm booking this appointment with In-Clinic Cash payment?")) {
+                receiptModal.classList.add('hidden');
+                submitBookingToDatabase('cash', null, null);
+            }
+        });
+    }
+
+    if (submitOnlineBookingBtn) {
+        submitOnlineBookingBtn.addEventListener('click', () => {
+            let paymentRef = '';
+            if (currentPaymentChannel === 'gcash') {
+                const mob = document.getElementById('gcash-mobile')?.value.trim();
+                if (!mob) { alert('Please input your GCash mobile number.'); return; }
+                paymentRef = document.getElementById('gcash-ref')?.value.trim() || 'GCASH-' + Date.now();
+            } else if (currentPaymentChannel === 'maya') {
+                const mob = document.getElementById('maya-mobile')?.value.trim();
+                if (!mob) { alert('Please input your Maya mobile number.'); return; }
+                paymentRef = document.getElementById('maya-ref')?.value.trim() || 'MAYA-' + Date.now();
+            } else if (currentPaymentChannel === 'gotyme') {
+                const name = document.getElementById('gotyme-name')?.value.trim();
+                if (!name) { alert('Please input your GoTyme account name.'); return; }
+                paymentRef = 'GOTYME-' + Date.now();
+            } else if (currentPaymentChannel === 'card') {
+                const num = document.getElementById('card-number')?.value.trim();
+                const exp = document.getElementById('card-expiry')?.value.trim();
+                const cvv = document.getElementById('card-cvv')?.value.trim();
+                if (!num || !exp || !cvv) { alert('Please fill in complete Card details.'); return; }
+                paymentRef = 'CARD-' + num.slice(-4) + '-' + Date.now();
+            } else if (currentPaymentChannel === 'qrph') {
+                const bank = document.getElementById('qrph-bank')?.value.trim();
+                if (!bank) { alert('Please specify your Bank/Payment app.'); return; }
+                paymentRef = 'QRPH-' + bank + '-' + Date.now();
+            } else if (currentPaymentChannel === 'ewallet') {
+                const mob = document.getElementById('ewallet-mobile')?.value.trim();
+                if (!mob) { alert('Please input your registered E-Wallet number.'); return; }
+                const prov = document.getElementById('ewallet-provider')?.value;
+                paymentRef = prov + '-' + Date.now();
+            }
+
+            submitOnlineBookingBtn.disabled = true;
+            submitOnlineBookingBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Processing Online Payment...';
+
+            setTimeout(() => {
+                onlinePaymentModal.classList.add('hidden');
+                submitBookingToDatabase('online', currentPaymentChannel, paymentRef);
+            }, 800);
+        });
+    }
+}
+
+function showValidationModal(message, focusTarget = null) {
+    const modal = document.getElementById('validation-modal');
+    const text = document.getElementById('validation-modal-text');
+    const okBtn = document.getElementById('validation-modal-ok');
+
+    if (!modal || !text || !okBtn) {
+        alert(message); // safety fallback if the modal markup is missing
+        return;
+    }
+
+    text.textContent = message;
+    modal.classList.remove('hidden');
+
+    const closeModal = () => {
+        modal.classList.add('hidden');
+        if (focusTarget) focusTarget.focus();
+    };
+
+    okBtn.onclick = closeModal; // .onclick overwrite avoids stacking duplicate listeners
+    modal.onclick = (e) => { if (e.target === modal) closeModal(); };
+}
+
+
+// ── 7. Submit Appointment to Backend API ────────────────────────────────────
+async function submitBookingToDatabase(method, channel = null, reference = null) {
+    const token = localStorage.getItem('userToken');
+
+    const totalMinutes = selectedServices.reduce((sum, s) => sum + (s.duration_minutes || 30), 0);
+
+    const payload = {
+        appointment_date: selectedDateValue,
+        time_slot: selectedStartTime,
+        end_time_slot: selectedEndTime,
+        estimated_duration_minutes: totalMinutes,
+        doctor_id: selectedDoctorId || null,
+        service_id: selectedServices[0].service_id,
+        service_ids: selectedServices.map(s => s.service_id),
+        patient_note: document.getElementById('PNote')?.value.trim() || '',
+        payment_method: method,
+        payment_channel: channel || (method === 'cash' ? 'cash' : 'online'),
+        payment_reference: reference || null
+    };
+
+    try {
+        const headers = {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        };
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+
+        const response = await fetch(`${API_BASE_URL}/api/appointments`, {
+            method: 'POST',
+            headers: headers,
+            body: JSON.stringify(payload)
+        });
+
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.message || 'Failed to complete booking.');
+
+        alert(result.message || (method === 'online' ? 'Payment confirmed & appointment scheduled!' : 'Appointment scheduled successfully!'));
+        window.location.href = 'History.html';
+
+    } catch (error) {
+        console.error('Booking Submission Error:', error);
+        alert('Booking Error: ' + error.message);
+        const submitOnlineBtn = document.getElementById('submitOnlineBookingBtn');
+        if (submitOnlineBtn) {
+            submitOnlineBtn.disabled = false;
+            submitOnlineBtn.innerHTML = '<i class="fa-solid fa-check-circle"></i> Confirm &amp; Finalize Booking';
+        }
+    }
+
+}
+ 
