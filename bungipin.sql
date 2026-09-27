@@ -233,13 +233,14 @@ CREATE TABLE patient_documents (
 );
 
 CREATE TABLE password_resets (
-    reset_id     INT AUTO_INCREMENT PRIMARY KEY,
-    user_id      INT NOT NULL,
-    token_hash   VARCHAR(255) NOT NULL,
-    expires_at   DATETIME NOT NULL,
-    used         BOOLEAN NOT NULL DEFAULT FALSE,
-    created_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
+    reset_id    INT PRIMARY KEY AUTO_INCREMENT,
+    user_id     INT NOT NULL,
+    token_hash  VARCHAR(64) NOT NULL,
+    expires_at  DATETIME NOT NULL,
+    used        BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+    INDEX idx_token_hash (token_hash)
 );
 
 DELIMITER $$
