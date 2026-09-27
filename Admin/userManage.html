@@ -614,7 +614,7 @@
                     ${u.account_status === 'suspended' ? '<span class="text-xs font-bold text-red-600">Account Disabled</span>' : ''}
                     
                     <p id="loginResetMessage-${u.user_id}" class="text-xs font-semibold mt-1" role="status">
-                        ${u.isLocked ? '<span class="text-red-600">Login locked. Admin reset required.</span>' : '<span class="text-gray-400">Login session is active.</span>'}
+                        ${u.is_locked ? '<span class="text-red-600">Login locked. Admin reset required.</span>' : '<span class="text-gray-400">Login session is active.</span>'}
                     </p>
                 </div>
 
@@ -643,7 +643,7 @@
                     </button>
 
                     <!-- LOGIN ATTEMPT SECURITY -->
-                    <button class="resetLoginBtn w-9 h-9 flex items-center justify-center rounded-lg bg-[#8A925F] hover:bg-[#707746] disabled:bg-gray-300 disabled:hover:bg-gray-300 disabled:cursor-not-allowed disabled:opacity-60 transition shadow-sm cursor-pointer text-white font-bold" data-id="${u.user_id}" title="${u.isLocked ? 'Reset login session' : 'No login reset needed'}" ${u.isLocked ? '' : 'disabled'}>
+                    <button class="resetLoginBtn w-9 h-9 flex items-center justify-center rounded-lg bg-[#8A925F] hover:bg-[#707746] disabled:bg-gray-300 disabled:hover:bg-gray-300 disabled:cursor-not-allowed disabled:opacity-60 transition shadow-sm cursor-pointer text-white font-bold" data-id="${u.user_id}" title="${u.is_locked ? 'Reset login session' : 'No login reset needed'}" ${u.is_locked ? '' : 'disabled'}>
                         <span aria-hidden="true">↻</span>
                     </button>
                 </div>
@@ -1259,7 +1259,7 @@
         socket.on('user-locked', (data) => {
             const user = users.find(u => Number(u.user_id) === Number(data.userId));
             if (user) {
-                user.isLocked = true;
+                user.is_locked = true;
             }
             renderUsers();
         });

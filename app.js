@@ -137,7 +137,7 @@ app.get('/contact.html', (req, res) => {
  }
  try {
  const [rows] = await db.query(
- 'SELECT user_id, public_id, first_name, last_name, email, phone, sex, role, account_status, created_at, isLocked, loginAttempts FROM users'
+ 'SELECT user_id, public_id, first_name, last_name, email, phone, sex, role, account_status, created_at, is_locked, login_attempts FROM users'
  );
  res.json(rows);
  } catch (err) {

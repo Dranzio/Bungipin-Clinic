@@ -20,7 +20,7 @@ function getState(email) {
     return state;
 }
 
-function isLocked(email) {
+function is_locked(email) {
     const state = getState(email);
     return state && state.failures >= MAX_FAILURES;
 }
@@ -43,7 +43,7 @@ function clear(email) {
 }
 
 module.exports = {
-    isLocked,
+    is_locked,
     recordFailure,
     clear
 };
