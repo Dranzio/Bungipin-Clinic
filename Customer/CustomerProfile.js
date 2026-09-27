@@ -100,13 +100,15 @@ function registerPatientProfileRoute(app, db) {
         if (new_password) {
             const password_hash = await bcrypt.hash(new_password, SALT_ROUNDS);
             await connection.query(
-                'UPDATE users SET phone = ?, password_hash = ? WHERE user_id = ?',
-                [phone || null, password_hash, patientId]
-            );
-        } else {
-            await connection.query(
-                'UPDATE users SET phone = ? WHERE user_id = ?',
-                [phone || null, patientId]
+                `UPDATE patient_profiles
+                 SET birthday = ?, secondary_email = ?, pregnancy_status = ?,
+                     address = ?, address_street = ?, address_barangay = ?, address_city = ?, address_province = ?
+                 WHERE patient_id = ?`,
+                [
+                    birthday || null, secondary_email, pregnancy_status || null,
+                    address || null, addressStreet || null, addressBarangay || null, addressCity || null, addressProvince || null,
+                    patientId
+                ]
             );
         }
 

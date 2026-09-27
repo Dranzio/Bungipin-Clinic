@@ -23,6 +23,7 @@ const errorHandler = require('./Utils/errorHandler');
 const rateLimit = require("express-rate-limit");
 const registerServiceRoutes = require("./Admin/ServiceRoutes");
 const registerUserManagementRoutes = require("./Admin/UserManage");
+const registerAdminProfileRoute = require("./Admin/AdminProfile");
 
 // DENIED DIRECT PAGE ACESS VIA URL
 const registerDashboardRoutes = require("./Admin/DashboardRoutes");
@@ -81,6 +82,7 @@ registerPatientRecordsRoutes(app, db);
 registerMessagesRoutes(app, db);
 registerServiceRoutes(app, db);
 registerUserManagementRoutes(app, db);
+registerAdminProfileRoute(app, db);
 registerDashboardRoutes(app, db);
 
 // DENIES DIRECT PAGE VIA URL
@@ -133,19 +135,19 @@ app.get('/contact.html', (req, res) => {
 // MOVED THIS TO USERMANAGE.JS
 /**
  * app.get('/api/users', authenticateToken, async (req, res) => {
-        if (req.user.role !== 'admin') {
-            return res.status(403).json({ error: 'Admins only' });
-        }
-        try {
-            const [rows] = await db.query(
-                'SELECT user_id, public_id, first_name, last_name, email, phone, sex, role, account_status, created_at, isLocked, loginAttempts FROM users'
-            );
-            res.json(rows);
-        } catch (err) {
-            console.error('Databse Error', err);
-            res.status(500).json({error: "Internal Server Error"});
-        }
-    });
+ if (req.user.role !== 'admin') {
+ return res.status(403).json({ error: 'Admins only' });
+ }
+ try {
+ const [rows] = await db.query(
+ 'SELECT user_id, public_id, first_name, last_name, email, phone, sex, role, account_status, created_at, isLocked, loginAttempts FROM users'
+ );
+ res.json(rows);
+ } catch (err) {
+ console.error('Databse Error', err);
+ res.status(500).json({error: "Internal Server Error"});
+ }
+ });
  */
 
 

@@ -33,6 +33,8 @@ CREATE TABLE users (
     sex             VARCHAR(10),
     role            ENUM('patient','employee','admin') NOT NULL,
     account_status  ENUM('active','suspended') NOT NULL DEFAULT 'active',
+    loginAttempts   INT NOT NULL DEFAULT 0,
+    isLocked        BOOLEAN NOT NULL DEFAULT FALSE,
     created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -85,6 +87,10 @@ CREATE TABLE patient_profiles (
     birthday         DATE,
     secondary_email  VARCHAR(150),
     address          VARCHAR(255),
+    address_street   VARCHAR(150),
+    address_barangay VARCHAR(100),
+    address_city     VARCHAR(100),
+    address_province VARCHAR(100),
     pregnancy_status VARCHAR(30),
     FOREIGN KEY (patient_id) REFERENCES users(user_id) ON DELETE CASCADE
 );
@@ -235,6 +241,11 @@ BEGIN
         'birthday', pp.birthday,
         'email', u.email,
         'phone', u.phone,
+        'address', pp.address,
+        'address_street', pp.address_street,
+        'address_barangay', pp.address_barangay,
+        'address_city', pp.address_city,
+        'address_province', pp.address_province,
         'pregnancy_status', pp.pregnancy_status,
         'health_conditions', (
             SELECT COALESCE(JSON_ARRAYAGG(JSON_OBJECT('description', description)), JSON_ARRAY())
@@ -304,6 +315,11 @@ BEGIN
         'birthday', pp.birthday,
         'email', u.email,
         'phone', u.phone,
+        'address', pp.address,
+        'address_street', pp.address_street,
+        'address_barangay', pp.address_barangay,
+        'address_city', pp.address_city,
+        'address_province', pp.address_province,
         'pregnancy_status', pp.pregnancy_status,
         'health_conditions', (
             SELECT COALESCE(JSON_ARRAYAGG(JSON_OBJECT('description', description)), JSON_ARRAY())
@@ -390,8 +406,8 @@ CALL sp_register_user('Liza', 'Tan', 'liza.tan@example.com', '09203334444', '$2b
 CALL sp_register_user('Carla', 'Reyes', 'carla.reyes@example.com', '09051119999', '$2b$10$PFUiFjV7FngVMIZ2u/chOOV3l.cVQ84nz4Os8DipZlw72yiqAKKJi', 'F', 'admin', @uid5);
 
 
-UPDATE patient_profiles SET birthday = '1990-04-12', address = '123 Mabini St, Quezon City' WHERE patient_id = 1;
-UPDATE patient_profiles SET birthday = '1985-11-02', address = '45 Rizal Ave, Manila' WHERE patient_id = 2;
+UPDATE patient_profiles SET birthday = '1990-04-12', civil_status = 'Single', address = '123 Mabini St, Quezon City', address_street = '123 Mabini St', address_city = 'Quezon City', address_province = 'Metro Manila' WHERE patient_id = 1;
+UPDATE patient_profiles SET birthday = '1985-11-02', civil_status = 'Married', address = '45 Rizal Ave, Manila', address_street = '45 Rizal Ave', address_city = 'Manila', address_province = 'Metro Manila' WHERE patient_id = 2;
 
 UPDATE employee_profiles SET staff_code = 'STF-2026-001', position = 'Dentist', birthday = '1985-06-10' WHERE employee_id = 3;
 UPDATE employee_profiles SET staff_code = 'STF-2026-002', position = 'Dentist', birthday = '1990-02-20' WHERE employee_id = 4;
@@ -441,3 +457,5 @@ select * from appointments;
 select a.first_name from users a INNER JOIN  employee_profiles b on a.user_id = b.employee_id;
 select * from payments;
 select a.appointment_id, s.label AS service_offered from appointments a INNER JOIN services s on a.service_id = s.service_id;
+
+ SELECT email, loginAttempts, isLocked FROM users WHERE email = 'juan.delacruz@example.com';

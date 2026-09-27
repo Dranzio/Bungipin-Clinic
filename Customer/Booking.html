@@ -5,263 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <!-- DENIED DIRECT PAGE ACCESS VIA URL -->
     <script src="../pageProtection.js"></script>
-    <title>Booking</title>
+    <title>Book Dental Appointment</title>
     <link rel="stylesheet" href="../output.css">
     <!-- Tailwind CDN Fallback for missing builds -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://kit.fontawesome.com/fc8c3f4103.js" crossorigin="anonymous"></script>
-    <script src="Booking.js"></script>
-
-    <!-- Integrated Booking.js Script Logic -->
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            let selectedDateValue = '';
-            let selectedTimeValue = '';
-            let selectedServiceLabel = '';
-            let selectedPriceValue = 0;
-            let selectedPaymentMethod = 'cash';
-
-            // 1. Time Slot Selection Logic
-            document.querySelectorAll('[data-time]').forEach(slot => {
-                slot.addEventListener('click', () => {
-                    // no past dates
-                    if (!document.getElementById('selected-date').value) {
-                        alert('Please select a date first.');
-                        return;
-                    }
-                    if (slot.dataset.disabled === 'true') return;
-                    document.querySelectorAll('[data-time]').forEach(s => s.classList.remove('bg-[#D7E3A5]'));
-                    slot.classList.add('bg-[#D7E3A5]');
-                    selectedTimeValue = slot.getAttribute('data-time');
-                    document.getElementById('selected-time').value = selectedTimeValue;
-                });
-            });
-
-            // 2. Services — generated from the database
-            const serviceGrid = document.getElementById('service-grid');
-            const CARD_CLASSES = 'flex flex-col w-[200px] h-[250px] justify-between items-center text-center bg-[#FFFFFF] rounded-[8px] border-2 border-black hover:bg-[#D7E3A5] transition-all duration-250 hover:scale-[1.035] cursor-pointer p-3';
-
-            // Used when a service has no uploaded icon (matched on the label).
-            function fallbackIcon(label) {
-                const l = String(label).toLowerCase();
-                if (l.includes('clean')) return '../assets/cleaning.png';
-                if (l.includes('pasta') || l.includes('filling')) return '../assets/pasta.png';
-                if (l.includes('check') || l.includes('consult')) return '../assets/Checkup.png';
-                if (l.includes('whiten')) return '../assets/whitening.png';
-                return '../assets/logo.png';
-            }
-
-            function buildServiceCard(service) {
-                const card = document.createElement('div');
-                card.className = CARD_CLASSES;
-                card.dataset.service = service.label;
-                card.dataset.serviceId = service.service_id;
-                card.dataset.price = service.price;
-
-                const title = document.createElement('h1');
-                title.className = 'font-bold text-[20px] break-words whitespace-normal overflow-hidden max-w-full min-w-0';
-                title.textContent = service.label;
-
-                const img = document.createElement('img');
-                img.className = 'w-28 h-28 object-contain';
-                img.alt = service.label;
-                const hasIcon = service.icon && (service.icon.startsWith('/') || service.icon.startsWith('http'));
-                img.src = hasIcon ? service.icon : fallbackIcon(service.label);
-                img.onerror = () => { img.onerror = null; img.src = '../assets/logo.png'; };
-
-                const price = document.createElement('h2');
-                price.className = 'font-bold text-[18px]';
-                price.textContent = `Price: ${Number(service.price).toLocaleString()}`;
-
-                card.append(title, img, price);
-                return card;
-            }
-
-            function showServiceMessage(text) {
-                const p = document.createElement('p');
-                p.className = 'col-span-full text-center font-bold text-[#2c3e2b] py-10';
-                p.textContent = text;
-                serviceGrid.replaceChildren(p);
-            }
-
-            async function loadServices() {
-                showServiceMessage('Loading services...');
-                try {
-                    const token = localStorage.getItem('userToken');
-                    const response = await fetch(`${API_BASE_URL}/api/services`, {
-                        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
-                    });
-                    if (response.status === 401 || response.status === 403) {
-                        throw new Error('Your session has expired. Please log in again.');
-                    }
-                    if (!response.ok) throw new Error('Failed to load services.');
-
-                    const services = (await response.json()).filter(s => s.is_available);
-                    if (services.length === 0) {
-                        showServiceMessage('No services are available right now.');
-                        return;
-                    }
-                    serviceGrid.replaceChildren(...services.map(buildServiceCard));
-                } catch (error) {
-                    console.error('Service load error:', error);
-                    showServiceMessage(error.message || 'Could not load services.');
-                }
-            }
-
-            // One delegated listener, since the cards are created after page load.
-            serviceGrid.addEventListener('click', (e) => {
-                const card = e.target.closest('[data-service]');
-                if (!card) return;
-
-                serviceGrid.querySelectorAll('[data-service]').forEach(c => c.classList.remove('bg-[#D7E3A5]'));
-                card.classList.add('bg-[#D7E3A5]');
-
-                selectedServiceLabel = card.dataset.service;
-                selectedPriceValue = card.dataset.price;
-
-                document.getElementById('selected-service').value = selectedServiceLabel;
-                document.getElementById('selected-service-id').value = card.dataset.serviceId;
-                document.getElementById('selected-price').value = selectedPriceValue;
-            });
-
-            // Note: Your calendar script handles setting selectedDateValue and updating
-            // document.getElementById('selected-date').value = selectedDateValue;
-
-            // 3. Modal & Form Submission Workflow
-            const bookingForm = document.getElementById('booking-form');
-            const receiptModal = document.getElementById('receipt-modal');
-            const closeModalBtn = document.getElementById('close-modal');
-            const receiptContent = document.getElementById('receipt-content');
-            const payOnlineBtn = document.getElementById('pay-online-btn');
-            const payCashBtn = document.getElementById('pay-cash-btn');
-            const qrContainer = document.getElementById('qr-container');
-
-            // Change this if your backend uses a different API base URL.
-            const API_BASE_URL = window.BACKEND_API_BASE_URL || '';
-
-            loadServices();
-
-            bookingForm.addEventListener('submit', (e) => {
-                e.preventDefault();
-
-                const dateVal = document.getElementById('selected-date').value;
-                const timeVal = document.getElementById('selected-time').value;
-                const serviceVal = document.getElementById('selected-service').value;
-                const serviceIdVal = document.getElementById('selected-service-id').value;
-                const noteVal = document.getElementById('PNote').value.trim();
-
-                if (!dateVal || !timeVal || !serviceVal || !serviceIdVal) {
-                    alert('Please select a date, time slot, and service.');
-                    return;
-                }
-
-                // The price shown here is for the frontend receipt only.
-                // The backend should retrieve the real price from the database using service_id.
-                receiptContent.innerHTML = `
-                    <p><strong>Service:</strong> ${escapeHtml(selectedServiceLabel)}</p>
-                    <p><strong>Date:</strong> ${escapeHtml(dateVal)}</p>
-                    <p><strong>Time:</strong> ${escapeHtml(timeVal)}</p>
-                    <p><strong>Price:</strong> ₱${Number(selectedPriceValue).toLocaleString()}</p>
-                    <p><strong>Note:</strong> ${escapeHtml(noteVal || 'None')}</p>
-                `;
-
-                receiptModal.classList.remove('hidden');
-            });
-
-            closeModalBtn.addEventListener('click', () => {
-                receiptModal.classList.add('hidden');
-                qrContainer.classList.add('hidden');
-            });
-
-            payOnlineBtn.addEventListener('click', () => {
-                selectedPaymentMethod = 'online';
-                qrContainer.classList.remove('hidden');
-                submitBookingToDatabase('online');
-            });
-
-            payCashBtn.addEventListener('click', () => {
-                selectedPaymentMethod = 'cash';
-                qrContainer.classList.add('hidden');
-                submitBookingToDatabase('cash');
-            });
-
-            async function submitBookingToDatabase(method) {
-                const token = localStorage.getItem('userToken');
-
-                const payload = {
-                    appointment_date: document.getElementById('selected-date').value,
-                    time_slot: document.getElementById('selected-time').value,
-                    service_id: Number(document.getElementById('selected-service-id').value),
-                    patient_note: document.getElementById('PNote').value.trim(),
-                    payment_method: method
-                };
-
-                // The backend should calculate the final amount from service_id.
-                // selectedPriceValue is intentionally not used as the source of truth.
-
-                try {
-                    const headers = {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json'
-                    };
-
-                    // Add authentication only when a token exists.
-                    if (token) {
-                        headers['Authorization'] = `Bearer ${token}`;
-                    }
-
-                    const response = await fetch(`${API_BASE_URL}/api/appointments`, {
-                        method: 'POST',
-                        headers: headers,
-                        body: JSON.stringify(payload)
-                    });
-
-                    const contentType = response.headers.get('content-type') || '';
-                    const result = contentType.includes('application/json')
-                        ? await response.json()
-                        : { message: await response.text() };
-
-                    if (!response.ok) {
-                        throw new Error(result.error || result.message || 'Failed to save appointment.');
-                    }
-
-                    alert(result.message || 'Booking successfully recorded!');
-
-                    receiptModal.classList.add('hidden');
-                    window.location.reload();
-
-                } catch (error) {
-                    console.error('Booking API Error:', error);
-                    alert('Error saving booking: ' + error.message);
-                }
-            }
-
-            // Prevent user-entered notes from being interpreted as HTML in the receipt.
-            function escapeHtml(value) {
-                const div = document.createElement('div');
-                div.textContent = value;
-                return div.innerHTML;
-            }
-        });
-    </script>
-    <!--
-        BACKEND INTEGRATION:
-        POST /api/appointments
-        JSON fields:
-        - appointment_date
-        - time_slot
-        - service_id
-        - patient_note
-        - payment_method
-
-        The backend should authenticate the user, validate the appointment,
-        check slot availability, retrieve the service price from the database,
-        and save the appointment. Do not trust a frontend price as the final amount.
-    -->
-    <script src="../Taskbar/Customer_Sidebar.js"></script>
+    <script src="/Taskbar/Customer_Sidebar.js"></script>
+    <script src="Booking.js" defer></script>
 </head>
-<body class="bg-[#F3EFE4] min-h-screen font-poppins text-[#2c3e2b] antialiased">
-<div class="min-h-screen flex flex-col md:flex-row w-full"> <!--Div for whole body-->
+<body class="bg-[#F3EFE4] min-h-screen font-sans text-[#2c3e2b] antialiased">
+<div class="min-h-screen flex flex-col md:flex-row w-full">
+
+    <!-- SIDEBAR -->
     <div id="sidebar-placeholder"></div>
     <script>
         function syncContentOffset() {
@@ -305,173 +60,266 @@
                 console.log('Sidebar fallback:', error);
             }
         })();
-
     </script>
+
     <!-- Main Content Area Wrapper -->
-    <!-- Right column: header on top, form below -->
     <div id="main-content" class="flex-1 min-w-0 flex flex-col">
 
-        <!-- Header (same as the Profile page) -->
-        <div class="flex justify-between items-start pt-5 pl-12 pr-4 md:pl-24 md:pr-8">
+        <!-- Header -->
+        <div class="flex justify-between items-start pt-5 pl-6 pr-4 md:pl-24 md:pr-8">
             <h1 class="text-2xl sm:text-3xl md:text-5xl 2xl:text-[73px] pt-5 font-bold text-[#2A1001] font-['Poppins']">
-                Booking
+                Book Appointment
             </h1>
             <img
-                    src="../assets/logowithtitle.png"
-                    class="w-20 sm:w-24 md:w-28 h-auto object-contain shrink-0"
-                    alt="Logo"/>
+                src="../assets/logowithtitle.png"
+                class="w-20 sm:w-24 md:w-28 h-auto object-contain shrink-0"
+                alt="Logo"/>
         </div>
         <hr class="border-t border-[#2A1001] mt-2 mb-6" />
 
-
         <div class="p-4 sm:p-6 md:p-10 flex justify-center items-start">
-            <form id="booking-form" method="post" class="w-full max-w-4xl flex flex-col items-center gap-8">
+            <form id="booking-form" class="w-full max-w-5xl flex flex-col items-center gap-8">
 
-                <!-- Hidden Database Fields -->
+                <!-- Hidden Selected Fields -->
                 <input type="hidden" id="selected-date" name="appointment_date" required>
                 <input type="hidden" id="selected-time" name="time_slot" required>
-                <input type="hidden" id="selected-service" name="service_name" required>
-                <input type="hidden" id="selected-service-id" name="service_id" required>
-                <input type="hidden" id="selected-price" name="service_price" required>
+                <input type="hidden" id="selected-end-time" name="end_time_slot" required>
+                <input type="hidden" id="selected-doctor-id" name="doctor_id">
 
-                <div class="w-full flex flex-wrap justify-center items-start gap-12">
+                <!-- 1. Dentist Selection (Choose 1 Doctor) -->
+                <div class="w-full bg-[#D7E3A5] border border-[#2A1001]/15 rounded-3xl p-5 sm:p-6 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    <div class="flex items-center gap-3.5">
+                        <div class="w-12 h-12 rounded-full bg-[#667733] text-white flex items-center justify-center text-xl shrink-0 shadow-sm">
+                            <i class="fa-solid fa-user-doctor"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-base font-extrabold text-[#2A1001] uppercase tracking-wide">
+                                Choose Your Attending Dentist: <span class="text-red-500">*</span>
+                            </h2>
+                            <p class="text-xs text-[#2A1001]/70 mt-0.5">Select a dentist to load their dynamic clinic timecard &amp; availability.</p>
+                        </div>
+                    </div>
+                    <div class="relative w-full sm:w-80">
+                        <select id="doctorSelect" required class="w-full h-12 pl-4 pr-10 rounded-full bg-white border-2 border-[#2A1001]/20 font-bold text-sm text-[#2A1001] outline-none cursor-pointer appearance-none shadow-inner focus:ring-2 focus:ring-[#667733]">
+                            <option value="" disabled selected>-- Loading Dentists --</option>
+                            <!-- Injected dynamically from /api/doctors -->
+                        </select>
+                        <div class="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-[#2A1001] text-xs">▼</div>
+                    </div>
+                </div>
 
-                    <div>
-                        <!--Calendar-->
-                        <div class="w-full max-w-[410px]">
-                            <div class="flex flex-col w-full min-h-[360px] rounded-3xl border-[2px] border-black bg-white overflow-hidden">
-
-                                <!--Header-->
-                                <div class="flex justify-between items-center p-[10px] w-full h-15 bg-[#667733]">
-
-                                    <!--Left Button-->
-                                    <div class="cursor-pointer text-[25px] bold text-[#FDFCE9]" id="prev"><i class="fa-solid fa-arrow-left"></i></div>
-
-                                    <!--Month-Year-->
-                                    <div id="month-year" class="text-[25px] bold text-[#FDFCE9]"></div>
-
-                                    <!--Right Button-->
-                                    <div class="cursor-pointer text-[25px] bold text-[#FDFCE9]" id="next"><i class="fa-solid fa-arrow-right"></i></div>
-                                </div>
-
-                                <!--Days-->
-                                <div class="grid grid-cols-7 gap-3 px-4 py-2">
-                                    <div>Sun</div>
-                                    <div>Mon</div>
-                                    <div>Tue</div>
-                                    <div>Wed</div>
-                                    <div>Thu</div>
-                                    <div>Fri</div>
-                                    <div>Sat</div>
-                                </div>
-                                <div class="grid grid-cols-7 gap-3 px-4 py-1" id="days"></div>
+                <!-- 2. Services Grid with Multi-Select & Estimated Duration -->
+                <div class="w-full flex flex-col gap-3">
+                    <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-2">
+                        <div>
+                            <h2 class="font-extrabold text-xl text-[#2A1001]">Select Treatment Services</h2>
+                            <p class="text-xs text-[#2A1001]/70">Click treatments to add them. We automatically calculate total procedure duration &amp; bill.</p>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-2">
+                            <!-- Live Duration Badge -->
+                            <div class="bg-white border-2 border-amber-600/60 rounded-full px-4 py-1.5 flex items-center gap-1.5 shadow-sm text-xs font-bold text-[#2A1001]">
+                                <i class="fa-solid fa-stopwatch text-amber-600"></i>
+                                <span>Est. Duration:</span>
+                                <span id="liveDurationDisplay" class="font-black text-amber-700">0 mins</span>
+                            </div>
+                            <!-- Live Total Badge -->
+                            <div class="bg-white border-2 border-[#667733] rounded-full px-4 py-1.5 flex items-center gap-1.5 shadow-sm text-xs font-bold text-[#2A1001]">
+                                <span>Total Price:</span>
+                                <span id="liveTotalDisplay" class="font-black text-sm text-[#667733]">₱0.00</span>
                             </div>
                         </div>
                     </div>
-                    <!--AM and PM Time slot side by side-->
-                    <div class="w-full sm:w-auto flex flex-row gap-3 sm:gap-5">
-                        <!--AM Time slot-->
-                        <div class="flex flex-col flex-1 min-w-0 sm:flex-none sm:w-[180px] gap-3">
-                            <h1 class="font-extrabold text-[#2A1001]">AM-Time</h1>
-                            <div data-time="07:00:00" class="flex w-full h-[60px] bg-white rounded-3xl border-[2px] border-black items-center justify-center text-center hover:bg-[#D7E3A5] transition-all duration-250 hover:scale-[1.035] cursor-pointer">
-                                <h2>7AM - 8AM</h2>
+
+                    <!-- Dynamic Services Grid -->
+                    <div id="service-grid" class="grid text-[#2A1001] grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 w-full justify-items-center mt-2">
+                        <!-- Cards injected dynamically by JS -->
+                    </div>
+                </div>
+
+                <!-- 3. Calendar & Dynamic Doctor Time Slots Container -->
+                <div class="w-full flex flex-wrap justify-center items-start gap-8 lg:gap-12 pt-4 border-t border-[#2A1001]/15">
+
+                    <!-- Calendar Card -->
+                    <div class="w-full max-w-[390px]">
+                        <div class="flex flex-col w-full min-h-[360px] rounded-3xl border-2 border-black bg-white overflow-hidden shadow-md">
+                            <!-- Header -->
+                            <div class="flex justify-between items-center p-3 w-full bg-[#667733] text-[#FDFCE9]">
+                                <button type="button" id="prev" class="cursor-pointer text-xl font-bold px-3 py-1 hover:opacity-80"><i class="fa-solid fa-arrow-left"></i></button>
+                                <div id="month-year" class="text-lg font-bold"></div>
+                                <button type="button" id="next" class="cursor-pointer text-xl font-bold px-3 py-1 hover:opacity-80"><i class="fa-solid fa-arrow-right"></i></button>
                             </div>
-                            <div data-time="08:00:00" class="flex w-full h-[60px] bg-white rounded-3xl border-[2px] border-black items-center justify-center text-center hover:bg-[#D7E3A5] transition-all duration-250 hover:scale-[1.035] cursor-pointer">
-                                <h2>8AM - 9AM</h2>
+
+                            <!-- Days header -->
+                            <div class="grid grid-cols-7 gap-1 px-4 py-2 text-center text-xs font-bold text-[#2A1001]/70 border-b">
+                                <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
                             </div>
-                            <div data-time="09:00:00" class="flex w-full h-[60px] bg-white rounded-3xl border-[2px] border-black items-center justify-center text-center hover:bg-[#D7E3A5] transition-all duration-250 hover:scale-[1.035] cursor-pointer">
-                                <h2>9AM - 10AM</h2>
-                            </div>
-                            <div data-time="10:00:00" class="flex w-full h-[60px] bg-white rounded-3xl border-[2px] border-black items-center justify-center text-center hover:bg-[#D7E3A5] transition-all duration-250 hover:scale-[1.035] cursor-pointer">
-                                <h2>10AM - 11AM</h2>
-                            </div>
-                            <div data-time="11:00:00" class="flex w-full h-[60px] bg-white rounded-3xl border-[2px] border-black items-center justify-center text-center hover:bg-[#D7E3A5] transition-all duration-250 hover:scale-[1.035] cursor-pointer">
-                                <h2>11AM - 12PM</h2>
-                            </div>
+                            <!-- Days grid -->
+                            <div class="grid grid-cols-7 gap-2 px-4 py-3" id="days"></div>
+                        </div>
+                        <p class="text-center text-xs text-[#2A1001]/60 mt-2 font-medium"><i class="fa-solid fa-calendar-day mr-1"></i>Select an appointment date</p>
+                    </div>
+
+                    <!-- Dynamic Time Slots Section -->
+                    <div class="w-full lg:flex-1 flex flex-col gap-3 min-w-[300px]">
+                        <div class="flex justify-between items-center pb-1 border-b border-[#2A1001]/15">
+                            <h2 class="font-extrabold text-sm text-[#2A1001] uppercase tracking-wider flex items-center gap-1.5">
+                                <i class="fa-solid fa-clock text-[#667733]"></i> Available Time Slots:
+                            </h2>
+                            <span id="slotInfoBadge" class="text-xs font-bold text-amber-800 italic"></span>
                         </div>
 
-                        <!--PM Time slot-->
-                        <div class="flex flex-col flex-1 min-w-0 sm:flex-none sm:w-[180px] gap-3">
-                            <h1 class="font-extrabold text-[#2A1001]">PM-Time</h1>
-                            <div data-time="12:00:00" class="flex w-full h-[60px] bg-white rounded-3xl border-[2px] border-black items-center justify-center text-center hover:bg-[#D7E3A5] transition-all duration-250 hover:scale-[1.035] cursor-pointer">
-                                <h2>12PM - 1PM</h2>
-                            </div>
-                            <div data-time="13:00:00" class="flex w-full h-[60px] bg-white rounded-3xl border-[2px] border-black items-center justify-center text-center hover:bg-[#D7E3A5] transition-all duration-250 hover:scale-[1.035] cursor-pointer">
-                                <h2>1PM - 2PM</h2>
-                            </div>
-                            <div data-time="14:00:00" class="flex w-full h-[60px] bg-white rounded-3xl border-[2px] border-black items-center justify-center text-center hover:bg-[#D7E3A5] transition-all duration-250 hover:scale-[1.035] cursor-pointer">
-                                <h2>2PM - 3PM</h2>
-                            </div>
-                            <div data-time="15:00:00" class="flex w-full h-[60px] bg-white rounded-3xl border-[2px] border-black items-center justify-center text-center hover:bg-[#D7E3A5] transition-all duration-250 hover:scale-[1.035] cursor-pointer">
-                                <h2>3PM - 4PM</h2>
-                            </div>
-                            <div data-time="16:00:00" class="flex w-full h-[60px] bg-white rounded-3xl border-[2px] border-black items-center justify-center text-center hover:bg-[#D7E3A5] transition-all duration-250 hover:scale-[1.035] cursor-pointer">
-                                <h2>4PM - 5PM</h2>
+                        <!-- Dynamic Time Slots Container (Injected by JS) -->
+                        <div id="timeSlotsContainer" class="w-full">
+                            <!-- Injected dynamically based on Doctor Schedule + Total Duration -->
+                            <div class="bg-white border border-dashed border-black/20 rounded-2xl p-8 text-center text-gray-500 font-semibold text-xs">
+                                <i class="fa-regular fa-calendar-check text-2xl text-[#667733] mb-2 block"></i>
+                                Please select an attending dentist and a calendar date to view available time slots.
                             </div>
                         </div>
                     </div>
-                </div> <!---->
-
-                <div class="w-full flex flex-col items-start">
-                    <h1 class="font-extrabold text-xl text-[#2A1001]">What do you need?</h1>
                 </div>
 
-                <div id="service-grid" class="grid text-[#2A1001] grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-5 w-full justify-items-center"> <!--Services are rendered here from /api/services-->
-                </div>
-                <!--Note For Users-->
-                <textarea id="PNote" name="PNote" class="w-full h-[225px] rounded bg-[#FFFFFF] text-[#2c3e2b] font-medium text-lg outline-none resize-none shadow-inner border-2 border-[#000000] p-4" maxlength="250"></textarea>
-                <div class="Counter-Cont">
-                    <span id="current-count">0</span>/<span id="max-count">250</span> characters
+                <!-- Patient Note Input -->
+                <div class="w-full flex flex-col gap-1.5">
+                    <label for="PNote" class="text-xs font-extrabold tracking-wider text-[#2A1001] uppercase">
+                        Patient Concern / Clinical Note (Optional):
+                    </label>
+                    <textarea id="PNote" name="PNote" placeholder="Describe your dental concern, symptoms, or any allergies..." class="w-full h-24 rounded-2xl bg-white text-[#2c3e2b] font-medium text-sm outline-none resize-none shadow-inner border-2 border-black p-4" maxlength="250"></textarea>
+                    <div class="text-right text-xs text-[#2A1001]/60 font-semibold">
+                        <span id="current-count">0</span>/250 characters
+                    </div>
                 </div>
 
-                <div class="flex justify-center gap-5">
-                    <button type="submit" id="submit-btn" class="z-10 bg-[#D5C04D] hover:bg-[#B8A957] text-[#2A1001] font-black text-xl px-12 py-3 rounded-full shadow-md active:scale-95 transition transform">
-                        Submit Booking
-                    </button>
-
-                    <!--ELIIIIII DRAFT BUTTON HERRRREEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE-->
-                    <button type="button" id="DraftBtn"
-                            class="z-10 bg-[#D5C04D] hover:bg-[#B8A957] text-[#2A1001] font-black text-xl px-12 py-3 rounded-full shadow-md active:scale-95 transition transform">
-                        Draft
+                <!-- Review and Submit Booking -->
+                <div class="flex justify-center">
+                    <button type="submit" id="submit-btn" class="bg-[#D5C04D] hover:bg-[#c4b03f] text-[#2A1001] font-black text-xl px-14 py-3.5 rounded-full shadow-lg active:scale-95 transition transform cursor-pointer">
+                        Review Booking &amp; Pay
                     </button>
                 </div>
 
-                <!-- Receipt Modal -->
-                <div id="receipt-modal" class="fixed inset-0 bg-black/50 flex items-center justify-center hidden z-50 p-4">
-                    <div class="bg-white rounded-3xl border-2 border-black w-full max-w-md p-6 flex flex-col gap-4 relative shadow-2xl">
+                <!-- ================= APPOINTMENT SUMMARY RECEIPT MODAL ================= -->
+                <div id="receipt-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center hidden z-50 p-4">
+                    <div class="bg-white rounded-3xl border-2 border-black w-full max-w-lg p-6 flex flex-col gap-4 relative shadow-2xl max-h-[92vh] overflow-y-auto">
                         <!-- Close Button -->
-                        <button type="button" id="close-modal" class="absolute top-4 right-4 w-8 h-8 flex items-center justify-center font-bold text-lg bg-gray-100 rounded-full border-2 border-black cursor-pointer hover:bg-gray-200">
-                            <i class="fa-solid fa-xmark"></i>
+                        <button type="button" id="close-modal" class="absolute top-4 right-4 w-8 h-8 flex items-center justify-center font-bold text-lg bg-gray-100 rounded-full border border-black cursor-pointer hover:bg-gray-200">
+                            &times;
                         </button>
-                        <h1 class="font-extrabold text-2xl text-[#2c3e2b]">Booking Receipt</h1>
-
-                        <!-- Receipt Content -->
-                        <div id="receipt-content" class="text-[#2c3e2b] flex flex-col gap-2 border-2 border-black p-4 rounded-xl bg-[#FDFCE9] max-h-85 overflow-y-auto break-words [overflow-wrap:anywhere]">
-                        </div>
-
-                        <!-- Pay Options -->
-                        <div class="flex gap-3 mt-2">
-                            <button type="button" id="pay-online-btn" class="flex-1 py-3 bg-[#D3DCBE] text-[#2A1001] font-bold rounded-xl border-2 border-black cursor-pointer hover:bg-[#667733] hover:text-[#FDFCE9] transition-all">
-                                Pay Online
-                            </button>
-                            <button type="button" id="pay-cash-btn" class="flex-1 py-3 bg-[#D3DCBE] text-[#2A1001] font-bold rounded-xl border-2 border-black cursor-pointer hover:bg-[#667733] hover:text-[#FDFCE9] transition-all">
-                                Pay Cash
-                            </button>
-                        </div>
-
-                        <!--QR Code-->
-                        <div id="qr-container" class="hidden flex flex-col items-center gap-2 mt-2 p-4 bg-white rounded-xl border-2 border-dashed border-black">
-                            <p class="font-bold text-sm text-[#2c3e2b]">Scan QR Code to Pay</p>
-                            <div class="w-36 h-36 bg-gray-100 border-2 border-black flex items-center justify-center rounded-lg">
-                                <img src="../assets/QRTest.png">
+                        
+                        <div class="flex items-center gap-3 border-b pb-3">
+                            <img src="../assets/logowithtitle.png" class="w-12 h-auto object-contain" alt="Clinic Logo"/>
+                            <div>
+                                <h2 class="font-extrabold text-xl text-[#2c3e2b]">Appointment Summary &amp; Bill</h2>
+                                <p class="text-xs text-[#2c3e2b]/60">Review your selected services, schedule, and payment</p>
                             </div>
+                        </div>
+
+                        <!-- Itemized Summary Content -->
+                        <div id="receipt-content" class="text-[#2c3e2b] flex flex-col gap-3 border-2 border-black p-4 rounded-2xl bg-[#FDFCE9] text-sm">
+                            <!-- Injected dynamically -->
+                        </div>
+
+                        <!-- Payment Method Action Buttons -->
+                        <div class="flex flex-col gap-2 mt-2">
+                            <p class="text-xs font-bold text-[#2A1001] uppercase tracking-wide">Choose Payment Mode:</p>
+                            <div class="flex gap-3">
+                                <button type="button" id="pay-online-btn" class="flex-1 py-3 bg-[#667733] hover:bg-[#556022] text-white font-bold rounded-xl border-2 border-black cursor-pointer transition shadow-md active:scale-95 flex items-center justify-center gap-2 text-sm">
+                                    <i class="fa-solid fa-wallet"></i> Pay Online (PH Channels)
+                                </button>
+                                <button type="button" id="pay-cash-btn" class="flex-1 py-3 bg-[#D3DCBE] hover:bg-[#c2ccab] text-[#2A1001] font-bold rounded-xl border-2 border-black cursor-pointer transition shadow-sm active:scale-95 flex items-center justify-center gap-2 text-sm">
+                                    <i class="fa-solid fa-money-bill-wave"></i> Pay in Clinic (Cash)
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ================= PHILIPPINES ONLINE PAYMENT MODAL ================= -->
+                <div id="online-payment-modal" class="fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center hidden z-[60] p-4">
+                    <div class="bg-[#F8F7F0] rounded-3xl border-2 border-black w-full max-w-xl p-5 sm:p-7 flex flex-col gap-4 relative shadow-2xl max-h-[94vh] overflow-y-auto">
+                        
+                        <!-- Close Button -->
+                        <button type="button" id="close-online-payment-btn" class="absolute top-4 right-4 w-8 h-8 flex items-center justify-center font-bold text-lg bg-white rounded-full border border-black cursor-pointer hover:bg-gray-100">
+                            &times;
+                        </button>
+
+                        <div class="flex items-center justify-between border-b border-black/10 pb-3">
+                            <div>
+                                <h2 class="font-extrabold text-xl text-[#2A1001] flex items-center gap-2">
+                                    <i class="fa-solid fa-shield-halved text-[#667733]"></i> Philippine Online Payment
+                                </h2>
+                                <p class="text-xs text-[#2A1001]/60">Select your preferred e-wallet, digital bank, or card</p>
+                            </div>
+                            <div class="text-right">
+                                <span class="text-[10px] uppercase font-bold text-[#2A1001]/60">Total to Pay:</span>
+                                <p id="onlinePayAmountText" class="font-black text-lg text-[#667733]">₱0.00</p>
+                            </div>
+                        </div>
+
+                        <!-- Philippine Channels Tabs -->
+                        <div class="grid grid-cols-3 sm:grid-cols-6 gap-2" id="channelSelector">
+                            <!-- GCash -->
+                            <button type="button" data-channel="gcash" class="channel-tab-btn bg-white border-2 border-[#005CEE] text-[#005CEE] rounded-xl p-2 flex flex-col items-center justify-center gap-1 font-bold text-xs shadow-sm hover:scale-105 transition active:scale-95 cursor-pointer">
+                                <span class="font-black text-sm">GCash</span>
+                                <span class="text-[9px] text-gray-500">E-Wallet</span>
+                            </button>
+                            <!-- Maya -->
+                            <button type="button" data-channel="maya" class="channel-tab-btn bg-white border-2 border-black text-gray-800 rounded-xl p-2 flex flex-col items-center justify-center gap-1 font-bold text-xs shadow-sm hover:scale-105 transition active:scale-95 cursor-pointer">
+                                <span class="font-black text-sm text-green-600">Maya</span>
+                                <span class="text-[9px] text-gray-500">E-Wallet</span>
+                            </button>
+                            <!-- GoTyme Bank -->
+                            <button type="button" data-channel="gotyme" class="channel-tab-btn bg-white border-2 border-black text-gray-800 rounded-xl p-2 flex flex-col items-center justify-center gap-1 font-bold text-xs shadow-sm hover:scale-105 transition active:scale-95 cursor-pointer">
+                                <span class="font-black text-sm text-purple-700">GoTyme</span>
+                                <span class="text-[9px] text-gray-500">Digital Bank</span>
+                            </button>
+                            <!-- ShopeePay / GrabPay -->
+                            <button type="button" data-channel="ewallet" class="channel-tab-btn bg-white border-2 border-black text-gray-800 rounded-xl p-2 flex flex-col items-center justify-center gap-1 font-bold text-xs shadow-sm hover:scale-105 transition active:scale-95 cursor-pointer">
+                                <span class="font-black text-xs text-orange-600">Shopee/Grab</span>
+                                <span class="text-[9px] text-gray-500">E-Wallet</span>
+                            </button>
+                            <!-- Debit / Credit Card -->
+                            <button type="button" data-channel="card" class="channel-tab-btn bg-white border-2 border-black text-gray-800 rounded-xl p-2 flex flex-col items-center justify-center gap-1 font-bold text-xs shadow-sm hover:scale-105 transition active:scale-95 cursor-pointer">
+                                <i class="fa-solid fa-credit-card text-sm text-blue-700"></i>
+                                <span class="text-[10px] font-bold">Card</span>
+                            </button>
+                            <!-- QR Ph Standard -->
+                            <button type="button" data-channel="qrph" class="channel-tab-btn bg-white border-2 border-black text-gray-800 rounded-xl p-2 flex flex-col items-center justify-center gap-1 font-bold text-xs shadow-sm hover:scale-105 transition active:scale-95 cursor-pointer">
+                                <i class="fa-solid fa-qrcode text-sm text-red-600"></i>
+                                <span class="text-[10px] font-bold">QR Ph</span>
+                            </button>
+                        </div>
+
+                        <!-- Dynamic Channel Form & Details Box -->
+                        <div id="channelContentBox" class="bg-white rounded-2xl border-2 border-black/15 p-4 sm:p-5 flex flex-col gap-3">
+                            <!-- Injected by JavaScript based on active channel tab -->
+                        </div>
+
+                        <!-- Submit Final Online Payment & Booking -->
+                        <div class="flex gap-3 mt-1">
+                            <button type="button" id="submitOnlineBookingBtn" class="flex-1 py-3.5 bg-[#667733] hover:bg-[#556022] text-white font-extrabold text-base rounded-full border-2 border-black cursor-pointer transition shadow-lg active:scale-95 flex items-center justify-center gap-2">
+                                <i class="fa-solid fa-check-circle"></i> Confirm &amp; Finalize Booking
+                            </button>
                         </div>
 
                     </div>
                 </div>
 
             </form>
+            
         </div>
+    </div>
+</div>
+
+<div id="validation-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center hidden z-[70] p-4">
+    <div class="bg-white rounded-3xl border-2 border-black w-full max-w-sm p-6 flex flex-col items-center gap-3 text-center shadow-2xl">
+        <div class="w-14 h-14 rounded-full bg-amber-50 border-2 border-amber-400 flex items-center justify-center">
+            <i class="fa-solid fa-triangle-exclamation text-amber-500 text-2xl"></i>
+        </div>
+        <h2 class="font-extrabold text-lg text-[#2A1001]">Incomplete Booking</h2>
+        <p id="validation-modal-text" class="text-sm text-[#2A1001]/70"></p>
+        <button type="button" id="validation-modal-ok" class="mt-2 w-full py-2.5 bg-[#667733] hover:bg-[#556022] text-white font-bold rounded-full border-2 border-black cursor-pointer transition">
+            Okay, Got It
+        </button>
     </div>
 </div>
 </body>
