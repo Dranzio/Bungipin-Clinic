@@ -19,10 +19,10 @@ DROP TABLE IF EXISTS prescriptions;
 DROP TABLE IF EXISTS health_conditions;
 DROP TABLE IF EXISTS audit_logs;
 DROP TABLE IF EXISTS admin_profiles;
+DROP TABLE IF EXISTS doctor_schedules;
 DROP TABLE IF EXISTS employee_profiles;
 DROP TABLE IF EXISTS patient_profiles;
 DROP TABLE IF EXISTS users;
-DROP TABLE IF EXISTS doctor_schedules;
 
 CREATE TABLE users (
     user_id         INT AUTO_INCREMENT PRIMARY KEY,
@@ -127,7 +127,7 @@ CREATE TABLE audit_logs (
 CREATE TABLE doctor_schedules (
     schedule_id   INT AUTO_INCREMENT PRIMARY KEY,
     employee_id   INT NOT NULL,
-    day_of_week   TINYINT NOT NULL,               -- 0=Sun ... 6=Sat
+    day_of_week   TINYINT NOT NULL,          -- 0=Sunday ... 6=Saturday
     start_time    TIME NULL,
     end_time      TIME NULL,
     break_start   TIME NULL,
@@ -471,23 +471,13 @@ INSERT INTO notifications (user_id, type, title, message, message_id) VALUES
 (1, 'new_message', 'New Message', 'You have a new message from Dr. Ramon Cruz.', 1);
 
 INSERT INTO doctor_schedules (employee_id, day_of_week, start_time, end_time, break_start, break_end, is_active) VALUES
-(3, 0, NULL, NULL, NULL, NULL, FALSE),
-(3, 1, '08:00:00', '17:00:00', '12:00:00', '13:00:00', TRUE),
-(3, 2, '08:00:00', '17:00:00', '12:00:00', '13:00:00', TRUE),
-(3, 3, '08:00:00', '17:00:00', '12:00:00', '13:00:00', TRUE),
-(3, 4, '08:00:00', '17:00:00', '12:00:00', '13:00:00', TRUE),
-(3, 5, '08:00:00', '17:00:00', '12:00:00', '13:00:00', TRUE),
-(3, 6, '08:00:00', '17:00:00', '12:00:00', '13:00:00', TRUE);
- 
--- employee_id 4 = Dr. Liza Tan (Mon-Fri 9-6, lunch 12-1)
-INSERT INTO doctor_schedules (employee_id, day_of_week, start_time, end_time, break_start, break_end, is_active) VALUES
-(4, 0, NULL, NULL, NULL, NULL, FALSE),
-(4, 1, '09:00:00', '18:00:00', '12:00:00', '13:00:00', TRUE),
-(4, 2, '09:00:00', '18:00:00', '12:00:00', '13:00:00', TRUE),
-(4, 3, '09:00:00', '18:00:00', '12:00:00', '13:00:00', TRUE),
-(4, 4, '09:00:00', '18:00:00', '12:00:00', '13:00:00', TRUE),
-(4, 5, '09:00:00', '18:00:00', '12:00:00', '13:00:00', TRUE),
-(4, 6, NULL, NULL, NULL, NULL, FALSE);
+(4, 0, NULL, NULL, NULL, NULL, 0),
+(4, 1, '08:00:00', '17:00:00', '12:00:00', '13:00:00', 1),
+(4, 2, '08:00:00', '17:00:00', '12:00:00', '13:00:00', 1),
+(4, 3, '08:00:00', '17:00:00', '12:00:00', '13:00:00', 1),
+(4, 4, '08:00:00', '17:00:00', '12:00:00', '13:00:00', 1),
+(4, 5, '08:00:00', '17:00:00', '12:00:00', '13:00:00', 1),
+(4, 6, '08:00:00', '17:00:00', '12:00:00', '13:00:00', 1);
  
 -- ── Register Dr. Maria Gomez ─────────────────────────────────────────────
 -- Not in the original seed data — added here as a third dentist to match
@@ -526,3 +516,5 @@ select a.appointment_id, s.label AS service_offered from appointments a INNER JO
  SELECT email, login_attempts, is_locked FROM users WHERE email = 'juan.delacruz@example.com';
  
  Select * from password_resets;
+ 
+ SELECT * FROM doctor_schedules WHERE employee_id = 4 ORDER BY day_of_week;
