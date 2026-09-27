@@ -403,6 +403,47 @@
     const dosageOtherRow   = document.getElementById('dosageOtherRow');
     const dosageOtherInput = document.getElementById('dosageOtherInput');
 
+
+    // kapag nag submit na siya
+    if (form) {
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const birthdayVal = document.getElementById('birthday').value;
+
+            // Gather your other form fields as normal...
+            const formData = {
+                birthday: birthdayVal,
+                // ... other fields
+            };
+
+            try {
+                const response = await fetch('/api/patient-profile', {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('userToken')}`
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                if (response.ok) {
+                    console.log('Profile updated successfully!');
+
+                    // INSTANTLY update the booking link across the sidebar without a reload:
+                    if (window.appSocket) {
+                        window.appSocket.emit('profile_updated_client', {
+                            isComplete: Boolean(birthdayVal),
+                            birthday: birthdayVal
+                        });
+                    }
+                }
+            } catch (err) {
+                console.error('Error updating profile:', err);
+            }
+        });
+      }
+
 dosageInput.addEventListener('change', function () {
   const isOther = this.value === '__other__';
   dosageOtherRow.classList.toggle('hidden', !isOther);

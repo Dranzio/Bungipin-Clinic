@@ -60,6 +60,10 @@ app.set('io', io);
 
 io.on('connection', (socket) => {
     console.log('Connected to real-time updates');
+    socket.on('profile_updated_client', (data) => {
+        socket.broadcast.emit('profile_status_changed', data);
+        socket.emit('profile_status_changed', data);
+    });
 });
 
 server.listen(3000, () => {

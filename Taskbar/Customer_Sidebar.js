@@ -2,6 +2,72 @@
 // Handles: sidebar collapse/expand, user name+email loading
 // Called by each Customer page after the sidebar HTML is injected
 
+// IO socket for real-time stuff; connects to window.location.host
+const socket = io();
+const token = localStorage.getItem('userToken');
+if (token) {
+    socket.emit('authenticate', { token });
+}
+
+// listen for global real-time events
+socket.on('connect', () => {
+    console.log('socket connected: ', socket.id);
+});
+
+socket.on('notification', (data) => {
+    // update sidebar text dynamically
+    const badgeEl = document.getElementById('sidebar-notification-badge');
+    if (badgeEl) {
+        badgeEl.textContent = data.unreadCount;
+        badgeEl.classList.remove('hidden');
+    }
+});
+
+// exposing socket globally if individual pages need to emit custom events
+window.appSocket = socket;
+
+// Helper function to toggle booking link UI state
+function updateBookingLinkUI(isComplete) {
+    const bookLink = document.querySelector('a[data-page="Booking.html"]');
+    let warningText = document.getElementById('profile-warning-text');
+
+    if (!bookLink) return;
+
+    if (isComplete) {
+        // Enable link
+        bookLink.style.pointerEvents = 'auto';
+        bookLink.style.opacity = '1';
+        bookLink.href = '../Customer/Booking.html';
+
+        if (warningText) {
+            warningText.remove();
+        }
+    } else {
+        // Disable link
+        bookLink.style.pointerEvents = 'none';
+        bookLink.style.opacity = '0.4';
+        bookLink.removeAttribute('href');
+
+        // Inject red warning text if missing
+        if (!warningText) {
+            warningText = document.createElement('div');
+            warningText.id = 'profile-warning-text';
+            warningText.className = 'text-red-600 text-[10px] md:text-xs font-medium px-2 md:px-8 text-center md:text-left leading-tight w-full mt-1';
+            warningText.innerText = 'Please accomplish your profile first before booking.';
+            bookLink.insertAdjacentElement('afterend', warningText);
+        }
+    }
+}
+
+// Real-time listener for profile status changes
+if (window.appSocket) {
+    window.appSocket.on('profile_status_changed', (data) => {
+        console.log('Profile status changed via socket:', data);
+        const isComplete = Boolean(data.isComplete || data.birthday);
+        updateBookingLinkUI(isComplete);
+    });
+}
+
 function initSidebar() {
     _loadSidebarUser();
     _initCollapseToggle();
