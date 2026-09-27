@@ -114,11 +114,8 @@ async function _loadSidebarUser() {
     if (!nameEl || !emailEl) return;
 
     const token = localStorage.getItem('userToken');
-    if (!token) {
-        nameEl.textContent  = 'Guest';
-        emailEl.textContent = '';
-        return;
-    }
+    if (!token) return;
+    
 
     try {
         // Pulls first_name, last_name, email from the users table
@@ -132,10 +129,41 @@ async function _loadSidebarUser() {
             nameEl.textContent  = `${data.first_name || ''} ${data.last_name || ''}`.trim() || 'User';
             emailEl.textContent = data.email || '';
 
+            // check if profile is complete
+            const isProfileComplete = data.birthday && data.birthday !== '0000-00-00' && data.birthday !== '1970-01-01T00:00:00.000Z';
+
             // Handle Profile Picture
             const avatarImg = document.getElementById('sidebar-user-avatar');
             const defaultAvatar = document.getElementById('sidebar-default-avatar');
             const picUrl = data.profile_picture || data.image_url; // adjust if your DB uses a different column name
+
+            // lock/unlock booking link and show warning text if not yet complete
+            const bookLink = document.querySelector('a[data-page="Booking.html"]');
+            let warningText = document.getElementById('profile-warning-text');
+
+            if (bookLink) {
+                if (!isProfileComplete) {
+                    // disable link
+                    bookLink.style.pointerEvents = 'none';
+                    bookLink.style.opacity = '0.4';
+                    bookLink.removeAttribute('href');
+                    
+                    // inject tailwind RED WARNENG text below link
+                    if (!warningText) {
+                        warningText = document.createElement('div');
+                        warningText.id = 'profile-warning-text';
+                        warningText.className = 'text-red-600 text-[10px] md:text-xs font-medium px-2 md:px-8 text-center md:text-left leading-tight w-full mt-1';
+                        warningText.innerText = 'Please accomplish your profile first before booking.';
+                        bookLink.insertAdjacentElement('afterend', warningText);
+                    }
+                } else {
+                    // enable link when profile complete
+                    bookLink.style.pointerEvents = 'auto';
+                    bookLink.style.opacity = '1';
+                    bookLink.href = '../Customer/Booking.html';
+                    if (warningText) warningText.remove();
+                }
+            }
 
             if (avatarImg && defaultAvatar) {
                 if (picUrl) {
