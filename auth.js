@@ -189,6 +189,36 @@ router.get('/me', authenticateToken, (req, res) => {
     res.json(req.user);
 });
 
+// POST /api/auth/reauth - verify the current user's password before sensitive pages open
+router.post('/reauth', authenticateToken, async (req, res) => {
+    const password = String(req.body.password || '');
+    if (!password) {
+        return res.status(400).json({ error: 'Password is required.' });
+    }
+
+    try {
+        const [rows] = await db.query(
+            'SELECT password_hash, account_status FROM users WHERE user_id = ?',
+            [req.user.user_id]
+        );
+        const user = rows[0];
+
+        if (!user || user.account_status === 'suspended') {
+            return res.status(403).json({ error: 'Your account cannot access this page.' });
+        }
+
+        const valid = await bcrypt.compare(password, user.password_hash);
+        if (!valid) {
+            return res.status(401).json({ error: 'Incorrect password.' });
+        }
+
+        res.json({ message: 'Password verified.' });
+    } catch (err) {
+        console.error('Re-authentication error:', err);
+        res.status(500).json({ error: 'Unable to verify password.' });
+    }
+});
+
 // forgot + reset password
 const FORGOT_PASSWORD_MODEL = Joi.object({
     email: Joi.string().email().required()

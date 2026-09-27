@@ -103,6 +103,9 @@ app.get('/output.css', (req, res) => {
 app.get('/pageProtection.js', (req, res) => {
     res.sendFile(path.join(__dirname, 'pageProtection.js'));
 });
+app.get('/passwordGate.js', (req, res) => {
+    res.sendFile(path.join(__dirname, 'passwordGate.js'));
+});
 app.use('/LogInRegister', express.static(path.join(__dirname, 'LogInRegister')));
 app.use('/WelcomePage', express.static(path.join(__dirname, 'WelcomePage')));
 
