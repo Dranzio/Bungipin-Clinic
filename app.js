@@ -184,7 +184,14 @@ app.get('/api/patients/:id', authenticateToken, async (req, res) => {
 // send help : global error handling middleware
 app.use(errorHandler);
 
-const PORT = 3000;
-app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
-})
+try {
+    const PORT = 3000;
+    app.listen(PORT, () => {
+        console.log(`Server is running on port ${PORT}`);
+    })
+} catch (e) {
+
+}
+
+module.exports = app;
+
