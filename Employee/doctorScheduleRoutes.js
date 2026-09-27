@@ -23,7 +23,7 @@ function registerDoctorScheduleRoutes(app, db, io) {
     app.get('/api/doctors', authenticateToken, async (req, res) => {
         try {
             const [doctors] = await db.query(`
-                SELECT 
+                SELECT
                     u.user_id,
                     u.public_id,
                     u.first_name,
@@ -50,7 +50,7 @@ function registerDoctorScheduleRoutes(app, db, io) {
     app.get('/api/doctor/my-profile', authenticateToken, async (req, res) => {
         try {
             const [[doc]] = await db.query(`
-                SELECT 
+                SELECT
                     u.user_id,
                     u.public_id,
                     u.first_name,
@@ -61,7 +61,7 @@ function registerDoctorScheduleRoutes(app, db, io) {
                     COALESCE(ep.position, CASE WHEN u.role = 'admin' THEN 'Super Admin' ELSE 'Dentist' END) AS position,
                     ep.staff_code
                 FROM users u
-                LEFT JOIN employee_profiles ep ON ep.employee_id = u.user_id
+                         LEFT JOIN employee_profiles ep ON ep.employee_id = u.user_id
                 WHERE u.user_id = ?
             `, [req.user.user_id]);
 
@@ -110,7 +110,59 @@ function registerDoctorScheduleRoutes(app, db, io) {
         }
     });
 
-    // ── 4. GET /api/doctors/:id/appointments — Connected to Booking Request & Queue ──
+    // ── 4. PUT /api/doctor-schedule/:id/schedule — Save weekly shift timecards ──
+    //     NOTE: intentionally a different path from Admin/UserManage.js's
+    //     PUT /api/doctors/:id/schedule (admin-only).
+    app.put('/api/doctor-schedule/:id/schedule', authenticateToken, async (req, res) => {
+        if (!['employee', 'admin'].includes(req.user.role)) {
+            return res.status(403).json({ message: 'Not authorized' });
+        }
+
+        const employeeId = Number(req.params.id);
+        const { schedules } = req.body;
+
+        if (!Array.isArray(schedules) || schedules.length === 0) {
+            return res.status(400).json({ message: 'Valid schedules array is required' });
+        }
+
+        const connection = await db.getConnection();
+        try {
+            await connection.beginTransaction();
+
+            for (const s of schedules) {
+                await connection.query(`
+                    INSERT INTO doctor_schedules (
+                        employee_id, day_of_week, start_time, end_time, break_start, break_end, is_active
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?)
+                    ON DUPLICATE KEY UPDATE
+                        start_time = VALUES(start_time),
+                        end_time = VALUES(end_time),
+                        break_start = VALUES(break_start),
+                        break_end = VALUES(break_end),
+                        is_active = VALUES(is_active)
+                `, [
+                    employeeId,
+                    s.day_of_week,
+                    s.start_time || null,
+                    s.end_time || null,
+                    s.break_start || null,
+                    s.break_end || null,
+                    s.is_active ? 1 : 0
+                ]);
+            }
+
+            await connection.commit();
+            res.json({ message: 'Doctor shift schedule updated successfully' });
+        } catch (err) {
+            await connection.rollback();
+            console.error('Update schedule error:', err);
+            res.status(500).json({ message: 'Internal Server Error' });
+        } finally {
+            connection.release();
+        }
+    });
+
+    // ── 5. GET /api/doctors/:id/appointments — Today & Future approved customer bookings ──
     app.get('/api/doctors/:id/appointments', authenticateToken, async (req, res) => {
         const employeeId = Number(req.params.id);
 
@@ -161,8 +213,18 @@ function registerDoctorScheduleRoutes(app, db, io) {
         }
     });
 
-    // ── 5. PATCH /api/appointments/:id/complete — Mark as Completed with Clinical Notes ──
-    app.patch('/api/appointments/:id/complete', authenticateToken, async (req, res) => {
+    // ── 6. PATCH /api/doctor-schedule/appointments/:id/complete — Mark an approved
+    //     booking as Completed with Clinical Notes (Dentist Schedule page).
+    //     NOTE: intentionally a different path from PatientRecords.js's
+    //     PATCH /api/appointments/:id/complete, which requires an ongoing
+    //     queue session. This one just needs 'approved' — it's for closing
+    //     out any approved booking shown on the Dentist Schedule page,
+    //     whether or not a queue session was ever started.
+    app.patch('/api/doctor-schedule/appointments/:id/complete', authenticateToken, async (req, res) => {
+        if (!['employee', 'admin'].includes(req.user.role)) {
+            return res.status(403).json({ message: 'Not authorized' });
+        }
+
         const appointmentId = Number(req.params.id);
         const { dentist_note } = req.body;
 

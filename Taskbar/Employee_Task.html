@@ -19,9 +19,9 @@
             </div>
 
             <!-- Name + Email Badge -->
-            <div id="name-badge" class="flex flex-col items-center justify-center px-4 py-2 md:w-52 bg-[#D3DCBE] rounded-[35px] text-center gap-0.5 transition-all duration-300">
-                <h2 id="sidebar-user-name" class="text-base md:text-[16px] font-bold text-[#2A1001] whitespace-nowrap">Loading...</h2>
-                <p id="sidebar-user-email" class="text-[10px] md:text-[11px] font-medium text-[#2A1001]/70 whitespace-nowrap overflow-hidden text-ellipsis max-w-[180px]"></p>
+            <div id="name-badge" class="flex flex-col items-center justify-center px-4 py-2 md:w-52 min-w-0 bg-[#D3DCBE] rounded-[35px] text-center gap-0.5 transition-all duration-300">
+                <h2 id="sidebar-user-name" class="text-base md:text-[16px] font-bold text-[#2A1001] w-full break-words">Loading...</h2>
+                <p id="sidebar-user-email" class="text-[10px] md:text-[11px] font-medium text-[#2A1001]/75 w-full break-all"></p>
             </div>
         </div>
 
@@ -37,6 +37,10 @@
                 <span class="sidebar-label whitespace-nowrap">Schedule</span>
             </a>
 
+            <a href="../Employee/DoctorSchedule.html" data-page="employeeProfile.html" class="nav-link flex flex-row items-center justify-center md:justify-start gap-2 md:gap-4 px-2 sm:px-3 md:px-8 py-2 md:py-3 flex-1 md:flex-none md:w-full shrink-0 text-sm md:text-lg font-medium text-[#2A1001] hover:bg-[#FDFCE9] transition-colors">
+                <i class="fa-solid fa-clock w-5 text-center shrink-0"></i>
+                <span class="sidebar-label whitespace-nowrap">Schedule</span>
+
             <a href="../Employee/bookingRequest.html" data-page="bookingRequest.html" class="nav-link flex flex-row items-center justify-center md:justify-start gap-2 md:gap-4 px-2 sm:px-3 md:px-8 py-2 md:py-3 flex-1 md:flex-none md:w-full shrink-0 text-sm md:text-lg font-medium text-[#2A1001] hover:bg-[#FDFCE9] transition-colors">
                 <i class="fa-solid fa-calendar-days w-5 text-center shrink-0"></i>
                 <span class="sidebar-label whitespace-nowrap">Booking Requests</span>
@@ -48,7 +52,7 @@
             </a>
 
             <a href="../Employee/patientRecords.html" data-page="patientRecords.html" class="nav-link flex flex-row items-center justify-center md:justify-start gap-2 md:gap-4 px-2 sm:px-3 md:px-8 py-2 md:py-3 flex-1 md:flex-none md:w-full shrink-0 text-sm md:text-lg font-medium text-[#2A1001] hover:bg-[#FDFCE9] transition-colors">
-                <i class="fa-solid fa-clipboardt w-5 text-center shrink-0"></i>
+                <i class="fa-solid fa-clipboard w-5 text-center shrink-0"></i>
                 <span class="sidebar-label whitespace-nowrap">Patient Records</span>
             </a>
 
