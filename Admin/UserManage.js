@@ -14,7 +14,7 @@ function requireAdmin(req, res, next) {
 // One shape for every user the frontend receives (list, edit response).
 const USER_SELECT = `
     SELECT u.user_id, u.public_id, u.first_name, u.last_name, u.email, u.phone,
-           u.sex, u.role, u.account_status, u.isLocked, u.loginAttempts,
+           u.sex, u.role, u.account_status, u.is_locked, u.login_attempts,
            ep.position, ep.staff_code,
            ap.permission_level
     FROM users u
@@ -25,11 +25,11 @@ async function fetchUser(conn, userId) {
     const [rows] = await conn.query(`${USER_SELECT} WHERE u.user_id = ?`, [userId]);
 
     // LOGIN ATTEMPT SECURITY
-    // isLocked/loginAttempts are the real, persisted lock state — the same
+    // is_locked/login_attempts are the real, persisted lock state — the same
     // columns auth.js checks on every login attempt. Just coerce the 0/1
-    // MySQL gives back for isLocked into a real boolean for the frontend.
+    // MySQL gives back for is_locked into a real boolean for the frontend.
     return rows[0]
-        ? { ...rows[0], isLocked: Boolean(rows[0].isLocked) }
+        ? { ...rows[0], is_locked: Boolean(rows[0].is_locked) }
         : null;
 }
 
@@ -40,7 +40,7 @@ function registerUserManagementRoutes(app, db) {
         try {
             const query = `
                 SELECT u.user_id, u.public_id, u.first_name, u.last_name, u.email, u.phone,
-                       u.sex, u.role, u.account_status, u.isLocked, u.loginAttempts, u.created_at,
+                       u.sex, u.role, u.account_status, u.is_locked, u.login_attempts, u.created_at,
                        ep.position, ep.staff_code,
                        ap.permission_level
                 FROM users u
@@ -64,7 +64,7 @@ function registerUserManagementRoutes(app, db) {
 
     //         // LOGIN ATTEMPT SECURITY
     //         // checks if the email of that user is locked for attempts
-    //         const [users] = await db.query('SELECT user_id, email, isLocked FROM users');
+    //         const [users] = await db.query('SELECT user_id, email, is_locked FROM users');
     //         res.json(users);
     //     } catch (err) {
     //         console.error('Error fetching users. User list error:', err);
@@ -92,7 +92,7 @@ function registerUserManagementRoutes(app, db) {
 
             // update lock stats of database
             await db.query(
-                'UPDATE users SET isLocked = FALSE, loginAttempts = 0 WHERE user_id = ?', [userId]
+                'UPDATE users SET is_locked = FALSE, login_attempts = 0 WHERE user_id = ?', [userId]
             );
 
             res.json({ message: 'Login session reset successfully', user_id: userId });

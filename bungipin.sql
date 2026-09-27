@@ -33,8 +33,8 @@ CREATE TABLE users (
     sex             VARCHAR(10),
     role            ENUM('patient','employee','admin') NOT NULL,
     account_status  ENUM('active','suspended') NOT NULL DEFAULT 'active',
-    loginAttempts   INT NOT NULL DEFAULT 0,
-    isLocked        BOOLEAN NOT NULL DEFAULT FALSE,
+    login_attempts   INT NOT NULL DEFAULT 0,
+    is_locked        BOOLEAN NOT NULL DEFAULT FALSE,
     created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -454,4 +454,4 @@ select a.first_name from users a INNER JOIN  employee_profiles b on a.user_id = 
 select * from payments;
 select a.appointment_id, s.label AS service_offered from appointments a INNER JOIN services s on a.service_id = s.service_id;
 select * from patient_profiles;
- SELECT email, loginAttempts, isLocked FROM users WHERE email = 'juan.delacruz@example.com';
+ SELECT email, login_attempts, is_locked FROM users WHERE email = 'juan.delacruz@example.com';

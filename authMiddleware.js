@@ -48,7 +48,7 @@ async function authenticateToken(req, res, next) {
         // naturally expires.
         try {
             const [rows] = await db.query(
-                'SELECT role, public_id, account_status, isLocked FROM users WHERE user_id = ?',
+                'SELECT role, public_id, account_status, is_locked FROM users WHERE user_id = ?',
                 [decoded.user_id]
             );
             const user = rows[0];
@@ -59,7 +59,7 @@ async function authenticateToken(req, res, next) {
             if (user.account_status === 'suspended') {
                 return denyPageAccess(403, 'This account has been suspended. Please contact the clinic.');
             }
-            if (user.isLocked) {
+            if (user.is_locked) {
                 return denyPageAccess(429, 'Please contact an administrator to reset your session.');
             }
 

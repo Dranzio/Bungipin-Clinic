@@ -28,10 +28,6 @@ const registerAdminProfileRoute = require("./Admin/AdminProfile");
 // DENIED DIRECT PAGE ACESS VIA URL
 const registerDashboardRoutes = require("./Admin/DashboardRoutes");
 
-
-// forgot + reset pass
-const router = require('./userRoutes');
-
 const app = express();
 
 // show IO in routes
@@ -60,10 +56,6 @@ app.set('io', io);
 
 io.on('connection', (socket) => {
     console.log('Connected to real-time updates');
-    socket.on('profile_updated_client', (data) => {
-        socket.broadcast.emit('profile_status_changed', data);
-        socket.emit('profile_status_changed', data);
-    });
 });
 
 server.listen(3000, () => {
@@ -73,7 +65,6 @@ server.listen(3000, () => {
 // apply rate limiting to login route
 app.use('/api/auth/login', loginLimit);
 
-app.use('/api/user', router);
 
 app.use('/api/auth', authRoutes);
 registerPatientProfileRoute(app, db);
@@ -109,9 +100,6 @@ app.get('/output.css', (req, res) => {
 app.get('/pageProtection.js', (req, res) => {
     res.sendFile(path.join(__dirname, 'pageProtection.js'));
 });
-app.get('/passwordGate.js', (req, res) => {
-    res.sendFile(path.join(__dirname, 'passwordGate.js'));
-});
 app.use('/LogInRegister', express.static(path.join(__dirname, 'LogInRegister')));
 app.use('/WelcomePage', express.static(path.join(__dirname, 'WelcomePage')));
 
@@ -144,7 +132,7 @@ app.get('/contact.html', (req, res) => {
  }
  try {
  const [rows] = await db.query(
- 'SELECT user_id, public_id, first_name, last_name, email, phone, sex, role, account_status, created_at, isLocked, loginAttempts FROM users'
+ 'SELECT user_id, public_id, first_name, last_name, email, phone, sex, role, account_status, created_at, is_locked, login_attempts FROM users'
  );
  res.json(rows);
  } catch (err) {
