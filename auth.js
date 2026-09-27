@@ -8,6 +8,7 @@ const { sendEmail } = require('./Mailer');
 
 const SALT_ROUNDS = 10;
 const RESET_TOKEN_TTL_MINUTES = 30;
+const TOKEN_TTL_SECONDS = 7 * 24 * 60 * 60; // 7d — must match jwt.sign's expiresIn below
 
 // Letters (incl. accented), spaces, hyphens, apostrophes, periods — covers
 // real names ("O'Brien", "Anne-Marie", "José") while rejecting anything
@@ -16,6 +17,17 @@ const RESET_TOKEN_TTL_MINUTES = 30;
 const NAME_PATTERN = /^[a-zA-Z\u00C0-\u017F\s'\-.]{1,50}$/;
 const PHONE_PATTERN = /^[0-9]{7,15}$/;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+// Sets the httpOnly auth cookie. Attributes must match exactly what
+// clearAuthCookie in authMiddleware.js uses to clear it, or the browser
+// won't recognize it as the same cookie on logout.
+function setAuthCookie(res, token) {
+    const isProd = process.env.NODE_ENV === 'production' || process.env.VERCEL === '1';
+    res.setHeader(
+        'Set-Cookie',
+        `authToken=${token}; HttpOnly; Path=/; Max-Age=${TOKEN_TTL_SECONDS}; SameSite=Lax${isProd ? '; Secure' : ''}`
+    );
+}
 
 // POST /api/auth/register — patient self-registration only
 router.post('/register', async (req, res) => {
@@ -68,6 +80,7 @@ router.post('/register', async (req, res) => {
             { expiresIn: '7d' }
         );
 
+        setAuthCookie(res, token);
         res.status(201).json({ token, user: newUser });
     } catch (err) {
         if (err.code === 'ER_DUP_ENTRY') {
@@ -109,6 +122,7 @@ router.post('/login', async (req, res) => {
             { expiresIn: '7d' }
         );
 
+        setAuthCookie(res, token);
         res.json({
             token,
             user: {

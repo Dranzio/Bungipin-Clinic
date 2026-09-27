@@ -5,9 +5,10 @@ const db = require('./db');
 // setAuthCookie in auth.js used to set it, or the browser won't recognize
 // it as the same cookie and won't actually remove it.
 function clearAuthCookie(res) {
+    const isProd = process.env.NODE_ENV === 'production' || process.env.VERCEL === '1';
     res.setHeader(
         'Set-Cookie',
-        'authToken=; HttpOnly; Path=/; Max-Age=0; SameSite=Lax'
+        `authToken=; HttpOnly; Path=/; Max-Age=0; SameSite=Lax${isProd ? '; Secure' : ''}`
     );
 }
 
