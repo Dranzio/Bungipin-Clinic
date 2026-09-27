@@ -455,3 +455,5 @@ select * from appointments;
 select a.first_name, b.civil_status  from users a INNER JOIN  employee_profiles b on a.user_id = b.employee_id;
 select * from payments;
 select a.appointment_id, s.label AS service_offered from appointments a INNER JOIN services s on a.service_id = s.service_id;
+
+ SELECT email, loginAttempts, isLocked FROM users WHERE email = 'juan.delacruz@example.com';
