@@ -1,41 +1,10 @@
-// ── MOCK DATA & FALLBACK SCHEDULES ──────────────────────────────────────────
-const MOCK_SCHEDULES = {
-    1: [ // Dr. Ramon Cruz — Mon-Sat 8-5, lunch 12-1
-        { day_of_week: 0, is_active: 0 },
-        { day_of_week: 1, start_time: '08:00:00', end_time: '17:00:00', break_start: '12:00:00', break_end: '13:00:00', is_active: 1 },
-        { day_of_week: 2, start_time: '08:00:00', end_time: '17:00:00', break_start: '12:00:00', break_end: '13:00:00', is_active: 1 },
-        { day_of_week: 3, start_time: '08:00:00', end_time: '17:00:00', break_start: '12:00:00', break_end: '13:00:00', is_active: 1 },
-        { day_of_week: 4, start_time: '08:00:00', end_time: '17:00:00', break_start: '12:00:00', break_end: '13:00:00', is_active: 1 },
-        { day_of_week: 5, start_time: '08:00:00', end_time: '17:00:00', break_start: '12:00:00', break_end: '13:00:00', is_active: 1 },
-        { day_of_week: 6, start_time: '08:00:00', end_time: '17:00:00', break_start: '12:00:00', break_end: '13:00:00', is_active: 1 }
-    ],
-    2: [ // Dr. Liza Tan — Mon-Fri 9-6, lunch 12-1
-        { day_of_week: 0, is_active: 0 },
-        { day_of_week: 1, start_time: '09:00:00', end_time: '18:00:00', break_start: '12:00:00', break_end: '13:00:00', is_active: 1 },
-        { day_of_week: 2, start_time: '09:00:00', end_time: '18:00:00', break_start: '12:00:00', break_end: '13:00:00', is_active: 1 },
-        { day_of_week: 3, start_time: '09:00:00', end_time: '18:00:00', break_start: '12:00:00', break_end: '13:00:00', is_active: 1 },
-        { day_of_week: 4, start_time: '09:00:00', end_time: '18:00:00', break_start: '12:00:00', break_end: '13:00:00', is_active: 1 },
-        { day_of_week: 5, start_time: '09:00:00', end_time: '18:00:00', break_start: '12:00:00', break_end: '13:00:00', is_active: 1 },
-        { day_of_week: 6, is_active: 0 }
-    ],
-    3: [ // Dr. Maria Gomez — All days, half-day Saturday
-        { day_of_week: 0, is_active: 0 },
-        { day_of_week: 1, start_time: '08:00:00', end_time: '17:00:00', break_start: '12:00:00', break_end: '13:00:00', is_active: 1 },
-        { day_of_week: 2, start_time: '08:00:00', end_time: '17:00:00', break_start: '12:00:00', break_end: '13:00:00', is_active: 1 },
-        { day_of_week: 3, start_time: '08:00:00', end_time: '17:00:00', break_start: '12:00:00', break_end: '13:00:00', is_active: 1 },
-        { day_of_week: 4, start_time: '08:00:00', end_time: '17:00:00', break_start: '12:00:00', break_end: '13:00:00', is_active: 1 },
-        { day_of_week: 5, start_time: '08:00:00', end_time: '17:00:00', break_start: '12:00:00', break_end: '13:00:00', is_active: 1 },
-        { day_of_week: 6, start_time: '08:00:00', end_time: '12:00:00', is_active: 1 }
-    ]
-};
-
-function timeStrToMinutes(t) {
-    if (!t) return 0;
-    const [h, m] = t.split(':').map(Number);
-    return h * 60 + m;
-}
-
 // ── BOOKING CONTROLLER (Dynamic Doctor Schedules, Slots & Philippine Payments) ─────────
+// MOCK_SCHEDULES / generateLocalSlots() / timeStrToMinutes() removed: the
+// mock schedule was keyed by fake doctor_id 1/2/3, which no longer matches
+// the real employee_id values (3/4/6) now that /api/doctors and
+// /api/doctors/:id/available-slots return live DB data. Silently falling
+// back to a mock schedule under the wrong doctor's real ID/name was worse
+// than just telling the user to retry.
 const API_BASE_URL = window.BACKEND_API_BASE_URL || '';
 
 function escapeHtml(value) {
@@ -192,11 +161,11 @@ function renderServiceCards(services) {
         const isSelected = selectedServices.some(s => s.service_id == service.service_id);
         const card = document.createElement('div');
         const duration = getEstimatedDuration(service);
-        
+
         card.className = `flex flex-col w-full max-w-[240px] h-[270px] justify-between items-center text-center rounded-2xl border-2 transition-all duration-200 cursor-pointer p-4 relative shadow-sm hover:scale-[1.02] ${
             isSelected ? 'bg-[#D7E3A5] border-[#667733] ring-2 ring-[#667733]' : 'bg-white border-black hover:bg-[#F7F5EE]'
         }`;
-        
+
         card.dataset.serviceId = service.service_id;
 
         const imgSrc = (service.icon && (/^(\/|https?:\/\/|\.\.\/assets\/)/.test(service.icon)))
@@ -328,7 +297,7 @@ function initDoctorSelection() {
 
         doctorSelect.classList.toggle('text-gray-400', !selectedDoctorId);
         doctorSelect.classList.toggle('text-[#2A1001]', !!selectedDoctorId);
-        
+
         if (selectedDateValue) {
             fetchAvailableSlotsForDoctor(selectedDoctorId, selectedDateValue);
         }
@@ -366,7 +335,7 @@ async function fetchAvailableSlotsForDoctor(doctorId, dateString) {
             throw new Error();
         }
     } catch {
-        generateLocalSlots(container, doctorId, dateString, totalMinutes);
+        renderNoSlotsMessage(container, "Couldn't load this dentist's availability. Please check your connection and try again.");
     }
 }
 
@@ -382,73 +351,6 @@ function renderNoSlotsMessage(container, msg) {
     selectedEndTime = '';
     document.getElementById('selected-time').value = '';
     document.getElementById('selected-end-time').value = '';
-}
-
-function generateLocalSlots(container, doctorId, dateString, durationMinutes) {
-    const targetDate = new Date(`${dateString}T00:00:00`);
-    const dayOfWeek = targetDate.getDay();
-
-    const doctorSchedule = MOCK_SCHEDULES[Number(doctorId)];
-    const daySched = doctorSchedule
-        ? doctorSchedule.find(s => s.day_of_week === dayOfWeek)
-        : null;
-
-    const isActive = daySched && (daySched.is_active === 1 || daySched.is_active === true);
-
-    if (!isActive) {
-        const dayName = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][dayOfWeek];
-        renderNoSlotsMessage(container, `Dentist is not on duty on ${dayName}s.`);
-        return;
-    }
-
-    const startMins = timeStrToMinutes(daySched.start_time);
-    const endMins   = timeStrToMinutes(daySched.end_time);
-    const hasBreak  = !!(daySched.break_start && daySched.break_end);
-    const breakStart = hasBreak ? timeStrToMinutes(daySched.break_start) : null;
-    const breakEnd   = hasBreak ? timeStrToMinutes(daySched.break_end) : null;
-    const step = 30;
-
-    const slots = [];
-    const now = new Date();
-    const isToday = targetDate.toDateString() === now.toDateString();
-
-    for (let cur = startMins; cur + durationMinutes <= endMins; cur += step) {
-        const sM = cur;
-        const eM = cur + durationMinutes;
-
-        const startH = Math.floor(sM / 60);
-        const startMin = sM % 60;
-        const endH = Math.floor(eM / 60);
-        const endMin = eM % 60;
-
-        const timeSlotStr = `${String(startH).padStart(2, '0')}:${String(startMin).padStart(2, '0')}:00`;
-        const endTimeStr = `${String(endH).padStart(2, '0')}:${String(endMin).padStart(2, '0')}:00`;
-
-        let isAvailable = true;
-        let reason = 'Available';
-
-        if (hasBreak && sM < breakEnd && eM > breakStart) {
-            isAvailable = false;
-            reason = 'Doctor Lunch Break';
-        }
-
-        if (isAvailable && isToday) {
-            const slotDateTime = new Date(`${dateString}T${timeSlotStr}`);
-            if (slotDateTime <= now) {
-                isAvailable = false;
-                reason = 'Past Time';
-            }
-        }
-
-        slots.push({ time_slot: timeSlotStr, end_time_slot: endTimeStr, is_available: isAvailable, reason });
-    }
-
-    if (slots.length === 0) {
-        renderNoSlotsMessage(container, 'No bookable slots fit within this doctor\'s shift for the selected treatment duration.');
-        return;
-    }
-
-    renderDynamicSlots(container, slots, durationMinutes);
 }
 
 function renderDynamicSlots(container, slots, durationMinutes) {
@@ -496,7 +398,7 @@ function renderDynamicSlots(container, slots, durationMinutes) {
     function createSlotBtn(slot) {
         const isSelected = selectedStartTime === slot.time_slot;
         const btn = document.createElement('div');
-        
+
         btn.dataset.time = slot.time_slot;
         btn.dataset.endTime = slot.end_time_slot;
         btn.dataset.disabled = slot.is_available ? 'false' : 'true';
@@ -604,7 +506,7 @@ function initCalendar() {
                 dayDiv.addEventListener('click', () => {
                     document.querySelectorAll('#days > div').forEach(d => d.classList.remove('bg-[#667733]', 'text-white'));
                     dayDiv.classList.add('bg-[#667733]', 'text-white');
-                    
+
                     selectedDateValue = sqlDateStr;
                     document.getElementById('selected-date').value = selectedDateValue;
                     if (selectedDoctorId) {
@@ -630,7 +532,7 @@ function initPaymentChannels() {
         tab.addEventListener('click', () => {
             const channel = tab.dataset.channel;
             currentPaymentChannel = channel;
-            
+
             tabs.forEach(t => {
                 t.classList.remove('border-[#667733]', 'bg-[#D7E3A5]/20', 'ring-1', 'ring-[#667733]');
                 t.classList.add('border-black/15', 'bg-white');
