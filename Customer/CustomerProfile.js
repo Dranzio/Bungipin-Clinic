@@ -78,7 +78,8 @@ function registerPatientProfileRoute(app, db) {
 
         const patientId = req.user.user_id;
         const {
-            birthday, civil_status, secondary_email, address, phone,
+            birthday, secondary_email, phone,
+            address, addressStreet, addressBarangay, addressCity, addressProvince,
             pregnancy_status, health_conditions, prescriptions, allergies,
             new_password
         } = req.body;
@@ -103,9 +104,14 @@ function registerPatientProfileRoute(app, db) {
 
             await connection.query(
                 `UPDATE patient_profiles
-                 SET birthday = ?, civil_status = ?, secondary_email = ?, address = ?, pregnancy_status = ?
+                 SET birthday = ?, secondary_email = ?, pregnancy_status = ?,
+                     address = ?, address_street = ?, address_barangay = ?, address_city = ?, address_province = ?
                  WHERE patient_id = ?`,
-                [birthday || null, civil_status, secondary_email, address, pregnancy_status || null, patientId]
+                [
+                    birthday || null, secondary_email, pregnancy_status || null,
+                    address || null, addressStreet || null, addressBarangay || null, addressCity || null, addressProvince || null,
+                    patientId
+                ]
             );
 
             // health_conditions and allergies arrive as arrays of plain
