@@ -189,6 +189,15 @@ router.get('/me', authenticateToken, (req, res) => {
     res.json(req.user);
 });
 
+// POST /api/auth/logout — the frontend clears localStorage itself, but the
+// httpOnly authToken cookie can only be cleared here, server-side. Without
+// this, a "logged out" browser could still authenticate against page routes
+// via the leftover cookie alone.
+router.post('/logout', (req, res) => {
+    authenticateToken.clearAuthCookie(res);
+    res.json({ message: 'Logged out' });
+});
+
 // forgot + reset password
 const FORGOT_PASSWORD_MODEL = Joi.object({
     email: Joi.string().email().required()

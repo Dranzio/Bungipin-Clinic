@@ -47,5 +47,57 @@
         }
     }
 
+    // Runs the same check again, but re-hides the page first so there's no
+    // flash of stale content while it re-validates against the server.
+    function revalidatePageAccess(reason) {
+        console.warn('pageProtection: re-checking access (' + reason + ')');
+        document.documentElement.style.visibility = 'hidden';
+        validatePageAccess();
+    }
+
+    // Case 1: the token changed because a DIFFERENT tab logged in/out.
+    // localStorage is shared across tabs on the same origin, so logging in
+    // as someone else in another tab silently swaps the token out from
+    // under this one. The 'storage' event fires here, in the tab that
+    // DIDN'T make the change, the instant that happens.
+    window.addEventListener('storage', event => {
+        if (event.key !== 'userToken') return;
+        revalidatePageAccess('token changed in another tab');
+    });
+
+    // Case 2: this page was restored from the back/forward cache (bfcache).
+    // Hitting Back after logging in as someone else can bring this exact
+    // page back from memory without re-running any of this script's logic
+    // at all — 'pageshow' with persisted:true is the one hook that still
+    // fires when that happens, so it's the only reliable place to catch it.
+    window.addEventListener('pageshow', event => {
+        if (event.persisted) {
+            revalidatePageAccess('page restored from back/forward cache');
+        }
+    });
+
+    // Case 3 (belt-and-suspenders): re-check whenever the tab regains
+    // focus, in case a 'storage' event was ever missed (some browsers are
+    // inconsistent about firing it, e.g. after long background periods).
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+            revalidatePageAccess('tab became visible again');
+        }
+    });
+
     validatePageAccess();
+
+    // Exposed for existing "Logout" buttons to call, e.g. onclick="logout()".
+    // Clears the server-side cookie FIRST — without this, localStorage alone
+    // being cleared doesn't actually log the browser out, since the leftover
+    // httpOnly cookie can still authenticate page requests on its own.
+    window.logout = async function logout() {
+        try {
+            await fetch('/api/auth/logout', { method: 'POST' });
+        } catch (err) {
+            console.error('Logout request failed (clearing local session anyway):', err);
+        }
+        localStorage.removeItem('userToken');
+        window.location.replace(loginUrl);
+    };
 })();
