@@ -225,6 +225,15 @@ document.addEventListener('DOMContentLoaded', () => {
         filterSelect.addEventListener('change', renderThreads);
     }
 
+    if (chatInput) {
+        chatInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+    }
+
     // Automatically load messages when the page opens
     fetchThreads();
 });

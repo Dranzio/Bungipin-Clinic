@@ -50,16 +50,42 @@
                 <div>
                 <label for="password_hash" class="text-sm md:text-[20px] block font-semibold text-[#2A1001] font-poppins mb-2">Password:</label>
                 <!-- COLORS SEND HELP -->
-                <input id="password_hash" type="password" class="w-full h-12 md:h-14 px-4 bg-white outline-none rounded-[30px] mb-6 md:mb-8 disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed" placeholder="Password" />
+                
+                <div class="relative w-full mb-6 md:mb-8">
+                    <!-- Input field with right padding to prevent text overlapping the button -->
+                    <input id="password_hash" type="password" class="w-full h-12 md:h-14 px-4 pr-16 bg-white outline-none rounded-[30px] disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed" 
+                        placeholder="Password" 
+                    />
+                    
+                    <!-- Show/Hide Toggle Button -->
+                    <button 
+                        type="button" 
+                        id="togglePassword" 
+                        class="absolute right-5 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 text-sm font-medium focus:outline-none"
+                    >
+                        Show
+                    </button>
+                </div>
+
                 <p id="passwordError" class="hidden text-sm font-semibold text-red-600 -mt-4 mb-6 md:mb-8" role="alert"></p>
                 </div>
 
-                <div class="flex justify-center">
+                <div class="flex justify-center gap-7">
+                    <div class="flex justify-center">
+                        <a href="/WelcomePage/home.html"
+                            class="w-[280px] text-center bg-[#D5C04D] text-sm md:text-[20px] font-bold text-[#2A1001] py-2 rounded-full shadow-lg
+                            transition-all duration-200 ease-in-out
+                            hover:scale-105 hover:bg-[#FDFCE9] hover:shadow-xl
+                            active:scale-95 active:bg-[#c2ae3b]"
+                        >
+                            Return to Landing
+                        </a>
+                    </div>
                     <button type="submit" class="w-1/4 bg-[#D5C04D] text-sm md:text-[20px] font-bold text-[#2A1001] py-2 rounded-full shadow-lg
-                   transition-all duration-200 ease-in-out 
-                   hover:scale-105 hover:bg-[#FDFCE9] hover:shadow-xl
-                   active:scale-95 active:bg-[#c2ae3b]
-                   disabled:bg-gray-400 disabled:text-gray-600 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:bg-gray-400 disabled:hover:shadow-lg">
+                        transition-all duration-200 ease-in-out 
+                        hover:scale-105 hover:bg-[#FDFCE9] hover:shadow-xl
+                        active:scale-95 active:bg-[#c2ae3b]
+                        disabled:bg-gray-400 disabled:text-gray-600 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:bg-gray-400 disabled:hover:shadow-lg">
                         Login
                     </button>
                 </div>
@@ -87,7 +113,18 @@
     const emailError = document.getElementById('emailError');
     const passwordError = document.getElementById('passwordError');
     const loginError = document.getElementById('loginError');
+    const togglePassword = document.getElementById('togglePassword');
     let failedAttempts = 0;
+
+    togglePassword.addEventListener('click', () => {
+        if (passwordInput.type === 'password') {
+            passwordInput.type = 'text';
+            togglePassword.textContent = 'Hide';
+        } else {
+            passwordInput.type = 'password';
+            togglePassword.textContent = 'Show';
+        }
+    });
 
     function clearErrors() {
         [emailError, passwordError, loginError].forEach(message => {
