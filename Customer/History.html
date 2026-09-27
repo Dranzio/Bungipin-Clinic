@@ -5,17 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <!-- DENIED DIRECT PAGE ACCESS VIA URL -->
     <script src="../pageProtection.js"></script>
-    <title>Appointment History & Receipts</title>
+    <title>Appointment History &amp; Official Receipts</title>
     <link rel="stylesheet" href="/output.css">
-    <!-- Tailwind CDN Fallback for missing builds -->
+    <!-- Tailwind CDN Fallback -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://kit.fontawesome.com/fc8c3f4103.js" crossorigin="anonymous"></script>
     <script src="/Taskbar/Customer_Sidebar.js"></script>
     <script src="/socket.io/socket.io.js"></script>
-    <!-- ================= CLIENT JAVASCRIPT ================= -->
     <script src="History.js" defer></script>
 </head>
-<body class="bg-[#F3EFE4] min-h-screen font-sans text-[#2c3e2b] antialiased">
+<body class="bg-[#F3EFE4] min-h-screen font-sans text-[#2A1001] antialiased">
 <div class="min-h-screen flex flex-col md:flex-row w-full">
 
     <!-- SIDEBAR -->
@@ -43,7 +42,8 @@
         }
         (async () => {
             try {
-                const response = await fetch('/Taskbar/Customer_Task.html');
+                let response = await fetch('/Taskbar/Customer_Task.html');
+                if (!response.ok) response = await fetch('/Taskbar/Customer_Sidebar.html');
                 if (response.ok) {
                     const data = await response.text();
                     document.getElementById('sidebar-placeholder').innerHTML = data;
@@ -65,95 +65,107 @@
     </script>
 
     <!-- MAIN CONTENT -->
-    <div id="main-content" class="flex-1 min-w-0 flex flex-col">
+    <div id="main-content" class="flex-1 min-w-0 md:min-h-0 md:overflow-y-auto flex flex-col">
 
-        <!-- Header -->
-        <div class="flex justify-between items-start pt-5 pl-4 pr-4 sm:pl-6 sm:pr-6 md:pl-24 md:pr-8">
-            <h1 class="text-2xl sm:text-3xl md:text-5xl 2xl:text-[73px] pt-2 sm:pt-5 font-bold text-[#2A1001] font-['Poppins']">
-                Appointment History
-            </h1>
+        <!-- Page Header -->
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center pt-5 pl-4 pr-4 sm:pl-6 sm:pr-6 md:pl-20 md:pr-8 gap-4">
+            <div>
+                <h1 class="text-2xl sm:text-3xl md:text-5xl font-bold text-[#2A1001] font-['Poppins']">
+                    Appointment History
+                </h1>
+                <p class="text-xs sm:text-sm text-[#2A1001]/70 mt-1">
+                    View your past and upcoming dental clinic appointments, track reschedule requests, and print official statements.
+                </p>
+            </div>
             <img
                 src="../assets/logowithtitle.png"
                 class="w-16 sm:w-20 md:w-28 h-auto object-contain shrink-0"
+                onerror="this.style.display='none'"
                 alt="Logo"/>
         </div>
-         <hr class="border-t border-[#2A1001] mt-2 mb-6" />
 
-        <!-- Filter & Search Controls Bar -->
-        <div class="px-4 sm:px-8 max-w-6xl w-full mx-auto mb-6 flex flex-col md:flex-row items-center justify-between gap-3">
+        <hr class="border-t border-[#2A1001] mt-3 mb-6 mx-4 sm:mx-6 md:mx-12" />
 
-            <!-- Search bar -->
-            <div class="relative w-full md:max-w-md">
-                <input
-                    type="text"
-                    id="searchInput"
-                    placeholder="Search by service, doctor, or ID..."
-                    class="h-11 w-full rounded-full border border-black/20 bg-white px-5 outline-none shadow-sm text-sm focus:ring-2 focus:ring-[#667733]/50" />
-            </div>
+        <main class="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 md:px-12 pb-16 flex flex-col gap-6">
 
-            <!-- Filters Group -->
-            <div class="flex flex-wrap items-center gap-2.5 w-full md:w-auto justify-start md:justify-end">
+            <!-- Filter & Search Controls Bar -->
+            <div class="flex flex-col md:flex-row items-center justify-between gap-3 p-3 sm:p-4 rounded-3xl border border-[#2A1001]/10">
 
-                <!-- Status Filter Dropdown -->
-                <div class="relative">
-                    <select id="statusFilter" class="h-11 pl-4 pr-9 rounded-full bg-white border border-[#2A1001]/20 font-semibold text-xs sm:text-sm text-[#2A1001] outline-none cursor-pointer appearance-none shadow-sm focus:ring-2 focus:ring-[#667733]/50">
-                        <option value="all">Status: All</option>
-                        <option value="pending">Pending</option>
-                        <option value="approved">Approved</option>
-                        <option value="reschedule_requested">Reschedule Requested</option>
-                        <option value="completed">Completed</option>
-                        <option value="cancelled">Cancelled</option>
-                    </select>
-                    <div class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[#2A1001] text-xs">▼</div>
+                <!-- Search bar -->
+                <div class="w-full md:max-w-md">
+                    <input
+                        type="text"
+                        id="searchInput"
+                        placeholder="Search service, dentist, or appointment ID..."
+                        class="w-full h-[45px] bg-white border-1 border-black rounded-full px-5 outline-none shadow-sm text-xs sm:text-sm font-semibold"
+                    />
                 </div>
 
-                <!-- Date Sort Dropdown -->
-                <div class="relative">
-                    <select id="sortSelect" class="h-11 pl-4 pr-9 rounded-full bg-[#D5C04D] hover:bg-[#c6b242] font-bold text-xs sm:text-sm text-[#2A1001] outline-none cursor-pointer appearance-none shadow-sm transition">
-                        <option value="recent">Sort: Most Recent</option>
-                        <option value="oldest">Sort: Oldest First</option>
-                    </select>
-                    <div class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[#2A1001] text-xs">▼</div>
+                <!-- Filters Group -->
+                <div class="flex flex-wrap items-center gap-2.5 w-full md:w-auto justify-start md:justify-end">
+
+                    <!-- Status Filter Dropdown -->
+                    <div class="relative">
+                        <select id="statusFilter" class="h-11 pl-4 pr-9 rounded-full bg-white border border-[#2A1001]/20 font-bold text-xs sm:text-sm text-[#2A1001] outline-none cursor-pointer appearance-none shadow-sm focus:ring-2 focus:ring-[#667733]/50 transition">
+                            <option value="all">Status: All Bookings</option>
+                            <option value="pending">Pending Approval</option>
+                            <option value="approved">Approved / Confirmed</option>
+                            <option value="reschedule_requested">Reschedule Requested</option>
+                            <option value="completed">Completed Treatments</option>
+                            <option value="cancelled">Cancelled</option>
+                        </select>
+                        <div class="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-[#2A1001] text-[10px]">▼</div>
+                    </div>
+
+                    <!-- Date Sort Dropdown -->
+                    <div class="relative">
+                        <select id="sortSelect" class="h-11 pl-4 pr-9 rounded-full bg-[#D5C04D] hover:bg-[#c6b242] font-black text-xs sm:text-sm text-[#2A1001] outline-none cursor-pointer appearance-none shadow-sm transition">
+                            <option value="recent">Sort: Most Recent</option>
+                            <option value="oldest">Sort: Oldest First</option>
+                        </select>
+                        <div class="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-[#2A1001] text-[10px]">▼</div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Appointment Records Table -->
+            <div class="w-full">
+                <div class="overflow-x-auto rounded-3xl w-full shadow-lg border border-[#2A1001]/10 bg-[#ECF5E2]">
+                    <table class="w-full border-collapse text-left">
+                        <thead>
+                            <tr class="bg-[#667733] text-white text-xs sm:text-sm uppercase tracking-wider font-extrabold">
+                                <th class="py-4 px-4 sm:px-6 w-1/4">Service &amp; Price</th>
+                                <th class="py-4 px-4 sm:px-6 w-1/4">Attending Dentist</th>
+                                <th class="py-4 px-4 sm:px-6 w-1/5">Schedule</th>
+                                <th class="py-4 px-4 sm:px-6 text-center w-1/6">Status</th>
+                                <th class="py-4 px-4 sm:px-6 text-center w-1/4">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableBody" class="divide-y divide-[#2A1001]/10 text-xs sm:text-sm font-medium">
+                            <!-- Injected via JavaScript -->
+                        </tbody>
+                    </table>
                 </div>
 
-            </div>
-        </div>
+                <!-- Empty State -->
+                <div id="emptyState" class="hidden text-center py-14 bg-[#ECF5E2] rounded-3xl mt-4 border border-dashed border-[#2A1001]/20">
+                    <i class="fa-solid fa-calendar-xmark text-4xl text-[#2A1001]/30 mb-2"></i>
+                    <p class="text-base font-bold text-[#2A1001]/80">No appointment records found</p>
+                    <p class="text-xs text-[#2A1001]/50 mt-0.5">Try adjusting your search filters or status options.</p>
+                </div>
 
-        <!-- Appointment Records Table -->
-        <div class="px-4 sm:px-8 w-full max-w-6xl mx-auto mb-8">
-            <div class="overflow-x-auto rounded-3xl w-full shadow-xl border border-[#2A1001]/10 bg-[#ECF5E2]">
-                <table class="w-full border-collapse text-left">
-                    <thead>
-                    <tr class="bg-[#667733] text-white text-xs sm:text-sm uppercase tracking-wider">
-                        <th class="py-3.5 px-4 sm:px-6">Service</th>
-                        <th class="py-3.5 px-4 sm:px-6">Attending Dentist</th>
-                        <th class="py-3.5 px-4 sm:px-6">Date & Time</th>
-                        <th class="py-3.5 px-4 sm:px-6 text-center">Status</th>
-                        <th class="py-3.5 px-4 sm:px-6 text-center">Action</th>
-                    </tr>
-                    </thead>
-                    <tbody id="tableBody" class="divide-y divide-[#2A1001]/10 text-sm font-medium">
-                        <!-- Injected via JavaScript -->
-                    </tbody>
-                </table>
+                <!-- Pagination -->
+                <div class="flex justify-center items-center gap-2 my-6" id="pagination"></div>
             </div>
 
-            <!-- Empty State -->
-            <div id="emptyState" class="hidden text-center py-12 bg-white/40 rounded-3xl mt-4 border border-[#2A1001]/10">
-                <i class="fa-solid fa-calendar-xmark text-4xl text-[#2A1001]/30 mb-2"></i>
-                <p class="text-base font-bold text-[#2A1001]/70">No appointment records found</p>
-                <p class="text-xs text-[#2A1001]/50">Try adjusting your search filters or status options.</p>
-            </div>
-
-            <!-- Pagination -->
-            <div class="flex justify-center items-center gap-2 my-8" id="pagination"></div>
-        </div>
+        </main>
     </div>
 </div>
 
 <!-- ================= RECEIPT & DETAIL MODAL ================= -->
-<div id="detail-modal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4">
-    <div class="bg-[#F3EFE4] rounded-3xl w-full max-w-2xl max-h-[92vh] overflow-y-auto p-4 sm:p-7 border border-[#2A1001]/20 shadow-2xl relative flex flex-col">
+<div id="detail-modal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+    <div class="bg-[#F3EFE4] rounded-3xl w-full max-w-2xl max-h-[92vh] overflow-y-auto p-4 sm:p-7 border border-[#2A1001]/20 shadow-2xl relative flex flex-col my-auto">
 
         <!-- Modal Close Button -->
         <button onclick="closeDetailModal()" class="absolute top-4 right-4 w-8 h-8 flex items-center justify-center text-2xl font-bold text-[#2A1001] hover:bg-black/10 rounded-full cursor-pointer transition">
@@ -162,15 +174,15 @@
 
         <!-- Modal Brand Header -->
         <div class="flex items-center gap-3 mb-4 pr-8">
-            <img src="../assets/logowithtitle.png" onerror="this.src='../Customer/logowithtitle.png'" class="w-12 sm:w-14 h-auto object-contain shrink-0" alt="Clinic Logo"/>
+            <img src="../assets/logowithtitle.png" onerror="this.style.display='none'" class="w-12 h-auto object-contain shrink-0" alt="Clinic Logo"/>
             <div>
-                <h2 class="text-lg sm:text-2xl font-bold text-[#2A1001] font-['Poppins']">Appointment &amp; Official Receipt</h2>
-                <p class="text-xs text-[#2A1001]/60 font-medium">Summary Statement of Dental Service</p>
+                <h2 class="text-lg sm:text-xl font-bold text-[#2A1001] font-['Poppins']">Appointment &amp; Official Statement</h2>
+                <p class="text-xs text-[#2A1001]/60 font-medium">Statement of Dental Treatment &amp; Official Receipt</p>
             </div>
         </div>
 
         <!-- Receipt Card Container -->
-        <div id="detail-modal-body" class="bg-white rounded-2xl p-4 sm:p-6 border border-[#2A1001]/15 shadow-inner flex flex-col gap-4 text-xs sm:text-sm text-[#2A1001]">
+        <div id="detail-modal-body" class="bg-[#ECF5E2] rounded-2xl p-4 sm:p-6 border border-[#2A1001]/15 shadow-inner flex flex-col gap-4 text-xs sm:text-sm text-[#2A1001]">
             <!-- Injected by JavaScript -->
         </div>
 
@@ -186,7 +198,7 @@
     </div>
 </div>
 
-<!-- ================= CANCEL CONFIRMATION MODAL (WITH RADIO REASONS) ================= -->
+<!-- ================= CANCEL CONFIRMATION MODAL ================= -->
 <div id="cancel-modal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-3 sm:p-4 overflow-y-auto">
     <div class="bg-[#F2F0EF] border border-[#1a281b]/20 rounded-3xl p-5 sm:p-7 w-full max-w-lg flex flex-col gap-4 shadow-2xl my-auto max-h-[94vh]">
         <div class="flex items-start gap-3">
@@ -196,13 +208,13 @@
             <div>
                 <h2 class="font-extrabold text-lg sm:text-xl text-[#1a281b]">Cancel Appointment?</h2>
                 <p class="text-xs text-gray-600 leading-relaxed mt-0.5">
-                    Please tell us why you are cancelling. This helps us improve our clinic availability.
+                    Please tell us why you are cancelling. This helps us manage clinic availability.
                 </p>
             </div>
         </div>
 
         <!-- Cancellation Reason Radio Options -->
-        <div class="flex flex-col gap-2 bg-white rounded-2xl p-3.5 sm:p-4 border border-[#1a281b]/15 shadow-sm max-h-[50vh] overflow-y-auto pr-1">
+        <div class="flex flex-col gap-2 bg-[#ECF5E2] rounded-2xl p-3.5 sm:p-4 border border-[#1a281b]/15 shadow-sm max-h-[50vh] overflow-y-auto pr-1">
             <label class="text-xs font-bold text-[#1a281b] uppercase tracking-wide flex items-center gap-1.5">
                 <i class="fa-solid fa-circle-question text-red-600"></i> Reason for Cancellation <span class="text-red-500">*</span>
             </label>
@@ -272,18 +284,18 @@
         <div class="mb-3 text-center pr-6 pl-2 shrink-0">
             <h2 class="text-xl sm:text-2xl font-bold text-[#2A1001] font-['Poppins']">Request Appointment Reschedule</h2>
             <p class="text-xs sm:text-sm text-[#2A1001]/70 mt-0.5" id="reschedulePatientSummary">
-                Select your new desired date, available time slot, and reason for rescheduling.
+                Select your desired new date, available time slot, and reason.
             </p>
         </div>
 
         <!-- Scrollable Content -->
-        <div class="flex-1 overflow-y-auto overscroll-contain pr-1 flex flex-col gap-4">
+        <div class="flex-1 overflow-y-auto pr-1 flex flex-col gap-4">
 
             <!-- Calendar and Time Slots Row -->
             <div class="flex flex-col-reverse lg:flex-row gap-6 items-center justify-center mt-1">
 
                 <!-- Available slots panel -->
-                <div class="flex justify-center gap-4 sm:gap-6 bg-white/80 p-4 rounded-3xl border-2 border-[#2A1001]/20 shadow-sm w-full lg:w-auto">
+                <div class="flex justify-center gap-4 sm:gap-6 bg-[#ECF5E2] p-4 rounded-3xl border-2 border-[#2A1001]/20 shadow-sm w-full lg:w-auto">
                     <!-- AM time -->
                     <div class="flex flex-col w-32 sm:w-36">
                         <h4 class="font-bold text-xs sm:text-sm text-[#2A1001] mb-2 text-center border-b pb-1 border-[#2A1001]/10">
@@ -301,7 +313,7 @@
                 </div>
 
                 <!-- Dynamic calendar -->
-                <div class="flex flex-col w-[360px] sm:w-[390px] max-w-full h-[340px] rounded-3xl border-[3px] border-black bg-white overflow-hidden shadow-lg shrink-0">
+                <div class="flex flex-col w-[360px] sm:w-[390px] max-w-full h-[340px] rounded-3xl border-[3px] border-black bg-[#ECF5E2] overflow-hidden shadow-lg shrink-0">
 
                     <div class="flex justify-between items-center px-3 py-2 w-full bg-[#667733] text-[#D7E3A5]">
                         <div class="cursor-pointer text-xl font-bold px-2 hover:text-white transition" id="reschedPrev">&lt;</div>
@@ -319,12 +331,12 @@
             </div>
 
             <!-- Selected schedule feedback -->
-            <p class="text-xs sm:text-sm text-[#2A1001] text-center font-medium bg-white/60 py-2 px-4 rounded-full border border-black/10 mx-auto" id="reschedSelectedDateDisplay">
+            <p class="text-xs sm:text-sm text-[#2A1001] text-center font-medium bg-[#ECF5E2] py-2 px-4 rounded-full border border-black/10 mx-auto" id="reschedSelectedDateDisplay">
                 No date selected yet.
             </p>
 
             <!-- Reschedule Reason Selection -->
-            <div class="bg-white rounded-2xl p-4 sm:p-5 border border-[#2A1001]/15 shadow-sm flex flex-col gap-2.5">
+            <div class="bg-[#ECF5E2] rounded-2xl p-4 sm:p-5 border border-[#2A1001]/15 shadow-sm flex flex-col gap-2.5">
                 <label class="text-xs sm:text-sm font-extrabold text-[#2A1001] uppercase tracking-wide flex items-center gap-1.5">
                     <i class="fa-solid fa-clipboard-question text-[#667733]"></i> Reason for Rescheduling <span class="text-red-500">*</span>
                 </label>
@@ -379,8 +391,8 @@
 <div id="notice-modal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
     <div class="bg-[#F2F0EF] rounded-3xl p-6 sm:p-7 w-full max-w-sm shadow-2xl border border-[#1a281b]/15 flex flex-col gap-4">
         <div class="flex items-start gap-3">
-            <div id="notice-icon-wrap" class="w-10 h-10 rounded-full flex items-center justify-center text-lg shrink-0">
-                <i id="notice-icon" class="fa-solid"></i>
+            <div id="notice-icon-wrap" class="w-10 h-10 rounded-full flex items-center justify-center text-lg shrink-0 bg-[#EAF0DD] text-[#556022]">
+                <i id="notice-icon" class="fa-solid fa-circle-info"></i>
             </div>
             <div class="flex flex-col gap-1 pt-0.5">
                 <h3 id="notice-title" class="font-extrabold text-base sm:text-lg text-[#1a281b]">Notice</h3>

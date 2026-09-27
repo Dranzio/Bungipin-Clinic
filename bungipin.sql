@@ -518,3 +518,9 @@ select a.appointment_id, s.label AS service_offered from appointments a INNER JO
  Select * from password_resets;
  
  SELECT * FROM doctor_schedules WHERE employee_id = 4 ORDER BY day_of_week;
+ 
+ SELECT start_time, end_time, break_start, break_end, is_active
+			FROM doctor_schedules
+			WHERE employee_id = 3 AND day_of_week = 3
+            
+SELECT DATABASE() AS current_db, @@hostname AS host, @@port AS port, @@datadir AS data_dir;

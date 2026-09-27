@@ -1,3 +1,4 @@
+// ── PATIENT APPOINTMENT HISTORY & RECEIPTS CONTROLLER ──────────────────────
 const TEST_MODE = false;
 
 function escapeHtml(value) {
@@ -29,6 +30,7 @@ const clinicSlots = [
     { id: "15:00:00", label: "3:00 PM - 4:00 PM" },
     { id: "16:00:00", label: "4:00 PM - 5:00 PM" }
 ];
+
 const months = [
     'January', 'February', 'March', 'April', 'May', 'June', 'July',
     'August', 'September', 'October', 'November', 'December'
@@ -55,7 +57,7 @@ document.addEventListener('DOMContentLoaded', () => {
 // ── Notice modal (replaces window.alert) ────────────────────────────────
 function showNotice(message, { title = "Notice", type = "info" } = {}) {
     const modal = document.getElementById('notice-modal');
-    if (!modal) { console.log(title + ': ' + message); return; }
+    if (!modal) { alert(title + ': ' + message); return; }
 
     const iconWrap = document.getElementById('notice-icon-wrap');
     const icon = document.getElementById('notice-icon');
@@ -242,7 +244,7 @@ async function fetchAppointments() {
     const token = localStorage.getItem('userToken');
 
     if (!token && !TEST_MODE) {
-        if (tbody) tbody.innerHTML = `<tr><td colspan="5" class="text-center text-gray-500 py-8 font-bold">Please log in to view your appointments.</td></tr>`;
+        if (tbody) tbody.innerHTML = `<tr><td colspan="5" class="text-center text-gray-500 py-10 font-bold">Please log in to view your appointments.</td></tr>`;
         return;
     }
 
@@ -258,11 +260,11 @@ async function fetchAppointments() {
             applyFiltersAndRender();
         } else {
             console.error("Failed to load appointments:", response.status);
-            if (tbody) tbody.innerHTML = `<tr><td colspan="5" class="text-center text-red-500 py-8 font-bold">Failed to load appointments from server.</td></tr>`;
+            if (tbody) tbody.innerHTML = `<tr><td colspan="5" class="text-center text-red-500 py-10 font-bold">Failed to load appointments from server.</td></tr>`;
         }
     } catch(err) {
         console.error("Network error:", err);
-        if (tbody) tbody.innerHTML = `<tr><td colspan="5" class="text-center text-red-500 py-8 font-bold">Error connecting to server.</td></tr>`;
+        if (tbody) tbody.innerHTML = `<tr><td colspan="5" class="text-center text-red-500 py-10 font-bold">Error connecting to server.</td></tr>`;
     }
 }
 
@@ -341,7 +343,7 @@ function applyFiltersAndRender() {
     renderTable();
 }
 
-// ── Render Table (Separate Dentist Column & Aligned Responsive Actions) ─────
+// ── Render Table (All 5 Columns Aligned & Crisp) ──────────────────────────
 function renderTable() {
     const tbody = document.getElementById('tableBody');
     const emptyState = document.getElementById('emptyState');
@@ -360,39 +362,39 @@ function renderTable() {
 
     pageItems.forEach(appt => {
         const row = document.createElement('tr');
-        row.className = "hover:bg-white/60 transition-colors border-b border-[#2A1001]/10";
+        row.className = "hover:bg-[#FDFCE9]/60 transition-colors border-b border-[#2A1001]/10";
 
         const scheduledDate = appt.appointment_date
             ? new Date(appt.appointment_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
             : 'N/A';
 
-        const amountFormatted = appt.amount ? `₱${Number(appt.amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}` : 'N/A';
+        const amountFormatted = appt.amount ? `₱${Number(appt.amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}` : '₱0.00';
         const status = (appt.appointment_status || '').toLowerCase();
         const reschedStatus = (appt.reschedule_status || '').toLowerCase();
         const isCancellable = CANCELLABLE_STATUSES.includes(status);
         const isReschedulable = RESCHEDULABLE_STATUSES.includes(status);
 
-        // Dynamic Attending Dentist Column Content
+        // Attending Dentist Column Content
         let dentistColumnHtml = '';
         if (status === 'approved' || status === 'completed') {
             const dentistFullName = (appt.dentist_first_name || appt.dentist_last_name)
                 ? `Dr. ${appt.dentist_first_name || ''} ${appt.dentist_last_name || ''}`.trim()
                 : 'Assigned Clinic Dentist';
             dentistColumnHtml = `
-                <div class="font-bold text-[#2A1001] flex items-center gap-1.5">
+                <div class="font-extrabold text-[#2A1001] flex items-center gap-1.5">
                     <i class="fa-solid fa-user-doctor text-[#667733]"></i>
-                    <span>${escapeHtml(dentistFullName)}</span>
+                    <span class="truncate">${escapeHtml(dentistFullName)}</span>
                 </div>
             `;
         } else if (status === 'pending') {
             dentistColumnHtml = `
-                <span class="inline-flex items-center gap-1 text-xs font-semibold text-amber-800 bg-amber-50 px-2.5 py-1 rounded-full border border-amber-200">
+                <span class="inline-flex items-center gap-1 text-[11px] font-bold text-amber-800 bg-amber-50 px-2.5 py-1 rounded-full border border-amber-200">
                     <i class="fa-regular fa-clock text-amber-600"></i> Pending Assignment
                 </span>
             `;
         } else if (status === 'cancelled') {
             dentistColumnHtml = `
-                <span class="inline-flex items-center gap-1 text-xs font-semibold text-gray-400">
+                <span class="inline-flex items-center gap-1 text-[11px] font-semibold text-gray-400">
                     <i class="fa-solid fa-ban text-gray-400"></i> None (Cancelled)
                 </span>
             `;
@@ -401,64 +403,68 @@ function renderTable() {
         }
 
         row.innerHTML = `
-            <!-- Service Column -->
-            <td class="py-3.5 px-4 sm:px-6">
-                <div class="font-bold text-[#2A1001]">${escapeHtml(appt.label || 'General Treatment')}</div>
-                <div class="text-xs text-[#2A1001]/60 font-semibold">${amountFormatted}</div>
+            <!-- 1. Service Column -->
+            <td class="py-4 px-4 sm:px-6 align-middle">
+                <div class="font-black text-sm text-[#2A1001]">${escapeHtml(appt.label || 'General Treatment')}</div>
+                <div class="text-xs text-[#667733] font-bold mt-0.5">${amountFormatted}</div>
             </td>
 
-            <!-- Attending Dentist Column -->
-            <td class="py-3.5 px-4 sm:px-6">
+            <!-- 2. Attending Dentist Column -->
+            <td class="py-4 px-4 sm:px-6 align-middle">
                 ${dentistColumnHtml}
             </td>
 
-            <!-- Date & Time Column -->
-            <td class="py-3.5 px-4 sm:px-6">
-                <div class="text-[#2A1001] font-semibold">${scheduledDate}</div>
-                <div class="text-xs text-[#2A1001]/60">${escapeHtml(appt.time_slot || '')}</div>
+            <!-- 3. Schedule Column -->
+            <td class="py-4 px-4 sm:px-6 align-middle">
+                <div class="text-[#2A1001] font-bold text-xs sm:text-sm flex items-center gap-1.5">
+                    <i class="fa-regular fa-calendar text-gray-400 text-xs"></i> ${scheduledDate}
+                </div>
+                <div class="text-xs text-gray-500 font-semibold mt-0.5 flex items-center gap-1.5">
+                    <i class="fa-regular fa-clock text-gray-400 text-[11px]"></i> ${escapeHtml(appt.time_slot || '')}
+                </div>
                 ${reschedStatus === 'requested' ? `
-                    <div class="text-[10px] text-amber-800 font-bold mt-1 flex items-center gap-1 bg-amber-50 px-2 py-0.5 rounded-lg border border-amber-200">
-                        <i class="fa-solid fa-arrows-rotate fa-spin text-amber-600"></i> Resched Pending (${escapeHtml(appt.requested_date || '')})
+                    <div class="text-[10px] text-amber-900 font-extrabold mt-1.5 inline-flex items-center gap-1 bg-amber-100 px-2 py-0.5 rounded-md border border-amber-300">
+                        <i class="fa-solid fa-arrows-rotate fa-spin text-amber-700"></i> Resched: ${escapeHtml(appt.requested_date || '')}
                     </div>
                 ` : ''}
             </td>
 
-            <!-- Status Column -->
-            <td class="py-3.5 px-4 sm:px-6 text-center">
+            <!-- 4. Status Column -->
+            <td class="py-4 px-4 sm:px-6 text-center align-middle">
                 <div class="flex flex-col items-center gap-1">
                     ${renderStatusBadge(appt.appointment_status)}
                     ${reschedStatus === 'requested' ? `
-                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-100 text-amber-900 border border-amber-300">
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-black bg-amber-100 text-amber-900 border border-amber-300 uppercase">
                             Resched Requested
                         </span>
                     ` : ''}
                 </div>
             </td>
 
-            <!-- Action Column (Aligned 3-slot grid on desktop, stacked on mobile) -->
-            <td class="py-3.5 px-3 sm:px-6 text-center">
-                <div class="flex flex-col md:grid md:grid-cols-3 items-center justify-center gap-1.5 w-full max-w-[120px] md:max-w-[285px] mx-auto">
-                    <!-- Slot 1: Reschedule (Left) -->
+            <!-- 5. Actions Column -->
+            <td class="py-4 px-4 sm:px-6 text-center align-middle">
+                <div class="flex items-center justify-center gap-1.5 flex-wrap sm:flex-nowrap">
+                    <!-- Reschedule Button -->
                     ${isReschedulable ? `
                         <button onclick="openRescheduleModalById(${appt.appointment_id})"
-                                class="w-full bg-[#D5C04D] hover:bg-[#c6b242] text-[#2A1001] text-xs font-bold py-1.5 px-2 rounded-full transition active:scale-95 cursor-pointer shadow-sm flex items-center justify-center gap-1 whitespace-nowrap" title="Request a new date/time for this appointment">
+                                class="bg-[#D5C04D] hover:bg-[#c6b242] text-[#2A1001] text-xs font-bold py-1.5 px-3 rounded-full transition active:scale-95 cursor-pointer shadow-sm flex items-center gap-1 shrink-0 whitespace-nowrap" title="Request a new date/time">
                             <i class="fa-solid fa-calendar-days text-[10px]"></i> ${reschedStatus === 'requested' ? 'Update Req' : 'Reschedule'}
                         </button>
-                    ` : `<div class="hidden md:block w-full"></div>`}
+                    ` : ''}
 
-                    <!-- Slot 2: Receipt (Middle - always centered!) -->
+                    <!-- Receipt Button -->
                     <button onclick="openDetailModalById(${appt.appointment_id})"
-                            class="w-full bg-[#667733] hover:bg-[#556022] text-white text-xs font-bold py-1.5 px-2.5 rounded-full transition flex items-center justify-center gap-1.5 shadow-sm active:scale-95 cursor-pointer whitespace-nowrap" title="View details and receipt">
-                        <i class="fa-solid fa-receipt text-[11px]"></i> Receipt
+                            class="bg-[#667733] hover:bg-[#556022] text-white text-xs font-bold py-1.5 px-3 rounded-full transition flex items-center gap-1 shadow-sm active:scale-95 cursor-pointer shrink-0 whitespace-nowrap" title="View details and receipt">
+                        <i class="fa-solid fa-receipt text-[10px]"></i> Receipt
                     </button>
 
-                    <!-- Slot 3: Cancel (Right) -->
+                    <!-- Cancel Button -->
                     ${isCancellable ? `
                         <button onclick="openCancelModal(${appt.appointment_id})"
-                                class="w-full bg-[#D9534F] hover:bg-[#c9302c] text-white text-xs font-bold py-1.5 px-2 rounded-full transition active:scale-95 cursor-pointer shadow-sm flex items-center justify-center gap-1 whitespace-nowrap" title="Cancel this appointment">
+                                class="bg-[#D9534F] hover:bg-[#c9302c] text-white text-xs font-bold py-1.5 px-3 rounded-full transition active:scale-95 cursor-pointer shadow-sm flex items-center gap-1 shrink-0 whitespace-nowrap" title="Cancel this appointment">
                             <i class="fa-solid fa-ban text-[10px]"></i> Cancel
                         </button>
-                    ` : `<div class="hidden md:block w-full"></div>`}
+                    ` : ''}
                 </div>
             </td>
         `;
@@ -471,19 +477,19 @@ function renderTable() {
 function renderStatusBadge(status) {
     const s = (status || '').toLowerCase();
     if (s === 'completed') {
-        return `<span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-[#c2d09c] text-[#1a281b] border border-[#1a281b]/30">
+        return `<span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-extrabold bg-[#c2d09c] text-[#1a281b] border border-[#1a281b]/30">
                     <span class="w-1.5 h-1.5 rounded-full bg-[#394a28] mr-1.5"></span>Completed
                 </span>`;
     } else if (s === 'approved') {
-        return `<span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-[#9ea988] text-[#1a281b] border border-[#1a281b]/30">
+        return `<span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-extrabold bg-[#9ea988] text-[#1a281b] border border-[#1a281b]/30">
                     <span class="w-1.5 h-1.5 rounded-full bg-[#273a21] mr-1.5"></span>Approved
                 </span>`;
     } else if (s === 'pending') {
-        return `<span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-[#dcb954] text-[#1a281b] border border-[#1a281b]/30">
+        return `<span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-extrabold bg-[#F1B770] text-[#2A1001] border border-[#2A1001]/20">
                     <span class="w-1.5 h-1.5 rounded-full bg-[#6a5416] mr-1.5"></span>Pending
                 </span>`;
     } else if (s === 'cancelled') {
-        return `<span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-red-100 text-red-700 border border-red-300">
+        return `<span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-extrabold bg-red-100 text-red-700 border border-red-300">
                     <span class="w-1.5 h-1.5 rounded-full bg-red-600 mr-1.5"></span>Cancelled
                 </span>`;
     }
@@ -536,7 +542,7 @@ function renderPagination(totalItems) {
     for (let i = batchStart; i <= batchEnd; i++) {
         const btn = document.createElement('button');
         btn.textContent = i;
-        btn.className = `w-9 h-9 rounded-full font-semibold cursor-pointer transition ${i === currentPage ? 'bg-[#667733] text-white shadow' : 'bg-white text-[#2A1001] border border-[#2A1001]/20 hover:bg-gray-50'}`;
+        btn.className = `w-9 h-9 rounded-full font-bold text-xs cursor-pointer transition ${i === currentPage ? 'bg-[#667733] text-white shadow-sm' : 'bg-white text-[#2A1001] border border-[#2A1001]/20 hover:bg-gray-50'}`;
         btn.addEventListener('click', () => { currentPage = i; renderTable(); });
         pagination.appendChild(btn);
     }
@@ -550,7 +556,7 @@ function renderPagination(totalItems) {
     }
 }
 
-// ── Open Premium Receipt & Detail Modal (Dynamic Attending Dentist) ────────
+// ── Open Detail & Receipt Modal ────────────────────────────────────────────
 function openDetailModalById(id) {
     const appt = allAppointments.find(a => a.appointment_id == id);
     if (appt) openDetailModal(appt);
@@ -578,7 +584,7 @@ function openDetailModal(appt) {
     const patientId = escapeHtml(appt.public_id || `PAT-${appt.appointment_id}`);
     const receiptNo = escapeHtml(`OR-${(appt.appointment_date || '').replace(/-/g, '')}-${appt.appointment_id}`);
 
-    // Dynamic Attending Dentist Display based on Status
+    // Dynamic Attending Dentist Display
     let dentistDisplayHtml = '';
     if (status === 'approved' || status === 'completed') {
         const dentistFullName = (appt.dentist_first_name || appt.dentist_last_name)
@@ -586,8 +592,8 @@ function openDetailModal(appt) {
             : 'Assigned Clinic Dentist';
         dentistDisplayHtml = `
             <div>
-                <span class="text-[11px] text-[#2A1001]/60 font-semibold block uppercase tracking-wide">Attending Dentist</span>
-                <span class="inline-flex items-center gap-1 font-bold text-sm text-[#667733]">
+                <span class="text-[11px] text-[#2A1001]/60 font-bold block uppercase tracking-wide">Attending Dentist</span>
+                <span class="inline-flex items-center gap-1 font-extrabold text-sm text-[#667733]">
                     <i class="fa-solid fa-user-doctor"></i> ${escapeHtml(dentistFullName)}
                 </span>
             </div>
@@ -595,8 +601,8 @@ function openDetailModal(appt) {
     } else if (status === 'pending') {
         dentistDisplayHtml = `
             <div>
-                <span class="text-[11px] text-[#2A1001]/60 font-semibold block uppercase tracking-wide">Attending Dentist</span>
-                <span class="italic text-xs text-gray-500 font-semibold bg-gray-100 px-2 py-0.5 rounded-full inline-block">
+                <span class="text-[11px] text-[#2A1001]/60 font-bold block uppercase tracking-wide">Attending Dentist</span>
+                <span class="italic text-xs text-gray-500 font-semibold bg-gray-100 px-2.5 py-0.5 rounded-full inline-block">
                     To be assigned upon confirmation
                 </span>
             </div>
@@ -604,7 +610,7 @@ function openDetailModal(appt) {
     } else if (status === 'cancelled') {
         dentistDisplayHtml = `
             <div>
-                <span class="text-[11px] text-[#2A1001]/60 font-semibold block uppercase tracking-wide">Attending Dentist</span>
+                <span class="text-[11px] text-[#2A1001]/60 font-bold block uppercase tracking-wide">Attending Dentist</span>
                 <span class="text-xs text-gray-400 font-semibold">None (Appointment Cancelled)</span>
             </div>
         `;
@@ -619,89 +625,7 @@ function openDetailModal(appt) {
                     <span class="font-extrabold block text-amber-900 uppercase tracking-wide text-xs">Pending Reschedule Request</span>
                     <p class="mt-0.5 text-xs">Requested Schedule: <strong>${escapeHtml(appt.requested_date || '')} at ${escapeHtml(appt.requested_time || '')}</strong></p>
                     <p class="italic text-amber-800 mt-1">Reason: "${escapeHtml(appt.reschedule_reason || 'Schedule Conflict')}"</p>
-                    <p class="text-[11px] text-amber-700/90 mt-1 font-medium">Our clinic staff is reviewing your request. Your current appointment remains active until confirmed.</p>
-                </div>
-            </div>
-        `;
-    }
-
-    let statusNotice = '';
-    if (status === 'pending') {
-        const paidNote = (appt.payment_status || '').toLowerCase() === 'paid'
-            ? `<p class="text-xs text-yellow-800 mt-1">This appointment was paid online — cancelling will automatically process your refund.</p>`
-            : '';
-        statusNotice = `
-            <div class="mt-3 p-3.5 bg-yellow-50 rounded-2xl border border-yellow-200 flex items-start gap-3">
-                <span class="text-yellow-600 text-lg mt-0.5"><i class="fa-solid fa-clock"></i></span>
-                <div>
-                    <p class="text-xs font-bold text-yellow-900 uppercase tracking-wide">Pending Clinic Approval</p>
-                    <p class="text-xs text-yellow-800 mt-0.5">Please be patient with our dental team. Your appointment approval will be confirmed shortly.</p>
-                    ${paidNote}
-                </div>
-            </div>
-            <div class="mt-3 flex flex-wrap justify-start gap-2">
-                <button onclick="closeDetailModal(); openRescheduleModalById(${appt.appointment_id})"
-                        class="bg-[#D5C04D] hover:bg-[#c6b242] text-[#2A1001] font-bold text-xs px-4 py-2 rounded-full transition shadow-sm cursor-pointer active:scale-95 flex items-center gap-1.5">
-                    <i class="fa-solid fa-calendar-days"></i> Reschedule
-                </button>
-                <button onclick="closeDetailModal(); openCancelModal(${appt.appointment_id})"
-                        class="bg-[#D9534F] hover:bg-[#c9302c] text-white font-bold text-xs px-4 py-2 rounded-full transition shadow-sm cursor-pointer active:scale-95 flex items-center gap-1.5">
-                    <i class="fa-solid fa-ban"></i> Cancel This Appointment
-                </button>
-            </div>
-        `;
-    } else if (status === 'approved') {
-        const dentistFullName = (appt.dentist_first_name || appt.dentist_last_name)
-            ? `Dr. ${appt.dentist_first_name || ''} ${appt.dentist_last_name || ''}`.trim()
-            : 'Assigned Clinic Dentist';
-        statusNotice = `
-            <div class="mt-3 p-3.5 bg-blue-50 rounded-2xl border border-blue-200 flex items-start gap-3">
-                <span class="text-blue-600 text-lg mt-0.5"><i class="fa-solid fa-user-doctor"></i></span>
-                <div>
-                    <p class="text-xs font-bold text-blue-900 uppercase tracking-wide">Dentist Confirmed</p>
-                    <p class="text-xs text-blue-800 mt-0.5">Your attending dentist <strong class="text-blue-900">${dentistFullName}</strong> has confirmed your appointment.</p>
-                </div>
-            </div>
-            <div class="mt-3 flex flex-wrap justify-start gap-2">
-                <button onclick="closeDetailModal(); openRescheduleModalById(${appt.appointment_id})"
-                        class="bg-[#D5C04D] hover:bg-[#c6b242] text-[#2A1001] font-bold text-xs px-4 py-2 rounded-full transition shadow-sm cursor-pointer active:scale-95 flex items-center gap-1.5">
-                    <i class="fa-solid fa-calendar-days"></i> Reschedule
-                </button>
-                <button onclick="closeDetailModal(); openCancelModal(${appt.appointment_id})"
-                        class="bg-[#D9534F] hover:bg-[#c9302c] text-white font-bold text-xs px-4 py-2 rounded-full transition shadow-sm cursor-pointer active:scale-95 flex items-center gap-1.5">
-                    <i class="fa-solid fa-ban"></i> Cancel This Appointment
-                </button>
-            </div>
-        `;
-    } else if (status === 'completed') {
-        statusNotice = `
-            <div class="mt-3 p-3.5 bg-green-50 rounded-2xl border border-green-200 flex flex-col gap-2">
-                <div class="flex items-center gap-2">
-                    <span class="text-green-600"><i class="fa-solid fa-circle-check"></i></span>
-                    <p class="text-xs font-bold text-green-900 uppercase tracking-wide">Appointment Completed</p>
-                </div>
-                ${dentistNote ? `
-                    <div class="bg-white p-3 rounded-xl border border-green-200 text-xs text-green-900 shadow-inner">
-                        <span class="font-bold block mb-1">Dentist Remarks & Instructions:</span>
-                        <p class="italic">${dentistNote}</p>
-                    </div>
-                ` : ''}
-            </div>
-        `;
-    } else if (status === 'cancelled') {
-        const refundNote = (appt.payment_status || '').toLowerCase() === 'paid' || (appt.payment_status || '').toLowerCase() === 'refunded' || (appt.payment_status || '').toLowerCase() === 'refund_pending'
-            ? `Payment status: <span class="font-bold">${paymentStatus}</span>.`
-            : ``;
-        const reasonBlock = appt.cancellation_reason
-            ? `<p class="text-xs text-red-700 mt-1"><span class="font-bold">Reason:</span> "${escapeHtml(appt.cancellation_reason)}"</p>`
-            : '';
-        statusNotice = `
-            <div class="mt-3 p-3.5 bg-red-50 rounded-2xl border border-red-200 flex items-start gap-3">
-                <span class="text-red-600 text-lg mt-0.5"><i class="fa-solid fa-circle-xmark"></i></span>
-                <div>
-                    <p class="text-xs font-bold text-red-900 uppercase tracking-wide">Cancelled Appointment</p>
-                    <p class="text-xs text-red-800 mt-0.5">This appointment was cancelled. ${refundNote}</p>
-                    ${reasonBlock}
+                    <p class="text-[11px] text-amber-700/90 mt-1 font-medium">Our clinic team is reviewing your request. Your current schedule remains confirmed until approved.</p>
                 </div>
             </div>
         `;
@@ -723,23 +647,23 @@ function openDetailModal(appt) {
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 py-1">
             <div>
-                <span class="text-[11px] text-[#2A1001]/60 font-semibold block uppercase tracking-wide">Patient Name</span>
-                <span class="font-bold text-sm text-[#2A1001]">${patientName} (${patientId})</span>
+                <span class="text-[11px] text-[#2A1001]/60 font-bold block uppercase tracking-wide">Patient Name</span>
+                <span class="font-extrabold text-sm text-[#2A1001]">${patientName} (${patientId})</span>
             </div>
 
-            <!-- Dynamic Dentist Field -->
+            <!-- Dentist Field -->
             ${dentistDisplayHtml}
 
             <div>
-                <span class="text-[11px] text-[#2A1001]/60 font-semibold block uppercase tracking-wide">Scheduled Date & Time</span>
-                <span class="font-bold text-sm text-[#2A1001]">${scheduledDate} &bull; ${escapeHtml(appt.time_slot || 'N/A')}</span>
+                <span class="text-[11px] text-[#2A1001]/60 font-bold block uppercase tracking-wide">Scheduled Schedule</span>
+                <span class="font-extrabold text-sm text-[#2A1001]">${scheduledDate} &bull; ${escapeHtml(appt.time_slot || 'N/A')}</span>
             </div>
             <div>
-                <span class="text-[11px] text-[#2A1001]/60 font-semibold block uppercase tracking-wide">Mode of Payment</span>
-                <span class="font-bold text-sm text-[#2A1001]">${method}</span>
+                <span class="text-[11px] text-[#2A1001]/60 font-bold block uppercase tracking-wide">Payment Mode</span>
+                <span class="font-extrabold text-sm text-[#2A1001]">${method}</span>
             </div>
             <div>
-                <span class="text-[11px] text-[#2A1001]/60 font-semibold block uppercase tracking-wide">Payment Status</span>
+                <span class="text-[11px] text-[#2A1001]/60 font-bold block uppercase tracking-wide">Payment Status</span>
                 ${renderPaymentStatusBadge(appt.payment_status)}
             </div>
         </div>
@@ -748,7 +672,7 @@ function openDetailModal(appt) {
             <table class="w-full text-xs sm:text-sm">
                 <thead>
                     <tr class="text-[#2A1001]/70 border-b border-[#2A1001]/10 uppercase text-[10px] tracking-wider">
-                        <th class="text-left py-2 font-extrabold">Service & Description</th>
+                        <th class="text-left py-2 font-extrabold">Service &amp; Description</th>
                         <th class="text-right py-2 font-extrabold">Amount (PHP)</th>
                     </tr>
                 </thead>
@@ -756,7 +680,7 @@ function openDetailModal(appt) {
                     <tr>
                         <td class="py-2.5">
                             <p class="font-bold text-[#2A1001] text-sm">${service}</p>
-                            <p class="text-xs text-[#2A1001]/60">${escapeHtml(appt.patient_note || 'Standard dental clinic service & consultation')}</p>
+                            <p class="text-xs text-[#2A1001]/60">${escapeHtml(appt.patient_note || 'Standard consultation and dental treatment')}</p>
                         </td>
                         <td class="text-right py-2.5 font-extrabold text-[#2A1001] text-sm">${amountFormatted}</td>
                     </tr>
@@ -770,7 +694,12 @@ function openDetailModal(appt) {
             </table>
         </div>
 
-        ${statusNotice}
+        ${dentistNote ? `
+            <div class="p-3.5 bg-green-50 rounded-2xl border border-green-200 text-xs text-green-950 shadow-inner">
+                <span class="font-bold block mb-1">Dentist Clinical Remarks & Instructions:</span>
+                <p class="italic">${dentistNote}</p>
+            </div>
+        ` : ''}
     `;
 
     document.getElementById('detail-modal').classList.remove('hidden');
@@ -781,7 +710,7 @@ function closeDetailModal() {
     if (modal) modal.classList.add('hidden');
 }
 
-// ── Print Receipt Helper ───────────────────────────────────────────────────
+// ── Print Official Receipt ────────────────────────────────────────────────
 function printCurrentReceipt() {
     if (!currentSelectedAppt) return;
     const a = currentSelectedAppt;
@@ -867,7 +796,7 @@ function printCurrentReceipt() {
 
         <div class="footer">
             <p>Thank you for choosing our dental clinic for your oral healthcare!</p>
-            <p>This document serves as an electronic official receipt.</p>
+            <p>This document serves as an electronic official receipt statement.</p>
         </div>
     </body>
     </html>`;
@@ -961,14 +890,14 @@ async function cancelAppointment(appointmentId) {
             closeCancelModal();
             await fetchAppointments();
             const result = await response.json();
-            showNotice(result.message || 'Your appointment has been cancelled. The clinic has been notified.', { title: 'Appointment Cancelled', type: 'success' });
+            showNotice(result.message || 'Your appointment has been cancelled.', { title: 'Appointment Cancelled', type: 'success' });
         } else {
             const err = await response.json();
             showNotice(err.message || 'Please try again.', { title: 'Failed to Cancel', type: 'error' });
         }
     } catch(err) {
         console.error("Cancel error:", err);
-        showNotice('Please check your connection and try again.', { title: 'Error Cancelling Appointment', type: 'error' });
+        showNotice('Please check your connection and try again.', { title: 'Error Cancelling', type: 'error' });
     } finally {
         if (confirmButton) {
             confirmButton.disabled = false;
