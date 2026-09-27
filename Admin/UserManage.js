@@ -23,18 +23,79 @@ const USER_SELECT = `
 
 async function fetchUser(conn, userId) {
     const [rows] = await conn.query(`${USER_SELECT} WHERE u.user_id = ?`, [userId]);
-    return rows[0] || null;
+
+    // LOGIN ATTEMPT SECURITY
+    // checks if the email of that user is locked for attempts
+    return rows[0]
+        ? { ...rows[0], isLocked : Boolean(loginAttempts.isLocked(rows[0].email)) }
+        : null;
 }
 
 function registerUserManagementRoutes(app, db) {
 
     // GET /api/users — powers the User Management list
     app.get('/api/users', authenticateToken, requireAdmin, async (req, res) => {
+    try {
+        const query = `
+            SELECT u.user_id, u.public_id, u.first_name, u.last_name, u.email, u.phone,
+                   u.sex, u.role, u.account_status, u.isLocked, u.loginAttempts, u.created_at,
+                   ep.position, ep.staff_code,
+                   ap.permission_level
+            FROM users u
+            LEFT JOIN employee_profiles ep ON ep.employee_id = u.user_id
+            LEFT JOIN admin_profiles ap ON ap.admin_id = u.user_id
+            ORDER BY u.user_id
+        `;
+        const [users] = await db.query(query);
+        res.json(users);
+    } catch (err) {
+        console.error('Error fetching users:', err);
+        res.status(500).json({ message: 'Internal Server Error' });
+    }
+});
+
+
+    // changed code from this to the one above; revert if code breaks
+    // app.get('/api/users', authenticateToken, requireAdmin, async (req, res) => {
+    //     try {
+    //         const [rows] = await db.query(`${USER_SELECT} ORDER BY u.user_id`);
+
+    //         // LOGIN ATTEMPT SECURITY
+    //         // checks if the email of that user is locked for attempts
+    //         const [users] = await db.query('SELECT user_id, email, isLocked FROM users');
+    //         res.json(users);
+    //     } catch (err) {
+    //         console.error('Error fetching users. User list error:', err);
+    //         res.status(500).json({ message: 'Internal Server Error' });
+    //     }
+    // });
+
+
+
+    // LOGIN ATTEMPT SECURITY
+    // POST /api/users/:id/reset-login-lock — clear the server-side login lock.
+    app.post('/api/users/:id/reset-login-lock', authenticateToken, requireAdmin, async (req, res) => {
+        
+        // only active admin can access this
+        const userId = Number(req.params.id);
+        if (!Number.isInteger(userId)) {
+            return res.status(400).json({ message: 'Invalid user id' });
+        }
+
         try {
-            const [rows] = await db.query(`${USER_SELECT} ORDER BY u.user_id`);
-            res.json(rows);
-        } catch (err) {
-            console.error('User list error:', err);
+            const [rows] = await db.query('SELECT email FROM users WHERE user_id = ?', [userId]);
+            if (rows.length === 0) {
+                return res.status(404).json({ message: 'User not found' });
+            }
+
+            // update lock stats of database
+            await db.query(
+                'UPDATE users SET isLocked = FALSE, loginAttempts = 0 WHERE user_id = ?', [userId]
+            );
+
+            res.json({ message: 'Login session reset successfully', user_id: userId });
+        } catch (err) { 
+            console.error('Login lock reset error:', err);
             res.status(500).json({ message: 'Internal Server Error' });
         }
     });

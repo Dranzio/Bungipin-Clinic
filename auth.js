@@ -93,18 +93,33 @@ router.post('/register', async (req, res) => {
 
 // POST /api/auth/login
 router.post('/login', async (req, res) => {
-    const { email, password } = req.body;
+    // LOGIN ATTEMPT SECURITY
+    // additional security for email input
+    const email = String(req.body.email || '').trim().toLowerCase();
+    const { password } = req.body;
 
     if (!email || !password) {
-        return res.status(400).json({ error: 'Email and password are required' });
+        return res.status(400).json({ error: 'Email and password are required.' });
     }
 
+    // LOGIN ATTEMPT SECURITY
+    // error display when attempt goes over 3 and email exists in system
     try {
         const [rows] = await db.query('SELECT * FROM users WHERE email = ?', [email]);
         const user = rows[0];
 
         if (!user) {
-            return res.status(401).json({ error: 'Invalid email or password' });
+            // LOGIN ATTEMPT SECURITY
+            // error display when user inputs email that doesn't exist in system
+            return res.status(401).json({ error: 'Email does not exist in the system.' });
+        }
+
+        // LOGIN ATTEMPT SECURITY
+        // 1. check lock status in db
+        if (user.isLocked) {
+            return res.status(429).json({
+                error: "Please contact an administrator to reset your session."
+            });
         }
 
         if (user.account_status === 'suspended') {
@@ -113,12 +128,39 @@ router.post('/login', async (req, res) => {
 
         const match = await bcrypt.compare(password, user.password_hash);
         if (!match) {
-            return res.status(401).json({ error: 'Invalid email or password' });
+            // LOGIN ATTEMPT SECURITY
+            // 2. increase attempts and change status to locked if > 3
+            const newAttempts = (user.loginAttempts || 0) + 1;
+            const isLocked = newAttempts > 3;
+
+            await db.query(
+                'UPDATE users SET loginAttempts = ?, isLocked = ? WHERE user_id =?', [newAttempts, isLocked, user.user_id]
+            );
+
+            if (isLocked) {
+                const io = req.app.get('io');
+                if (io) {
+                    io.emit('user-locked', {userId: user.user_id});
+                }
+                return res.status(429).json({
+                    error: "Please contact an administrator to reset your session."
+                });
+            }
+
+            return res.status(401).json({
+                error: "Incorrect password."
+            });
+        }
+
+        // reset attempts & lock on a successful login
+        if (user.loginAttempts > 0 || user.isLocked) {
+            await db.query(
+                'UPDATE users SET loginAttempts = 0, isLocked = FALSE WHERE user_id = ?', [user.user_id]
+            );
         }
 
         const token = jwt.sign(
-            { user_id: user.user_id, role: user.role, public_id: user.public_id },
-            process.env.JWT_SECRET,
+            { user_id: user.user_id, role:user.role, public_id: user.public_id }, process.env.JWT_SECRET,
             { expiresIn: '7d' }
         );
 
@@ -136,7 +178,9 @@ router.post('/login', async (req, res) => {
         });
     } catch (err) {
         console.error('Login error:', err);
-        res.status(500).json({ error: 'Internal Server Error' });
+        res.status(500).json({
+            error: "Internal Server Error"
+        });
     }
 });
 
