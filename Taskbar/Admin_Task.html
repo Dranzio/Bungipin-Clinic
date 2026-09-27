@@ -7,7 +7,7 @@
         </button>
     </div>
 
-    <!-- Main Content Wrapper -->
+    <!-- Main Content Wr/apper -->
     <div class="flex flex-col gap-4 overflow-hidden md:mt-10">
 
         <!-- Profile Section -->
@@ -17,7 +17,7 @@
                 <img id="sidebar-user-avatar" src="" alt="User Avatar" class="w-full h-full object-cover hidden">
                 <i id="sidebar-default-avatar" class="fa-solid fa-user text-gray-300 text-2xl md:text-[50px]"></i>
             </div>
-
+            
             <!-- Name + Email Badge -->
             <div id="name-badge" class="flex flex-col items-center justify-center px-4 py-2 md:w-52 min-w-0 bg-[#D3DCBE] rounded-[35px] text-center gap-0.5 transition-all duration-300">
                 <h2 id="sidebar-user-name" class="text-base md:text-[16px] font-bold text-[#2A1001] w-full break-words">Loading...</h2>
@@ -46,7 +46,7 @@
         </div>
     </div>
 
-    <!-- Sign-Out -->
+    <!-- Sign/Out -->
     <div class="pt-2 border-t border-[#8f9976] md:border-none w-full">
         <a href="../LogInRegister/login.html" onclick="event.preventDefault(); if (typeof logout === 'function') { logout(); } else { localStorage.removeItem('userToken'); window.location.href = '../LogInRegister/login.html'; }" class="flex flex-row items-center gap-4 px-4 md:px-8 py-2 md:py-3 w-full text-base md:text-lg font-medium text-[#2A1001] hover:bg-[#FDFCE9] transition-colors">
             <i class="fa-solid fa-right-from-bracket w-5 text-center shrink-0"></i>
