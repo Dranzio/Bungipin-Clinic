@@ -1077,7 +1077,7 @@ function showSuccessModal({ date, time, doctorName, servicesLabel, amount }) {
 }
 
 
-// ── 7. Submit Appointment to Backend API ────────────────────────────────────
+// ── 7. Submit Appointment to Backend// API ────────────────────────────────────
 async function submitBookingToDatabase(method, channel = null, reference = null) {
     const token = localStorage.getItem('userToken');
 
