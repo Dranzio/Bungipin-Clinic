@@ -21,7 +21,7 @@
     <script>
         function syncContentOffset() {
             const placeholder = document.getElementById('sidebar-placeholder');
-            const sidebar = Array.from(placeholder.children)
+            const sidebar = Array.from(placeholder?.children || [])
                 .find(el => !['SCRIPT', 'STYLE', 'LINK'].includes(el.tagName));
             if (!sidebar) return;
 
@@ -66,19 +66,19 @@
     <div id="main-content" class="flex-1 min-w-0 flex flex-col">
 
         <!-- Header -->
-        <div class="flex justify-between items-start pt-5 pl-6 pr-4 md:pl-24 md:pr-8">
-            <h1 class="text-2xl sm:text-3xl md:text-5xl 2xl:text-[73px] pt-5 font-bold text-[#2A1001] font-['Poppins']">
+        <div class="flex justify-between items-start pt-5 pl-4 pr-4 sm:pl-6 sm:pr-6 md:pl-24 md:pr-8">
+            <h1 class="text-2xl sm:text-3xl md:text-5xl 2xl:text-[73px] pt-2 sm:pt-5 font-bold text-[#2A1001] font-['Poppins']">
                 Booking Appointment
             </h1>
             <img
                 src="../assets/logowithtitle.png"
-                class="w-20 sm:w-24 md:w-28 h-auto object-contain shrink-0"
+                class="w-16 sm:w-20 md:w-28 h-auto object-contain shrink-0"
                 alt="Logo"/>
         </div>
         <hr class="border-t border-[#2A1001] mt-2 mb-6" />
 
-        <div class="p-4 sm:p-6 md:p-10 flex justify-center items-start">
-            <form id="booking-form" novalidate class="w-full max-w-5xl flex flex-col items-center gap-8">
+        <div class="p-3 sm:p-6 md:p-10 flex justify-center items-start">
+            <form id="booking-form" novalidate class="w-full max-w-5xl flex flex-col items-center gap-6 sm:gap-8">
 
                 <!-- Hidden Selected Fields -->
                 <input type="hidden" id="selected-date" name="appointment_date">
@@ -87,21 +87,21 @@
                 <input type="hidden" id="selected-doctor-id" name="doctor_id">
 
                 <!-- 1. Dentist Selection (Choose 1 Doctor) -->
-                <div class="w-full bg-[#D7E3A5] border border-[#2A1001]/15 rounded-3xl p-5 sm:p-6 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div class="w-full bg-[#D7E3A5] border border-[#2A1001]/15 rounded-3xl p-4 sm:p-6 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                     <div class="flex items-center gap-3.5">
-                        <div class="w-12 h-12 rounded-full bg-[#667733] text-white flex items-center justify-center text-xl shrink-0 shadow-sm">
+                        <div class="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-[#667733] text-white flex items-center justify-center text-lg sm:text-xl shrink-0 shadow-sm">
                             <i class="fa-solid fa-user-doctor"></i>
                         </div>
                         <div>
-                            <h2 class="text-base font-extrabold text-[#2A1001] uppercase tracking-wide">
+                            <h2 class="text-sm sm:text-base font-extrabold text-[#2A1001] uppercase tracking-wide">
                                 Choose Your Attending Dentist: <span class="text-red-500">*</span>
                             </h2>
-                            <p class="text-xs text-[#2A1001]/70 mt-0.5">Select a dentist to load their dynamic clinic timecard &amp; availability.</p>
+                            <p class="text-xs text-[#2A1001]/70 mt-0.5">Select a dentist to load their clinic schedule &amp; availability.</p>
                         </div>
                     </div>
                     <div class="relative w-full sm:w-80">
-                        <select id="doctorSelect" required class="w-full h-12 pl-4 pr-10 rounded-full bg-white border-2 border-[#2A1001]/20 font-bold text-sm text-[#2A1001] outline-none cursor-pointer appearance-none shadow-inner focus:ring-2 focus:ring-[#667733]">
-                            <option value="" disabled selected>-- Loading Dentists --</option>
+                        <select id="doctorSelect" required class="w-full h-11 sm:h-12 pl-4 pr-10 rounded-full bg-white border-2 border-[#2A1001]/20 font-bold text-xs sm:text-sm text-gray-400 outline-none cursor-pointer appearance-none shadow-inner focus:ring-2 focus:ring-[#667733]">
+                            <option value="" disabled selected>-- Select Your Attending Dentist --</option>
                             <!-- Injected dynamically from /api/doctors -->
                         </select>
                         <div class="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-[#2A1001] text-xs">▼</div>
@@ -112,18 +112,18 @@
                 <div class="w-full flex flex-col gap-3">
                     <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-2">
                         <div>
-                            <h2 class="font-extrabold text-xl text-[#2A1001]">Select Treatment Services</h2>
+                            <h2 class="font-extrabold text-lg sm:text-xl text-[#2A1001]">Select Treatment Services</h2>
                             <p class="text-xs text-[#2A1001]/70">Click treatments to add them. We automatically calculate total procedure duration &amp; bill.</p>
                         </div>
                         <div class="flex flex-wrap items-center gap-2">
                             <!-- Live Duration Badge -->
-                            <div class="bg-white border-2 border-amber-600/60 rounded-full px-4 py-1.5 flex items-center gap-1.5 shadow-sm text-xs font-bold text-[#2A1001]">
+                            <div class="bg-white border-2 border-amber-600/60 rounded-full px-3 sm:px-4 py-1.5 flex items-center gap-1.5 shadow-sm text-xs font-bold text-[#2A1001]">
                                 <i class="fa-solid fa-stopwatch text-amber-600"></i>
                                 <span>Est. Duration:</span>
                                 <span id="liveDurationDisplay" class="font-black text-amber-700">0 mins</span>
                             </div>
                             <!-- Live Total Badge -->
-                            <div class="bg-white border-2 border-[#667733] rounded-full px-4 py-1.5 flex items-center gap-1.5 shadow-sm text-xs font-bold text-[#2A1001]">
+                            <div class="bg-white border-2 border-[#667733] rounded-full px-3 sm:px-4 py-1.5 flex items-center gap-1.5 shadow-sm text-xs font-bold text-[#2A1001]">
                                 <span>Total Price:</span>
                                 <span id="liveTotalDisplay" class="font-black text-sm text-[#667733]">₱0.00</span>
                             </div>
@@ -137,7 +137,7 @@
                 </div>
 
                 <!-- 3. Calendar & Dynamic Doctor Time Slots Container -->
-                <div class="w-full flex flex-wrap justify-center items-start gap-8 lg:gap-12 pt-4 border-t border-[#2A1001]/15">
+                <div class="w-full flex flex-wrap justify-center items-start gap-6 lg:gap-12 pt-4 border-t border-[#2A1001]/15">
 
                     <!-- Calendar Card -->
                     <div class="w-full max-w-[390px]">
@@ -145,7 +145,7 @@
                             <!-- Header -->
                             <div class="flex justify-between items-center p-3 w-full bg-[#667733] text-[#FDFCE9]">
                                 <button type="button" id="prev" class="cursor-pointer text-xl font-bold px-3 py-1 hover:opacity-80"><i class="fa-solid fa-arrow-left"></i></button>
-                                <div id="month-year" class="text-lg font-bold"></div>
+                                <div id="month-year" class="text-base sm:text-lg font-bold"></div>
                                 <button type="button" id="next" class="cursor-pointer text-xl font-bold px-3 py-1 hover:opacity-80"><i class="fa-solid fa-arrow-right"></i></button>
                             </div>
 
@@ -154,14 +154,14 @@
                                 <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
                             </div>
                             <!-- Days grid -->
-                            <div class="grid grid-cols-7 gap-2 px-4 py-3" id="days"></div>
+                            <div class="grid grid-cols-7 gap-2 px-3 sm:px-4 py-3" id="days"></div>
                         </div>
                         <p class="text-center text-xs text-[#2A1001]/60 mt-2 font-medium"><i class="fa-solid fa-calendar-day mr-1"></i>Select an appointment date</p>
                     </div>
 
                     <!-- Dynamic Time Slots Section -->
-                    <div class="w-full lg:flex-1 flex flex-col gap-3 min-w-[300px]">
-                        <div class="flex justify-between items-center pb-1 border-b border-[#2A1001]/15">
+                    <div class="w-full lg:flex-1 flex flex-col gap-3 min-w-[280px]">
+                        <div class="flex flex-col sm:flex-row justify-between sm:items-center pb-1 border-b border-[#2A1001]/15 gap-1">
                             <h2 class="font-extrabold text-sm text-[#2A1001] uppercase tracking-wider flex items-center gap-1.5">
                                 <i class="fa-solid fa-clock text-[#667733]"></i> Available Time Slots:
                             </h2>
@@ -170,8 +170,7 @@
 
                         <!-- Dynamic Time Slots Container (Injected by JS) -->
                         <div id="timeSlotsContainer" class="w-full">
-                            <!-- Injected dynamically based on Doctor Schedule + Total Duration -->
-                            <div class="bg-white border border-dashed border-black/20 rounded-2xl p-8 text-center text-gray-500 font-semibold text-xs">
+                            <div class="bg-white border border-dashed border-black/20 rounded-2xl p-6 sm:p-8 text-center text-gray-500 font-semibold text-xs">
                                 <i class="fa-regular fa-calendar-check text-2xl text-[#667733] mb-2 block"></i>
                                 Please select an attending dentist and a calendar date to view available time slots.
                             </div>
@@ -184,51 +183,50 @@
                     <label for="PNote" class="text-xs font-extrabold tracking-wider text-[#2A1001] uppercase">
                         Patient Concern / Clinical Note (Optional):
                     </label>
-                    <textarea id="PNote" name="PNote" placeholder="Describe your dental concern, symptoms, or any allergies..." class="w-full h-24 rounded-2xl bg-white text-[#2c3e2b] font-medium text-sm outline-none resize-none shadow-inner border-2 border-black p-4" maxlength="250"></textarea>
+                    <textarea id="PNote" name="PNote" placeholder="Describe your dental concern, symptoms, or any allergies..." class="w-full h-24 rounded-2xl bg-white text-[#2c3e2b] font-medium text-sm outline-none resize-none shadow-inner border-2 border-black p-3 sm:p-4" maxlength="250"></textarea>
                     <div class="text-right text-xs text-[#2A1001]/60 font-semibold">
                         <span id="current-count">0</span>/250 characters
                     </div>
                 </div>
 
-        <!-- Review and Submit Booking -->
-                <div class="flex justify-center">
-                    <button type="submit" id="submit-btn" class="bg-[#D5C04D] hover:bg-[#c4b03f] text-[#2A1001] font-black text-xl px-14 py-3.5 rounded-full shadow-lg active:scale-95 transition transform cursor-pointer">
+                <!-- Review and Submit Booking -->
+                <div class="flex justify-center w-full pb-4">
+                    <button type="submit" id="submit-btn" class="w-full sm:w-auto bg-[#D5C04D] hover:bg-[#c4b03f] text-[#2A1001] font-black text-lg sm:text-xl px-10 sm:px-14 py-3.5 rounded-full shadow-lg active:scale-95 transition transform cursor-pointer">
                         Review Booking &amp; Pay
                     </button>
                 </div>
-            </form> <!-- MOVED HERE -->
-            
+            </form>
         </div>
     </div>
 </div>
 
-<!-- ================= APPOINTMENT SUMMARY RECEIPT MODAL ================= -->
-<div id="receipt-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center hidden z-50 p-4">
-    <div class="bg-white rounded-[30px] w-full max-w-lg p-6 sm:p-8 flex flex-col gap-4 relative shadow-xl border-2 border-black/10 max-h-[92vh] overflow-y-auto">
+<!-- ================= 1. APPOINTMENT SUMMARY RECEIPT MODAL ================= -->
+<div id="receipt-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center hidden z-50 p-3 sm:p-4">
+    <div class="bg-white rounded-3xl w-full max-w-lg p-5 sm:p-7 flex flex-col gap-4 relative shadow-2xl border-2 border-black/10 max-h-[90vh] overflow-y-auto">
 
-        <button type="button" id="close-modal" class="absolute top-5 right-5 w-8 h-8 flex items-center justify-center text-2xl font-extrabold text-[#382414]/60 hover:text-[#382414] hover:bg-gray-100 rounded-full transition leading-none cursor-pointer">&times;</button>
+        <button type="button" id="close-modal" class="absolute top-4 right-4 w-8 h-8 flex items-center justify-center text-2xl font-extrabold text-[#382414]/60 hover:text-[#382414] hover:bg-gray-100 rounded-full transition leading-none cursor-pointer" aria-label="Close">&times;</button>
 
-        <div class="flex items-center gap-3 border-b border-black/10 pb-4">
-            <img src="../assets/logowithtitle.png" class="w-12 h-auto object-contain" alt="Clinic Logo"/>
+        <div class="flex items-center gap-3 border-b border-black/10 pb-3 pr-8">
+            <img src="../assets/logowithtitle.png" class="w-10 sm:w-12 h-auto object-contain shrink-0" alt="Clinic Logo"/>
             <div>
-                <h2 class="font-extrabold text-xl text-[#2c3e2b]">Appointment Summary &amp; Bill</h2>
+                <h2 class="font-extrabold text-lg sm:text-xl text-[#2c3e2b] leading-snug">Appointment Summary &amp; Bill</h2>
                 <p class="text-xs text-[#2c3e2b]/60">Review your selected services, schedule, and payment</p>
             </div>
         </div>
 
         <!-- Itemized Summary Content -->
-        <div id="receipt-content" class="text-[#2c3e2b] flex flex-col gap-3 border border-black/10 p-4 rounded-2xl bg-[#FDFCE9] text-sm">
+        <div id="receipt-content" class="text-[#2c3e2b] flex flex-col gap-3 border border-black/10 p-3.5 sm:p-4 rounded-2xl bg-[#FDFCE9] text-xs sm:text-sm">
             <!-- Injected dynamically -->
         </div>
 
         <!-- Payment Method Action Buttons -->
         <div class="flex flex-col gap-2 mt-1">
-            <p class="text-xs font-bold text-[#2A1001]/50 uppercase tracking-wider text-center">Choose Payment Mode</p>
-            <div class="flex gap-3">
-                <button type="button" id="pay-online-btn" class="flex-1 py-3 bg-[#667733] hover:bg-[#556022] text-white font-bold rounded-full shadow-md active:scale-95 transition transform flex items-center justify-center gap-2 text-sm cursor-pointer">
+            <p class="text-xs font-bold text-[#2A1001]/60 uppercase tracking-wider text-center">Choose Payment Mode</p>
+            <div class="flex flex-col sm:flex-row gap-2.5 sm:gap-3">
+                <button type="button" id="pay-online-btn" class="flex-1 py-3 bg-[#667733] hover:bg-[#556022] text-white font-bold rounded-full shadow-md active:scale-95 transition transform flex items-center justify-center gap-2 text-xs sm:text-sm cursor-pointer">
                     <i class="fa-solid fa-wallet"></i> Pay Online
                 </button>
-                <button type="button" id="pay-cash-btn" class="flex-1 py-3 bg-[#D3DCBE] hover:bg-[#c2ccab] text-[#2A1001] font-bold rounded-full shadow-sm active:scale-95 transition transform flex items-center justify-center gap-2 text-sm cursor-pointer">
+                <button type="button" id="pay-cash-btn" class="flex-1 py-3 bg-[#D3DCBE] hover:bg-[#c2ccab] text-[#2A1001] font-bold rounded-full shadow-sm active:scale-95 transition transform flex items-center justify-center gap-2 text-xs sm:text-sm cursor-pointer">
                     <i class="fa-solid fa-money-bill-wave"></i> Pay in Clinic (Cash)
                 </button>
             </div>
@@ -236,109 +234,128 @@
     </div>
 </div>
 
-             <!-- ================= PHILIPPINES ONLINE PAYMENT MODAL ================= -->
-<div id="online-payment-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center hidden z-[60] p-4">
-    <div class="bg-white rounded-[30px] w-full max-w-xl p-6 sm:p-8 flex flex-col gap-4 relative shadow-xl border-2 border-black/10 max-h-[92vh] overflow-y-auto">
+<!-- ================= 2. RESPONSIVE PHILIPPINES ONLINE PAYMENT MODAL ================= -->
+<div id="online-payment-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center hidden z-[60] p-3 sm:p-4">
+    <div class="bg-white rounded-3xl w-full max-w-lg p-4 sm:p-6 flex flex-col max-h-[90vh] shadow-2xl border-2 border-black/10">
 
-        <button type="button" id="close-online-payment-btn" class="absolute top-5 right-5 w-8 h-8 flex items-center justify-center text-2xl font-extrabold text-[#382414]/60 hover:text-[#382414] hover:bg-gray-100 rounded-full transition leading-none cursor-pointer">&times;</button>
-
-        <div class="flex items-center gap-3 border-b border-black/10 pb-4">
-            <div class="w-12 h-12 rounded-full bg-[#D7E3A5] flex items-center justify-center text-xl text-[#667733] shrink-0">
-                <i class="fa-solid fa-shield-halved"></i>
+        <!-- Fixed Header Area -->
+        <div class="flex items-center justify-between border-b border-black/10 pb-3 shrink-0">
+            <div class="flex items-center gap-2.5">
+                <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-[#D7E3A5] flex items-center justify-center text-base sm:text-lg text-[#667733] shrink-0">
+                    <i class="fa-solid fa-shield-halved"></i>
+                </div>
+                <div>
+                    <h2 class="font-extrabold text-sm sm:text-lg text-[#2c3e2b] leading-tight">Secure Online Payment</h2>
+                    <p class="text-[10px] sm:text-xs text-[#2c3e2b]/60">Select payment channel &amp; details</p>
+                </div>
             </div>
-            <div>
-                <h2 class="font-extrabold text-xl text-[#2c3e2b]">Secure Online Payment</h2>
-                <p class="text-xs text-[#2c3e2b]/60">Total Amount: <span id="onlinePayAmountText" class="font-bold text-amber-700">₱0.00</span></p>
+            <div class="flex items-center gap-2.5 sm:gap-3">
+                <div class="text-right">
+                    <span class="text-[9px] uppercase font-bold text-[#2A1001]/60 block leading-none">Total Due</span>
+                    <span id="onlinePayAmountText" class="font-black text-sm sm:text-base text-[#667733]">₱0.00</span>
+                </div>
+                <button type="button" id="close-online-payment-btn" class="w-8 h-8 flex items-center justify-center text-xl font-extrabold text-[#382414]/60 hover:text-[#382414] hover:bg-gray-100 rounded-full transition leading-none cursor-pointer shrink-0" aria-label="Close">&times;</button>
             </div>
         </div>
 
-        <!-- Philippine Channels Tabs -->
-        <div class="grid grid-cols-3 sm:grid-cols-6 gap-2" id="channelSelector">
-            <button type="button" data-channel="gcash" class="channel-tab-btn bg-[#D7E3A5]/20 border-2 border-[#667733] ring-2 ring-[#667733] text-[#005CEE] rounded-xl p-2 flex flex-col items-center justify-center gap-1 font-bold text-xs shadow-sm hover:scale-105 transition active:scale-95 cursor-pointer">
-                <span class="font-black text-sm">GCash</span>
-                <span class="text-[9px] text-gray-500">E-Wallet</span>
-            </button>
-            <button type="button" data-channel="maya" class="channel-tab-btn bg-white border-2 border-[#2A1001]/10 text-gray-800 rounded-xl p-2 flex flex-col items-center justify-center gap-1 font-bold text-xs shadow-sm hover:scale-105 transition active:scale-95 cursor-pointer">
-                <span class="font-black text-sm text-green-600">Maya</span>
-                <span class="text-[9px] text-gray-500">E-Wallet</span>
-            </button>
-            <button type="button" data-channel="gotyme" class="channel-tab-btn bg-white border-2 border-[#2A1001]/10 text-gray-800 rounded-xl p-2 flex flex-col items-center justify-center gap-1 font-bold text-xs shadow-sm hover:scale-105 transition active:scale-95 cursor-pointer">
-                <span class="font-black text-sm text-purple-700">GoTyme</span>
-                <span class="text-[9px] text-gray-500">Digital Bank</span>
-            </button>
-            <button type="button" data-channel="paypal" class="channel-tab-btn bg-white border-2 border-[#2A1001]/10 text-gray-800 rounded-xl p-2 flex flex-col items-center justify-center gap-1 font-bold text-xs shadow-sm hover:scale-105 transition active:scale-95 cursor-pointer">
-                <i class="fa-brands fa-paypal text-sm text-[#003087]"></i>
-                <span class="text-[10px] font-bold">PayPal</span>
-            </button>
-            <button type="button" data-channel="card" class="channel-tab-btn bg-white border-2 border-[#2A1001]/10 text-gray-800 rounded-xl p-2 flex flex-col items-center justify-center gap-1 font-bold text-xs shadow-sm hover:scale-105 transition active:scale-95 cursor-pointer">
-                <i class="fa-solid fa-credit-card text-sm text-blue-700"></i>
-                <span class="text-[10px] font-bold">Card</span>
+        <!-- Scrollable Body Content -->
+        <div class="flex-1 overflow-y-auto overscroll-contain py-3 flex flex-col gap-3 pr-0.5">
+
+            <!-- Channel Tabs (Compact & Responsive) -->
+            <div class="grid grid-cols-3 sm:grid-cols-5 gap-1.5" id="channelSelector">
+                <!-- GCash -->
+                <button type="button" data-channel="gcash" class="channel-tab-btn bg-[#D7E3A5]/20 border-2 border-[#667733] ring-1 ring-[#667733] text-[#005CEE] rounded-xl py-1.5 px-2 flex flex-col items-center justify-center gap-0.5 font-bold shadow-sm hover:scale-[1.02] transition active:scale-95 cursor-pointer">
+                    <span class="font-black text-xs sm:text-sm">GCash</span>
+                    <span class="text-[8px] sm:text-[9px] text-gray-500 font-medium">E-Wallet</span>
+                </button>
+                <!-- Maya -->
+                <button type="button" data-channel="maya" class="channel-tab-btn bg-white border border-black/15 text-gray-800 rounded-xl py-1.5 px-2 flex flex-col items-center justify-center gap-0.5 font-bold shadow-sm hover:scale-[1.02] transition active:scale-95 cursor-pointer">
+                    <span class="font-black text-xs sm:text-sm text-green-600">Maya</span>
+                    <span class="text-[8px] sm:text-[9px] text-gray-500 font-medium">E-Wallet</span>
+                </button>
+                <!-- GoTyme -->
+                <button type="button" data-channel="gotyme" class="channel-tab-btn bg-white border border-black/15 text-gray-800 rounded-xl py-1.5 px-2 flex flex-col items-center justify-center gap-0.5 font-bold shadow-sm hover:scale-[1.02] transition active:scale-95 cursor-pointer">
+                    <span class="font-black text-xs sm:text-sm text-purple-700">GoTyme</span>
+                    <span class="text-[8px] sm:text-[9px] text-gray-500 font-medium">Digital Bank</span>
+                </button>
+                <!-- PayPal -->
+                <button type="button" data-channel="paypal" class="channel-tab-btn bg-white border border-black/15 text-gray-800 rounded-xl py-1.5 px-2 flex flex-col items-center justify-center gap-0.5 font-bold shadow-sm hover:scale-[1.02] transition active:scale-95 cursor-pointer">
+                    <i class="fa-brands fa-paypal text-xs text-[#003087]"></i>
+                    <span class="text-[10px] font-bold">PayPal</span>
+                </button>
+                <!-- Debit/Credit Card -->
+                <button type="button" data-channel="card" class="channel-tab-btn bg-white border border-black/15 text-gray-800 rounded-xl py-1.5 px-2 flex flex-col items-center justify-center gap-0.5 font-bold shadow-sm hover:scale-[1.02] transition active:scale-95 cursor-pointer col-span-2 sm:col-span-1">
+                    <i class="fa-solid fa-credit-card text-xs text-blue-700"></i>
+                    <span class="text-[10px] font-bold">Card</span>
+                </button>
+            </div>
+
+            <!-- Dynamic Channel Form & Details Box -->
+            <div id="channelContentBox" class="w-full bg-[#FDFCE9] border border-black/10 p-3 sm:p-4 rounded-2xl">
+                <!-- Content dynamically injected by JS renderChannelContent() -->
+            </div>
+
+        </div>
+
+        <!-- Fixed Footer Action Button -->
+        <div class="pt-2 border-t border-black/10 shrink-0">
+            <button type="button" id="submitOnlineBookingBtn" class="w-full py-3 bg-[#D5C04D] hover:bg-[#c4b03f] text-[#2A1001] font-black text-sm sm:text-base rounded-full shadow-md active:scale-95 transition transform flex items-center justify-center gap-2 cursor-pointer">
+                <i class="fa-solid fa-check-circle"></i> Confirm &amp; Finalize Booking
             </button>
         </div>
 
-        <!-- Dynamic Channel Content Box -->
-        <div id="channelContentBox" class="w-full bg-[#FDFCE9] border border-black/10 p-4 rounded-2xl min-h-[160px]">
-            <!-- Content injected by JS renderChannelContent() -->
-        </div>
-
-        <button type="button" id="submitOnlineBookingBtn" class="w-full py-3.5 bg-[#D5C04D] hover:bg-[#c4b03f] text-[#2A1001] font-black text-lg rounded-full shadow-md active:scale-95 transition transform flex items-center justify-center gap-2 cursor-pointer">
-            <i class="fa-solid fa-check-circle"></i> Confirm &amp; Finalize Booking
-        </button>
     </div>
 </div>
 
-    
-
-            </form>
-            
-        </div>
-    </div>
-</div>
-
+<!-- ================= 3. VALIDATION MODAL ================= -->
 <div id="validation-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center hidden z-[70] p-4">
-    <div class="bg-white rounded-[30px] w-full max-w-sm p-8 flex flex-col items-center gap-3 text-center shadow-xl border-2 border-black/10">
+    <div class="bg-white rounded-3xl w-full max-w-sm p-6 sm:p-8 flex flex-col items-center gap-3 text-center shadow-xl border-2 border-black/10">
         <div class="w-14 h-14 rounded-full bg-amber-50 flex items-center justify-center">
             <i class="fa-solid fa-triangle-exclamation text-amber-500 text-2xl"></i>
         </div>
         <h2 class="font-extrabold text-lg text-[#2A1001]">Incomplete Booking</h2>
-        <p id="validation-modal-text" class="text-sm text-[#2A1001]/70 leading-relaxed"></p>
-        <button type="button" id="validation-modal-ok" class="mt-2 w-full py-2.5 bg-[#667733] hover:bg-[#556022] text-white font-bold rounded-full shadow-md active:scale-95 transition cursor-pointer">
+        <p id="validation-modal-text" class="text-xs sm:text-sm text-[#2A1001]/70 leading-relaxed"></p>
+        <button type="button" id="validation-modal-ok" class="mt-2 w-full py-2.5 bg-[#667733] hover:bg-[#556022] text-white font-bold rounded-full shadow-md active:scale-95 transition cursor-pointer text-sm">
             Okay, Got It
         </button>
     </div>
 </div>
+
+<!-- ================= 4. CASH CONFIRM MODAL ================= -->
 <div id="cash-confirm-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center hidden z-[70] p-4">
-    <div class="bg-white rounded-[30px] border-2 border-black/10 w-full max-w-sm p-8 flex flex-col items-center gap-3 text-center shadow-xl">
+    <div class="bg-white rounded-3xl border-2 border-black/10 w-full max-w-sm p-6 sm:p-8 flex flex-col items-center gap-3 text-center shadow-xl">
         <div class="w-14 h-14 rounded-full bg-[#D7E3A5] flex items-center justify-center">
             <i class="fa-solid fa-money-bill-wave text-[#667733] text-2xl"></i>
         </div>
         <h2 class="font-extrabold text-lg text-[#2A1001]">Confirm Cash Payment</h2>
-        <p class="text-sm text-[#2A1001]/70 leading-relaxed">Confirm booking this appointment with In-Clinic Cash payment?</p>
+        <p class="text-xs sm:text-sm text-[#2A1001]/70 leading-relaxed">Confirm booking this appointment with In-Clinic Cash payment?</p>
         <div class="flex gap-3 w-full mt-2">
-            <button type="button" id="cash-confirm-cancel" class="flex-1 py-2.5 bg-white border border-[#2A1001]/20 hover:bg-[#F3EFE4] text-[#2A1001] font-semibold rounded-full transition cursor-pointer">Cancel</button>
-            <button type="button" id="cash-confirm-ok" class="flex-1 py-2.5 bg-[#667733] hover:bg-[#556022] text-white font-bold rounded-full shadow-md active:scale-95 transition cursor-pointer">Yes, Confirm</button>
+            <button type="button" id="cash-confirm-cancel" class="flex-1 py-2.5 bg-white border border-[#2A1001]/20 hover:bg-[#F3EFE4] text-[#2A1001] font-semibold rounded-full transition cursor-pointer text-xs sm:text-sm">Cancel</button>
+            <button type="button" id="cash-confirm-ok" class="flex-1 py-2.5 bg-[#667733] hover:bg-[#556022] text-white font-bold rounded-full shadow-md active:scale-95 transition cursor-pointer text-xs sm:text-sm">Yes, Confirm</button>
         </div>
     </div>
 </div>
-<!-- ================= BOOKING SUCCESS MODAL ================= -->
+
+<!-- ================= 5. BOOKING SUCCESS MODAL ================= -->
 <div id="success-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center hidden z-[80] p-4">
-    <div class="bg-white rounded-[30px] w-full max-w-sm p-8 flex flex-col items-center gap-3 text-center shadow-xl border-2 border-black/10">
+    <div class="bg-white rounded-3xl w-full max-w-sm p-6 sm:p-8 flex flex-col items-center gap-3 text-center shadow-xl border-2 border-black/10">
         <div class="w-16 h-16 rounded-full bg-[#D7E3A5] flex items-center justify-center">
             <i class="fa-solid fa-check text-[#667733] text-3xl"></i>
         </div>
-        <h2 class="font-extrabold text-xl text-[#2A1001] mt-1">Booking Confirmed!</h2>
-        <p id="success-modal-text" class="text-sm text-[#2A1001]/70 leading-relaxed">
-            Your appointment has been successfully booked. A confirmation has been sent to your email.
+        <h2 class="font-extrabold text-lg sm:text-xl text-[#2A1001] mt-1">Booking Confirmed!</h2>
+        <p id="success-modal-text" class="text-xs sm:text-sm text-[#2A1001]/70 leading-relaxed">
+            Your appointment has been successfully booked. A confirmation has been logged to your account.
         </p>
 
         <div id="success-modal-details" class="w-full bg-[#FDFCE9] border border-black/10 rounded-2xl p-4 text-sm text-left flex flex-col gap-1.5 mt-1">
             <!-- Injec/ted dynamica//lly: date, time, doctor, services, amount -->
         </div>
 
-        <button type="button" id="success-modal-ok" class="mt-2 w-full py-2.5 bg-[#667733] hover:bg-[#556022] text-white font-bold rounded-full shadow-md active:scale-95 transition cursor-pointer">
+        <button type="button" id="success-modal-ok" class="mt-2 w-full py-2.5 bg-[#667733] hover:bg-[#556022] text-white font-bold rounded-full shadow-md active:scale-95 transition cursor-pointer text-sm">
             Done
         </button>
     </div>
 </div>
+
 </body>
 </html>
