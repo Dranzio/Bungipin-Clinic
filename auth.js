@@ -5,6 +5,8 @@ const crypto = require('crypto');
 const router = express.Router();
 const db = require('./db');
 const { sendEmail } = require('./Mailer');
+const authenticateToken = require('./authMiddleware');
+const { clearAuthCookie } = authenticateToken;
 
 const SALT_ROUNDS = 10;
 const RESET_TOKEN_TTL_MINUTES = 30;
@@ -232,6 +234,60 @@ router.post('/reset-password', async (req, res) => {
     } catch (err) {
         console.error('Reset password error:', err);
         res.status(500).json({ error: 'Something went wrong. Please try again later.' });
+    }
+});
+
+// GET /api/auth/me
+// pageProtection.js calls this on every protected page load to confirm the
+// token is still valid and to get the live role (in case an admin changed
+// it since the token was issued). authenticateToken already re-checks
+// account_status/is_locked against the DB and populates req.user, so this
+// route just needs to hand that back.
+router.get('/me', authenticateToken, (req, res) => {
+    res.json({
+        user_id: req.user.user_id,
+        public_id: req.user.public_id,
+        role: req.user.role
+    });
+});
+
+// POST /api/auth/logout
+// Called by pageProtection.js's window.logout(). Must clear the httpOnly
+// cookie server-side — clearing localStorage alone leaves the cookie
+// behind, which can still authenticate requests on its own.
+router.post('/logout', (req, res) => {
+    clearAuthCookie(res);
+    res.json({ message: 'Logged out' });
+});
+
+// POST /api/auth/reauth
+// Called by passwordGate.js. Re-checks the current password for an
+// already-authenticated user before revealing gated content — this is a
+// step-up check, not a login, so it doesn't issue a new token or cookie.
+router.post('/reauth', authenticateToken, async (req, res) => {
+    const { password } = req.body;
+
+    if (!password) {
+        return res.status(400).json({ error: 'Password is required.' });
+    }
+
+    try {
+        const [rows] = await db.query('SELECT password_hash FROM users WHERE user_id = ?', [req.user.user_id]);
+        const user = rows[0];
+
+        if (!user) {
+            return res.status(401).json({ error: 'Invalid session.' });
+        }
+
+        const match = await bcrypt.compare(password, user.password_hash);
+        if (!match) {
+            return res.status(401).json({ error: 'Incorrect password.' });
+        }
+
+        res.json({ message: 'Re-authenticated.' });
+    } catch (err) {
+        console.error('Reauth error:', err);
+        res.status(500).json({ error: 'Internal Server Error' });
     }
 });
 
