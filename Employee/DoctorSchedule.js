@@ -350,7 +350,7 @@ async function loadDoctorAppointments(doctorId) {
     const docId = doctorId || (currentDoctor ? currentDoctor.user_id : 1);
 
     try {
-        const res = await fetch(`${API_BASE_URL}/api/doctors/${docId}/appointments`, { headers: authHeaders() });
+        const res = await fetch(`${API_BASE_URL}/api/doctor-schedule/${docId}/appointments`, { headers: authHeaders() });
         if (res.ok) {
             allDoctorAppointments = await res.json();
         } else {
