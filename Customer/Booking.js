@@ -162,7 +162,7 @@ function renderServiceCards(services) {
         const card = document.createElement('div');
         const duration = getEstimatedDuration(service);
 
-        card.className = `flex flex-col w-full max-w-[240px] h-[270px] justify-between items-center text-center rounded-2xl border-2 transition-all duration-200 cursor-pointer p-4 relative shadow-sm hover:scale-[1.02] ${
+        card.className = `flex flex-col w-full max-w-[240px] h-[270px] justify-between items-center text-center rounded-2xl border-2 transition-all duration-200 cursor-pointer p-4 pt-7 relative shadow-sm hover:scale-[1.02] overflow-hidden ${
             isSelected ? 'bg-[#D7E3A5] border-[#667733] ring-2 ring-[#667733]' : 'bg-white border-black hover:bg-[#F7F5EE]'
         }`;
 
@@ -181,7 +181,7 @@ function renderServiceCards(services) {
                 <i class="fa-regular fa-clock text-[9px]"></i> ${duration}m
             </div>
 
-            <h3 class="font-extrabold text-sm sm:text-base break-words text-[#2A1001] line-clamp-2 px-2 mt-5">
+            <h3 class="font-extrabold text-sm sm:text-base break-words w-full text-[#2A1001] line-clamp-2 px-2 mt-5">
                 ${escapeHtml(service.label)}
             </h3>
 
