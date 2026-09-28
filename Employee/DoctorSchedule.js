@@ -193,7 +193,7 @@ async function loadInitialData() {
         updateDoctorHeader(currentDoctor);
 
         // 2. Fetch doctors list to populate selector (Admin/Staff view)
-        const resAllDoctors = await fetch(`${API_BASE_URL}/api/doctors`, { headers: authHeaders() });
+        const resAllDoctors = await fetch(`${API_BASE_URL}/api/doctor-schedule/doctors`, { headers: authHeaders() });
         if (resAllDoctors.ok) {
             allDoctorsList = await resAllDoctors.json();
             populateDentistSelector(allDoctorsList, currentDoctor);
