@@ -496,3 +496,9 @@ INSERT INTO doctor_schedules (employee_id, day_of_week, start_time, end_time, br
 (@uid6, 4, '08:00:00', '17:00:00', '12:00:00', '13:00:00', TRUE),
 (@uid6, 5, '08:00:00', '17:00:00', '12:00:00', '13:00:00', TRUE),
 (@uid6, 6, '08:00:00', '12:00:00', NULL, NULL, TRUE);
+
+SELECT user_id, public_id, email, role, account_status, is_locked, login_attempts
+FROM users
+WHERE is_locked = 1
+   OR login_attempts > 0
+ORDER BY login_attempts DESC;

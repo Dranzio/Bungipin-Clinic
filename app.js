@@ -30,6 +30,7 @@ const registerAdminProfileRoute = require("./Admin/AdminProfile");
 const registerDashboardRoutes = require("./Admin/DashboardRoutes");
 
 const app = express();
+app.set('trust proxy', 1);
 
 // show IO in routes
 const server = http.createServer(app);
@@ -44,12 +45,12 @@ app.use(express.urlencoded({ extended: false }));
 // rate limiter for login requests
 const loginLimit = rateLimit({
     windowMs: 1 * 60 * 1000,
-    max: 5,
-    message: {
-        error: "Too many login attempts for this address, please try again later."
-    },
+    max: 10,
+    skipSuccessfulRequests: true,
+    message: { error: "Too many login attempts for this address, please try again later." },
     standardHeaders: true,
-    legacyHeaders: false
+    legacyHeaders: false,
+    validate: { forwardedHeader: false }   // silences ERR_ERL_FORWARDED_HEADER on Vercel
 });
 
 // make IO accessible in route files
