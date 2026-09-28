@@ -350,7 +350,7 @@
             }
 
             // 3. Contains a special character
-            if (/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(value)) {
+            if (/[^A-Za-z0-9\s]/.test(value)) {
                 strength++;
             }
 
@@ -423,55 +423,67 @@
 
             const hasMinLength = passwordValue.length >= 8;
             const hasNumber = /\d/.test(passwordValue);
-            const hasSpecialChar = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(passwordValue);
-            const passwordsMatch =
-                (passwordValue === confirmValue) &&
-                passwordValue !== '';
+            const hasSpace = passwordValue.includes(' ');
+            const hasSpecialChar = /[^A-Za-z0-9\s]/.test(passwordValue);
+            const hasUpperLower = /[A-Z]/.test(passwordValue) && /[a-z]/.test(passwordValue);
+            const passwordsMatch = (passwordValue === confirmValue) && passwordValue !== '';
 
-            if (passwordValue !== "" && !hasMinLength) {
+            let strength = 0;
 
+            if (hasMinLength){
+                strength++;
+            }
+
+            if (hasNumber) {
+                strength++;
+            }
+
+            if (hasSpecialChar) {
+                strength++;
+            }
+
+            if (hasUpperLower) {
+                strength++;
+            }
+
+            if (passwordValue !== "" && hasSpace) {
+                warningMessage = "Password should not contain spaces.";
+                allRequiredFilled = false;
+            } else if (passwordValue !== "" && !hasMinLength) {
                 warningMessage = "Password must be at least 8 characters long.";
                 allRequiredFilled = false;
 
-            } else if (
-                passwordValue !== "" &&
-                (!hasNumber || !hasSpecialChar)
-            ) {
-
-                warningMessage =
-                    "Password must include at least one number and one special character.";
-
+            } else if (passwordValue !== "" && !hasNumber) {
+                warningMessage = "Password must include at least one number.";
                 allRequiredFilled = false;
 
-            } else if (
-                confirmValue !== "" &&
-                !passwordsMatch
-            ) {
+            }  else if (passwordValue !== "" && !hasSpecialChar) {
+                warningMessage = "Password must include at least one special character.";
+                allRequiredFilled = false;
 
+            }   else if (passwordValue !== "" && !hasUpperLower) {
+                warningMessage = "Password must include uppercase and lowercase letters.";
+                allRequiredFilled = false;
+
+            }   else if (confirmValue !== "" && !passwordsMatch) {
                 warningMessage = "Passwords do not match.";
                 allRequiredFilled = false;
 
             } else {
-
                 warningMessage = "";
             }
 
-            if (
-                warningMessage !== "" &&
-                (passwordValue !== "" || confirmValue !== "")
-            ) {
-
+            if (warningMessage !== "" && (passwordValue !== "" || confirmValue !== "")) {
                 passwordWarning.textContent = warningMessage;
                 passwordWarning.classList.remove('hidden');
 
             } else {
-
                 passwordWarning.textContent = "";
                 passwordWarning.classList.add('hidden');
             }
 
             clearBtn.disabled = !hasAnyInput;
-            createAccountBtn.disabled = !allRequiredFilled;
+            createAccountBtn.disabled = !allRequiredFilled || strength < 3;
         }
 
         allInputs.forEach(input => {
