@@ -52,14 +52,14 @@ function registerBookingRequestRoutes(app, db, io) {
             // FIX: Check if status is NOT 'all'
             if (status && status !== 'all') {
                 if (status === 'reschedule_requested') {
-                    query += ' WHERE a.reschedule_status = "requested"';
+                    query += ' WHERE a.reschedule_status = \'requested\'';
                 } else {
                     query += ' WHERE a.appointment_status = ?';
                     params.push(status);
                 }
             }
-            
-            query += ' ORDER BY (a.reschedule_status = "requested") DESC, a.created_at DESC';
+
+            query += ' ORDER BY (a.reschedule_status = \'requested\') DESC, a.created_at DESC';
 
             const [rows] = await db.query(query, params);
             res.json(rows);
