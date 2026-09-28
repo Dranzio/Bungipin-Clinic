@@ -163,7 +163,7 @@ function registerDoctorScheduleRoutes(app, db, io) {
     });
 
     // ── 5. GET /api/doctors/:id/appointments — Today & Future approved customer bookings ──
-    app.get('/api/doctor/:id/appointments', authenticateToken, async (req, res) => {
+    app.get('/api/doctor-schedule/:id/appointments', authenticateToken, async (req, res) => {
         const employeeId = Number(req.params.id);
 
         try {
