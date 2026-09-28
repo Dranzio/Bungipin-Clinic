@@ -20,7 +20,7 @@ function registerDoctorScheduleRoutes(app, db, io) {
     }]);
 
     // ── 1. GET /api/doctors — List all active dentists ──
-    app.get('/api/doctors', authenticateToken, async (req, res) => {
+    app.get('/api/doctor-schedule/doctors', authenticateToken, async (req, res) => {
         try {
             const [doctors] = await db.query(`
                 SELECT
@@ -76,7 +76,7 @@ function registerDoctorScheduleRoutes(app, db, io) {
     });
 
     // ── 3. GET /api/doctors/:id/schedule — Weekly assigned duty shifts ──
-    app.get('/api/doctors/:id/schedule', authenticateToken, async (req, res) => {
+    app.get('/api/doctor-schedule/:id/schedule', authenticateToken, async (req, res) => {
         const employeeId = Number(req.params.id);
         if (!Number.isInteger(employeeId)) {
             return res.status(400).json({ message: 'Invalid doctor ID' });
@@ -163,7 +163,7 @@ function registerDoctorScheduleRoutes(app, db, io) {
     });
 
     // ── 5. GET /api/doctors/:id/appointments — Today & Future approved customer bookings ──
-    app.get('/api/doctors/:id/appointments', authenticateToken, async (req, res) => {
+    app.get('/api/doctor/:id/appointments', authenticateToken, async (req, res) => {
         const employeeId = Number(req.params.id);
 
         try {
