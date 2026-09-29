@@ -6,18 +6,16 @@ const fs = require('fs');
 const { put, del } = require('@vercel/blob');
 
 const SALT_ROUNDS = 10;
-
 const uploadDir = path.join(__dirname, '..', 'uploads', 'medical-pdfs');
 const isVercel = process.env.VERCEL === '1' || !!process.env.BLOB_READ_WRITE_TOKEN;
 
-// Use memoryStorage so buffers are available on both local and Vercel serverless environments
 const storage = multer.memoryStorage();
 
 const upload = multer({
     storage,
-    limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
+    limits: { fileSize: 10 * 1024 * 1024 }, /// 10MB
     fileFilter: (req, file, cb) => {
-        if (file.mimetype !== 'application/pdf') {
+        if (file.mimetype !== 'application/pdf' && !file.originalname.toLowerCase().endsWith('.pdf')) {
             return cb(new Error('Only PDF files are allowed'));
         }
         cb(null, true);
@@ -60,31 +58,53 @@ function registerPatientProfileRoute(app, db) {
 
         try {
             if (isVercel) {
-                // --- PRODUCTION (Vercel): Upload PDF to Vercel Blob ---
                 const blob = await put(`medical-pdfs/${filename}`, req.file.buffer, {
                     access: 'public',
-                    contentType: req.file.mimetype,
+                    contentType: req.file.mimetype || 'application/pdf',
                 });
                 fileUrl = blob.url;
             } else {
-                // --- LOCAL DEVELOPMENT: Write PDF to local disk ---
                 fs.mkdirSync(uploadDir, { recursive: true });
                 const localPath = path.join(uploadDir, filename);
                 fs.writeFileSync(localPath, req.file.buffer);
                 fileUrl = `/uploads/medical-pdfs/${filename}`;
             }
 
-            await db.query(
+            const [result] = await db.query(
                 'INSERT INTO patient_documents (patient_id, file_url) VALUES (?, ?)',
                 [req.user.user_id, fileUrl]
             );
-            res.status(201).json({ message: 'PDF uploaded successfully', file_url: fileUrl });
+            res.status(201).json({
+                message: 'PDF uploaded successfully',
+                file_url: fileUrl,
+                document_id: result.insertId
+            });
         } catch (err) {
             console.error('Medical PDF upload error:', err);
             res.status(500).json({ message: 'Internal Server Error' });
         }
     });
 
+    // DELETE /api/patient-profile/medical-pdf/:documentId
+    app.delete('/api/patient-profile/medical-pdf/:documentId', authenticateToken, async (req, res) => {
+        if (req.user.role !== 'patient') {
+            return res.status(403).json({ message: 'Unauthorized' });
+        }
+        const documentId = req.params.documentId;
+
+        try {
+            await db.query(
+                'DELETE FROM patient_documents WHERE document_id = ? AND patient_id = ?',
+                [documentId, req.user.user_id]
+            );
+            res.json({ message: 'Document deleted successfully' });
+        } catch (err) {
+            console.error('Document delete error:', err);
+            res.status(500).json({ message: 'Failed to delete document' });
+        }
+    });
+
+    // PATCH /api/patient-profile
     app.patch('/api/patient-profile', authenticateToken, async (req, res) => {
         if (req.user.role !== 'patient') {
             return res.status(403).json({ message: 'Only patients can update this profile' });
@@ -94,6 +114,7 @@ function registerPatientProfileRoute(app, db) {
         const {
             birthday,
             secondary_email,
+            phone,
             address,
             address_street,
             address_barangay,
@@ -108,22 +129,43 @@ function registerPatientProfileRoute(app, db) {
             new_password
         } = req.body;
 
+        // ── Validation Checks ──
+        if (new_password) {
+            const pw = String(new_password);
+            if (pw.length < 8) {
+                return res.status(400).json({ message: 'New password must be at least 8 characters long.' });
+            }
+            if (pw.length > 64) {
+                return res.status(400).json({ message: 'New password must not exceed 64 characters.' });
+            }
+        }
+
+        if (birthday) {
+            const bDate = new Date(birthday);
+            if (isNaN(bDate.getTime()) || bDate > new Date() || bDate.getFullYear() < 1900) {
+                return res.status(400).json({ message: 'Invalid birthday value.' });
+            }
+        }
+
+        if (phone && !/^09\d{9}$/.test(String(phone).trim())) {
+            return res.status(400).json({ message: 'Phone number must be an 11-digit Philippine mobile number starting with 09.' });
+        }
+
         const connection = await db.getConnection();
 
         try {
             await connection.beginTransaction();
 
-            // 1. Update Users Table (password)
+            // 1. Password Update (8-64 characters)
             if (new_password) {
                 const password_hash = await bcrypt.hash(new_password, SALT_ROUNDS);
-                // Update the users table where the password actually lives
                 await connection.query(
                     `UPDATE users SET password_hash = ? WHERE user_id = ?`,
                     [password_hash, patient_id]
                 );
             }
 
-            // 2. Single Unified Update for Patient Profiles
+            // 2. Profile Details Update (Address is optional)
             await connection.query(
                 `UPDATE patient_profiles
                  SET birthday = ?,
@@ -137,64 +179,82 @@ function registerPatientProfileRoute(app, db) {
                  WHERE patient_id = ?`,
                 [
                     birthday || null,
-                    secondary_email || null,
+                    secondary_email ? String(secondary_email).trim() : null,
                     address || null,
-                    address_street || null,
-                    address_barangay || null,
-                    address_city || null,
-                    address_province || null,
+                    address_street ? String(address_street).trim() : null,
+                    address_barangay ? String(address_barangay).trim() : null,
+                    address_city ? String(address_city).trim() : null,
+                    address_province ? String(address_province).trim() : null,
                     pregnancy_status || null,
                     patient_id
                 ]
             );
 
-            // 3. Health Conditions
-            await connection.query('DELETE FROM health_conditions WHERE patient_id = ?', [patient_id]);
-            if (Array.isArray(health_conditions) && health_conditions.length > 0) {
-                const values = health_conditions.map(description => [patient_id, description]);
-                await connection.query('INSERT INTO health_conditions (patient_id, description) VALUES ?', [values]);
+            // Update phone number in users table
+            if (phone) {
+                try {
+                    await connection.query(
+                        `UPDATE users SET phone = ? WHERE user_id = ?`,
+                        [String(phone).trim(), patient_id]
+                    );
+                } catch (e) { /* Ignore if phone column is purely in patient_profiles */ }
             }
 
-            // 4. Surgeries (Safely handled if table exists)
+            // 3. Health Conditions (Mandatory update)
+            await connection.query('DELETE FROM health_conditions WHERE patient_id = ?', [patient_id]);
+            if (Array.isArray(health_conditions) && health_conditions.length > 0) {
+                const values = health_conditions.filter(Boolean).map(desc => [patient_id, String(desc).trim()]);
+                if (values.length > 0) {
+                    await connection.query('INSERT INTO health_conditions (patient_id, description) VALUES ?', [values]);
+                }
+            }
+
+            // 4. Surgeries
             try {
                 await connection.query('DELETE FROM surgeries WHERE patient_id = ?', [patient_id]);
                 if (Array.isArray(surgeries) && surgeries.length > 0) {
-                    const values = surgeries.map(description => [patient_id, description]);
-                    await connection.query('INSERT INTO surgeries (patient_id, description) VALUES ?', [values]);
+                    const values = surgeries.filter(Boolean).map(desc => [patient_id, String(desc).trim()]);
+                    if (values.length > 0) {
+                        await connection.query('INSERT INTO surgeries (patient_id, description) VALUES ?', [values]);
+                    }
                 }
-            } catch (err) {
-                // Ignore if surgeries table hasn't been created in DB yet
-            }
+            } catch (err) { /* Surgeries table optional */ }
 
-            // 5. Life Factors (Safely handled if table exists)
+            // 5. Lifestyle Factors
             try {
                 await connection.query('DELETE FROM life_factors WHERE patient_id = ?', [patient_id]);
                 if (Array.isArray(life_factors) && life_factors.length > 0) {
-                    const values = life_factors.map(description => [patient_id, description]);
-                    await connection.query('INSERT INTO life_factors (patient_id, description) VALUES ?', [values]);
+                    const values = life_factors.filter(Boolean).map(desc => [patient_id, String(desc).trim()]);
+                    if (values.length > 0) {
+                        await connection.query('INSERT INTO life_factors (patient_id, description) VALUES ?', [values]);
+                    }
                 }
-            } catch (err) {
-                // Ignore if life_factors table hasn't been created in DB yet
-            }
+            } catch (err) { /* Life factors table optional */ }
 
-            // 6. Prescriptions
+            // 6. Prescriptions (Sanitized & Validated)
             await connection.query('DELETE FROM prescriptions WHERE patient_id = ?', [patient_id]);
             if (Array.isArray(prescriptions) && prescriptions.length > 0) {
-                const values = prescriptions.map(p => [patient_id, p.medication_name, p.dosage || null]);
-                await connection.query('INSERT INTO prescriptions (patient_id, medication_name, dosage) VALUES ?', [values]);
+                const values = prescriptions
+                    .filter(p => p && p.medication_name && String(p.medication_name).trim())
+                    .map(p => [patient_id, String(p.medication_name).trim(), p.dosage ? String(p.dosage).trim() : null]);
+                if (values.length > 0) {
+                    await connection.query('INSERT INTO prescriptions (patient_id, medication_name, dosage) VALUES ?', [values]);
+                }
             }
 
             // 7. Allergies
             await connection.query('DELETE FROM allergies WHERE patient_id = ?', [patient_id]);
             if (Array.isArray(allergies) && allergies.length > 0) {
-                const values = allergies.map(allergen => [patient_id, allergen]);
-                await connection.query('INSERT INTO allergies (patient_id, allergen) VALUES ?', [values]);
+                const values = allergies.filter(Boolean).map(al => [patient_id, String(al).trim()]);
+                if (values.length > 0) {
+                    await connection.query('INSERT INTO allergies (patient_id, allergen) VALUES ?', [values]);
+                }
             }
 
             await connection.commit();
 
             const io = req.app.get('io');
-            if(io) {
+            if (io) {
                 io.to(`user_${patient_id}`).emit('profile_status_changed', {
                     patient_id: patient_id,
                     isComplete: Boolean(birthday),

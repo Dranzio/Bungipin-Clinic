@@ -10,12 +10,26 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://kit.fontawesome.com/fc8c3f4103.js" crossorigin="anonymous"></script>
   <script src="/Taskbar/Customer_Sidebar.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
+    .font-poppins { font-family: 'Poppins', sans-serif; }
+    
+    .input-error {
+      border-color: #ef4444 !important;
+      background-color: #fef2f2 !important;
+    }
+    .container-error {
+      border-color: #ef4444 !important;
+      background-color: #fff5f5 !important;
+      box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2) !important;
+    }
+  </style>
 </head>
 
-<body class="min-h-screen md:h-screen md:overflow-hidden bg-[#F3EFE4] relative flex flex-col md:flex-row antialiased text-[#2A1001]">
+<body class="min-h-screen md:h-screen md:overflow-hidden bg-[#F3EFE4] relative flex flex-col md:flex-row antialiased text-[#2A1001] font-poppins">
 
   <!-- SIDEBAR -->
-  <div id="sidebar-placeholder"></div>
+  <div id="sidebar-placeholder" class="shrink-0 w-full md:w-auto"></div>
   <script>
     function syncContentOffset() {
       const placeholder = document.getElementById('sidebar-placeholder');
@@ -51,23 +65,43 @@
   </script>
 
   <!-- CONTENT WRAPPER -->
-  <div id="main-content" class="flex-1 min-w-0 md:min-h-0 md:overflow-y-auto">
+  <div id="main-content" class="flex-1 min-w-0 md:min-h-0 md:overflow-y-auto scroll-smooth">
 
-    <div class="shrink-0 flex justify-between items-start pt-5 pl-6 pr-4 md:pl-24 md:pr-8">
-      <h1 class="text-2xl sm:text-3xl md:text-5xl 2xl:text-[73px] pt-5 font-bold text-[#2A1001] font-['Poppins']">
+    <!-- ── Header (Matches Booking Appointment Layout) ── -->
+    <div class="flex justify-between items-start pt-5 pl-6 pr-4 md:pl-24 md:pr-8">
+      <h1 class="text-2xl sm:text-3xl md:text-5xl 2xl:text-[73px] pt-5 font-bold text-[#2A1001]">
         Patient Profile
       </h1>
-      <img src="../assets/logowithtitle.png" class="w-20 sm:w-24 md:w-28 h-auto object-contain shrink-0" alt="Logo"/>
+      <img
+        src="../assets/logowithtitle.png"
+        onerror="this.src='../images/logowithtitle.png'; this.onerror=null;"
+        class="w-20 sm:w-24 md:w-28 h-auto object-contain shrink-0"
+        alt="Logo"/>
     </div>
-    <hr class="border-t border-[#2A1001] mt-2 mb-6 mx-4 sm:mx-6 md:mx-12" />
+    
+    <hr class="border-t border-[#2A1001] mt-2 mb-6" />
 
-    <main class="w-full max-w-5xl mx-auto py-8 px-6 md:px-12">
-      <div id="incompleteProfileBanner" class="hidden mb-6 p-4 bg-red-100 border border-red-400 text-red-800 rounded-2xl font-semibold text-sm text-center">
-        Your profile is incomplete. Please fill out your birthday, phone number, and address to continue using all features.
+    <main class="w-full max-w-6xl mx-auto py-4 sm:py-6 px-4 sm:px-6 md:px-20">
+      
+      <!-- ── Register-Style Incomplete Warning Banner ── -->
+      <div id="incompleteProfileBanner"
+        class="hidden text-center mb-6 p-4 bg-red-100 border border-red-400 text-red-800 rounded-2xl font-poppins font-semibold text-xs sm:text-sm shadow-sm">
+        Your profile is incomplete. Please fill out your birthday, phone number, and all required medical history sections to continue.
       </div>
-      <form id="customer_profile" class="flex flex-col items-center gap-10 sm:gap-12 w-full">
 
-        <!-- ── Basic Information ── -->
+      <!-- ── Register-Style Success & Error Banners ── -->
+      <div id="successMessage"
+        class="hidden text-center mb-6 p-4 bg-green-100 border border-green-400 text-green-800 rounded-2xl font-poppins font-semibold text-sm shadow-sm transition-all duration-300">
+        Profile Changes Updated Successfully!
+      </div>
+
+      <div id="errorMessage"
+        class="hidden text-center mb-6 p-4 bg-red-100 border border-red-400 text-red-800 rounded-2xl font-poppins font-semibold text-sm shadow-sm transition-all duration-300">
+      </div>
+
+      <form id="customer_profile" class="flex flex-col items-center gap-8 sm:gap-10 w-full" novalidate>
+
+        <!-- ── 1. Basic Information ── -->
         <div class="relative w-full bg-[#D7E3A5] rounded-2xl p-5 sm:p-7 pt-8 sm:pt-9 shadow-sm border border-[#d2dbbe]">
           <span class="absolute -top-3.5 left-4 sm:left-6 bg-[#667733] text-white text-[10px] sm:text-xs font-bold px-3 sm:px-4 py-1.5 rounded-full tracking-wider uppercase shadow-sm">Basic Information</span>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 sm:gap-y-5">
@@ -91,14 +125,15 @@
             </div>
 
             <div class="flex flex-col gap-1.5">
-              <label for="birthday" class="text-[11px] font-extrabold tracking-wider text-[#2A1001] uppercase">Birthday: <span class="text-red-500">*</span></label>
+              <label for="birthday" class="text-[11px] font-extrabold tracking-wider text-[#2A1001] uppercase">Birthday: <span class="text-red-500">* REQUIRED</span></label>
               <input type="date" id="birthday" name="birthday" required
                 class="w-full px-4 py-2.5 rounded-full bg-white text-[#2c3e2b] font-medium text-sm outline-none shadow-inner border border-[#c1ccab] focus:ring-2 focus:ring-[#4a5e3b]/50">
+              <span id="birthdayError" class="text-[11px] text-red-600 font-bold hidden px-3"></span>
             </div>
           </div>
         </div>
 
-        <!-- ── Contact Information ── -->
+        <!-- ── 2. Contact Information ── -->
         <div class="relative w-full bg-[#D7E3A5] rounded-2xl p-5 sm:p-7 pt-8 sm:pt-9 shadow-sm border border-[#d2dbbe]">
           <span class="absolute -top-3.5 left-4 sm:left-6 bg-[#667733] text-white text-[10px] sm:text-xs font-bold px-3 sm:px-4 py-1.5 rounded-full tracking-wider uppercase shadow-sm">Contact Information</span>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 sm:gap-y-5">
@@ -110,18 +145,19 @@
             </div>
 
             <div class="flex flex-col gap-1.5">
-              <label for="secondary-email" class="text-[11px] font-extrabold tracking-wider text-[#2A1001] uppercase">Secondary Email:</label>
-              <input type="email" id="secondary-email" name="secondary_email"
+              <label for="secondary-email" class="text-[11px] font-extrabold tracking-wider text-[#2A1001] uppercase">Secondary Email (Optional):</label>
+              <input type="email" id="secondary-email" name="secondary_email" placeholder="e.g. personal@gmail.com" maxlength="100"
                 class="w-full px-4 py-2.5 rounded-full bg-white text-[#2c3e2b] font-medium text-sm outline-none shadow-inner border border-[#c1ccab] focus:ring-2 focus:ring-[#4a5e3b]/50">
+              <span id="secondaryEmailError" class="text-[11px] text-red-600 font-bold hidden px-3"></span>
             </div>
 
-            <!-- Address — split into sub-fields -->
+            <!-- Address Breakdown (Optional) -->
             <div class="flex flex-col gap-2.5 md:col-span-2">
-              <label class="text-[11px] font-extrabold tracking-wider text-[#2A1001] uppercase">Address:</label>
+              <label class="text-[11px] font-extrabold tracking-wider text-[#2A1001] uppercase">Address (Optional):</label>
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div class="sm:col-span-2 flex flex-col gap-1">
                   <label class="text-[10px] font-semibold text-[#4a5e3b] uppercase tracking-wide">House / Unit No. &amp; Street</label>
-                  <input type="text" id="address-street" placeholder="e.g. 123 Rizal Street"
+                  <input type="text" id="address-street" placeholder="e.g. 123 Rizal Street" maxlength="150"
                     class="w-full px-4 py-2.5 rounded-full bg-white text-[#2c3e2b] font-medium text-sm outline-none shadow-inner border border-[#c1ccab] focus:ring-2 focus:ring-[#4a5e3b]/50">
                 </div>
                 <div class="flex flex-col gap-1">
@@ -149,100 +185,146 @@
             </div>
 
             <div class="flex flex-col gap-1.5">
-              <label for="phone" class="text-[11px] font-extrabold tracking-wider text-[#2A1001] uppercase">Phone Number:</label>
+              <label for="phone" class="text-[11px] font-extrabold tracking-wider text-[#2A1001] uppercase">Phone Number: <span class="text-red-500">* REQUIRED</span></label>
               <input type="tel" id="phone" name="phone" placeholder="09XXXXXXXXX" maxlength="11"
                 class="w-full px-4 py-2.5 rounded-full bg-white text-[#2c3e2b] font-medium text-sm outline-none shadow-inner border border-[#c1ccab] focus:ring-2 focus:ring-[#4a5e3b]/50">
+              <span id="phoneError" class="text-[11px] text-red-600 font-bold hidden px-3"></span>
             </div>
           </div>
         </div>
 
-        <!-- ── Medical Information ── -->
+        <!-- ── 3. Medical Information (Strictly Mandatory) ── -->
         <div class="relative w-full bg-[#D7E3A5] rounded-2xl p-5 sm:p-7 pt-8 sm:pt-9 shadow-sm border border-[#d2dbbe]">
           <span class="absolute -top-3.5 left-4 sm:left-6 bg-[#667733] text-white text-[10px] sm:text-xs font-bold px-3 sm:px-4 py-1.5 rounded-full tracking-wider uppercase shadow-sm">Medical Information</span>
 
-          <div class="mb-5 bg-[#eef2e0] border border-[#c8d4a0] rounded-xl px-4 py-3 flex gap-3 items-start">
-            <span class="text-lg mt-0.5 shrink-0">ℹ️</span>
+          <div class="mb-5 bg-[#eef2e0] border border-[#c8d4a0] rounded-2xl p-4 flex gap-3.5 items-start">
+            <span class="text-xl mt-0.5 shrink-0 text-[#667733]"><i class="fa-solid fa-circle-info"></i></span>
             <div>
               <p class="text-[11px] font-extrabold text-[#4a5e3b] uppercase tracking-wide mb-1">Why we collect this information</p>
-              <p class="text-[11px] text-[#4a5e3b] leading-relaxed">Your medical history helps our dental team provide <strong>safe, personalized care</strong>. It allows us to avoid medications or materials you're allergic to, adapt procedures for pre-existing conditions, ensure safe use of anesthesia and X-rays, and determine the best chair positioning — especially during pregnancy. All information is kept strictly confidential.</p>
+              <p class="text-[11px] sm:text-xs text-[#4a5e3b] leading-relaxed">Your medical history helps our dental team provide <strong>safe, personalized care</strong>. It allows us to avoid medications or materials you're allergic to, adapt procedures for pre-existing conditions, ensure safe use of anesthesia and X-rays, and determine the best chair positioning — especially during pregnancy. All information is kept strictly confidential.</p>
             </div>
           </div>
 
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 sm:gap-y-5">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-5">
 
-            <!-- Pre-existing Health Conditions -->
-            <div class="flex flex-col gap-1.5 md:col-span-2">
-              <div>
-                <label class="text-[11px] font-extrabold tracking-wider text-[#2A1001] uppercase">Pre-existing Health Conditions:</label>
-                <p class="text-[10px] text-[#4a5e3b]/80 italic mt-0.5">Please check all that apply.</p>
+            <!-- Pre-existing Health Conditions (Required) -->
+            <div id="healthConditionsContainer" class="flex flex-col gap-1.5 md:col-span-2 p-3 sm:p-4 rounded-2xl transition border border-transparent">
+              <div class="flex justify-between items-baseline">
+                <label class="text-[11px] font-extrabold tracking-wider text-[#2A1001] uppercase">Pre-existing Health Conditions: <span class="text-red-500">* Required</span></label>
+                <span class="text-[10px] text-[#4a5e3b]/80 italic">Select applicable or check None</span>
               </div>
-              <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
-                <label class="flex items-center gap-2 bg-white border border-[#c1ccab] rounded-full px-4 py-2 text-sm text-[#2c3e2b] font-medium cursor-pointer shadow-inner min-w-0"><input type="checkbox" class="healthConditionCheckbox accent-[#667733] shrink-0" value="Asthma"> <span class="break-words">Asthma</span></label>
-                <label class="flex items-center gap-2 bg-white border border-[#c1ccab] rounded-full px-4 py-2 text-sm text-[#2c3e2b] font-medium cursor-pointer shadow-inner min-w-0"><input type="checkbox" class="healthConditionCheckbox accent-[#667733] shrink-0" value="Diabetes"> <span class="break-words">Diabetes</span></label>
-                <label class="flex items-center gap-2 bg-white border border-[#c1ccab] rounded-full px-4 py-2 text-sm text-[#2c3e2b] font-medium cursor-pointer shadow-inner min-w-0"><input type="checkbox" class="healthConditionCheckbox accent-[#667733] shrink-0" value="Hypertension"> <span class="break-words">Hypertension</span></label>
-                <label class="flex items-center gap-2 bg-white border border-[#c1ccab] rounded-full px-4 py-2 text-sm text-[#2c3e2b] font-medium cursor-pointer shadow-inner min-w-0"><input type="checkbox" class="healthConditionCheckbox accent-[#667733] shrink-0" value="Heart Disease"> <span class="break-words">Heart Disease</span></label>
-                <label class="flex items-center gap-2 bg-white border border-[#c1ccab] rounded-full px-4 py-2 text-sm text-[#2c3e2b] font-medium cursor-pointer shadow-inner min-w-0"><input type="checkbox" class="healthConditionCheckbox accent-[#667733] shrink-0" value="Hepatitis"> <span class="break-words">Hepatitis</span></label>
-                <label class="flex items-center gap-2 bg-white border border-[#c1ccab] rounded-full px-4 py-2 text-sm text-[#2c3e2b] font-medium cursor-pointer shadow-inner min-w-0"><input type="checkbox" class="healthConditionCheckbox accent-[#667733] shrink-0" value="Bleeding Disorder"> <span class="break-words">Bleeding Disorder</span></label>
-                <label class="flex items-center gap-2 bg-white border border-[#c1ccab] rounded-full px-4 py-2 text-sm text-[#2c3e2b] font-medium cursor-pointer shadow-inner min-w-0"><input type="checkbox" class="healthConditionCheckbox accent-[#667733] shrink-0" value="Epilepsy"> <span class="break-words">Epilepsy</span></label>
-                <label class="flex items-center gap-2 bg-white border border-[#c1ccab] rounded-full px-4 py-2 text-sm text-[#2c3e2b] font-medium cursor-pointer shadow-inner min-w-0"><input type="checkbox" id="healthConditionOtherCheckbox" class="accent-[#667733] shrink-0"> <span class="break-words">Others</span></label>
-                <label class="flex items-center gap-2 bg-white border border-[#c1ccab] rounded-full px-4 py-2 text-sm text-[#2c3e2b] font-medium cursor-pointer shadow-inner min-w-0"><input type="checkbox" id="healthConditionNoneCheckbox" class="accent-[#667733] shrink-0"> <span class="break-words">None</span></label>
+              
+              <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 mt-1">
+                <label class="checkbox-chip flex items-center gap-2 bg-white border border-[#c1ccab] rounded-full px-4 py-2 text-sm text-[#2c3e2b] font-medium cursor-pointer shadow-inner min-w-0 transition"><input type="checkbox" class="healthConditionCheckbox accent-[#667733] shrink-0" value="Asthma"> <span class="break-words">Asthma</span></label>
+                <label class="checkbox-chip flex items-center gap-2 bg-white border border-[#c1ccab] rounded-full px-4 py-2 text-sm text-[#2c3e2b] font-medium cursor-pointer shadow-inner min-w-0 transition"><input type="checkbox" class="healthConditionCheckbox accent-[#667733] shrink-0" value="Diabetes"> <span class="break-words">Diabetes</span></label>
+                <label class="checkbox-chip flex items-center gap-2 bg-white border border-[#c1ccab] rounded-full px-4 py-2 text-sm text-[#2c3e2b] font-medium cursor-pointer shadow-inner min-w-0 transition"><input type="checkbox" class="healthConditionCheckbox accent-[#667733] shrink-0" value="Hypertension"> <span class="break-words">Hypertension</span></label>
+                <label class="checkbox-chip flex items-center gap-2 bg-white border border-[#c1ccab] rounded-full px-4 py-2 text-sm text-[#2c3e2b] font-medium cursor-pointer shadow-inner min-w-0 transition"><input type="checkbox" class="healthConditionCheckbox accent-[#667733] shrink-0" value="Heart Disease"> <span class="break-words">Heart Disease</span></label>
+                <label class="checkbox-chip flex items-center gap-2 bg-white border border-[#c1ccab] rounded-full px-4 py-2 text-sm text-[#2c3e2b] font-medium cursor-pointer shadow-inner min-w-0 transition"><input type="checkbox" class="healthConditionCheckbox accent-[#667733] shrink-0" value="Hepatitis"> <span class="break-words">Hepatitis</span></label>
+                <label class="checkbox-chip flex items-center gap-2 bg-white border border-[#c1ccab] rounded-full px-4 py-2 text-sm text-[#2c3e2b] font-medium cursor-pointer shadow-inner min-w-0 transition"><input type="checkbox" class="healthConditionCheckbox accent-[#667733] shrink-0" value="Bleeding Disorder"> <span class="break-words">Bleeding Disorder</span></label>
+                <label class="checkbox-chip flex items-center gap-2 bg-white border border-[#c1ccab] rounded-full px-4 py-2 text-sm text-[#2c3e2b] font-medium cursor-pointer shadow-inner min-w-0 transition"><input type="checkbox" class="healthConditionCheckbox accent-[#667733] shrink-0" value="Epilepsy"> <span class="break-words">Epilepsy</span></label>
+                <label class="checkbox-chip flex items-center gap-2 bg-white border border-[#c1ccab] rounded-full px-4 py-2 text-sm text-[#2c3e2b] font-medium cursor-pointer shadow-inner min-w-0 transition"><input type="checkbox" id="healthConditionNoneCheckbox" class="accent-[#667733] shrink-0"> <span class="break-words font-bold">None</span></label>
               </div>
-              <div id="healthConditionOtherRow" class="hidden flex gap-2 mt-1">
-                <input type="text" id="healthConditionOtherInput" placeholder="Please specify other condition"
-                  class="flex-1 px-4 py-2.5 rounded-full bg-white text-[#2c3e2b] font-medium text-sm outline-none shadow-inner border border-[#c1ccab] focus:ring-2 focus:ring-[#4a5e3b]/50" maxlength="40">
-                <button type="button" id="addHealthConditionOtherBtn"
-                  class="shrink-0 px-4 py-2.5 rounded-full bg-[#667733] hover:bg-[#556022] text-white font-bold text-sm transition">+ Add</button>
+
+              <!-- Separated Bottom Section for Others -->
+              <div class="mt-2 pt-3 border-t border-[#c1ccab]/70 flex flex-col gap-2">
+                <div class="flex flex-wrap gap-2">
+                  <label class="checkbox-chip flex items-center gap-2 bg-white border border-[#667733] rounded-full px-4 py-2 text-sm text-[#2c3e2b] font-bold cursor-pointer shadow-inner min-w-0 transition"><input type="checkbox" id="healthConditionOtherCheckbox" class="accent-[#667733] shrink-0"> <span class="break-words">Others</span></label>
+                </div>
+
+                <div id="healthConditionOtherRow" class="hidden flex-col gap-1.5 mt-1 bg-white/70 p-3 rounded-2xl border border-[#c1ccab]">
+                  <div class="flex justify-between items-center text-[10px] font-bold text-[#4a5e3b] uppercase">
+                    <span>Specify Other Condition <span class="text-red-500">* Required</span></span>
+                    <span id="healthConditionLimit">0/10 added</span>
+                  </div>
+                  <div class="flex flex-col sm:flex-row gap-2">
+                    <input type="text" id="healthConditionOtherInput" placeholder="Please specify other condition"
+                      class="flex-1 px-4 py-2.5 rounded-full bg-white text-[#2c3e2b] font-medium text-sm outline-none shadow-inner border border-[#c1ccab] focus:ring-2 focus:ring-[#4a5e3b]/50" maxlength="80">
+                    <button type="button" id="addHealthConditionOtherBtn"
+                      class="w-full sm:w-auto shrink-0 px-5 py-2.5 rounded-full bg-[#667733] hover:bg-[#556022] text-white font-bold text-sm transition cursor-pointer">+ Add</button>
+                  </div>
+                </div>
+                <div id="healthConditionOtherList" class="flex flex-wrap gap-2 mt-1"></div>
               </div>
-              <div id="healthConditionOtherList" class="flex flex-wrap gap-2 mt-1"></div>
+              <span id="healthConditionError" class="text-[11px] text-red-600 font-bold hidden px-1 mt-1"></span>
             </div>
 
-            <!-- Past Surgeries -->
-            <div class="flex flex-col gap-1.5 md:col-span-2">
-              <div>
-                <label class="text-[11px] font-extrabold tracking-wider text-[#2A1001] uppercase">Past Surgeries:</label>
-                <p class="text-[10px] text-[#4a5e3b]/80 italic mt-0.5">Please check all that apply.</p>
+            <!-- Past Surgeries (Required) -->
+            <div id="surgeriesContainer" class="flex flex-col gap-1.5 md:col-span-2 p-3 sm:p-4 rounded-2xl transition border border-transparent">
+              <div class="flex justify-between items-baseline">
+                <label class="text-[11px] font-extrabold tracking-wider text-[#2A1001] uppercase">Past Surgeries: <span class="text-red-500">* Required</span></label>
+                <span class="text-[10px] text-[#4a5e3b]/80 italic">Select applicable or check None</span>
               </div>
-              <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
-                <label class="flex items-center gap-2 bg-white border border-[#c1ccab] rounded-full px-4 py-2 text-sm text-[#2c3e2b] font-medium cursor-pointer shadow-inner min-w-0"><input type="checkbox" class="surgeryCheckbox accent-[#667733] shrink-0" value="Tooth Extraction"> <span class="break-words">Tooth Extraction</span></label>
-                <label class="flex items-center gap-2 bg-white border border-[#c1ccab] rounded-full px-4 py-2 text-sm text-[#2c3e2b] font-medium cursor-pointer shadow-inner min-w-0"><input type="checkbox" class="surgeryCheckbox accent-[#667733] shrink-0" value="Wisdom Tooth Removal"> <span class="break-words">Wisdom Tooth Removal</span></label>
-                <label class="flex items-center gap-2 bg-white border border-[#c1ccab] rounded-full px-4 py-2 text-sm text-[#2c3e2b] font-medium cursor-pointer shadow-inner min-w-0"><input type="checkbox" class="surgeryCheckbox accent-[#667733] shrink-0" value="Root Canal Surgery"> <span class="break-words">Root Canal Surgery</span></label>
-                <label class="flex items-center gap-2 bg-white border border-[#c1ccab] rounded-full px-4 py-2 text-sm text-[#2c3e2b] font-medium cursor-pointer shadow-inner min-w-0"><input type="checkbox" class="surgeryCheckbox accent-[#667733] shrink-0" value="Jaw Surgery"> <span class="break-words">Jaw Surgery</span></label>
-                <label class="flex items-center gap-2 bg-white border border-[#c1ccab] rounded-full px-4 py-2 text-sm text-[#2c3e2b] font-medium cursor-pointer shadow-inner min-w-0"><input type="checkbox" class="surgeryCheckbox accent-[#667733] shrink-0" value="Appendectomy"> <span class="break-words">Appendectomy</span></label>
-                <label class="flex items-center gap-2 bg-white border border-[#c1ccab] rounded-full px-4 py-2 text-sm text-[#2c3e2b] font-medium cursor-pointer shadow-inner min-w-0"><input type="checkbox" class="surgeryCheckbox accent-[#667733] shrink-0" value="Cesarean Section"> <span class="break-words">Cesarean Section</span></label>
-                <label class="flex items-center gap-2 bg-white border border-[#c1ccab] rounded-full px-4 py-2 text-sm text-[#2c3e2b] font-medium cursor-pointer shadow-inner min-w-0"><input type="checkbox" id="surgeryOtherCheckbox" class="accent-[#667733] shrink-0"> <span class="break-words">Others</span></label>
-                <label class="flex items-center gap-2 bg-white border border-[#c1ccab] rounded-full px-4 py-2 text-sm text-[#2c3e2b] font-medium cursor-pointer shadow-inner min-w-0"><input type="checkbox" id="surgeryNoneCheckbox" class="accent-[#667733] shrink-0"> <span class="break-words">None</span></label>
+              
+              <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 mt-1">
+                <label class="checkbox-chip flex items-center gap-2 bg-white border border-[#c1ccab] rounded-full px-4 py-2 text-sm text-[#2c3e2b] font-medium cursor-pointer shadow-inner min-w-0 transition"><input type="checkbox" class="surgeryCheckbox accent-[#667733] shrink-0" value="Tooth Extraction"> <span class="break-words">Tooth Extraction</span></label>
+                <label class="checkbox-chip flex items-center gap-2 bg-white border border-[#c1ccab] rounded-full px-4 py-2 text-sm text-[#2c3e2b] font-medium cursor-pointer shadow-inner min-w-0 transition"><input type="checkbox" class="surgeryCheckbox accent-[#667733] shrink-0" value="Wisdom Tooth Removal"> <span class="break-words">Wisdom Tooth Removal</span></label>
+                <label class="checkbox-chip flex items-center gap-2 bg-white border border-[#c1ccab] rounded-full px-4 py-2 text-sm text-[#2c3e2b] font-medium cursor-pointer shadow-inner min-w-0 transition"><input type="checkbox" class="surgeryCheckbox accent-[#667733] shrink-0" value="Root Canal Surgery"> <span class="break-words">Root Canal Surgery</span></label>
+                <label class="checkbox-chip flex items-center gap-2 bg-white border border-[#c1ccab] rounded-full px-4 py-2 text-sm text-[#2c3e2b] font-medium cursor-pointer shadow-inner min-w-0 transition"><input type="checkbox" class="surgeryCheckbox accent-[#667733] shrink-0" value="Jaw Surgery"> <span class="break-words">Jaw Surgery</span></label>
+                <label class="checkbox-chip flex items-center gap-2 bg-white border border-[#c1ccab] rounded-full px-4 py-2 text-sm text-[#2c3e2b] font-medium cursor-pointer shadow-inner min-w-0 transition"><input type="checkbox" class="surgeryCheckbox accent-[#667733] shrink-0" value="Appendectomy"> <span class="break-words">Appendectomy</span></label>
+                <label class="checkbox-chip flex items-center gap-2 bg-white border border-[#c1ccab] rounded-full px-4 py-2 text-sm text-[#2c3e2b] font-medium cursor-pointer shadow-inner min-w-0 transition"><input type="checkbox" class="surgeryCheckbox accent-[#667733] shrink-0" value="Cesarean Section"> <span class="break-words">Cesarean Section</span></label>
+                <label class="checkbox-chip flex items-center gap-2 bg-white border border-[#c1ccab] rounded-full px-4 py-2 text-sm text-[#2c3e2b] font-medium cursor-pointer shadow-inner min-w-0 transition"><input type="checkbox" id="surgeryNoneCheckbox" class="accent-[#667733] shrink-0"> <span class="break-words font-bold">None</span></label>
               </div>
-              <div id="surgeryOtherRow" class="hidden flex gap-2 mt-1">
-                <input type="text" id="surgeryOtherInput" placeholder="Please specify other surgery"
-                  class="flex-1 px-4 py-2.5 rounded-full bg-white text-[#2c3e2b] font-medium text-sm outline-none shadow-inner border border-[#c1ccab] focus:ring-2 focus:ring-[#4a5e3b]/50" maxlength="40">
-                <button type="button" id="addSurgeryOtherBtn"
-                  class="shrink-0 px-4 py-2.5 rounded-full bg-[#667733] hover:bg-[#556022] text-white font-bold text-sm transition">+ Add</button>
+
+              <!-- Separated Bottom Section for Others -->
+              <div class="mt-2 pt-3 border-t border-[#c1ccab]/70 flex flex-col gap-2">
+                <div class="flex flex-wrap gap-2">
+                  <label class="checkbox-chip flex items-center gap-2 bg-white border border-[#667733] rounded-full px-4 py-2 text-sm text-[#2c3e2b] font-bold cursor-pointer shadow-inner min-w-0 transition"><input type="checkbox" id="surgeryOtherCheckbox" class="accent-[#667733] shrink-0"> <span class="break-words">Others</span></label>
+                </div>
+
+                <div id="surgeryOtherRow" class="hidden flex-col gap-1.5 mt-1 bg-white/70 p-3 rounded-2xl border border-[#c1ccab]">
+                  <div class="flex justify-between items-center text-[10px] font-bold text-[#4a5e3b] uppercase">
+                    <span>Specify Other Surgery <span class="text-red-500">* Required</span></span>
+                    <span id="surgeryLimit">0/10 added</span>
+                  </div>
+                  <div class="flex flex-col sm:flex-row gap-2">
+                    <input type="text" id="surgeryOtherInput" placeholder="Please specify other surgery"
+                      class="flex-1 px-4 py-2.5 rounded-full bg-white text-[#2c3e2b] font-medium text-sm outline-none shadow-inner border border-[#c1ccab] focus:ring-2 focus:ring-[#4a5e3b]/50" maxlength="80">
+                    <button type="button" id="addSurgeryOtherBtn"
+                      class="w-full sm:w-auto shrink-0 px-5 py-2.5 rounded-full bg-[#667733] hover:bg-[#556022] text-white font-bold text-sm transition cursor-pointer">+ Add</button>
+                  </div>
+                </div>
+                <div id="surgeryOtherList" class="flex flex-wrap gap-2 mt-1"></div>
               </div>
-              <div id="surgeryOtherList" class="flex flex-wrap gap-2 mt-1"></div>
+              <span id="surgeryError" class="text-[11px] text-red-600 font-bold hidden px-1 mt-1"></span>
             </div>
 
-            <!-- Lifestyle Factors -->
-            <div class="flex flex-col gap-1.5 md:col-span-2">
-              <div>
-                <label class="text-[11px] font-extrabold tracking-wider text-[#2A1001] uppercase">Lifestyle Factors:</label>
-                <p class="text-[10px] text-[#4a5e3b]/80 italic mt-0.5">Please check all that apply.</p>
+            <!-- Lifestyle Factors (Required) -->
+            <div id="lifestyleContainer" class="flex flex-col gap-1.5 md:col-span-2 p-3 sm:p-4 rounded-2xl transition border border-transparent">
+              <div class="flex justify-between items-baseline">
+                <label class="text-[11px] font-extrabold tracking-wider text-[#2A1001] uppercase">Lifestyle Factors: <span class="text-red-500">* Required</span></label>
+                <span class="text-[10px] text-[#4a5e3b]/80 italic">Select applicable or check None</span>
               </div>
-              <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
-                <label class="flex items-center gap-2 bg-white border border-[#c1ccab] rounded-full px-4 py-2 text-sm text-[#2c3e2b] font-medium cursor-pointer shadow-inner min-w-0"><input type="checkbox" name="life_factors" value="Smoker" class="lifeFactorCheckbox accent-[#667733] shrink-0"> <span class="break-words">Smoker</span></label>
-                <label class="flex items-center gap-2 bg-white border border-[#c1ccab] rounded-full px-4 py-2 text-sm text-[#2c3e2b] font-medium cursor-pointer shadow-inner min-w-0"><input type="checkbox" name="life_factors" value="Alcohol Consumption" class="lifeFactorCheckbox accent-[#667733] shrink-0"> <span class="break-words">Alcohol Consumption</span></label>
-                <label class="flex items-center gap-2 bg-white border border-[#c1ccab] rounded-full px-4 py-2 text-sm text-[#2c3e2b] font-medium cursor-pointer shadow-inner min-w-0"><input type="checkbox" name="life_factors" value="Regular Exercise" class="lifeFactorCheckbox accent-[#667733] shrink-0"> <span class="break-words">Regular Exercise</span></label>
-                <label class="flex items-center gap-2 bg-white border border-[#c1ccab] rounded-full px-4 py-2 text-sm text-[#2c3e2b] font-medium cursor-pointer shadow-inner min-w-0"><input type="checkbox" name="life_factors" value="Poor Diet" class="lifeFactorCheckbox accent-[#667733] shrink-0"> <span class="break-words">Poor Diet</span></label>
-                <label class="flex items-center gap-2 bg-white border border-[#c1ccab] rounded-full px-4 py-2 text-sm text-[#2c3e2b] font-medium cursor-pointer shadow-inner min-w-0"><input type="checkbox" name="life_factors" value="High Stress" class="lifeFactorCheckbox accent-[#667733] shrink-0"> <span class="break-words">High Stress</span></label>
-                <label class="flex items-center gap-2 bg-white border border-[#c1ccab] rounded-full px-4 py-2 text-sm text-[#2c3e2b] font-medium cursor-pointer shadow-inner min-w-0"><input type="checkbox" id="lifeFactorOtherCheckbox" class="accent-[#667733] shrink-0"> <span class="break-words">Others</span></label>
-                <label class="flex items-center gap-2 bg-white border border-[#c1ccab] rounded-full px-4 py-2 text-sm text-[#2c3e2b] font-medium cursor-pointer shadow-inner min-w-0"><input type="checkbox" id="lifeFactorNoneCheckbox" class="accent-[#667733] shrink-0"> <span class="break-words">None</span></label>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 mt-1">
+                <label class="checkbox-chip flex items-center gap-2 bg-white border border-[#c1ccab] rounded-full px-4 py-2 text-sm text-[#2c3e2b] font-medium cursor-pointer shadow-inner min-w-0 transition"><input type="checkbox" name="life_factors" value="Smoker" class="lifeFactorCheckbox accent-[#667733] shrink-0"> <span class="break-words">Smoker</span></label>
+                <label class="checkbox-chip flex items-center gap-2 bg-white border border-[#c1ccab] rounded-full px-4 py-2 text-sm text-[#2c3e2b] font-medium cursor-pointer shadow-inner min-w-0 transition"><input type="checkbox" name="life_factors" value="Alcohol Consumption" class="lifeFactorCheckbox accent-[#667733] shrink-0"> <span class="break-words">Alcohol Consumption</span></label>
+                <label class="checkbox-chip flex items-center gap-2 bg-white border border-[#c1ccab] rounded-full px-4 py-2 text-sm text-[#2c3e2b] font-medium cursor-pointer shadow-inner min-w-0 transition"><input type="checkbox" name="life_factors" value="Regular Exercise" class="lifeFactorCheckbox accent-[#667733] shrink-0"> <span class="break-words">Regular Exercise</span></label>
+                <label class="checkbox-chip flex items-center gap-2 bg-white border border-[#c1ccab] rounded-full px-4 py-2 text-sm text-[#2c3e2b] font-medium cursor-pointer shadow-inner min-w-0 transition"><input type="checkbox" name="life_factors" value="Poor Diet" class="lifeFactorCheckbox accent-[#667733] shrink-0"> <span class="break-words">Poor Diet</span></label>
+                <label class="checkbox-chip flex items-center gap-2 bg-white border border-[#c1ccab] rounded-full px-4 py-2 text-sm text-[#2c3e2b] font-medium cursor-pointer shadow-inner min-w-0 transition"><input type="checkbox" name="life_factors" value="High Stress" class="lifeFactorCheckbox accent-[#667733] shrink-0"> <span class="break-words">High Stress</span></label>
+                <label class="checkbox-chip flex items-center gap-2 bg-white border border-[#c1ccab] rounded-full px-4 py-2 text-sm text-[#2c3e2b] font-medium cursor-pointer shadow-inner min-w-0 transition"><input type="checkbox" id="lifeFactorNoneCheckbox" class="accent-[#667733] shrink-0"> <span class="break-words font-bold">None</span></label>
               </div>
-              <div id="lifeFactorOtherRow" class="hidden flex gap-2 mt-1">
-                <input type="text" id="lifeFactorOtherInput" placeholder="Please specify other lifestyle factor"
-                  class="flex-1 px-4 py-2.5 rounded-full bg-white text-[#2c3e2b] font-medium text-sm outline-none shadow-inner border border-[#c1ccab] focus:ring-2 focus:ring-[#4a5e3b]/50" maxlength="40">
-                <button type="button" id="addLifeFactorOtherBtn"
-                  class="shrink-0 px-4 py-2.5 rounded-full bg-[#667733] hover:bg-[#556022] text-white font-bold text-sm transition">+ Add</button>
+
+              <!-- Separated Bottom Section for Others -->
+              <div class="mt-2 pt-3 border-t border-[#c1ccab]/70 flex flex-col gap-2">
+                <div class="flex flex-wrap gap-2">
+                  <label class="checkbox-chip flex items-center gap-2 bg-white border border-[#667733] rounded-full px-4 py-2 text-sm text-[#2c3e2b] font-bold cursor-pointer shadow-inner min-w-0 transition"><input type="checkbox" id="lifeFactorOtherCheckbox" class="accent-[#667733] shrink-0"> <span class="break-words">Others</span></label>
+                </div>
+
+                <div id="lifeFactorOtherRow" class="hidden flex-col gap-1.5 mt-1 bg-white/70 p-3 rounded-2xl border border-[#c1ccab]">
+                  <div class="flex justify-between items-center text-[10px] font-bold text-[#4a5e3b] uppercase">
+                    <span>Specify Other Lifestyle Factor <span class="text-red-500">* Required</span></span>
+                    <span id="lifeFactorLimit">0/10 added</span>
+                  </div>
+                  <div class="flex flex-col sm:flex-row gap-2">
+                    <input type="text" id="lifeFactorOtherInput" placeholder="Please specify other lifestyle factor"
+                      class="flex-1 px-4 py-2.5 rounded-full bg-white text-[#2c3e2b] font-medium text-sm outline-none shadow-inner border border-[#c1ccab] focus:ring-2 focus:ring-[#4a5e3b]/50" maxlength="80">
+                    <button type="button" id="addLifeFactorOtherBtn"
+                      class="w-full sm:w-auto shrink-0 px-5 py-2.5 rounded-full bg-[#667733] hover:bg-[#556022] text-white font-bold text-sm transition cursor-pointer">+ Add</button>
+                  </div>
+                </div>
+                <div id="lifeFactorOtherList" class="flex flex-wrap gap-2 mt-1"></div>
               </div>
-              <div id="lifeFactorOtherList" class="flex flex-wrap gap-2 mt-1"></div>
+              <span id="lifeFactorError" class="text-[11px] text-red-600 font-bold hidden px-1 mt-1"></span>
             </div>
 
             <!-- Current Prescriptions -->
@@ -254,10 +336,10 @@
               <div id="prescriptionsList" class="flex flex-wrap items-start gap-2 mb-1"></div>
               <div class="flex flex-col sm:flex-row gap-2 items-stretch">
                 <input type="text" id="medicationNameInput" placeholder="e.g. Ibuprofen"
-                  class="flex-1 min-w-0 px-4 py-2.5 rounded-full bg-white text-[#2c3e2b] font-medium text-sm outline-none shadow-inner border border-[#c1ccab] focus:ring-2 focus:ring-[#4a5e3b]/50" maxlength="40">
+                  class="flex-1 min-w-0 px-4 py-2.5 rounded-full bg-white text-[#2c3e2b] font-medium text-sm outline-none shadow-inner border border-[#c1ccab] focus:ring-2 focus:ring-[#4a5e3b]/50" maxlength="80">
                 <div class="flex gap-2 items-stretch">
                   <select id="dosageInput" name="dosage"
-                    class="w-1/3 min-w-[100px] max-w-[180px] px-4 py-2.5 rounded-full bg-white text-[#2c3e2b] font-medium text-sm outline-none shadow-inner border border-[#c1ccab] focus:ring-2 focus:ring-[#4a5e3b]/50 cursor-pointer">
+                    class="w-full sm:w-56 md:w-60 px-4 py-2.5 rounded-full bg-white text-[#2c3e2b] font-medium text-sm outline-none shadow-inner border border-[#c1ccab] focus:ring-2 focus:ring-[#4a5e3b]/50 cursor-pointer">
                     <option value="" selected>Dosage (optional)</option>
                     <option value="5mg">5mg</option>
                     <option value="10mg">10mg</option>
@@ -276,19 +358,20 @@
                     <option value="mcg (Micrograms)">mcg (Micrograms)</option>
                     <option value="mL (Liquid)">mL (Liquid)</option>
                     <option value="Units (Insulin)">Units (Insulin)</option>
-                    <option value="Puffs/Sprays">Puffs / Sprays</option>
+                    <option value="Puffs / Sprays">Puffs / Sprays</option>
                     <option value="Drops">Drops</option>
                     <option value="__other__">Other (type in)</option>
                   </select>
                   <button type="button" id="addPrescriptionBtn"
-                    class="shrink-0 px-4 py-2.5 rounded-full bg-[#667733] hover:bg-[#556022] text-white font-bold text-sm transition">+ Add</button>
+                    class="shrink-0 px-5 py-2.5 rounded-full bg-[#667733] hover:bg-[#556022] text-white font-bold text-sm transition cursor-pointer">+ Add</button>
                 </div>
               </div>
               <div id="dosageOtherRow" class="hidden gap-2 mt-1">
-                <input type="text" id="dosageOtherInput" maxlength="30"
+                <input type="text" id="dosageOtherInput" maxlength="60"
                   placeholder="Type exact dosage (e.g. 15mg, 2 tablets, twice daily)"
                   class="flex-1 px-4 py-2.5 rounded-full bg-white text-[#2c3e2b] font-medium text-sm outline-none shadow-inner border border-[#c1ccab] focus:ring-2 focus:ring-[#4a5e3b]/50">
               </div>
+              <span id="prescriptionError" class="text-[11px] text-red-600 font-bold hidden px-3"></span>
             </div>
 
             <!-- Allergies -->
@@ -298,28 +381,31 @@
                 <p class="text-[10px] text-[#4a5e3b]/80 italic mt-0.5">(Leave blank if none.)</p>
               </div>
               <div id="allergiesList" class="flex flex-wrap gap-2 mb-1"></div>
-              <div class="flex gap-2">
+              <div class="flex flex-col sm:flex-row gap-2">
                 <input type="text" id="allergenInput" placeholder="e.g. Penicillin"
-                  class="flex-1 px-4 py-2.5 rounded-full bg-white text-[#2c3e2b] font-medium text-sm outline-none shadow-inner border border-[#c1ccab] focus:ring-2 focus:ring-[#4a5e3b]/50" maxlength="30">
+                  class="flex-1 px-4 py-2.5 rounded-full bg-white text-[#2c3e2b] font-medium text-sm outline-none shadow-inner border border-[#c1ccab] focus:ring-2 focus:ring-[#4a5e3b]/50" maxlength="60">
                 <button type="button" id="addAllergyBtn"
-                  class="shrink-0 px-4 py-2.5 rounded-full bg-[#667733] hover:bg-[#556022] text-white font-bold text-sm transition">+ Add</button>
+                  class="w-full sm:w-auto shrink-0 px-6 py-2.5 rounded-full bg-[#667733] hover:bg-[#556022] text-white font-bold text-sm transition cursor-pointer">+ Add</button>
               </div>
+              <span id="allergyError" class="text-[11px] text-red-600 font-bold hidden px-3"></span>
             </div>
 
-            <!-- Pregnancy Status -->
+            <!-- Pregnancy Status (Mandatory for Females) -->
             <div id="pregnancyStatusWrapper" class="hidden flex-col gap-1.5 w-full col-span-1 md:col-span-2">
-              <label for="pregnancy-status" class="text-[11px] font-extrabold tracking-wider text-[#2A1001] uppercase">Pregnancy Status:</label>
+              <label for="pregnancy-status" class="text-[11px] font-extrabold tracking-wider text-[#2A1001] uppercase">
+                Pregnancy Status: <span class="text-red-500">* Required</span>
+              </label>
               <select id="pregnancy-status" name="pregnancy_status"
                 class="w-full px-4 py-2.5 rounded-full bg-white text-[#2c3e2b] font-medium text-sm outline-none shadow-inner border border-[#c1ccab] focus:ring-2 focus:ring-[#4a5e3b]/50 cursor-pointer">
                 <option value="" disabled selected>Select Status...</option>
                 <option value="Not Pregnant">Not Pregnant</option>
                 <option value="Unsure / Possibly Pregnant">Unsure / Possibly Pregnant</option>
-                <option value="Trying to Conceive">Trying to Conceive</option>
                 <option value="Pregnant (1-3 Months)">Pregnant (1-3 Months / 1st Trimester)</option>
                 <option value="Pregnant (4-6 Months)">Pregnant (4-6 Months / 2nd Trimester)</option>
                 <option value="Pregnant (7-9 Months)">Pregnant (7-9 Months / 3rd Trimester)</option>
                 <option value="Breastfeeding / Nursing">Breastfeeding / Nursing</option>
               </select>
+              <span id="pregnancyError" class="text-[11px] text-red-600 font-bold hidden px-3"></span>
               <p class="text-[10px] sm:text-[11px] text-[#4a5e3b] px-3 mt-0.5 leading-tight font-medium italic">
                 * This information helps the dentist determine safe use of X-rays, anesthesia, medications, and chair positioning.
               </p>
@@ -328,67 +414,68 @@
           </div>
         </div>
 
-        <!-- ── Change Password ── -->
+        <!-- ── 4. Change Password (8-64 Limit) ── -->
         <div class="relative w-full bg-[#D7E3A5] rounded-2xl p-5 sm:p-7 pt-8 sm:pt-9 shadow-sm border border-[#d2dbbe]">
           <span class="absolute -top-3.5 left-4 sm:left-6 bg-[#667733] text-white text-[10px] sm:text-xs font-bold px-3 sm:px-4 py-1.5 rounded-full tracking-wider uppercase shadow-sm">Change Password</span>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 sm:gap-y-5">
             <div class="flex flex-col gap-1.5">
               <label for="new-password" class="text-[11px] font-extrabold tracking-wider text-[#2A1001] uppercase">New Account Password:</label>
-              <input type="password" id="new-password" name="new_password" placeholder="Enter New Password"
+              <input type="password" id="new-password" name="new_password" placeholder="Enter New Password (min. 8 chars)" maxlength="64"
                 class="w-full px-4 py-2.5 rounded-full bg-white text-[#2c3e2b] font-medium text-sm outline-none shadow-inner border border-[#c1ccab] focus:ring-2 focus:ring-[#4a5e3b]/50">
+              <span id="passwordError" class="text-[11px] text-red-600 font-bold hidden px-3"></span>
             </div>
             <div class="flex flex-col gap-1.5">
               <label for="confirm-password" class="text-[11px] font-extrabold tracking-wider text-[#2A1001] uppercase">Confirm Account Password:</label>
-              <input type="password" id="confirm-password" name="confirm_password" placeholder="Re-enter new password"
+              <input type="password" id="confirm-password" name="confirm_password" placeholder="Re-enter new password" maxlength="64"
                 class="w-full px-4 py-2.5 rounded-full bg-white text-[#2c3e2b] font-medium text-sm outline-none shadow-inner border border-[#c1ccab] focus:ring-2 focus:ring-[#4a5e3b]/50">
+              <span id="confirmPasswordError" class="text-[11px] text-red-600 font-bold hidden px-3"></span>
             </div>
           </div>
         </div>
 
-        <!-- ── Upload PDF — multiple files, stacked list ── -->
+        <!-- ── 5. Upload PDF ── -->
         <div class="w-full flex flex-col gap-3">
           <div id="pdfDropZone"
-            class="w-full bg-[#e3e8d8] rounded-2xl p-5 sm:p-8 border-2 border-dashed border-[#4a5e3b]/50 flex flex-col items-center justify-center gap-2 min-h-[140px] cursor-pointer hover:bg-[#dbe4cb] transition">
-            <div class="flex flex-col sm:flex-row items-center gap-3 text-center sm:text-left">
+            class="w-full bg-[#e3e8d8] rounded-2xl p-5 sm:p-8 border-2 border-dashed border-[#4a5e3b]/50 flex flex-col items-center justify-center gap-2 min-h-[140px] cursor-pointer hover:bg-[#dbe4cb] transition text-center">
+            <div class="flex flex-col sm:flex-row items-center gap-3">
               <p class="text-[#2c3e2b] font-bold text-sm sm:text-base">Click to upload PDFs of your medical conditions</p>
-              <img src="../assets/logowithtitle.png" alt="Clinic Logo" class="w-8 h-8 sm:w-10 sm:h-10 object-contain">
+              <img src="../assets/logowithtitle.png" onerror="this.src='../images/logowithtitle.png'; this.onerror=null;" alt="Clinic Logo" class="w-8 h-8 sm:w-10 sm:h-10 object-contain">
             </div>
-              <p class="text-[#4a5e3b]/70 text-xs">You can select multiple files at once</p>
-              <p class="text-[#4a5e3b]/70 text-xs">PDF only · Max 10MB per file · 50MB total</p>
-            <input type="file" id="medical-pdf-upload" accept=".pdf" class="hidden" multiple>
+            <p class="text-[#4a5e3b]/70 text-xs">You can select multiple files at once</p>
+            <p class="text-[#4a5e3b]/70 text-xs">PDF only · Max 10MB per file · 50MB total</p>
+            <input type="file" id="medical-pdf-upload" accept=".pdf,application/pdf" class="hidden" multiple>
           </div>
           <div id="uploadedFilesList" class="flex flex-col gap-2 w-full"></div>
         </div>
 
-        <!-- ── Save / Cancel / Edit buttons ── -->
-        <div id="submitGroup" class="flex flex-wrap gap-3 items-center justify-center">
+        <!-- ── Action Buttons ── -->
+        <div id="submitGroup" class="flex flex-wrap gap-3 items-center justify-center w-full">
           <button type="submit" id="submitBtn"
-            class="z-10 bg-[#D5C04D] hover:bg-[#F6F2DB] text-[#2A1001] font-black text-xl px-12 py-3 rounded-full shadow-md active:scale-95 transition transform cursor-pointer">
-            Save Profile
+            class="w-full sm:w-auto z-10 bg-[#D5C04D] hover:bg-[#F6F2DB] text-[#2A1001] font-black text-xl px-12 py-3 rounded-full shadow-md active:scale-95 transition transform cursor-pointer flex items-center justify-center gap-2 min-w-[220px]">
+            <span id="submitBtnSpinner" class="hidden"><i class="fa-solid fa-circle-notch fa-spin"></i></span>
+            <span id="submitBtnText">Save Profile</span>
           </button>
           <button type="button" id="cancelBtn"
-            class="hidden z-10 bg-[#D9534F] hover:bg-[#c9302c] text-white font-black text-xl px-10 py-3 rounded-full shadow-md active:scale-95 transition transform cursor-pointer">
+            class="w-full sm:w-auto hidden z-10 bg-[#D9534F] hover:bg-[#c9302c] text-white font-black text-xl px-10 py-3 rounded-full shadow-md active:scale-95 transition transform cursor-pointer">
             Cancel
           </button>
         </div>
 
-        <!-- Edit button: shown after save when form is locked -->
         <button type="button" id="editBtn"
-          class="hidden z-10 bg-[#667733] hover:bg-[#556022] text-white font-black text-xl px-12 py-3 rounded-full shadow-md active:scale-95 transition transform cursor-pointer">
-          Edit Profile
+          class="w-full sm:w-auto hidden z-10 bg-[#667733] hover:bg-[#556022] text-white font-black text-xl px-12 py-3 rounded-full shadow-md active:scale-95 transition transform cursor-pointer flex items-center justify-center gap-2">
+          <i class="fa-solid fa-pen-to-square"></i> Edit Profile
         </button>
 
       </form>
 
-      <div id="successMessage" class="hidden text-center mt-4 p-4 bg-green-100 border border-green-400 text-green-800 rounded-2xl font-bold">
-        Profile Changes Updated Successfully!
-      </div>
     </main>
   </div>
 
   <script>
     const form            = document.getElementById('customer_profile');
     const submitBtn       = document.getElementById('submitBtn');
+    const submitBtnText   = document.getElementById('submitBtnText');
+    const submitBtnSpinner= document.getElementById('submitBtnSpinner');
     const cancelBtn       = document.getElementById('cancelBtn');
     const editBtn         = document.getElementById('editBtn');
     const submitGroup     = document.getElementById('submitGroup');
@@ -399,17 +486,55 @@
     const dosageOtherRow   = document.getElementById('dosageOtherRow');
     const dosageOtherInput = document.getElementById('dosageOtherInput');
     const successMessage  = document.getElementById('successMessage');
+    const errorMessage    = document.getElementById('errorMessage');
+
+    let messageTimer = null;
+    function showNotification(type, text, duration = 4500) {
+      if (messageTimer) clearTimeout(messageTimer);
+      successMessage.classList.add('hidden');
+      errorMessage.classList.add('hidden');
+
+      const target = type === 'success' ? successMessage : errorMessage;
+      target.textContent = text;
+      target.classList.remove('hidden');
+
+      // Smooth Scroll to Top
+      const mainContent = document.getElementById('main-content');
+      if (mainContent) {
+        mainContent.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+
+      messageTimer = setTimeout(() => target.classList.add('hidden'), duration);
+    }
+
+    function setFieldError(inputEl, errorEl, msg) {
+      if (msg) {
+        inputEl?.classList.add('input-error');
+        if (errorEl) { errorEl.textContent = msg; errorEl.classList.remove('hidden'); }
+      } else {
+        inputEl?.classList.remove('input-error');
+        if (errorEl) { errorEl.textContent = ''; errorEl.classList.add('hidden'); }
+      }
+    }
 
     dosageInput.addEventListener('change', function () {
       const isOther = this.value === '__other__';
       dosageOtherRow.classList.toggle('hidden', !isOther);
       dosageOtherRow.classList.toggle('flex', isOther);
-      if (isOther) dosageOtherInput.focus(); else dosageOtherInput.value = '';
+      if (isOther) {
+        dosageOtherInput.focus();
+      } else {
+        dosageOtherInput.value = '';
+        dosageOtherInput.classList.remove('input-error');
+      }
+      setFieldError(null, document.getElementById('prescriptionError'), '');
     });
 
     const birthdayInput = document.getElementById('birthday');
     const today = new Date();
     birthdayInput.max = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+    birthdayInput.min = '1900-01-01';
 
     function escapeHtml(str) {
       return String(str ?? '').replace(/[&<>"']/g, ch => ({
@@ -422,7 +547,7 @@
     }
 
     // ══════════════════════════════════════════════════════
-    //  SNAPSHOT — capture & restore full form state for Cancel
+    //  SNAPSHOT & CANCEL
     // ══════════════════════════════════════════════════════
     let formSnapshot = null;
 
@@ -447,8 +572,8 @@
         lifeFactors:              [...document.querySelectorAll('.lifeFactorCheckbox:checked')].map(cb => cb.value),
         lifeFactorOtherChk:       document.getElementById('lifeFactorOtherCheckbox').checked,
         lifeFactorNoneChk:        document.getElementById('lifeFactorNoneCheckbox').checked,
-        lifeFactorOthers:         [...lifeFactorOthers],
-        allergies:     allergies.map(v => v),
+        lifeFactorsOthers:        [...lifeFactorOthers],
+        allergies:     [...allergies],
         prescriptions: prescriptions.map(rx => ({ ...rx })),
       };
     }
@@ -486,12 +611,16 @@
       document.getElementById('lifeFactorOtherCheckbox').checked = s.lifeFactorOtherChk;
       document.getElementById('lifeFactorNoneCheckbox').checked  = s.lifeFactorNoneChk;
       document.getElementById('lifeFactorOtherRow').classList.toggle('hidden', !s.lifeFactorOtherChk);
-      lifeFactorOthers.length = 0; s.lifeFactorOthers.forEach(v => lifeFactorOthers.push(v));
+      lifeFactorOthers.length = 0; (s.lifeFactorsOthers || []).forEach(v => lifeFactorOthers.push(v));
       lifeFactorOtherHandler.render();
 
       allergies.length = 0;     s.allergies.forEach(v => allergies.push(v));
       prescriptions.length = 0; s.prescriptions.forEach(rx => prescriptions.push({ ...rx }));
       renderAllergies(); renderPrescriptions();
+      
+      document.querySelectorAll('.input-error').forEach(el => el.classList.remove('input-error'));
+      document.querySelectorAll('.container-error').forEach(el => el.classList.remove('container-error'));
+      document.querySelectorAll('[id$="Error"]').forEach(el => el.classList.add('hidden'));
     }
 
     // ══════════════════════════════════════════════════════
@@ -512,7 +641,7 @@
         data.sort((a,b) => a.name.localeCompare(b.name)).forEach(p => sel.add(new Option(p.name, p.code)));
         sel.disabled = false;
       } catch(e) {
-        sel.innerHTML = '<option value="">Province unavailable — check internet</option>';
+        sel.innerHTML = '<option value="">Province unavailable</option>';
         sel.disabled  = false;
       }
     }
@@ -571,7 +700,18 @@
 
     async function populateSavedAddress(data) {
       const { address_street, address_province, address_city, address_barangay, address } = data;
-      document.getElementById('address-street').value = address_street || address || '';
+      
+      const placeholderPhrases = ['Select Province', 'Select City', 'Select Barangay', 'Loading '];
+      let streetVal = address_street || '';
+      if (!streetVal && address) {
+        const isPlaceholder = placeholderPhrases.some(p => address.includes(p));
+        if (!isPlaceholder) streetVal = address;
+      }
+      if (placeholderPhrases.some(p => streetVal.includes(p))) {
+        streetVal = '';
+      }
+      document.getElementById('address-street').value = streetVal;
+
       if (!address_province) return;
       await provinceLoadPromise;
       const pSel = document.getElementById('address-province');
@@ -595,13 +735,32 @@
       const pSel = document.getElementById('address-province');
       const cSel = document.getElementById('address-city');
       const bSel = document.getElementById('address-barangay');
-      const street   = document.getElementById('address-street').value.trim();
-      const province = pSel.options[pSel.selectedIndex]?.textContent.trim() || '';
-      const city     = cSel.options[cSel.selectedIndex]?.textContent.trim() || '';
-      const barangay = bSel.options[bSel.selectedIndex]?.textContent.trim() || '';
-      const placeholders = ['Select Province…','Select City / Municipality…','Select Barangay…','Loading provinces…','Loading cities…','Loading barangays…'];
-      const combined = [street, barangay, city, province].filter(s => s && !placeholders.includes(s)).join(', ');
-      return { address: combined, address_street: street, address_province: province, address_city: city, address_barangay: barangay };
+      let street = document.getElementById('address-street').value.trim();
+      
+      const placeholders = [
+        'Select Province…','Select Province...','Select City / Municipality…','Select City / Municipality...',
+        'Select City first…','Select City first...','Select Barangay…','Select Barangay...',
+        'Loading provinces…','Loading cities…','Loading barangays…','Province unavailable',
+        'Could not load cities','Could not load barangays'
+      ];
+
+      if (placeholders.some(p => street.includes(p))) street = '';
+
+      const province = (pSel.selectedIndex > 0 && !placeholders.includes(pSel.options[pSel.selectedIndex]?.textContent.trim()))
+        ? pSel.options[pSel.selectedIndex]?.textContent.trim() : '';
+      const city = (cSel.selectedIndex > 0 && !placeholders.includes(cSel.options[cSel.selectedIndex]?.textContent.trim()))
+        ? cSel.options[cSel.selectedIndex]?.textContent.trim() : '';
+      const barangay = (bSel.selectedIndex > 0 && !placeholders.includes(bSel.options[bSel.selectedIndex]?.textContent.trim()))
+        ? bSel.options[bSel.selectedIndex]?.textContent.trim() : '';
+      
+      const combined = [street, barangay, city, province].filter(Boolean).join(', ');
+      return { 
+        address: combined, 
+        address_street: street, 
+        address_province: province, 
+        address_city: city, 
+        address_barangay: barangay 
+      };
     }
 
     // ══════════════════════════════════════════════════════
@@ -616,7 +775,9 @@
         const el = document.getElementById(id);
         if (!el) return;
         locked ? el.setAttribute('readonly', true) : el.removeAttribute('readonly');
-        el.classList.toggle('opacity-60', locked);
+        el.classList.toggle('bg-[#dedede]', locked);
+        el.classList.toggle('bg-white', !locked);
+        el.classList.toggle('text-[#2c3e2b]/70', locked);
         el.classList.toggle('pointer-events-none', locked);
         el.classList.toggle('cursor-not-allowed', locked);
       });
@@ -625,18 +786,18 @@
         const el = document.getElementById(id);
         if (!el) return;
         el.disabled = locked;
-        el.classList.toggle('opacity-60', locked);
+        el.classList.toggle('bg-[#dedede]', locked);
+        el.classList.toggle('bg-white', !locked);
         el.classList.toggle('cursor-not-allowed', locked);
       });
 
       const pEl = document.getElementById('address-province');
-      if (pEl) { pEl.disabled = locked; pEl.classList.toggle('opacity-60', locked); pEl.classList.toggle('cursor-not-allowed', locked); }
+      if (pEl) { pEl.disabled = locked; pEl.classList.toggle('cursor-not-allowed', locked); }
 
       ['address-city','address-barangay'].forEach(id => {
         const el = document.getElementById(id);
         if (!el) return;
         el.disabled = locked ? true : el.options.length <= 1;
-        el.classList.toggle('opacity-60', locked);
         el.classList.toggle('cursor-not-allowed', locked);
       });
 
@@ -648,10 +809,27 @@
         el.classList.toggle('pointer-events-none', locked);
       });
 
-      document.querySelectorAll('.healthConditionCheckbox,.surgeryCheckbox,.lifeFactorCheckbox').forEach(cb => { cb.disabled = locked; });
+      document.querySelectorAll('.checkbox-chip').forEach(chip => {
+        chip.classList.toggle('bg-[#dedede]', locked);
+        chip.classList.toggle('bg-white', !locked);
+        chip.classList.toggle('opacity-75', locked);
+        chip.classList.toggle('cursor-not-allowed', locked);
+        chip.classList.toggle('cursor-pointer', !locked);
+      });
+
+      document.querySelectorAll('.healthConditionCheckbox,.surgeryCheckbox,.lifeFactorCheckbox').forEach(cb => { 
+        cb.disabled = locked; 
+        cb.classList.toggle('cursor-not-allowed', locked);
+      });
       ['healthConditionOtherCheckbox','surgeryOtherCheckbox','lifeFactorOtherCheckbox',
        'healthConditionNoneCheckbox','surgeryNoneCheckbox','lifeFactorNoneCheckbox'
-      ].forEach(id => { const el = document.getElementById(id); if (el) el.disabled = locked; });
+      ].forEach(id => { 
+        const el = document.getElementById(id); 
+        if (el) {
+          el.disabled = locked; 
+          el.classList.toggle('cursor-not-allowed', locked);
+        }
+      });
 
       ['prescriptionsList','allergiesList','healthConditionOtherList','surgeryOtherList','lifeFactorOtherList'].forEach(id => {
         const el = document.getElementById(id);
@@ -659,7 +837,11 @@
       });
 
       const pdfZone = document.getElementById('pdfDropZone');
-      if (pdfZone) { pdfZone.style.pointerEvents = locked ? 'none' : ''; pdfZone.style.opacity = locked ? '0.55' : ''; pdfZone.style.cursor = locked ? 'not-allowed' : ''; }
+      if (pdfZone) { 
+        pdfZone.style.pointerEvents = locked ? 'none' : ''; 
+        pdfZone.style.opacity = locked ? '0.55' : ''; 
+        pdfZone.style.cursor = locked ? 'not-allowed' : ''; 
+      }
       const pdfList = document.getElementById('uploadedFilesList');
       if (pdfList) pdfList.style.pointerEvents = locked ? 'none' : '';
 
@@ -671,47 +853,373 @@
     editBtn.addEventListener('click', () => {
       takeSnapshot();
       setFormLocked(false);
-      submitBtn.textContent = 'Update Changes';
+      submitBtnText.textContent = 'Update Changes';
     });
 
     cancelBtn.addEventListener('click', () => {
       restoreSnapshot();
       setFormLocked(true);
-      submitBtn.textContent = 'Update Changes';
+      submitBtnText.textContent = 'Update Changes';
     });
 
     function updateMedicalLayout() {
       const sex = (document.getElementById('sex').value || '').trim().toLowerCase();
-      const pregnancyWrapper     = document.getElementById('pregnancyStatusWrapper');
-      const prescriptionsWrapper = document.getElementById('prescriptionsWrapper');
-      if (!pregnancyWrapper || !prescriptionsWrapper) return;
+      const pregnancyWrapper = document.getElementById('pregnancyStatusWrapper');
+      if (!pregnancyWrapper) return;
       if (sex === 'm' || sex === 'male') {
         pregnancyWrapper.classList.add('hidden');
       } else if (sex === 'f' || sex === 'female') {
         pregnancyWrapper.classList.remove('hidden');
-        prescriptionsWrapper.classList.add('md:col-span-2');
       }
     }
 
     // ══════════════════════════════════════════════════════
-    //  CHIP LISTS
+    //  SEPARATED OTHERS HANDLER WITH LIMIT & ERROR CLEARING
+    // ══════════════════════════════════════════════════════
+    const MAX_OTHER_ITEMS = 10;
+
+    function setupOtherChipList({ checkboxId, rowId, inputId, addBtnId, listId, limitId, containerId, errorId, itemTypeName, items }) {
+      const checkbox  = document.getElementById(checkboxId);
+      const row       = document.getElementById(rowId);
+      const input     = document.getElementById(inputId);
+      const addBtn    = document.getElementById(addBtnId);
+      const list      = document.getElementById(listId);
+      const limitEl   = document.getElementById(limitId);
+      const container = document.getElementById(containerId);
+      const errorEl   = document.getElementById(errorId);
+
+      const render = () => {
+        if (limitEl) limitEl.textContent = `${items.length}/${MAX_OTHER_ITEMS} added`;
+        list.innerHTML = items.map((item, i) => `
+          <span class="inline-flex items-center gap-2 bg-white border border-[#c1ccab] rounded-full px-3.5 py-1 text-xs font-semibold shadow-inner text-[#2c3e2b]">
+            ${escapeHtml(item)}
+            <button type="button" class="removeOtherChipBtn text-[#2c3e2b]/50 hover:text-red-600 font-bold text-sm cursor-pointer ml-1" data-list="${listId}" data-index="${i}">&times;</button>
+          </span>`).join('');
+      };
+
+      const clearSectionError = () => {
+        input.classList.remove('input-error');
+        if (errorEl) { errorEl.textContent = ''; errorEl.classList.add('hidden'); }
+        if (container) container.classList.remove('container-error');
+      };
+
+      checkbox.addEventListener('change', function () {
+        row.classList.toggle('hidden', !this.checked);
+        row.classList.toggle('flex', this.checked);
+        clearSectionError();
+        if (this.checked) {
+          input.focus();
+        } else {
+          input.value = '';
+          items.length = 0;
+          render();
+        }
+      });
+
+      // Clear red error highlight on user typing
+      input.addEventListener('input', function() {
+        this.classList.remove('input-error');
+        if (errorEl) {
+          errorEl.textContent = '';
+          errorEl.classList.add('hidden');
+        }
+        if (container) container.classList.remove('container-error');
+      });
+
+      const addValue = () => {
+        const val = sanitizeInput(input.value);
+        if (!val) {
+          setFieldError(input, errorEl, `Please specify a ${itemTypeName} before adding.`);
+          if (container) container.classList.add('container-error');
+          input.focus();
+          return;
+        }
+        if (val.length < 2) {
+          setFieldError(input, errorEl, `${itemTypeName.charAt(0).toUpperCase() + itemTypeName.slice(1)} must be at least 2 characters.`);
+          if (container) container.classList.add('container-error');
+          input.focus();
+          return;
+        }
+        if (items.length >= MAX_OTHER_ITEMS) {
+          setFieldError(input, errorEl, `Maximum of ${MAX_OTHER_ITEMS} items reached.`);
+          return;
+        }
+        if (items.some(it => it.toLowerCase() === val.toLowerCase())) {
+          setFieldError(input, errorEl, `This ${itemTypeName} has already been added.`);
+          return;
+        }
+        items.push(val);
+        input.value = '';
+        clearSectionError();
+        render();
+      };
+
+      addBtn.addEventListener('click', addValue);
+      input.addEventListener('keydown', e => {
+        if (e.key === 'Enter') { e.preventDefault(); e.stopPropagation(); addValue(); }
+      });
+
+      return {
+        render,
+        clearSectionError,
+        remove: (i) => { 
+          items.splice(i, 1); 
+          render(); 
+        },
+        validate: () => {
+          if (checkbox.checked) {
+            const pending = sanitizeInput(input.value);
+            if (pending && !items.includes(pending) && items.length < MAX_OTHER_ITEMS) {
+              items.push(pending);
+              input.value = '';
+              render();
+            }
+            if (items.length === 0) return false;
+          }
+          clearSectionError();
+          return true;
+        }
+      };
+    }
+
+    const healthConditionOthers = [];
+    const surgeryOthers         = [];
+    const lifeFactorOthers      = [];
+
+    const healthConditionOtherHandler = setupOtherChipList({ 
+      checkboxId: 'healthConditionOtherCheckbox', 
+      rowId: 'healthConditionOtherRow', 
+      inputId: 'healthConditionOtherInput', 
+      addBtnId: 'addHealthConditionOtherBtn', 
+      listId: 'healthConditionOtherList', 
+      limitId: 'healthConditionLimit',
+      containerId: 'healthConditionsContainer',
+      errorId: 'healthConditionError',
+      itemTypeName: 'condition',
+      items: healthConditionOthers 
+    });
+
+    const surgeryOtherHandler = setupOtherChipList({ 
+      checkboxId: 'surgeryOtherCheckbox', 
+      rowId: 'surgeryOtherRow', 
+      inputId: 'surgeryOtherInput', 
+      addBtnId: 'addSurgeryOtherBtn', 
+      listId: 'surgeryOtherList', 
+      limitId: 'surgeryLimit',
+      containerId: 'surgeriesContainer',
+      errorId: 'surgeryError',
+      itemTypeName: 'surgery',
+      items: surgeryOthers 
+    });
+
+    const lifeFactorOtherHandler = setupOtherChipList({ 
+      checkboxId: 'lifeFactorOtherCheckbox', 
+      rowId: 'lifeFactorOtherRow', 
+      inputId: 'lifeFactorOtherInput', 
+      addBtnId: 'addLifeFactorOtherBtn', 
+      listId: 'lifeFactorOtherList', 
+      limitId: 'lifeFactorLimit',
+      containerId: 'lifestyleContainer',
+      errorId: 'lifeFactorError',
+      itemTypeName: 'lifestyle factor',
+      items: lifeFactorOthers 
+    });
+
+    function setupNoneCheckbox({ noneId, checkboxSel, otherCheckboxId, otherRowId, otherHandler, otherItems, containerId, errorId }) {
+      const noneCb = document.getElementById(noneId);
+      const container = document.getElementById(containerId);
+      const errorEl = document.getElementById(errorId);
+
+      const clearError = () => {
+        if (container) container.classList.remove('container-error');
+        if (errorEl) { errorEl.textContent = ''; errorEl.classList.add('hidden'); }
+      };
+
+      noneCb.addEventListener('change', function () {
+        if (!this.checked) return;
+        clearError();
+        document.querySelectorAll(checkboxSel).forEach(cb => cb.checked = false);
+        const otherCb = document.getElementById(otherCheckboxId);
+        if (otherCb) {
+          otherCb.checked = false;
+          const r = document.getElementById(otherRowId);
+          r.classList.add('hidden');
+          r.classList.remove('flex');
+        }
+        otherItems.length = 0;
+        otherHandler.render();
+      });
+
+      document.querySelectorAll(`${checkboxSel}, #${otherCheckboxId}`).forEach(cb => {
+        cb.addEventListener('change', function () { 
+          clearError();
+          if (this.checked) noneCb.checked = false; 
+        });
+      });
+    }
+
+    setupNoneCheckbox({ 
+      noneId: 'healthConditionNoneCheckbox', 
+      checkboxSel: '.healthConditionCheckbox', 
+      otherCheckboxId: 'healthConditionOtherCheckbox', 
+      otherRowId: 'healthConditionOtherRow', 
+      otherHandler: healthConditionOtherHandler, 
+      otherItems: healthConditionOthers,
+      containerId: 'healthConditionsContainer',
+      errorId: 'healthConditionError'
+    });
+
+    setupNoneCheckbox({ 
+      noneId: 'surgeryNoneCheckbox', 
+      checkboxSel: '.surgeryCheckbox', 
+      otherCheckboxId: 'surgeryOtherCheckbox', 
+      otherRowId: 'surgeryOtherRow', 
+      otherHandler: surgeryOtherHandler, 
+      otherItems: surgeryOthers,
+      containerId: 'surgeriesContainer',
+      errorId: 'surgeryError'
+    });
+
+    setupNoneCheckbox({ 
+      noneId: 'lifeFactorNoneCheckbox', 
+      checkboxSel: '.lifeFactorCheckbox', 
+      otherCheckboxId: 'lifeFactorOtherCheckbox', 
+      otherRowId: 'lifeFactorOtherRow', 
+      otherHandler: lifeFactorOtherHandler, 
+      otherItems: lifeFactorOthers,
+      containerId: 'lifestyleContainer',
+      errorId: 'lifeFactorError'
+    });
+
+    // Real-time Input Validation & Instant Error Clearing
+    birthdayInput.addEventListener('input', function() {
+      if (this.value) setFieldError(this, document.getElementById('birthdayError'), '');
+    });
+    birthdayInput.addEventListener('change', function() {
+      if (this.value) setFieldError(this, document.getElementById('birthdayError'), '');
+    });
+
+    document.getElementById('secondary-email').addEventListener('input', function() {
+      setFieldError(this, document.getElementById('secondaryEmailError'), '');
+    });
+
+    document.getElementById('pregnancy-status')?.addEventListener('change', function() {
+      if (this.value) setFieldError(this, document.getElementById('pregnancyError'), '');
+    });
+
+    newPassword.addEventListener('input', function() {
+      setFieldError(this, document.getElementById('passwordError'), '');
+      if (confirmPassword.value) {
+        if (this.value === confirmPassword.value) setFieldError(confirmPassword, document.getElementById('confirmPasswordError'), '');
+      }
+    });
+
+    confirmPassword.addEventListener('input', function() {
+      setFieldError(this, document.getElementById('confirmPasswordError'), '');
+    });
+
+    document.getElementById('allergenInput').addEventListener('input', function() {
+      setFieldError(this, document.getElementById('allergyError'), '');
+    });
+
+    document.getElementById('medicationNameInput').addEventListener('input', function() {
+      setFieldError(this, document.getElementById('prescriptionError'), '');
+    });
+
+    dosageOtherInput.addEventListener('input', function() {
+      setFieldError(this, document.getElementById('prescriptionError'), '');
+    });
+
+    const getSelectedHealthConditions = () => {
+      if (document.getElementById('healthConditionNoneCheckbox').checked) return ['None'];
+      return [...Array.from(document.querySelectorAll('.healthConditionCheckbox:checked')).map(cb=>cb.value), ...healthConditionOthers];
+    };
+    const getSelectedSurgeries = () => {
+      if (document.getElementById('surgeryNoneCheckbox').checked) return ['None'];
+      return [...Array.from(document.querySelectorAll('.surgeryCheckbox:checked')).map(cb=>cb.value), ...surgeryOthers];
+    };
+    const getSelectedLifeFactors = () => {
+      if (document.getElementById('lifeFactorNoneCheckbox').checked) return ['None'];
+      return [...Array.from(document.querySelectorAll('.lifeFactorCheckbox:checked')).map(cb=>cb.value), ...lifeFactorOthers];
+    };
+
+    function setHealthConditions(values) {
+      if (!Array.isArray(values)) return;
+      if (values.includes('None') || values.length === 0) {
+        document.getElementById('healthConditionNoneCheckbox').checked = true;
+      }
+      const predefined = Array.from(document.querySelectorAll('.healthConditionCheckbox')).map(cb=>cb.value);
+      values.forEach(val => {
+        if (val === 'None') return;
+        const cb = document.querySelector(`.healthConditionCheckbox[value="${val}"]`);
+        if (cb) cb.checked = true;
+        else if (val && !predefined.includes(val) && healthConditionOthers.length < MAX_OTHER_ITEMS) healthConditionOthers.push(val);
+      });
+      if (healthConditionOthers.length > 0) {
+        document.getElementById('healthConditionOtherCheckbox').checked = true;
+        document.getElementById('healthConditionOtherRow').classList.remove('hidden');
+        document.getElementById('healthConditionOtherRow').classList.add('flex');
+      }
+      healthConditionOtherHandler.render();
+    }
+
+    function setSurgeries(values) {
+      if (!Array.isArray(values)) return;
+      if (values.includes('None') || values.length === 0) {
+        document.getElementById('surgeryNoneCheckbox').checked = true;
+      }
+      const predefined = Array.from(document.querySelectorAll('.surgeryCheckbox')).map(cb=>cb.value);
+      values.forEach(val => {
+        if (val === 'None') return;
+        const cb = document.querySelector(`.surgeryCheckbox[value="${val}"]`);
+        if (cb) cb.checked = true;
+        else if (val && !predefined.includes(val) && surgeryOthers.length < MAX_OTHER_ITEMS) surgeryOthers.push(val);
+      });
+      if (surgeryOthers.length > 0) {
+        document.getElementById('surgeryOtherCheckbox').checked = true;
+        document.getElementById('surgeryOtherRow').classList.remove('hidden');
+        document.getElementById('surgeryOtherRow').classList.add('flex');
+      }
+      surgeryOtherHandler.render();
+    }
+
+    function setLifeFactors(values) {
+      if (!Array.isArray(values)) return;
+      if (values.includes('None') || values.length === 0) {
+        document.getElementById('lifeFactorNoneCheckbox').checked = true;
+      }
+      const predefined = Array.from(document.querySelectorAll('.lifeFactorCheckbox')).map(cb=>cb.value);
+      values.forEach(val => {
+        if (val === 'None') return;
+        const cb = document.querySelector(`.lifeFactorCheckbox[value="${val}"]`);
+        if (cb) cb.checked = true;
+        else if (val && !predefined.includes(val) && lifeFactorOthers.length < MAX_OTHER_ITEMS) lifeFactorOthers.push(val);
+      });
+      if (lifeFactorOthers.length > 0) {
+        document.getElementById('lifeFactorOtherCheckbox').checked = true;
+        document.getElementById('lifeFactorOtherRow').classList.remove('hidden');
+        document.getElementById('lifeFactorOtherRow').classList.add('flex');
+      }
+      lifeFactorOtherHandler.render();
+    }
+
+    // ══════════════════════════════════════════════════════
+    //  PRESCRIPTIONS & ALLERGIES
     // ══════════════════════════════════════════════════════
     let allergies     = [];
     let prescriptions = [];
 
-    function renderChipList(containerId, items) {
-      const el = document.getElementById(containerId);
+    function renderAllergies() {
+      const el = document.getElementById('allergiesList');
       if (!el) return;
-      el.innerHTML = items.length === 0
+      el.innerHTML = allergies.length === 0
         ? `<p class="text-xs text-[#2c3e2b]/50 italic">None added yet.</p>`
-        : items.map((item, i) => `
+        : allergies.map((item, i) => `
             <span class="inline-flex items-center gap-2 bg-white border border-[#c1ccab] rounded-full px-4 py-1.5 text-sm text-[#2c3e2b] font-medium shadow-inner">
               ${escapeHtml(item)}
-              <button type="button" class="removeChipBtn text-[#2c3e2b]/50 hover:text-red-600 font-bold cursor-pointer" data-container="${containerId}" data-index="${i}">&times;</button>
+              <button type="button" class="removeChipBtn text-[#2c3e2b]/50 hover:text-red-600 font-bold cursor-pointer" data-container="allergiesList" data-index="${i}">&times;</button>
             </span>`).join('');
     }
-
-    function renderAllergies() { renderChipList('allergiesList', allergies); }
 
     function renderPrescriptions() {
       const el = document.getElementById('prescriptionsList');
@@ -725,122 +1233,35 @@
             </div>`).join('');
     }
 
-    function setupOtherChipList({ checkboxId, rowId, inputId, addBtnId, listId, items }) {
-      const checkbox = document.getElementById(checkboxId);
-      const row      = document.getElementById(rowId);
-      const input    = document.getElementById(inputId);
-      const addBtn   = document.getElementById(addBtnId);
-      const list     = document.getElementById(listId);
-
-      const render = () => {
-        list.innerHTML = items.map((item, i) => `
-          <span class="inline-flex items-center gap-2 bg-white border border-[#c1ccab] rounded-full px-4 py-1.5 text-sm text-[#2c3e2b] font-medium shadow-inner">
-            ${escapeHtml(item)}
-            <button type="button" class="removeOtherChipBtn text-[#2c3e2b]/50 hover:text-red-600 font-bold cursor-pointer" data-list="${listId}" data-index="${i}">&times;</button>
-          </span>`).join('');
-      };
-
-      checkbox.addEventListener('change', function () {
-        row.classList.toggle('hidden', !this.checked);
-        if (this.checked) input.focus(); else input.value = '';
-      });
-
-      const addValue = () => {
-        const value = sanitizeInput(input.value);
-        if (!value) return;
-        items.push(value); input.value = ''; render();
-      };
-
-      addBtn.addEventListener('click', addValue);
-      input.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); e.stopPropagation(); addValue(); } });
-
-      return { render, remove: (i) => { items.splice(i, 1); render(); } };
-    }
-
-    const healthConditionOthers = [];
-    const surgeryOthers         = [];
-    const lifeFactorOthers      = [];
-
-    const healthConditionOtherHandler = setupOtherChipList({ checkboxId:'healthConditionOtherCheckbox', rowId:'healthConditionOtherRow', inputId:'healthConditionOtherInput', addBtnId:'addHealthConditionOtherBtn', listId:'healthConditionOtherList', items:healthConditionOthers });
-    const surgeryOtherHandler         = setupOtherChipList({ checkboxId:'surgeryOtherCheckbox',         rowId:'surgeryOtherRow',         inputId:'surgeryOtherInput',         addBtnId:'addSurgeryOtherBtn',         listId:'surgeryOtherList',         items:surgeryOthers });
-    const lifeFactorOtherHandler      = setupOtherChipList({ checkboxId:'lifeFactorOtherCheckbox',      rowId:'lifeFactorOtherRow',      inputId:'lifeFactorOtherInput',      addBtnId:'addLifeFactorOtherBtn',      listId:'lifeFactorOtherList',      items:lifeFactorOthers });
-
-    function setupNoneCheckbox({ noneId, checkboxSel, otherCheckboxId, otherRowId, otherHandler, otherItems }) {
-      const noneCb = document.getElementById(noneId);
-      noneCb.addEventListener('change', function () {
-        if (!this.checked) return;
-        document.querySelectorAll(checkboxSel).forEach(cb => cb.checked = false);
-        const otherCb = document.getElementById(otherCheckboxId);
-        if (otherCb) { otherCb.checked = false; document.getElementById(otherRowId).classList.add('hidden'); }
-        otherItems.length = 0; otherHandler.render();
-      });
-      document.querySelectorAll(`${checkboxSel}, #${otherCheckboxId}`).forEach(cb => {
-        cb.addEventListener('change', function () { if (this.checked) noneCb.checked = false; });
-      });
-    }
-
-    setupNoneCheckbox({ noneId:'healthConditionNoneCheckbox', checkboxSel:'.healthConditionCheckbox', otherCheckboxId:'healthConditionOtherCheckbox', otherRowId:'healthConditionOtherRow', otherHandler:healthConditionOtherHandler, otherItems:healthConditionOthers });
-    setupNoneCheckbox({ noneId:'surgeryNoneCheckbox',         checkboxSel:'.surgeryCheckbox',         otherCheckboxId:'surgeryOtherCheckbox',         otherRowId:'surgeryOtherRow',         otherHandler:surgeryOtherHandler,         otherItems:surgeryOthers });
-    setupNoneCheckbox({ noneId:'lifeFactorNoneCheckbox',      checkboxSel:'.lifeFactorCheckbox',      otherCheckboxId:'lifeFactorOtherCheckbox',      otherRowId:'lifeFactorOtherRow',      otherHandler:lifeFactorOtherHandler,      otherItems:lifeFactorOthers });
-
-    const getSelectedHealthConditions = () => [...Array.from(document.querySelectorAll('.healthConditionCheckbox:checked')).map(cb=>cb.value), ...healthConditionOthers];
-    const getSelectedSurgeries        = () => [...Array.from(document.querySelectorAll('.surgeryCheckbox:checked')).map(cb=>cb.value), ...surgeryOthers];
-    const getSelectedLifeFactors      = () => [...Array.from(document.querySelectorAll('.lifeFactorCheckbox:checked')).map(cb=>cb.value), ...lifeFactorOthers];
-
-    function setHealthConditions(values) {
-      if (!Array.isArray(values)) return;
-      const predefined = Array.from(document.querySelectorAll('.healthConditionCheckbox')).map(cb=>cb.value);
-      values.forEach(val => {
-        const cb = document.querySelector(`.healthConditionCheckbox[value="${val}"]`);
-        if (cb) cb.checked = true;
-        else if (val && !predefined.includes(val)) healthConditionOthers.push(val);
-      });
-      if (healthConditionOthers.length > 0) document.getElementById('healthConditionOtherCheckbox').checked = true;
-      if (values.length === 0) document.getElementById('healthConditionNoneCheckbox').checked = true;
-      healthConditionOtherHandler.render();
-    }
-
-    function setSurgeries(values) {
-      if (!Array.isArray(values)) return;
-      const predefined = Array.from(document.querySelectorAll('.surgeryCheckbox')).map(cb=>cb.value);
-      values.forEach(val => {
-        const cb = document.querySelector(`.surgeryCheckbox[value="${val}"]`);
-        if (cb) cb.checked = true;
-        else if (val && !predefined.includes(val)) surgeryOthers.push(val);
-      });
-      if (surgeryOthers.length > 0) document.getElementById('surgeryOtherCheckbox').checked = true;
-      if (values.length === 0) document.getElementById('surgeryNoneCheckbox').checked = true;
-      surgeryOtherHandler.render();
-    }
-
-    function setLifeFactors(values) {
-      if (!Array.isArray(values)) return;
-      const predefined = Array.from(document.querySelectorAll('.lifeFactorCheckbox')).map(cb=>cb.value);
-      values.forEach(val => {
-        const cb = document.querySelector(`.lifeFactorCheckbox[value="${val}"]`);
-        if (cb) cb.checked = true;
-        else if (val && !predefined.includes(val)) lifeFactorOthers.push(val);
-      });
-      if (lifeFactorOthers.length > 0) document.getElementById('lifeFactorOtherCheckbox').checked = true;
-      if (values.length === 0) document.getElementById('lifeFactorNoneCheckbox').checked = true;
-      lifeFactorOtherHandler.render();
-    }
-
     document.getElementById('addAllergyBtn').addEventListener('click', () => {
       const input = document.getElementById('allergenInput');
-      const val   = sanitizeInput(input.value);
-      if (!val) return;
+      const err = document.getElementById('allergyError');
+      const val = sanitizeInput(input.value);
+      if (!val) { setFieldError(input, err, 'Please enter an allergen before adding.'); input.focus(); return; }
+      if (val.length < 2) { setFieldError(input, err, 'Allergen must be at least 2 characters.'); input.focus(); return; }
+      if (allergies.some(a => a.toLowerCase() === val.toLowerCase())) { setFieldError(input, err, 'Allergen already exists.'); return; }
+      setFieldError(input, err, '');
       allergies.push(val); input.value = ''; renderAllergies();
     });
 
     document.getElementById('addPrescriptionBtn').addEventListener('click', () => {
       const n = document.getElementById('medicationNameInput');
       const d = document.getElementById('dosageInput');
+      const err = document.getElementById('prescriptionError');
       const name = sanitizeInput(n.value);
-      if (!name) return;
-      const dosageValue = d.value === '__other__'
-        ? sanitizeInput(dosageOtherInput.value)
-        : d.value;
+      const isOther = d.value === '__other__';
+      const dosageValue = isOther ? sanitizeInput(dosageOtherInput.value) : d.value;
+
+      if (!name) { setFieldError(n, err, 'Please enter a medication name before adding.'); n.focus(); return; }
+      if (name.length < 2) { setFieldError(n, err, 'Medication name must be at least 2 characters.'); n.focus(); return; }
+      if (isOther && !dosageValue) { setFieldError(dosageOtherInput, err, 'Please type the custom dosage before adding.'); dosageOtherInput.focus(); return; }
+      if (prescriptions.some(p => p.medication_name.toLowerCase() === name.toLowerCase())) {
+        setFieldError(n, err, `"${name}" is already in your prescriptions.`);
+        return;
+      }
+
+      setFieldError(n, err, '');
+      setFieldError(dosageOtherInput, err, '');
       prescriptions.push({ medication_name: name, dosage: dosageValue });
       n.value = ''; d.value = ''; dosageOtherInput.value = '';
       dosageOtherRow.classList.add('hidden'); dosageOtherRow.classList.remove('flex');
@@ -848,14 +1269,13 @@
     });
 
     ['allergenInput','medicationNameInput'].forEach(id => {
-      document.getElementById(id).addEventListener('keydown', e => {
-        if (e.key !== 'Enter') return; e.preventDefault();
-        document.getElementById(id === 'allergenInput' ? 'addAllergyBtn' : 'addPrescriptionBtn').click();
+      document.getElementById(id)?.addEventListener('keydown', e => {
+        if (e.key === 'Enter') { e.preventDefault(); (id === 'allergenInput' ? document.getElementById('addAllergyBtn') : document.getElementById('addPrescriptionBtn')).click(); }
       });
     });
 
     // ══════════════════════════════════════════════════════
-    //  PDF UPLOAD & PERSISTENCE
+    //  PDF UPLOADS
     // ══════════════════════════════════════════════════════
     let uploadedPdfs = [];
 
@@ -880,11 +1300,7 @@
 
     document.getElementById('pdfDropZone').addEventListener('click', () => document.getElementById('medical-pdf-upload').click());
 
-    const MAX_FILE_SIZE_MB = 10;
-    const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
-    const MAX_TOTAL_SIZE_MB = 50;
-    const MAX_TOTAL_SIZE_BYTES = MAX_TOTAL_SIZE_MB * 1024 * 1024;
-
+    const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024;
     document.getElementById('medical-pdf-upload').addEventListener('change', async function (e) {
       const incoming = Array.from(e.target.files);
       if (!incoming.length) return;
@@ -894,13 +1310,13 @@
 
       for (const f of incoming) {
         const isPdfExt  = /\.pdf$/i.test(f.name);
-        const isPdfMime = f.type === 'application/pdf';
+        const isPdfMime = f.type === 'application/pdf' || f.type === '';
         if (!isPdfExt || !isPdfMime) {
           uploadedPdfs.push({ name: f.name, status: 'failed', reason: 'Not a valid PDF file' });
           continue;
         }
         if (f.size > MAX_FILE_SIZE_BYTES) {
-          uploadedPdfs.push({ name: f.name, status: 'failed', reason: `Exceeds ${MAX_FILE_SIZE_MB}MB limit` });
+          uploadedPdfs.push({ name: f.name, status: 'failed', reason: 'Exceeds 10MB limit' });
           continue;
         }
         uploadedPdfs.push({ name: f.name, status: 'uploading', file: f, size: f.size });
@@ -936,21 +1352,26 @@
     });
 
     document.addEventListener('click', async e => {
-      if (e.target.classList.contains('removeChipBtn')) {
-        const i = Number(e.target.dataset.index);
-        if (e.target.dataset.container === 'allergiesList') { allergies.splice(i,1); renderAllergies(); }
+      if (e.target.closest('.removeChipBtn')) {
+        const btn = e.target.closest('.removeChipBtn');
+        allergies.splice(Number(btn.dataset.index), 1);
+        renderAllergies();
       }
-      if (e.target.classList.contains('removePrescriptionBtn')) {
-        prescriptions.splice(Number(e.target.dataset.index),1); renderPrescriptions();
+      if (e.target.closest('.removePrescriptionBtn')) {
+        const btn = e.target.closest('.removePrescriptionBtn');
+        prescriptions.splice(Number(btn.dataset.index), 1);
+        renderPrescriptions();
       }
-      if (e.target.classList.contains('removeOtherChipBtn')) {
-        const i = Number(e.target.dataset.index);
-        if (e.target.dataset.list === 'healthConditionOtherList') healthConditionOtherHandler.remove(i);
-        if (e.target.dataset.list === 'surgeryOtherList')         surgeryOtherHandler.remove(i);
-        if (e.target.dataset.list === 'lifeFactorOtherList')      lifeFactorOtherHandler.remove(i);
+      if (e.target.closest('.removeOtherChipBtn')) {
+        const btn = e.target.closest('.removeOtherChipBtn');
+        const i = Number(btn.dataset.index);
+        if (btn.dataset.list === 'healthConditionOtherList') healthConditionOtherHandler.remove(i);
+        if (btn.dataset.list === 'surgeryOtherList')         surgeryOtherHandler.remove(i);
+        if (btn.dataset.list === 'lifeFactorOtherList')      lifeFactorOtherHandler.remove(i);
       }
-      if (e.target.classList.contains('removePdfBtn')) {
-        const idx = Number(e.target.dataset.index);
+      if (e.target.closest('.removePdfBtn')) {
+        const btn = e.target.closest('.removePdfBtn');
+        const idx = Number(btn.dataset.index);
         const item = uploadedPdfs[idx];
         if (item && item.document_id) {
           try {
@@ -959,30 +1380,29 @@
               method: 'DELETE',
               headers: { 'Authorization': `Bearer ${token}` }
             });
-          } catch (err) {
-            console.warn('PDF delete error:', err);
-          }
+          } catch (err) { console.warn('PDF delete error:', err); }
         }
         uploadedPdfs.splice(idx, 1);
         renderPdfList();
       }
     });
 
-    phoneInput.addEventListener('input', function () { this.value = this.value.replace(/\D/g,'').slice(0,11); });
-    confirmPassword.addEventListener('input', function () {
-      this.setCustomValidity(newPassword.value && this.value && newPassword.value !== this.value ? 'Passwords do not match.' : '');
-    });
-    newPassword.addEventListener('input', function () {
-      confirmPassword.setCustomValidity(confirmPassword.value && this.value !== confirmPassword.value ? 'Passwords do not match.' : '');
+    phoneInput.addEventListener('input', function () {
+      this.value = this.value.replace(/\D/g,'').slice(0,11);
+      if (this.value && !this.value.startsWith('09')) {
+        setFieldError(this, document.getElementById('phoneError'), 'Must start with 09.');
+      } else {
+        setFieldError(this, document.getElementById('phoneError'), '');
+      }
     });
 
     // ══════════════════════════════════════════════════════
-    //  LOAD FROM DATABASE
+    //  DATABASE LOAD
     // ══════════════════════════════════════════════════════
     async function loadProfileFromDatabase() {
       try {
         const token = localStorage.getItem('userToken');
-        if (!token) { console.warn('No user token found.'); return; }
+        if (!token) return;
         const res  = await fetch('/api/patient-profile', { method:'GET', headers:{ 'Authorization':`Bearer ${token}` } });
         if (!res.ok) throw new Error(`Server error: ${res.status}`);
         const data = await res.json();
@@ -1012,7 +1432,6 @@
         renderAllergies();
         renderPrescriptions();
 
-        // PERSISTENCE FIX: Load saved medical PDF documents from database
         if (Array.isArray(data.patient_documents)) {
           uploadedPdfs = data.patient_documents.map(doc => ({
             document_id: doc.document_id,
@@ -1026,7 +1445,7 @@
         if (data.birthday) {
           takeSnapshot();
           setFormLocked(true);
-          submitBtn.textContent = 'Update Changes';
+          submitBtnText.textContent = 'Update Changes';
         }
       } catch(err) { console.error('Failed to load profile:', err); }
     }
@@ -1038,26 +1457,170 @@
     }
 
     // ══════════════════════════════════════════════════════
-    //  FORM SUBMIT
+    //  STRICT VALIDATION: Medical Info Required, Address Optional
+    // ══════════════════════════════════════════════════════
+    function validateCompleteForm() {
+      let isValid = true;
+      let firstInvalid = null;
+
+      function check(el, errEl, msg, containerEl = null) {
+        setFieldError(el, errEl, msg);
+        if (containerEl) containerEl.classList.add('container-error');
+        isValid = false;
+        if (!firstInvalid && (el || containerEl)) firstInvalid = el || containerEl;
+      }
+
+      // Reset container errors
+      ['healthConditionsContainer','surgeriesContainer','lifestyleContainer'].forEach(id => {
+        document.getElementById(id)?.classList.remove('container-error');
+      });
+
+      // Birthday (Required)
+      const bday = birthdayInput.value;
+      if (!bday) {
+        check(birthdayInput, document.getElementById('birthdayError'), 'Birthday is required.');
+      } else {
+        const bDate = new Date(`${bday}T00:00:00`);
+        const now = new Date(); now.setHours(0,0,0,0);
+        if (bDate > now) check(birthdayInput, document.getElementById('birthdayError'), 'Birthday cannot be in the future.');
+        else if (bDate.getFullYear() < 1900) check(birthdayInput, document.getElementById('birthdayError'), 'Invalid birth year (must be 1900 or later).');
+        else setFieldError(birthdayInput, document.getElementById('birthdayError'), '');
+      }
+
+      // Phone (Required)
+      const ph = phoneInput.value.trim();
+      if (!ph) {
+        check(phoneInput, document.getElementById('phoneError'), 'Phone number is required.');
+      } else if (!/^09\d{9}$/.test(ph)) {
+        check(phoneInput, document.getElementById('phoneError'), 'Must be an 11-digit Philippine mobile number starting with 09.');
+      } else {
+        setFieldError(phoneInput, document.getElementById('phoneError'), '');
+      }
+
+      // Secondary Email (Optional)
+      const sec = document.getElementById('secondary-email').value.trim();
+      const pri = document.getElementById('email').value.trim();
+      if (sec) {
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(sec)) {
+          check(document.getElementById('secondary-email'), document.getElementById('secondaryEmailError'), 'Invalid email format.');
+        } else if (sec.toLowerCase() === pri.toLowerCase()) {
+          check(document.getElementById('secondary-email'), document.getElementById('secondaryEmailError'), 'Cannot be same as primary email.');
+        } else {
+          setFieldError(document.getElementById('secondary-email'), document.getElementById('secondaryEmailError'), '');
+        }
+      }
+
+      // Password (8-64 characters if entered)
+      if (newPassword.value) {
+        if (newPassword.value.length < 8) {
+          check(newPassword, document.getElementById('passwordError'), 'Password must be at least 8 characters.');
+        } else if (newPassword.value.length > 64) {
+          check(newPassword, document.getElementById('passwordError'), 'Password cannot exceed 64 characters.');
+        } else {
+          setFieldError(newPassword, document.getElementById('passwordError'), '');
+        }
+
+        if (newPassword.value !== confirmPassword.value) {
+          check(confirmPassword, document.getElementById('confirmPasswordError'), 'Passwords do not match.');
+        } else {
+          setFieldError(confirmPassword, document.getElementById('confirmPasswordError'), '');
+        }
+      }
+
+      // ── STRICT MEDICAL FORM VALIDATIONS ──
+      // 1. Health Conditions
+      const hcCount = document.querySelectorAll('.healthConditionCheckbox:checked').length;
+      const hcNone  = document.getElementById('healthConditionNoneCheckbox').checked;
+      const hcOther = document.getElementById('healthConditionOtherCheckbox').checked;
+      const hcOtherVal = sanitizeInput(document.getElementById('healthConditionOtherInput').value);
+      if (hcCount === 0 && !hcNone && (!hcOther || (healthConditionOthers.length === 0 && !hcOtherVal))) {
+        check(null, document.getElementById('healthConditionError'), 'Pre-existing health conditions selection is required. Please choose your conditions or select "None".', document.getElementById('healthConditionsContainer'));
+      } else {
+        setFieldError(null, document.getElementById('healthConditionError'), '');
+      }
+
+      // 2. Past Surgeries
+      const surgCount = document.querySelectorAll('.surgeryCheckbox:checked').length;
+      const surgNone  = document.getElementById('surgeryNoneCheckbox').checked;
+      const surgOther = document.getElementById('surgeryOtherCheckbox').checked;
+      const surgOtherVal = sanitizeInput(document.getElementById('surgeryOtherInput').value);
+      if (surgCount === 0 && !surgNone && (!surgOther || (surgeryOthers.length === 0 && !surgOtherVal))) {
+        check(null, document.getElementById('surgeryError'), 'Past surgeries selection is required. Please choose your past surgeries or select "None".', document.getElementById('surgeriesContainer'));
+      } else {
+        setFieldError(null, document.getElementById('surgeryError'), '');
+      }
+
+      // 3. Lifestyle Factors
+      const lfCount = document.querySelectorAll('.lifeFactorCheckbox:checked').length;
+      const lfNone  = document.getElementById('lifeFactorNoneCheckbox').checked;
+      const lfOther = document.getElementById('lifeFactorOtherCheckbox').checked;
+      const lfOtherVal = sanitizeInput(document.getElementById('lifeFactorOtherInput').value);
+      if (lfCount === 0 && !lfNone && (!lfOther || (lifeFactorOthers.length === 0 && !lfOtherVal))) {
+        check(null, document.getElementById('lifeFactorError'), 'Lifestyle factors selection is required. Please choose applicable factors or select "None".', document.getElementById('lifestyleContainer'));
+      } else {
+        setFieldError(null, document.getElementById('lifeFactorError'), '');
+      }
+
+      // 4. Pregnancy Status (Mandatory for Females)
+      const sexVal = (document.getElementById('sex').value || '').trim().toLowerCase();
+      const pregInput = document.getElementById('pregnancy-status');
+      if (sexVal === 'female' || sexVal === 'f') {
+        if (!pregInput.value) {
+          check(pregInput, document.getElementById('pregnancyError'), 'Please declare your pregnancy status.');
+        } else {
+          setFieldError(pregInput, document.getElementById('pregnancyError'), '');
+        }
+      }
+
+      // 5. "Others" Validations
+      if (!healthConditionOtherHandler.validate()) {
+        check(document.getElementById('healthConditionOtherInput'), document.getElementById('healthConditionError'), 'Please add the specified other condition.', document.getElementById('healthConditionsContainer'));
+      } else {
+        document.getElementById('healthConditionOtherInput').classList.remove('input-error');
+      }
+      if (!surgeryOtherHandler.validate()) {
+        check(document.getElementById('surgeryOtherInput'), document.getElementById('surgeryError'), 'Please add the specified other surgery.', document.getElementById('surgeriesContainer'));
+      } else {
+        document.getElementById('surgeryOtherInput').classList.remove('input-error');
+      }
+      if (!lifeFactorOtherHandler.validate()) {
+        check(document.getElementById('lifeFactorOtherInput'), document.getElementById('lifeFactorError'), 'Please add the specified other lifestyle factor.', document.getElementById('lifestyleContainer'));
+      } else {
+        document.getElementById('lifeFactorOtherInput').classList.remove('input-error');
+      }
+
+      if (!isValid && firstInvalid) {
+        firstInvalid.focus?.();
+        firstInvalid.scrollIntoView({ behavior:'smooth', block:'center' });
+      }
+      return isValid;
+    }
+
+    // ══════════════════════════════════════════════════════
+    //  FORM SUBMISSION WITH SMOOTH LOADING & SCROLL TO TOP
     // ══════════════════════════════════════════════════════
     form.addEventListener('submit', async function (e) {
       e.preventDefault();
 
-      const birthdayValue = document.getElementById('birthday').value;
-      if (!birthdayValue) { alert('Birthday is required.'); document.getElementById('birthday').focus(); return; }
-      const bDay = new Date(`${birthdayValue}T00:00:00`);
-      const now  = new Date(); now.setHours(0,0,0,0);
-      if (bDay > now) { alert('Birthday cannot be a future date.'); return; }
+      successMessage.classList.add('hidden');
+      errorMessage.classList.add('hidden');
 
-      if (newPassword.value && newPassword.value !== confirmPassword.value) {
-        confirmPassword.setCustomValidity('Passwords do not match.'); confirmPassword.reportValidity(); return;
-      } else { confirmPassword.setCustomValidity(''); }
+      if (!validateCompleteForm()) {
+        showNotification('error', 'Please answer all required medical sections and resolve errors before saving.');
+        return;
+      }
+
+      // Smooth loading state
+      submitBtn.disabled = true;
+      submitBtn.classList.add('opacity-75', 'cursor-not-allowed');
+      submitBtnSpinner.classList.remove('hidden');
+      submitBtnText.textContent = 'Saving Changes…';
 
       const addrPayload = getAddressPayload();
       const payload = {
-        birthday:          birthdayValue,
+        birthday:          birthdayInput.value,
         secondary_email:   document.getElementById('secondary-email').value.trim(),
-        phone:             document.getElementById('phone').value.trim(),
+        phone:             phoneInput.value.trim(),
         pregnancy_status:  document.getElementById('pregnancy-status').value,
         health_conditions: getSelectedHealthConditions(),
         surgeries:         getSelectedSurgeries(),
@@ -1070,23 +1633,37 @@
 
       try {
         const token = localStorage.getItem('userToken');
-        const res   = await fetch('/api/patient-profile', {
-          method: 'PATCH',
-          headers: { 'Content-Type':'application/json', 'Authorization':`Bearer ${token}` },
-          body: JSON.stringify(payload)
-        });
-        if (!res.ok) { const err = await res.json(); throw new Error(err.message || 'Failed to update profile'); }
+        
+        // 600ms transition buffer for smooth UI feedback
+        const [res] = await Promise.all([
+          fetch('/api/patient-profile', {
+            method: 'PATCH',
+            headers: { 'Content-Type':'application/json', 'Authorization':`Bearer ${token}` },
+            body: JSON.stringify(payload)
+          }),
+          new Promise(r => setTimeout(r, 600))
+        ]);
+
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.message || 'Failed to update profile');
+        }
 
         newPassword.value = ''; confirmPassword.value = '';
         takeSnapshot();
         setFormLocked(true);
-        submitBtn.textContent = 'Update Changes';
-        successMessage.classList.remove('hidden');
-        successMessage.scrollIntoView({ behavior:'smooth', block:'center' });
-        setTimeout(() => successMessage.classList.add('hidden'), 4000);
+        submitBtnText.textContent = 'Update Changes';
+
+        // Display Success Banner & Smoothly Scroll to Top
+        showNotification('success', 'Profile Changes Updated Successfully!');
+
       } catch(err) {
         console.error('Error updating profile:', err);
-        alert('Could not update profile: ' + err.message);
+        showNotification('error', err.message || 'Could not update profile. Please try again.');
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.classList.remove('opacity-75', 'cursor-not-allowed');
+        submitBtnSpinner.classList.add('hidden');
       }
     });
 
