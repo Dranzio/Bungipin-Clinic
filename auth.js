@@ -11,6 +11,10 @@ const { clearAuthCookie } = authenticateToken;
 const SALT_ROUNDS = 10;
 const RESET_TOKEN_TTL_MINUTES = 30;
 const TOKEN_TTL_SECONDS = 7 * 24 * 60 * 60; // 7d — must match jwt.sign's expiresIn below
+// Failed logins allowed before the account locks. Matches login.html, which
+// locks its form on the 4th failed attempt (failedAttempts > 3).
+const MAX_LOGIN_ATTEMPTS = 4;
+const LOCKED_MESSAGE = 'Please contact an administrator to reset your session.';
 
 // Letters (incl. accented), spaces, hyphens, apostrophes, periods — covers
 // real names ("O'Brien", "Anne-Marie", "José") while rejecting anything
@@ -94,10 +98,9 @@ router.post('/register', async (req, res) => {
 });
 
 // POST /api/auth/login
-const MAX_LOGIN_ATTEMPTS = 5;
-
 router.post('/login', async (req, res) => {
     const { email, password } = req.body;
+
     if (!email || !password) {
         return res.status(400).json({ error: 'Email and password are required' });
     }
@@ -114,31 +117,63 @@ router.post('/login', async (req, res) => {
             return res.status(403).json({ error: 'This account has been suspended. Please contact the clinic.' });
         }
 
-        // Locked accounts are rejected before the password is even checked
+        // Checked BEFORE the password comparison, so a locked account can't
+        // be used to keep guessing — even a correct password is refused
+        // until an admin resets it.
         if (user.is_locked) {
-            return res.status(423).json({ error: 'This account is locked after too many failed attempts. Please contact an administrator.' });
+            return res.status(429).json({ error: LOCKED_MESSAGE });
         }
 
         const match = await bcrypt.compare(password, user.password_hash);
         if (!match) {
-            // Atomic increment; lock when the new count reaches the limit
+            // Increment, then read the new value back. (Not done as one
+            // UPDATE with a comparison, because assignments inside a single
+            // UPDATE are evaluated left-to-right and that ordering is easy
+            // to get subtly wrong.)
             await db.query(
-                `UPDATE users
-                 SET login_attempts = login_attempts + 1,
-                     is_locked = (login_attempts + 1 >= ?)
-                 WHERE user_id = ?`,
-                [MAX_LOGIN_ATTEMPTS, user.user_id]
+                'UPDATE users SET login_attempts = login_attempts + 1 WHERE user_id = ?',
+                [user.user_id]
             );
+            const [[{ login_attempts }]] = await db.query(
+                'SELECT login_attempts FROM users WHERE user_id = ?',
+                [user.user_id]
+            );
+
+            if (login_attempts >= MAX_LOGIN_ATTEMPTS) {
+                await db.query('UPDATE users SET is_locked = TRUE WHERE user_id = ?', [user.user_id]);
+                return res.status(429).json({ error: LOCKED_MESSAGE });
+            }
+
             return res.status(401).json({ error: 'Invalid email or password' });
         }
 
-        // Successful login clears the counter
+        // Successful login — clear any earlier failed attempts so they
+        // don't accumulate across days and eventually lock a real user out.
         if (user.login_attempts > 0) {
             await db.query('UPDATE users SET login_attempts = 0 WHERE user_id = ?', [user.user_id]);
         }
 
-        // ...jwt.sign / setAuthCookie / res.json exactly as before
-    } catch (err) { /* unchanged */ }
+        const token = jwt.sign(
+            { user_id: user.user_id, role: user.role, public_id: user.public_id },
+            process.env.JWT_SECRET,
+            { expiresIn: '7d' }
+        );
+
+        setAuthCookie(res, token);
+        res.json({
+            token,
+            user: {
+                user_id: user.user_id,
+                public_id: user.public_id,
+                first_name: user.first_name,
+                last_name: user.last_name,
+                role: user.role
+            }
+        });
+    } catch (err) {
+        console.error('Login error:', err);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
 });
 
 // POST /api/auth/forgot-password
