@@ -154,11 +154,12 @@ CREATE TABLE allergies (
 );
 
 CREATE TABLE services (
-    service_id    INT AUTO_INCREMENT PRIMARY KEY,
-    label         VARCHAR(100) NOT NULL,
-    price         DECIMAL(10,2) NOT NULL DEFAULT 0.00,
-    icon          VARCHAR(255),
-    is_available  BOOLEAN NOT NULL DEFAULT TRUE
+    service_id        INT AUTO_INCREMENT PRIMARY KEY,
+    label             VARCHAR(100) NOT NULL,
+    price             DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+    duration_minutes  INT NOT NULL DEFAULT 30,
+    icon              VARCHAR(255),
+    is_available      BOOLEAN NOT NULL DEFAULT TRUE
 );
 
 -- ================= APPOINTMENTS =================
@@ -169,6 +170,7 @@ CREATE TABLE appointments (
     service_id          INT NOT NULL,
     appointment_date    DATE NOT NULL,
     time_slot           TIME NOT NULL,
+    end_time            TIME NOT NULL,
     appointment_status  ENUM('pending','approved','completed','cancelled') NOT NULL DEFAULT 'pending',
     queue_status        ENUM('pending','waiting','ongoing','completed') NOT NULL DEFAULT 'pending',
     reschedule_status   ENUM('none','requested','approved','declined') NOT NULL DEFAULT 'none',
@@ -180,9 +182,7 @@ CREATE TABLE appointments (
     created_at          TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (patient_id)  REFERENCES patient_profiles(patient_id) ON DELETE CASCADE,
     FOREIGN KEY (employee_id) REFERENCES employee_profiles(employee_id) ON DELETE SET NULL,
-    FOREIGN KEY (service_id)  REFERENCES services(service_id) ON DELETE RESTRICT,
-    
-    UNIQUE KEY unique_employee_slot (employee_id, appointment_date, time_slot)
+    FOREIGN KEY (service_id)  REFERENCES services(service_id) ON DELETE RESTRICT
 );
 
 CREATE TABLE payments (
@@ -449,15 +449,15 @@ UPDATE employee_profiles SET staff_code = 'STF-2026-002', position = 'Dentist', 
 
 UPDATE admin_profiles SET permission_level = 'full_access' WHERE admin_id = 5;
 
-INSERT INTO services (label, price, icon, is_available) VALUES
-('Dental Cleaning', 1500.00, 'cleaning-icon', TRUE),
-('Pasta', 2500.00, 'pasta-icon', TRUE),
-('Checkup', 500.00, 'checkup-icon', TRUE),
-('Whitening', 3000.00, 'whitening-icon', TRUE);
+INSERT INTO services (label, price, duration_minutes, icon, is_available) VALUES
+('Dental Cleaning', 1500.00, 45, 'cleaning-icon', TRUE),
+('Pasta', 2500.00, 30, 'pasta-icon', TRUE),
+('Checkup', 500.00, 30, 'checkup-icon', TRUE),
+('Whitening', 3000.00, 60, 'whitening-icon', TRUE);
 
-INSERT INTO appointments (patient_id, employee_id, service_id, appointment_date, time_slot, appointment_status, queue_status, reschedule_status, patient_note) VALUES
-(1, 3, 1, '2026-09-10', '10:00:00', 'approved', 'completed', 'none', 'First-time patient'),
-(2, NULL, 2, '2026-09-12', '11:00:00', 'pending', 'pending', 'none', NULL);
+INSERT INTO appointments (patient_id, employee_id, service_id, appointment_date, time_slot, end_time, appointment_status, queue_status, reschedule_status, patient_note) VALUES
+(1, 3, 1, '2026-09-10', '10:00:00', '10:45:00', 'approved', 'completed', 'none', 'First-time patient'),
+(2, NULL, 2, '2026-09-12', '11:00:00', '11:30:00', 'pending', 'pending', 'none', NULL);
 
 INSERT INTO payments (appointment_id, amount, payment_date, method, status) VALUES
 (1, 1500.00, '2026-09-10', 'card', 'paid');

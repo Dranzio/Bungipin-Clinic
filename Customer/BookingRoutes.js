@@ -14,7 +14,7 @@ function registerBookingRoute(app, db) {
                 `SELECT ep.employee_id AS doctor_id, ep.position,
                         CONCAT(u.first_name, ' ', u.last_name) AS name
                  FROM employee_profiles ep
-                 JOIN users u ON ep.employee_id = u.user_id
+                          JOIN users u ON ep.employee_id = u.user_id
                  WHERE ep.position = 'Dentist' AND u.account_status = 'active'
                  ORDER BY u.first_name`
             );
@@ -63,21 +63,28 @@ function registerBookingRoute(app, db) {
                 return res.json({ is_working_day: false, slots: [], message: `Dentist is not on duty on ${dayName}s.` });
             }
 
-            // Existing bookings for this dentist on this date block out their
-            // start times regardless of status, except cancelled ones —
-            // pending requests still hold the slot until staff reject them.
+            // Existing bookings for this dentist on this date block out the
+            // time they actually occupy (time_slot -> end_time), not just
+            // their exact start — a 90-minute booking at 9:00 must also
+            // block the 9:30 and 10:00 slots, not just 9:00 itself.
+            // Cancelled bookings don't block; pending/approved/completed do,
+            // since a pending request still holds the slot until staff act on it.
             const [bookedRows] = await db.query(
-                `SELECT time_slot FROM appointments
+                `SELECT time_slot, end_time FROM appointments
                  WHERE employee_id = ? AND appointment_date = ? AND appointment_status != 'cancelled'`,
                 [doctorId, date]
             );
-            const bookedTimes = new Set(bookedRows.map(r => r.time_slot));
 
             const toMinutes = t => {
                 if (!t) return 0;
                 const [h, m] = t.split(':').map(Number);
                 return h * 60 + m;
             };
+
+            const bookedRanges = bookedRows.map(r => ({
+                start: toMinutes(r.time_slot),
+                end: toMinutes(r.end_time)
+            }));
 
             const startMins = toMinutes(schedule.start_time);
             const endMins = toMinutes(schedule.end_time);
@@ -98,13 +105,16 @@ function registerBookingRoute(app, db) {
                 const timeSlot = `${String(startH).padStart(2, '0')}:${String(startM).padStart(2, '0')}:00`;
                 const endTimeSlot = `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}:00`;
 
+                // Two ranges [sM,eM) and [start,end) overlap when sM < end AND start < eM
+                const overlapsBooking = bookedRanges.some(r => sM < r.end && r.start < eM);
+
                 let isAvailable = true;
                 let reason = 'Available';
 
                 if (hasBreak && sM < breakEnd && eM > breakStart) {
                     isAvailable = false;
                     reason = 'Doctor Lunch Break';
-                } else if (bookedTimes.has(timeSlot)) {
+                } else if (overlapsBooking) {
                     isAvailable = false;
                     reason = 'Already Booked';
                 } else if (isToday) {
@@ -131,10 +141,25 @@ function registerBookingRoute(app, db) {
         }
 
         const patientId = req.user.user_id;
-        const { appointment_date, time_slot, service_id, patient_note, payment_method } = req.body;
+        const { appointment_date, time_slot, service_id, service_ids, doctor_id, patient_note, payment_method } = req.body;
 
-        if (!appointment_date || !time_slot || !service_id || !payment_method) {
+        // service_ids (array) is what Booking.js actually sends when the
+        // patient picks several treatments in one visit — service_id alone
+        // used to be trusted for both price AND duration, silently dropping
+        // every service after the first from billing and from the time the
+        // appointment actually occupies. Accept either, but always resolve
+        // to the full list.
+        const allServiceIds = Array.isArray(service_ids) && service_ids.length > 0
+            ? service_ids
+            : (service_id ? [service_id] : []);
+
+        if (!appointment_date || !time_slot || allServiceIds.length === 0 || !payment_method || !doctor_id) {
             return res.status(400).json({ message: 'Missing required booking fields' });
+        }
+
+        const employeeId = Number(doctor_id);
+        if (!Number.isInteger(employeeId) || employeeId <= 0) {
+            return res.status(400).json({ message: 'Invalid doctor selected' });
         }
 
         // no past dates
@@ -148,40 +173,89 @@ function registerBookingRoute(app, db) {
         try {
             await connection.beginTransaction();
 
-            // Price comes from the database, never from the client — the
-            // HTML comment in Booking.html already called this out as a
-            // requirement, and the old Booking.js violated it by sending
-            // its own client-computed amount.
+            // Price AND duration both come from the database, never the
+            // client — look up every selected service in one go.
             const [serviceRows] = await connection.query(
-                'SELECT price, is_available FROM services WHERE service_id = ?',
-                [service_id]
+                'SELECT service_id, price, duration_minutes, is_available FROM services WHERE service_id IN (?)',
+                [allServiceIds]
             );
 
-            if (serviceRows.length === 0) {
+            if (serviceRows.length !== allServiceIds.length) {
                 await connection.rollback();
-                return res.status(404).json({ message: 'Service not found' });
+                return res.status(404).json({ message: 'One or more selected services were not found' });
             }
-            if (!serviceRows[0].is_available) {
+            const unavailable = serviceRows.find(s => !s.is_available);
+            if (unavailable) {
                 await connection.rollback();
-                return res.status(400).json({ message: 'This service is currently unavailable' });
+                return res.status(400).json({ message: 'One or more selected services are currently unavailable' });
             }
 
-            const price = serviceRows[0].price;
+            const totalPrice = serviceRows.reduce((sum, s) => sum + Number(s.price), 0);
+            const totalDuration = serviceRows.reduce((sum, s) => sum + Number(s.duration_minutes || 30), 0);
 
-            // employee_id is left NULL — staff assigns a dentist after
-            // reviewing the request, matching the earlier design decision.
+            const [doctorRows] = await connection.query(
+                `SELECT ep.employee_id
+                 FROM employee_profiles ep
+                 JOIN users u ON ep.employee_id = u.user_id
+                 WHERE ep.employee_id = ? AND ep.position = 'Dentist' AND u.account_status = 'active'
+                 FOR UPDATE`,
+                [employeeId]
+            );
+            if (doctorRows.length === 0) {
+                await connection.rollback();
+                return res.status(404).json({ message: 'Selected dentist is not available' });
+            }
+
+            // Compute the real end time this booking occupies, from the
+            // authoritative summed duration — not whatever the client
+            // estimated for the UI preview.
+            const [startH, startM] = time_slot.split(':').map(Number);
+            const totalStartMins = startH * 60 + startM;
+            const totalEndMins = totalStartMins + totalDuration;
+            const endH = Math.floor(totalEndMins / 60);
+            const endM = totalEndMins % 60;
+            const endTime = `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}:00`;
+
+            // Re-check for an overlapping booking inside the transaction
+            // (FOR UPDATE) rather than relying only on the unique constraint
+            // below — two requests hitting this at the same instant would
+            // otherwise both pass the frontend's earlier /available-slots
+            // check. This blocks by overlapping RANGE, not just an exact
+            // start-time match, since a 90-minute booking must also block
+            // slots that start partway through it.
+            const [clashRows] = await connection.query(
+                `SELECT appointment_id FROM appointments
+                 WHERE employee_id = ? AND appointment_date = ?
+                   AND appointment_status != 'cancelled'
+                   AND time_slot < ? AND ? < end_time
+                 FOR UPDATE`,
+                [employeeId, appointment_date, endTime, time_slot]
+            );
+            if (clashRows.length > 0) {
+                await connection.rollback();
+                return res.status(409).json({ message: 'That time slot is no longer available' });
+            }
+
+            // employee_id is the dentist the patient actually selected and
+            // whose real schedule/availability the slot was validated
+            // against (see /api/doctors/:id/available-slots) — leaving this
+            // NULL meant the row never blocked that dentist's slot for
+            // anyone else. service_id keeps the first selected service as
+            // the appointment's primary record; the full duration/price
+            // across ALL selected services is still what's stored in
+            // end_time and payments.amount below.
             const [result] = await connection.query(
                 `INSERT INTO appointments
-                 (patient_id, employee_id, service_id, appointment_date, time_slot, appointment_status, patient_note)
-                 VALUES (?, NULL, ?, ?, ?, 'pending', ?)`,
-                [patientId, service_id, appointment_date, time_slot, patient_note || null]
+                 (patient_id, employee_id, service_id, appointment_date, time_slot, end_time, appointment_status, patient_note)
+                 VALUES (?, ?, ?, ?, ?, ?, 'pending', ?)`,
+                [patientId, employeeId, allServiceIds[0], appointment_date, time_slot, endTime, patient_note || null]
             );
             const appointmentId = result.insertId;
 
             await connection.query(
                 `INSERT INTO payments (appointment_id, amount, method, status)
                  VALUES (?, ?, ?, 'pending')`,
-                [appointmentId, price, payment_method]
+                [appointmentId, totalPrice, payment_method]
             );
 
             await connection.commit();
