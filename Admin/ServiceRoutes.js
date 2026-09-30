@@ -16,16 +16,11 @@ function requireAdmin(req, res, next) {
     next();
 }
 
-// The page sends the icon as a base64 data URL (FileReader). services.icon is
-// VARCHAR(255), so write the image to /uploads/services and store only the URL.
-// Existing URLs (unchanged icon on edit) pass straight through.
 async function resolveIcon(icon) {
     if (!icon) return null;
 
     if (!icon.startsWith('data:')) {
-        // Unchanged icon validation
-        // Allows local paths (/uploads/services/...) and external URLs (https://...)
-        if (!/^(\/uploads\/services\/[\w.-]+|https?:\/\/[^\s"'<>]+)$/.test(icon)) {
+        if (!/^(\/uploads\/services\/[\w.-]+|\.\.\/assets\/[\w.-]+|https?:\/\/[^\s"'<>]+)$/.test(icon)) {
             const err = new Error('Invalid icon value');
             err.status = 400;
             throw err;
@@ -50,11 +45,8 @@ async function resolveIcon(icon) {
     const ext = match[1] === 'jpeg' ? 'jpg' : match[1];
     const filename = `${crypto.randomUUID()}.${ext}`;
 
-    // Conditional storage logic
     if (isVercel) {
-        // --- PRODUCTION (Vercel): Use Vercel Blob ---
         try {
-            const { put } = require('@vercel/blob');
             const blob = await put(`services/${filename}`, buffer, {
                 access: 'public',
                 contentType: `image/${match[1]}`,
@@ -67,7 +59,6 @@ async function resolveIcon(icon) {
             throw err;
         }
     } else {
-        // --- LOCAL DEVELOPMENT: Use Local Filesystem ---
         try {
             fs.mkdirSync(ICON_DIR, { recursive: true });
             fs.writeFileSync(path.join(ICON_DIR, filename), buffer);
@@ -82,20 +73,49 @@ async function resolveIcon(icon) {
 }
 
 function toService(row) {
-    return { ...row, price: Number(row.price) }; // DECIMAL comes back as a string
+    return { ...row, price: Number(row.price) };
 }
 
+// Validates title and price while allowing val/id parentheses (e.g. "Root Canal (Molar)")//
 function validate(body) {
     const label = typeof body.label === 'string' ? body.label.trim() : '';
     const price = Number(body.price);
-    if (!label || label.length > 100) return { error: 'Service name is required (max 100 characters)' };
-    if (!Number.isFinite(price) || price < 0) return { error: 'Price must be a valid non-negative number' };
+
+    if (!label || label.length < 2 || label.length > 80) {
+        return { error: 'Service name is required (2 to 80 characters).' };
+    }
+
+    // 1. Strictly forbid dangerous symbols (% $ ^ * < > etc.)
+    if (/[%$^*<>{}[\]\\;~|_+=]/.test(label)) {
+        return { error: 'Service name contains forbidden symbols (e.g. %, $, *, <, >).' };
+    }
+
+    // 2. Forbid repeated punctuation: (((((, ))))), -----, .....
+    if (/([()\-',/.]){2,}/.test(label)) {
+        return { error: 'Service name cannot contain repeated punctuation characters.' };
+    }
+
+    // 3. Parentheses balance check: allows ( ) when properly matched
+    const openCount = (label.match(/\(/g) || []).length;
+    const closeCount = (label.match(/\)/g) || []).length;
+    if (openCount !== closeCount) {
+        return { error: 'Parentheses must be properly closed (e.g. "Root Canal (Molar)").' };
+    }
+
+    // 4. Valid title structure
+    const cleanTitleRegex = /^[A-Za-z0-9][A-Za-z0-9\s\-',/().]*[A-Za-z0-9.)]$/;
+    if (!cleanTitleRegex.test(label)) {
+        return { error: 'Service name must start and end with valid letters, numbers, or closing parenthesis.' };
+    }
+
+    if (!Number.isFinite(price) || price < 0 || price > 1500000) {
+        return { error: 'Price must be a valid number between 0 and 1,000,000 PHP.' };
+    }
+
     return { label, price };
 }
 
 function registerServiceRoutes(app, db) {
-
-    // Any logged-in user (patients need this for booking too)
     app.get('/api/services', authenticateToken, async (req, res) => {
         try {
             const [rows] = await db.query(
@@ -160,7 +180,6 @@ function registerServiceRoutes(app, db) {
             if (result.affectedRows === 0) return res.status(404).json({ message: 'Service not found' });
             res.json({ message: 'Service deleted' });
         } catch (err) {
-            // appointments.service_id is ON DELETE RESTRICT
             if (err.code === 'ER_ROW_IS_REFERENCED_2') {
                 return res.status(409).json({ message: 'This service has appointments booked against it and cannot be deleted.' });
             }

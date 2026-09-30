@@ -13,7 +13,7 @@ const storage = multer.memoryStorage();
 
 const upload = multer({
     storage,
-    limits: { fileSize: 10 * 1024 * 1024 }, /// 10MB
+    limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
     fileFilter: (req, file, cb) => {
         if (file.mimetype !== 'application/pdf' && !file.originalname.toLowerCase().endsWith('.pdf')) {
             return cb(new Error('Only PDF files are allowed'));
@@ -129,7 +129,6 @@ function registerPatientProfileRoute(app, db) {
             new_password
         } = req.body;
 
-        // ── Validation Checks ──
         if (new_password) {
             const pw = String(new_password);
             if (pw.length < 8) {
@@ -156,7 +155,7 @@ function registerPatientProfileRoute(app, db) {
         try {
             await connection.beginTransaction();
 
-            // 1. Password Update (8-64 characters)
+            // 1. Password Update
             if (new_password) {
                 const password_hash = await bcrypt.hash(new_password, SALT_ROUNDS);
                 await connection.query(
@@ -165,7 +164,7 @@ function registerPatientProfileRoute(app, db) {
                 );
             }
 
-            // 2. Profile Details Update (Address is optional)
+            // 2. Profile Details Update
             await connection.query(
                 `UPDATE patient_profiles
                  SET birthday = ?,
@@ -197,10 +196,10 @@ function registerPatientProfileRoute(app, db) {
                         `UPDATE users SET phone = ? WHERE user_id = ?`,
                         [String(phone).trim(), patient_id]
                     );
-                } catch (e) { /* Ignore if phone column is purely in patient_profiles */ }
+                } catch (e) { /* Ignore */ }
             }
 
-            // 3. Health Conditions (Mandatory update)
+            // 3. Health Conditions
             await connection.query('DELETE FROM health_conditions WHERE patient_id = ?', [patient_id]);
             if (Array.isArray(health_conditions) && health_conditions.length > 0) {
                 const values = health_conditions.filter(Boolean).map(desc => [patient_id, String(desc).trim()]);
@@ -231,7 +230,7 @@ function registerPatientProfileRoute(app, db) {
                 }
             } catch (err) { /* Life factors table optional */ }
 
-            // 6. Prescriptions (Sanitized & Validated)
+            // 6. Prescriptions
             await connection.query('DELETE FROM prescriptions WHERE patient_id = ?', [patient_id]);
             if (Array.isArray(prescriptions) && prescriptions.length > 0) {
                 const values = prescriptions
