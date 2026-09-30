@@ -105,19 +105,13 @@ function registerDashboardRoutes(app, db) {
             }
 
             const patientData = patientLabels.map((label, index) => {
-                const bucket = period === 'yearly'
-                    ? Number(label)
-                    : index;
-
+                const bucket = period === 'yearly' ? Number(label) : index;
                 const row = patientRows.find(r => Number(r.bucket) === bucket);
                 return row ? Number(row.total) : 0;
             });
 
             const transactionData = transactionLabels.map((label, index) => {
-                const bucket = period === 'yearly'
-                    ? Number(label)
-                    : index;
-
+                const bucket = period === 'yearly' ? Number(label) : index;
                 const row = transactionRows.find(r => Number(r.bucket) === bucket);
                 return row ? Number(row.total) : 0;
             });
@@ -138,12 +132,32 @@ function registerDashboardRoutes(app, db) {
                 })
             };
 
+            // Top 5 Most Requested Services
             const [serviceRows] = await db.query(`
                 SELECT s.label, COUNT(a.appointment_id) AS total
                 FROM services s
                 LEFT JOIN appointments a ON s.service_id = a.service_id
                 GROUP BY s.service_id, s.label
                 ORDER BY total DESC
+                LIMIT 5
+            `);
+
+            // Location Demographics (Captures city, province, or general address)
+            const [locationRows] = await db.query(`
+                SELECT 
+                    COALESCE(
+                        NULLIF(TRIM(pp.address_city), ''),
+                        NULLIF(TRIM(pp.address_province), ''),
+                        NULLIF(TRIM(pp.address), ''),
+                        'Unspecified'
+                    ) AS city,
+                    COUNT(DISTINCT pp.patient_id) AS total
+                FROM patient_profiles pp
+                JOIN users u ON pp.patient_id = u.user_id
+                WHERE u.role = 'patient'
+                GROUP BY city
+                ORDER BY total DESC
+                LIMIT 6
             `);
 
             res.json({
@@ -159,6 +173,10 @@ function registerDashboardRoutes(app, db) {
                 services: {
                     labels: serviceRows.map(row => row.label),
                     data: serviceRows.map(row => Number(row.total))
+                },
+                locations: {
+                    labels: locationRows.map(r => r.city),
+                    data: locationRows.map(r => Number(r.total))
                 }
             });
 

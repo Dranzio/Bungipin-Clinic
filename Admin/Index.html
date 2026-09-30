@@ -12,8 +12,12 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="../Taskbar/Admin_Sidebar.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
+        .font-poppins { font-family: 'Poppins', sans-serif; }
+    </style>
 </head>
-<body class="min-h-screen md:h-screen md:overflow-hidden bg-[#F3EFE4] relative flex flex-col md:flex-row antialiased">
+<body class="min-h-screen md:h-screen md:overflow-hidden bg-[#F3EFE4] relative flex flex-col md:flex-row antialiased font-poppins text-[#2A1001]">
 <div class="min-h-screen flex flex-col md:flex-row w-full">
 
     <!-- SIDEBAR -->
@@ -63,120 +67,163 @@
         })();
     </script>
 
-    <div id="main-content" class="flex-1 min-w-0 md:min-h-0 md:overflow-y-auto">
+    <div id="main-content" class="flex-1 min-w-0 md:min-h-0 md:overflow-y-auto flex flex-col">
 
-        <!--Header title with logo image-->
+        <!-- Header with Subtitle (Consistent Spacing) -->
         <div class="flex justify-between items-start pt-5 pl-6 pr-4 md:pl-24 md:pr-8">
-
-            <h1 class="text-2xl sm:text-3xl md:text-5xl 2xl:text-[73px] pt-5 font-bold text-[#2A1001] font-['Poppins']">
-                Admin Dashboard
-            </h1>
+            <div>
+                <h1 class="text-2xl sm:text-3xl md:text-5xl 2xl:text-[73px] pt-2 sm:pt-5 font-bold text-[#2A1001] font-['Poppins']">
+                    Admin Dashboard
+                </h1>
+               
+            </div>
             <img
-                    src="../assets/logowithtitle.png"
-                    class="w-20 sm:w-24 md:w-28 h-auto object-contain shrink-0"
-                    alt="Logo"/>
-
+                src="../assets/logowithtitle.png"
+                class="w-20 sm:w-24 md:w-28 h-auto object-contain shrink-0"
+                onerror="this.style.display='none'"
+                alt="Logo"/>
         </div>
+
         <hr class="border-t border-[#2A1001] mt-2 mb-6" />
 
-
-
         <!-- Main Content Area -->
-        <main class="flex-1 p-6 md:p-10 flex flex-col items-center">
-            <div class="w-full max-w-[1100px]">
+        <main class="flex-1 p-4 sm:p-6 md:p-8 flex flex-col items-center">
+            <div class="w-full max-w-[1100px] space-y-6">
 
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <!-- Action Bar Below HR: Export PDF Button -->
+                <div class="flex justify-end w-full">
+                    <button onclick="GenPDF()" class="h-11 px-6 rounded-full bg-[#D5C04D] hover:bg-[#c2ad3c] text-[#2A1001] font-bold text-sm shadow-md active:scale-95 transition flex items-center gap-2 cursor-pointer">
+                        <i class="fa-solid fa-file-arrow-down text-base"></i>
+                        <span>Export PDF Report</span>
+                    </button>
+                </div>
 
-                    <!--Patient Chart-->
-                    <div class="lg:col-span-2 bg-white border-2 border-[#1A1008] rounded-2xl p-4 h-[400px]">
-                        <div class="flex items-center justify-between mb-3">
-                            <h2 class="font-bold text-[#1A1008]">
-                                Total Numbers of Patients Review
-                            </h2>
+                <!-- Charts Grid -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+
+                    <!-- 1. Patient Chart (Full Width) -->
+                    <div class="lg:col-span-2 bg-white border-2 border-[#1A1008] rounded-2xl p-5 shadow-sm">
+                        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
+                            <div>
+                                <h2 class="font-bold text-lg text-[#1A1008]">
+                                    Total Number of Patients Review
+                                </h2>
+                                <p class="text-xs text-gray-500 font-medium">
+                                    Distinct patient visits and volume across selected timeline
+                                </p>
+                            </div>
 
                             <div class="flex gap-2">
-                                <button id="numweeklyBtn" class="px-5 py-2 rounded-lg bg-[#88925F] text-white">
+                                <button id="numweeklyBtn" class="px-4 py-1.5 rounded-full bg-[#88925F] text-white text-xs font-bold transition shadow-sm">
                                     Weekly
                                 </button>
-
-                                <button id="nummonthlyBtn" class="px-5 py-2 rounded-lg bg-gray-200 text-[#2A1001]">
+                                <button id="nummonthlyBtn" class="px-4 py-1.5 rounded-full bg-gray-200 text-[#2A1001] text-xs font-bold transition hover:bg-gray-300">
                                     Monthly
                                 </button>
-
-                                <button id="numyearlyBtn" class="px-5 py-2 rounded-lg bg-gray-200 text-[#2A1001]">
+                                <button id="numyearlyBtn" class="px-4 py-1.5 rounded-full bg-gray-200 text-[#2A1001] text-xs font-bold transition hover:bg-gray-300">
                                     Yearly
                                 </button>
                             </div>
                         </div>
 
-                        <div class="w-full h-[320px]">
+                        <div class="w-full h-[300px]">
                             <canvas id="NumPatRev"></canvas>
                         </div>
-
                     </div>
 
-                    <!--Appointment Card-->
-                    <div class="bg-white border-2 border-[#1A1008] rounded-2xl p-5 h-[310px]">
-
-                        <h2 class="font-bold text-[#2A1001] mb-2">
+                    <!-- 2. Appointment Status Card -->
+                    <div class="bg-white border-2 border-[#1A1008] rounded-2xl p-5 shadow-sm">
+                        <h2 class="font-bold text-lg text-[#2A1001]">
                             Appointment Status
                         </h2>
-
-                        <div class="w-full h-[200px]">
+                        <p class="text-xs text-gray-500 mb-3 font-medium">
+                            Booking flow and patient attendance breakdown
+                        </p>
+                        <div class="w-full h-[220px]">
                             <canvas id="appointmentChart"></canvas>
                         </div>
-
                     </div>
 
-                    <!--Appointment Card-->
-                    <div class="bg-white border-2 border-[#1A1008] rounded-2xl p-5 h-[310px]">
-
-                        <h2 class="font-bold text-[#2A1001] mb-2">
+                    <!-- 3. Most Requested Services Card -->
+                    <div class="bg-white border-2 border-[#1A1008] rounded-2xl p-5 shadow-sm">
+                        <h2 class="font-bold text-lg text-[#2A1001]">
                             Most Requested Services
                         </h2>
-
-                        <div class="w-full h-[200px]">
+                        <p class="text-xs text-gray-500 mb-3 font-medium">
+                            Top performing treatments by patient booking demand
+                        </p>
+                        <div class="w-full h-[220px]">
                             <canvas id="servChart"></canvas>
                         </div>
-
                     </div>
 
-                    <!--Patient Chart-->
-                    <div class="lg:col-span-2 bg-white border-2 border-[#1A1008] rounded-2xl p-4 h-[400px]">
-                        <div class="flex items-center justify-between mb-3">
-                            <h2 class="font-bold text-[#1A1008]">
-                                Total Number of Transaction
-                            </h2>
+                    <!-- 4. Detailed Location Demographics Card -->
+                    <div class="lg:col-span-2 bg-white border-2 border-[#1A1008] rounded-2xl p-6 shadow-sm">
+                        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-5 border-b border-gray-100 pb-3">
+                            <div>
+                                <h2 class="font-bold text-xl text-[#1A1008] flex items-center gap-2">
+
+                                    Patient Demographics &amp; Branch Expansion Potential
+                                </h2>
+                                <p class="text-xs text-gray-500 font-medium">
+                                    Geographic patient residence distribution to identify high-demand locations for new clinic branches
+                                </p>
+                            </div>
+                            <span class="text-xs font-bold bg-[#ECF5E2] text-[#667733] px-3.5 py-1.5 rounded-full border border-[#667733]/30 shrink-0">
+                                <i class="fa-solid fa-chart-line mr-1"></i> Expansion Insights
+                            </span>
+                        </div>
+
+                        <!-- 2-Column Split -->
+                        <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
+                            
+                            <!-- Left: Doughnut Chart -->
+                            <div class="md:col-span-5 h-[230px] relative flex items-center justify-center">
+                                <canvas id="locationChart"></canvas>
+                            </div>
+
+                            <!-- Right: Ranked Breakdown List with Progress Bars -->
+                            <div class="md:col-span-7 space-y-3" id="locationBreakdownList">
+                                <p class="text-xs text-gray-400 italic">Loading location demographics...</p>
+                            </div>
+
+                        </div>
+                    </div>
+
+                    <!-- 5. Transactions Chart (Full Width) -->
+                    <div class="lg:col-span-2 bg-white border-2 border-[#1A1008] rounded-2xl p-5 shadow-sm mb-6">
+                        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
+                            <div>
+                                <h2 class="font-bold text-lg text-[#1A1008]">
+                                    Total Number of Transactions &amp; Revenue
+                                </h2>
+                                <p class="text-xs text-gray-500 font-medium">
+                                    Completed payments collected over the selected period
+                                </p>
+                            </div>
 
                             <div class="flex gap-2">
-                                <button id="transweeklyBtn" class="px-5 py-2 rounded-lg bg-[#88925F] text-white">
+                                <button id="transweeklyBtn" class="px-4 py-1.5 rounded-full bg-[#88925F] text-white text-xs font-bold transition shadow-sm">
                                     Weekly
                                 </button>
-
-                                <button id="transmonthlyBtn" class="px-5 py-2 rounded-lg bg-gray-200 text-[#2A1001]">
+                                <button id="transmonthlyBtn" class="px-4 py-1.5 rounded-full bg-gray-200 text-[#2A1001] text-xs font-bold transition hover:bg-gray-300">
                                     Monthly
                                 </button>
-
-                                <button id="transyearlyBtn" class="px-5 py-2 rounded-lg bg-gray-200 text-[#2A1001]">
+                                <button id="transyearlyBtn" class="px-4 py-1.5 rounded-full bg-gray-200 text-[#2A1001] text-xs font-bold transition hover:bg-gray-300">
                                     Yearly
                                 </button>
                             </div>
                         </div>
 
-                        <div class="w-full h-[320px]">
+                        <div class="w-full h-[300px]">
                             <canvas id="TransactionRep"></canvas>
                         </div>
+                    </div>
 
-                    </div>
-                    <div class="dashboard-controls" style="margin: 20px;">
-                        <button onclick="GenPDF()" style="padding: 10px 20px; font-weight: bold; cursor: pointer;">
-                            📥 Download PDF Report
-                        </button>
-                    </div>
                 </div>
+
             </div>
         </main>
-
 
     </div>
 </div>
@@ -186,6 +233,7 @@
     const appointChart = document.getElementById('appointmentChart');
     const servChart = document.getElementById('servChart');
     const TransactionRep = document.getElementById('TransactionRep');
+    const locChart = document.getElementById('locationChart');
 
     const numweeklyBtn = document.getElementById('numweeklyBtn');
     const nummonthlyBtn = document.getElementById('nummonthlyBtn');
@@ -199,6 +247,16 @@
     let appointmentChart;
     let serviceChart;
     let TransactionChart;
+    let locationChart;
+
+    const chartColors = [
+        '#88925F', // Olive
+        '#D5C04D', // Gold
+        '#A2AC89', // Sage
+        '#D7E3A5', // Light Green
+        '#C7B9A0', // Warm Neutral
+        '#FA8D8D'  // Coral
+    ];
 
     function setPatientButton(activeButton) {
         [numweeklyBtn, nummonthlyBtn, numyearlyBtn].forEach(btn => {
@@ -232,6 +290,52 @@
                 return '#88925F';
             }
         });
+    }
+
+    // Render the Ranked Breakdown List on the Right Side
+    function renderLocationBreakdown(labels, data) {
+        const container = document.getElementById('locationBreakdownList');
+        if (!container) return;
+
+        const total = (data || []).reduce((a, b) => a + b, 0);
+        if (total === 0 || !labels || labels.length === 0) {
+            container.innerHTML = '<p class="text-xs text-gray-400 italic">No location records available.</p>';
+            return;
+        }
+
+        let html = `
+            <div class="flex justify-between items-center text-xs font-bold text-gray-500 uppercase tracking-wider pb-1">
+                <span>City / Municipality</span>
+            </div>
+        `;
+
+        labels.forEach((city, index) => {
+            const count = data[index] || 0;
+            const percentage = total > 0 ? Math.round((count / total) * 100) : 0;
+            const isTop = index === 0 && count > 0;
+            const color = chartColors[index % chartColors.length];
+
+            html += `
+                <div class="bg-gray-50 p-2.5 rounded-xl border border-black/5 hover:bg-gray-100/80 transition">
+                    <div class="flex justify-between items-center mb-1">
+                        <div class="flex items-center gap-2">
+                            <span class="w-3 h-3 rounded-full shrink-0" style="background-color: ${color}"></span>
+                            <span class="font-bold text-sm text-[#2A1001]">${city}</span>
+                            ${isTop ? '<span class="text-[10px] font-extrabold bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full">🔥 Top Expansion Area</span>' : ''}
+                        </div>
+                        <div class="text-right">
+                            <span class="font-bold text-sm text-[#2A1001]">${count}</span>
+                            <span class="text-xs text-gray-500">(${percentage}%)</span>
+                        </div>
+                    </div>
+                    <div class="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                        <div class="h-full rounded-full transition-all duration-500" style="width: ${percentage}%; background-color: ${color};"></div>
+                    </div>
+                </div>
+            `;
+        });
+
+        container.innerHTML = html;
     }
 
     function createCharts(data) {
@@ -279,22 +383,77 @@
             }
         });
 
+        // Most Requested Services (Guaranteed No Label Clipping)
         serviceChart = new Chart(servChart, {
-            type: 'pie',
+            type: 'bar',
             data: {
                 labels: data.services.labels,
                 datasets: [{
+                    label: 'Bookings',
                     data: data.services.data,
                     backgroundColor: [
-                        '#D7E3A5',
-                        '#FA8D8D',
-                        '#D5C04D',
-                        '#A2AC89',
-                        '#88925F',
-                        '#C7B9A0'
+                        '#88925F', // Olive
+                        '#D5C04D', // Gold
+                        '#A2AC89', // Sage
+                        '#D7E3A5', // Light Green
+                        '#C7B9A0', // Warm Neutral
+                        '#FA8D8D'  // Coral
                     ],
-                    borderColor: '#2A1001',
-                    borderWidth: 1
+                    borderRadius: 6,
+                    maxBarThickness: 18
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const val = context.raw || 0;
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = total > 0 ? Math.round((val / total) * 100) : 0;
+                                return ` ${val} booking${val !== 1 ? 's' : ''} (${percentage}%)`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        beginAtZero: true,
+                        ticks: { precision: 0 },
+                        grid: { color: 'rgba(0,0,0,0.05)' }
+                    },
+                    y: {
+                        grid: { display: false },
+                        afterFit: function(axis) {
+                            axis.width = 120; // 👈 Guarantees room for full service names
+                        },
+                        ticks: {
+                            font: {
+                                size: 11,
+                                family: 'Poppins',
+                                weight: '600'
+                            },
+                            color: '#2A1001'
+                        }
+                    }
+                }
+            }
+        });
+
+        // Location Doughnut Chart
+        locationChart = new Chart(locChart, {
+            type: 'doughnut',
+            data: {
+                labels: (data.locations && data.locations.labels) ? data.locations.labels : [],
+                datasets: [{
+                    data: (data.locations && data.locations.data) ? data.locations.data : [],
+                    backgroundColor: chartColors,
+                    borderColor: '#ffffff',
+                    borderWidth: 2
                 }]
             },
             options: {
@@ -302,20 +461,40 @@
                 maintainAspectRatio: false,
                 plugins: {
                     legend: {
-                        position: 'right'
+                        display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const label = context.label || '';
+                                const value = context.raw || 0;
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
+                                return ` ${label}: ${value} patient${value > 1 ? 's' : ''} (${percentage}%)`;
+                            }
+                        }
                     }
-                }
+                },
+                cutout: '65%'
             }
         });
+
+        // Render Breakdown List Initial Load
+        if (data.locations) {
+            renderLocationBreakdown(data.locations.labels, data.locations.data);
+        }
 
         TransactionChart = new Chart(TransactionRep, {
             type: 'line',
             data: {
                 labels: data.transactions.labels,
                 datasets: [{
-                    label: 'Money',
+                    label: 'Revenue (₱)',
                     data: data.transactions.data,
-                    borderColor: '#88925F'
+                    borderColor: '#88925F',
+                    backgroundColor: 'rgba(136, 146, 95, 0.15)',
+                    fill: true,
+                    tension: 0.3
                 }]
             },
             options: {
@@ -364,6 +543,13 @@
             serviceChart.data.labels = data.services.labels;
             serviceChart.data.datasets[0].data = data.services.data;
             serviceChart.update();
+
+            if (locationChart && data.locations) {
+                locationChart.data.labels = data.locations.labels;
+                locationChart.data.datasets[0].data = data.locations.data;
+                locationChart.update();
+                renderLocationBreakdown(data.locations.labels, data.locations.data);
+            }
 
             TransactionChart.data.labels = data.transactions.labels;
             TransactionChart.data.datasets[0].data = data.transactions.data;
@@ -420,9 +606,6 @@
         const grayBtn = [229, 231, 235];
         const titleColor = [26, 16, 8];
 
-        pdf.setFillColor(250, 248, 244);
-        pdf.rect(0, 0, pageWidth, pageHeight, 'F');
-
         function drawCard(x, y, w, h) {
             pdf.setFillColor(255, 255, 255);
             pdf.setDrawColor(border[0], border[1], border[2]);
@@ -462,49 +645,67 @@
         }
 
         function addChartImage(chart, x, y, w, h) {
+            if (!chart) return;
             const image = chart.toBase64Image('image/png', 1);
             pdf.addImage(image, 'PNG', x, y, w, h);
         }
 
-        pdf.setTextColor(0, 0, 0);
-        pdf.setFont('helvetica', 'bold');
-        pdf.setFontSize(26);
-        pdf.text('Dashboard Report', pageWidth / 2, 22, { align: 'center' });
+        // ================= PAGE 1 =================
+        pdf.setFillColor(250, 248, 244);
+        pdf.rect(0, 0, pageWidth, pageHeight, 'F');
 
-        const patientsY = 30;
-        const patientsH = 78;
+        pdf.setTextColor(titleColor[0], titleColor[1], titleColor[2]);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFontSize(22);
+        pdf.text('Executive Analytics Report', pageWidth / 2, 20, { align: 'center' });
+
+        const patientsY = 28;
+        const patientsH = 75;
         drawCard(margin, patientsY, contentWidth, patientsH);
         pdf.setFont('helvetica', 'bold');
         pdf.setFontSize(9);
-        pdf.setTextColor(titleColor[0], titleColor[1], titleColor[2]);
-        pdf.text('Total Numbers of Patients Review', margin + 6, patientsY + 9);
-        drawPills(margin + contentWidth - 6, patientsY + 4.2, numweeklyBtn, nummonthlyBtn, numyearlyBtn);
-        addChartImage(NumPatRev, margin + 5, patientsY + 14, contentWidth - 10, patientsH - 18);
+        pdf.text('Total Numbers of Patients Review', margin + 6, patientsY + 8);
+        drawPills(margin + contentWidth - 6, patientsY + 4, numweeklyBtn, nummonthlyBtn, numyearlyBtn);
+        addChartImage(NumPatRev, margin + 5, patientsY + 12, contentWidth - 10, patientsH - 16);
 
         const pieGap = 6;
-        const pieY = 114;
-        const pieH = 68;
+        const pieY = 108;
+        const pieH = 65;
         const pieW = (contentWidth - pieGap) / 2;
 
         drawCard(margin, pieY, pieW, pieH);
         pdf.setFont('helvetica', 'bold');
         pdf.setFontSize(9);
         pdf.text('Appointment Status', margin + 5, pieY + 8);
-        addChartImage(appointmentChart, margin + 4, pieY + 11, pieW - 8, pieH - 16);
+        addChartImage(appointmentChart, margin + 4, pieY + 11, pieW - 8, pieH - 15);
 
         const servicesX = margin + pieW + pieGap;
         drawCard(servicesX, pieY, pieW, pieH);
         pdf.text('Most Requested Services', servicesX + 5, pieY + 8);
-        addChartImage(serviceChart, servicesX + 4, pieY + 11, pieW - 8, pieH - 16);
+        addChartImage(serviceChart, servicesX + 4, pieY + 11, pieW - 8, pieH - 15);
 
-        const transY = 188;
-        const transH = 82;
+        // Location card on Page 1
+        const locY = 178;
+        const locH = 70;
+        drawCard(margin, locY, contentWidth, locH);
+        pdf.text('Patient Demographics & Branch Expansion Potential', margin + 6, locY + 8);
+        addChartImage(locationChart, margin + 5, locY + 11, contentWidth - 10, locH - 15);
+
+        // ================= PAGE 2 (Revenue Trends) =================
+        pdf.addPage();
+        pdf.setFillColor(250, 248, 244);
+        pdf.rect(0, 0, pageWidth, pageHeight, 'F');
+
+        const transY = 25;
+        const transH = 95;
         drawCard(margin, transY, contentWidth, transH);
-        pdf.text('Total Number of Transaction', margin + 6, transY + 9);
-        drawPills(margin + contentWidth - 6, transY + 4.2, transweeklyBtn, transmonthlyBtn, transyearlyBtn);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFontSize(10);
+        pdf.text('Total Transactions & Revenue Overview', margin + 6, transY + 9);
+        drawPills(margin + contentWidth - 6, transY + 4.5, transweeklyBtn, transmonthlyBtn, transyearlyBtn);
         addChartImage(TransactionChart, margin + 5, transY + 14, contentWidth - 10, transH - 18);
 
-        pdf.save('Dashboard_Report.pdf');
+        pdf.save('Clinic_Executive_Dashboard_Report.pdf');
     }
 </script>
 
