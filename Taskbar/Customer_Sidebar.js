@@ -1,30 +1,66 @@
 // Customer_Sidebar.js
-// Handles: sidebar collapse/expand, user name+email loading
-// Called by each Customer page after the sidebar HTML is injected
+(function () {
+    const socket = (typeof io === 'function') ? io() : null;
+    window.appSocket = socket;
 
-// IO socket for real-time stuff; connects to window.location.host
-const socket = io();
-const token = localStorage.getItem('userToken');
-if (token) {
-    socket.emit('authenticate', { token });
-}
-
-// listen for global real-time events
-socket.on('connect', () => {
-    console.log('socket connected: ', socket.id);
-});
-
-socket.on('notification', (data) => {
-    // update sidebar text dynamically
-    const badgeEl = document.getElementById('sidebar-notification-badge');
-    if (badgeEl) {
-        badgeEl.textContent = data.unreadCount;
-        badgeEl.classList.remove('hidden');
+    if (!socket) {
+        console.warn('Socket.IO client not loaded; real-time updates disabled.');
+        return;
     }
-});
+
+    socket.on('connect', () => {
+        console.log('socket connected: ', socket.id);
+        const t = localStorage.getItem('userToken');
+        if (t) socket.emit('authenticate', { token: t });
+    });
+
+    socket.on('notification', (data) => {
+        const badgeEl = document.getElementById('sidebar-notification-badge');
+        if (badgeEl) {
+            badgeEl.textContent = data.unreadCount;
+            badgeEl.classList.remove('hidden');
+        }
+    });
+
+    socket.on('profile_status_changed', (data) => {
+        console.log('Profile status changed via socket:', data);
+        updateBookingLinkUI(Boolean(data.isComplete));
+    });
+})();
+
+
+
+// testing lang
+
+// // Customer_Sidebar.js
+// // Handles: sidebar collapse/expand, user name+email loading
+// // Called by each Customer page after the sidebar HTML is injected
+
+// // IO socket for real-time stuff; connects to window.location.host
+// const socket = io();
+// const token = localStorage.getItem('userToken');
+// if (token) {
+//     socket.emit('authenticate', { token });
+// }
+
+// // listen for global real-time events
+// socket.on('connect', () => {
+//     console.log('socket connected: ', socket.id);
+//     const t = localStorage.getItem('userToken');
+//     if (t) socket.emit('authenticate', {token: t});
+// });
+
+// socket.on('notification', (data) => {
+//     // update sidebar text dynamically
+//     const badgeEl = document.getElementById('sidebar-notification-badge');
+//     if (badgeEl) {
+//         badgeEl.textContent = data.unreadCount;
+//         badgeEl.classList.remove('hidden');
+//     }
+// });
 
 // exposing socket globally if individual pages need to emit custom events
-window.appSocket = socket;
+// window.appSocket = socket;
 
 // Helper function to toggle booking link UI state
 function updateBookingLinkUI(isComplete) {
@@ -59,14 +95,15 @@ function updateBookingLinkUI(isComplete) {
     }
 }
 
+// moved to first script block
 // Real-time listener for profile status changes
-if (window.appSocket) {
-    window.appSocket.on('profile_status_changed', (data) => {
-        console.log('Profile status changed via socket:', data);
-        const isComplete = Boolean(data.isComplete || data.birthday);
-        updateBookingLinkUI(isComplete);
-    });
-}
+// if (window.appSocket) {
+//     window.appSocket.on('profile_status_changed', (data) => {
+//         console.log('Profile status changed via socket:', data);
+//         const isComplete = Boolean(data.isComplete || data.birthday);
+//         updateBookingLinkUI(isComplete);
+//     });
+// }
 
 function initSidebar() {
     _loadSidebarUser();

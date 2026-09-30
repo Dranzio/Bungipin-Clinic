@@ -103,6 +103,12 @@ app.get('/output.css', (req, res) => {
 app.get('/pageProtection.js', (req, res) => {
     res.sendFile(path.join(__dirname, 'pageProtection.js'));
 });
+
+// added route for passwordGate.js (kept returning 404 not found and loading a document type)
+app.get('/passwordGate.js', (req, res) => {
+    res.sendFile(path.join(__dirname, 'passwordGate.js'));
+});
+
 app.use('/LogInRegister', express.static(path.join(__dirname, 'LogInRegister')));
 app.use('/WelcomePage', express.static(path.join(__dirname, 'WelcomePage')));
 
@@ -185,9 +191,11 @@ app.get('/api/patients/:id', authenticateToken, async (req, res) => {
 // send help : global error handling middleware
 app.use(errorHandler);
 
-if (!process.env.VERCEL) {
-    server.listen(3000, () => console.log('Server running on port 3000'));
-}
+
+// pls check (from eli): di nagloload yung server so i removed this then it loaded na
+// if (!process.env.VERCEL) {
+//     server.listen(3000, () => console.log('Server running on port 3000'));
+// }
 
 module.exports = app;
 
