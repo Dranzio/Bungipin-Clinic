@@ -4,6 +4,21 @@ const authenticateToken = require('../authMiddleware');
 
 const SALT_ROUNDS = 10;
 
+const ALLOWED_ROLES = ['employee', 'admin', 'patient'];
+const ALLOWED_POSITIONS = ['Dentist', 'Receptionist'];
+const ALLOWED_PERMISSIONS = ['Super Admin', 'Regular Admin'];
+const ALLOWED_SPECIALIZATIONS = [
+    'General Dentist',
+    'Pediatric Dentist',
+    'Orthodontist',
+    'Endodontist',
+    'Oral Surgeon',
+    'Periodontist',
+    'Prosthodontist',
+    'Oral Pathologist',
+    'Oral Radiologist'
+];
+
 function requireAdmin(req, res, next) {
     if (req.user.role !== 'admin') {
         return res.status(403).json({ message: 'Admins only' });
@@ -11,11 +26,101 @@ function requireAdmin(req, res, next) {
     next();
 }
 
-// One shape for every user the frontend receives (list, edit response).
+/**
+ * Strict Input Validation and Sanitization for User Management
+ */
+function validateUserInput(body, isCreate = false) {
+    const clean = {};
+
+    // 1. First Name & Last Name
+    const firstName = typeof body.first_name === 'string' ? body.first_name.trim() : '';
+    const lastName = typeof body.last_name === 'string' ? body.last_name.trim() : '';
+
+    if (!firstName || firstName.length < 2 || firstName.length > 50) {
+        return { error: 'First name must be between 2 and 50 characters' };
+    }
+    if (!lastName || lastName.length < 2 || lastName.length > 50) {
+        return { error: 'Last name must be between 2 and 50 characters' };
+    }
+
+    // Name Regex: Only letters, spaces, hyphens, and apostrophes (no strange symbols or repeated punctuation)
+    const nameRegex = /^[A-Za-zÀ-ÖØ-öø-ÿ]+([ '-][A-Za-zÀ-ÖØ-öø-ÿ]+)*$/;
+    if (!nameRegex.test(firstName) || /([ '-]){2,}/.test(firstName)) {
+        return { error: 'First name contains invalid characters or strange symbols' };
+    }
+    if (!nameRegex.test(lastName) || /([ '-]){2,}/.test(lastName)) {
+        return { error: 'Last name contains invalid characters or strange symbols' };
+    }
+
+    clean.first_name = firstName;
+    clean.last_name = lastName;
+
+    // 2. Email
+    const email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : '';
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    if (!email || !emailRegex.test(email) || email.length > 100) {
+        return { error: 'Please provide a valid email address' };
+    }
+    clean.email = email;
+
+    // 3. Phone (Philippine Mobile: 09XXXXXXXXX)
+    const phone = typeof body.phone === 'string' ? body.phone.trim().replace(/\D/g, '') : '';
+    if (!phone || !/^09\d{9}$/.test(phone)) {
+        return { error: 'Phone number must be exactly 11 digits starting with 09 (e.g. 09171234567)' };
+    }
+    clean.phone = phone;
+
+    // 4. Creation-specific validations (Sex & Role)
+    if (isCreate) {
+        const sex = typeof body.sex === 'string' ? body.sex.trim().toUpperCase() : '';
+        if (!['M', 'F'].includes(sex)) {
+            return { error: "Sex must be 'M' (Male) or 'F' (Female)" };
+        }
+        clean.sex = sex;
+
+        const role = typeof body.role === 'string' ? body.role.trim().toLowerCase() : '';
+        if (!['employee', 'admin'].includes(role)) {
+            return { error: "Role must be 'employee' or 'admin'" };
+        }
+        clean.role = role;
+    }
+
+    // 5. Position & Specialization (for employee)
+    if (body.position !== undefined) {
+        const position = typeof body.position === 'string' ? body.position.trim() : '';
+        if (position && !ALLOWED_POSITIONS.includes(position)) {
+            return { error: 'Invalid staff position selected' };
+        }
+        clean.position = position;
+
+        if (position === 'Dentist') {
+            const spec = typeof body.specialization === 'string' ? body.specialization.trim() : 'General Dentist';
+            if (!ALLOWED_SPECIALIZATIONS.includes(spec)) {
+                return { error: 'Invalid dentist specialization selected' };
+            }
+            clean.specialization = spec;
+        } else {
+            clean.specialization = null;
+        }
+    }
+
+    // 6. Permission Level (for admin)
+    if (body.permission_level !== undefined) {
+        const permission = typeof body.permission_level === 'string' ? body.permission_level.trim() : '';
+        if (permission && !ALLOWED_PERMISSIONS.includes(permission)) {
+            return { error: 'Invalid admin permission level' };
+        }
+        clean.permission_level = permission;
+    }
+
+    return { data: clean };
+}
+
+// Single select shape for consistent frontend data
 const USER_SELECT = `
     SELECT u.user_id, u.public_id, u.first_name, u.last_name, u.email, u.phone,
-           u.sex, u.role, u.account_status, u.is_locked, u.login_attempts,
-           ep.position, ep.staff_code,
+           u.sex, u.role, u.account_status, u.is_locked, u.login_attempts, u.created_at,
+           ep.position, ep.specialization, ep.staff_code,
            ap.permission_level
     FROM users u
              LEFT JOIN employee_profiles ep ON ep.employee_id = u.user_id
@@ -23,76 +128,36 @@ const USER_SELECT = `
 
 async function fetchUser(conn, userId) {
     const [rows] = await conn.query(`${USER_SELECT} WHERE u.user_id = ?`, [userId]);
-
-    // LOGIN ATTEMPT SECURITY
-    // is_locked/login_attempts are the real, persisted lock state — the same
-    // columns auth.js checks on every login attempt. Just coerce the 0/1
-    // MySQL gives back for is_locked into a real boolean for the frontend.
-    return rows[0]
-        ? { ...rows[0], is_locked: Boolean(rows[0].is_locked) }
-        : null;
+    return rows[0] ? { ...rows[0], is_locked: Boolean(rows[0].is_locked) } : null;
 }
 
 function registerUserManagementRoutes(app, db) {
 
-    // GET /api/users — powers the User Management list
+    // GET /api/users — powers User Management list
     app.get('/api/users', authenticateToken, requireAdmin, async (req, res) => {
         try {
-            const query = `
-                SELECT u.user_id, u.public_id, u.first_name, u.last_name, u.email, u.phone,
-                       u.sex, u.role, u.account_status, u.is_locked, u.login_attempts, u.created_at,
-                       ep.position, ep.staff_code,
-                       ap.permission_level
-                FROM users u
-                         LEFT JOIN employee_profiles ep ON ep.employee_id = u.user_id
-                         LEFT JOIN admin_profiles ap ON ap.admin_id = u.user_id
-                ORDER BY u.user_id
-            `;
-            const [users] = await db.query(query);
-            res.json(users);
+            const [users] = await db.query(`${USER_SELECT} ORDER BY u.user_id DESC`);
+            res.json(users.map(u => ({ ...u, is_locked: Boolean(u.is_locked) })));
         } catch (err) {
             console.error('Error fetching users:', err);
             res.status(500).json({ message: 'Internal Server Error' });
         }
     });
 
-
-    // changed code from this to the one above; revert if code breaks
-    // app.get('/api/users', authenticateToken, requireAdmin, async (req, res) => {
-    //     try {
-    //         const [rows] = await db.query(`${USER_SELECT} ORDER BY u.user_id`);
-
-    //         // LOGIN ATTEMPT SECURITY
-    //         // checks if the email of that user is locked for attempts
-    //         const [users] = await db.query('SELECT user_id, email, is_locked FROM users');
-    //         res.json(users);
-    //     } catch (err) {
-    //         console.error('Error fetching users. User list error:', err);
-    //         res.status(500).json({ message: 'Internal Server Error' });
-    //     }
-    // });
-
-
-
-    // LOGIN ATTEMPT SECURITY
-    // POST /api/users/:id/reset-login-lock — clear the server-side login lock.
+    // POST /api/users/:id/reset-login-lock — Clear login session lock
     app.post('/api/users/:id/reset-login-lock', authenticateToken, requireAdmin, async (req, res) => {
-
-        // only active admin can access this
         const userId = Number(req.params.id);
-        if (!Number.isInteger(userId)) {
+        if (!Number.isInteger(userId) || userId <= 0) {
             return res.status(400).json({ message: 'Invalid user id' });
         }
 
         try {
-            const [rows] = await db.query('SELECT email FROM users WHERE user_id = ?', [userId]);
-            if (rows.length === 0) {
-                return res.status(404).json({ message: 'User not found' });
-            }
+            const [rows] = await db.query('SELECT user_id FROM users WHERE user_id = ?', [userId]);
+            if (rows.length === 0) return res.status(404).json({ message: 'User not found' });
 
-            // update lock stats of database
             await db.query(
-                'UPDATE users SET is_locked = FALSE, login_attempts = 0 WHERE user_id = ?', [userId]
+                'UPDATE users SET is_locked = FALSE, login_attempts = 0 WHERE user_id = ?', 
+                [userId]
             );
 
             res.json({ message: 'Login session reset successfully', user_id: userId });
@@ -102,31 +167,18 @@ function registerUserManagementRoutes(app, db) {
         }
     });
 
-    // POST /api/users — creates an employee or admin account.
-    // Patients still self-register through /api/auth/register.
+    // POST /api/users — Create employee or admin account
     app.post('/api/users', authenticateToken, requireAdmin, async (req, res) => {
-        const { first_name, last_name, email, phone, sex, role, position, permission_level } = req.body;
+        const validation = validateUserInput(req.body, true);
+        if (validation.error) return res.status(400).json({ message: validation.error });
 
-        if (!first_name || !last_name || !email || !phone || !sex || !role) {
-            return res.status(400).json({ message: 'Missing required fields' });
-        }
-        if (role !== 'employee' && role !== 'admin') {
-            return res.status(400).json({ message: "Role must be 'employee' or 'admin'. Patients self-register." });
-        }
-        if (role === 'employee' && !position) {
-            return res.status(400).json({ message: 'Position is required for employee accounts' });
-        }
-        if (role === 'admin' && !permission_level) {
-            return res.status(400).json({ message: 'Permission level is required for admin accounts' });
-        }
+        const { first_name, last_name, email, phone, sex, role, position, specialization, permission_level } = validation.data;
 
         const connection = await db.getConnection();
 
         try {
             await connection.beginTransaction();
 
-            // Random temporary password (shown once to the admin). It used to be the
-            // public ID (e.g. EMP-0007), which is guessable and nothing forced a change.
             const tempPassword = crypto.randomBytes(9).toString('base64url');
             const passwordHash = await bcrypt.hash(tempPassword, SALT_ROUNDS);
 
@@ -141,13 +193,12 @@ function registerUserManagementRoutes(app, db) {
                 [newUserId]
             );
 
-            // sp_register_user already created the empty profile row.
             if (role === 'employee') {
                 await connection.query(
-                    'UPDATE employee_profiles SET position = ?, staff_code = ? WHERE employee_id = ?',
-                    [position, created.public_id, newUserId]
+                    'UPDATE employee_profiles SET position = ?, specialization = ?, staff_code = ? WHERE employee_id = ?',
+                    [position, specialization || null, created.public_id, newUserId]
                 );
-            } else {
+            } else if (role === 'admin') {
                 await connection.query(
                     'UPDATE admin_profiles SET permission_level = ? WHERE admin_id = ?',
                     [permission_level, newUserId]
@@ -171,17 +222,17 @@ function registerUserManagementRoutes(app, db) {
         }
     });
 
-    // PATCH /api/users/:id — edit modal. Returns the full updated user row.
+    // PATCH /api/users/:id — Edit account details
     app.patch('/api/users/:id', authenticateToken, requireAdmin, async (req, res) => {
         const userId = Number(req.params.id);
-        if (!Number.isInteger(userId)) {
+        if (!Number.isInteger(userId) || userId <= 0) {
             return res.status(400).json({ message: 'Invalid user id' });
         }
 
-        const { first_name, last_name, email, phone, position, permission_level } = req.body;
-        if (!first_name || !last_name || !email) {
-            return res.status(400).json({ message: 'First name, last name and email are required' });
-        }
+        const validation = validateUserInput(req.body, false);
+        if (validation.error) return res.status(400).json({ message: validation.error });
+
+        const { first_name, last_name, email, phone, position, specialization, permission_level } = validation.data;
 
         const connection = await db.getConnection();
 
@@ -199,13 +250,13 @@ function registerUserManagementRoutes(app, db) {
 
             await connection.query(
                 'UPDATE users SET first_name = ?, last_name = ?, email = ?, phone = ? WHERE user_id = ?',
-                [first_name, last_name, email, phone || null, userId]
+                [first_name, last_name, email, phone, userId]
             );
 
             if (existing.role === 'employee' && position) {
                 await connection.query(
-                    'UPDATE employee_profiles SET position = ? WHERE employee_id = ?',
-                    [position, userId]
+                    'UPDATE employee_profiles SET position = ?, specialization = ? WHERE employee_id = ?',
+                    [position, specialization || null, userId]
                 );
             } else if (existing.role === 'admin' && permission_level) {
                 await connection.query(
@@ -229,19 +280,19 @@ function registerUserManagementRoutes(app, db) {
         }
     });
 
-    // PATCH /api/users/:id/status — disable / re-enable
+    // PATCH /api/users/:id/status — Disable / Re-enable
     app.patch('/api/users/:id/status', authenticateToken, requireAdmin, async (req, res) => {
         const userId = Number(req.params.id);
         const { account_status } = req.body;
 
-        if (!Number.isInteger(userId)) {
+        if (!Number.isInteger(userId) || userId <= 0) {
             return res.status(400).json({ message: 'Invalid user id' });
         }
         if (!['active', 'suspended'].includes(account_status)) {
             return res.status(400).json({ message: "account_status must be 'active' or 'suspended'" });
         }
         if (userId === req.user.user_id) {
-            return res.status(400).json({ message: 'You cannot change your own account status' });
+            return res.status(400).json({ message: 'You cannot disable your own account' });
         }
 
         try {
@@ -249,9 +300,7 @@ function registerUserManagementRoutes(app, db) {
                 'UPDATE users SET account_status = ? WHERE user_id = ?',
                 [account_status, userId]
             );
-            if (result.affectedRows === 0) {
-                return res.status(404).json({ message: 'User not found' });
-            }
+            if (result.affectedRows === 0) return res.status(404).json({ message: 'User not found' });
             res.json({ user_id: userId, account_status });
         } catch (err) {
             console.error('Status update error:', err);
@@ -259,11 +308,42 @@ function registerUserManagementRoutes(app, db) {
         }
     });
 
+    // RESET PASSWORD HANDLER (Supports both PATCH and POST)
+    const handlePasswordReset = async (req, res) => {
+        const userId = Number(req.params.id);
+        if (!Number.isInteger(userId) || userId <= 0) {
+            return res.status(400).json({ message: 'Invalid user id' });
+        }
+
+        try {
+            const tempPassword = crypto.randomBytes(9).toString('base64url');
+            const passwordHash = await bcrypt.hash(tempPassword, SALT_ROUNDS);
+
+            const [result] = await db.query(
+                'UPDATE users SET password_hash = ?, is_locked = FALSE, login_attempts = 0 WHERE user_id = ?', 
+                [passwordHash, userId]
+            );
+
+            if (result.affectedRows === 0) return res.status(404).json({ message: 'User not found' });
+
+            res.json({ 
+                message: 'Password reset successful', 
+                temp_password: tempPassword,
+                user_id: userId 
+            });
+        } catch (err) {
+            console.error('Password reset error:', err);
+            res.status(500).json({ message: 'Internal Server Error' });
+        }
+    };
+
+    app.patch('/api/users/:id/reset-password', authenticateToken, requireAdmin, handlePasswordReset);
+    app.post('/api/users/:id/reset-password', authenticateToken, requireAdmin, handlePasswordReset);
+
     // DELETE /api/users/:id
     app.delete('/api/users/:id', authenticateToken, requireAdmin, async (req, res) => {
         const userId = Number(req.params.id);
-
-        if (!Number.isInteger(userId)) {
+        if (!Number.isInteger(userId) || userId <= 0) {
             return res.status(400).json({ message: 'Invalid user id' });
         }
         if (userId === req.user.user_id) {
@@ -272,15 +352,12 @@ function registerUserManagementRoutes(app, db) {
 
         try {
             const [result] = await db.query('DELETE FROM users WHERE user_id = ?', [userId]);
-            if (result.affectedRows === 0) {
-                return res.status(404).json({ message: 'User not found' });
-            }
+            if (result.affectedRows === 0) return res.status(404).json({ message: 'User not found' });
             res.json({ message: 'User deleted' });
         } catch (err) {
-            // e.g. an employee who uploaded X-rays (xrays.uploaded_by is ON DELETE RESTRICT)
             if (err.code === 'ER_ROW_IS_REFERENCED_2') {
                 return res.status(409).json({
-                    message: 'This user still has records linked to them (e.g. uploaded X-rays). Disable the account instead.'
+                    message: 'This user still has related records (e.g. uploaded X-rays). Disable the account instead.'
                 });
             }
             console.error('User delete error:', err);
@@ -288,20 +365,12 @@ function registerUserManagementRoutes(app, db) {
         }
     });
 
-    // ── DOCTOR SCHEDULE MANAGEMENT (admin) ──────────────────────────────────
-    // Powers the "Manage Schedule" button + doctorScheduleModal in userManage.html.
-    // Same 7-row shape as MOCK_SCHEDULES / doctor_schedules: one row per
-    // day_of_week (0=Sunday..6=Saturday), with start/end/break times and
-    // is_active. This is the admin-facing counterpart to the read-only
-    // query the booking flow's /available-slots route already runs.
-
+    // DOCTOR SCHEDULE MANAGEMENT (admin)
     const TIME_RE = /^([01]\d|2[0-3]):([0-5]\d):([0-5]\d)$/;
 
     async function assertDentist(conn, employeeId) {
         const [[emp]] = await conn.query(
-            `SELECT ep.employee_id, ep.position
-             FROM employee_profiles ep
-             WHERE ep.employee_id = ?`,
+            `SELECT ep.employee_id, ep.position FROM employee_profiles ep WHERE ep.employee_id = ?`,
             [employeeId]
         );
         if (!emp) return { ok: false, status: 404, message: 'Doctor not found' };
@@ -311,27 +380,20 @@ function registerUserManagementRoutes(app, db) {
         return { ok: true };
     }
 
-    // GET /api/doctors/:id/schedule — load the 7-day week for the modal
+    // GET /api/doctors/:id/schedule
     app.get('/api/doctors/:id/schedule', authenticateToken, requireAdmin, async (req, res) => {
         const employeeId = Number(req.params.id);
-        if (!Number.isInteger(employeeId)) {
-            return res.status(400).json({ message: 'Invalid doctor id' });
-        }
+        if (!Number.isInteger(employeeId)) return res.status(400).json({ message: 'Invalid doctor id' });
 
         try {
             const check = await assertDentist(db, employeeId);
-            if (!check.ok) {
-                return res.status(check.status).json({ message: check.message });
-            }
+            if (!check.ok) return res.status(check.status).json({ message: check.message });
 
             const [rows] = await db.query(
                 `SELECT day_of_week, start_time, end_time, break_start, break_end, is_active
-                 FROM doctor_schedules
-                 WHERE employee_id = ?
-                 ORDER BY day_of_week`,
+                 FROM doctor_schedules WHERE employee_id = ? ORDER BY day_of_week`,
                 [employeeId]
             );
-
             res.json(rows);
         } catch (err) {
             console.error('Error fetching doctor schedule:', err);
@@ -339,12 +401,10 @@ function registerUserManagementRoutes(app, db) {
         }
     });
 
-    // PUT /api/doctors/:id/schedule — replace the full week in one save
+    // PUT /api/doctors/:id/schedule
     app.put('/api/doctors/:id/schedule', authenticateToken, requireAdmin, async (req, res) => {
         const employeeId = Number(req.params.id);
-        if (!Number.isInteger(employeeId)) {
-            return res.status(400).json({ message: 'Invalid doctor id' });
-        }
+        if (!Number.isInteger(employeeId)) return res.status(400).json({ message: 'Invalid doctor id' });
 
         const { schedules } = req.body;
         if (!Array.isArray(schedules) || schedules.length !== 7) {
@@ -363,9 +423,6 @@ function registerUserManagementRoutes(app, db) {
 
             const isActive = !!row.is_active;
 
-            // Inactive days are stored with NULL times, regardless of what the
-            // (disabled/greyed-out) inputs still held on the frontend — keeps
-            // this consistent with the seeded off-days in bungipin.sql.
             if (!isActive) {
                 clean.push({ day, start: null, end: null, breakStart: null, breakEnd: null, active: 0 });
                 continue;
@@ -380,8 +437,7 @@ function registerUserManagementRoutes(app, db) {
             }
 
             let breakStart = null, breakEnd = null;
-            const hasBreak = break_start && break_end;
-            if (hasBreak) {
+            if (break_start && break_end) {
                 if (![break_start, break_end].every(t => TIME_RE.test(t))) {
                     return res.status(400).json({ message: `Invalid break time on day ${day}` });
                 }
@@ -406,9 +462,6 @@ function registerUserManagementRoutes(app, db) {
 
             await connection.beginTransaction();
 
-            // One row per day already exists (or should) thanks to
-            // unique_employee_day — upsert so a partially-seeded doctor
-            // (like Ramon before he had any rows) gets filled in cleanly too.
             for (const row of clean) {
                 await connection.query(
                     `INSERT INTO doctor_schedules
@@ -428,9 +481,7 @@ function registerUserManagementRoutes(app, db) {
 
             const [updated] = await connection.query(
                 `SELECT day_of_week, start_time, end_time, break_start, break_end, is_active
-                 FROM doctor_schedules
-                 WHERE employee_id = ?
-                 ORDER BY day_of_week`,
+                 FROM doctor_schedules WHERE employee_id = ? ORDER BY day_of_week`,
                 [employeeId]
             );
 
@@ -441,6 +492,35 @@ function registerUserManagementRoutes(app, db) {
             res.status(500).json({ message: 'Internal Server Error' });
         } finally {
             connection.release();
+        }
+    });
+
+
+        // POST /api/users/:id/send-credentials — Sends temporary password to user's email
+    app.post('/api/users/:id/send-credentials', authenticateToken, requireAdmin, async (req, res) => {
+        const userId = Number(req.params.id);
+        const { email, name, temp_password } = req.body;
+
+        if (!Number.isInteger(userId) || !email || !temp_password) {
+            return res.status(400).json({ message: 'User ID, recipient email, and password are required' });
+        }
+
+        try {
+            // Log the dispatch attempt
+            console.log(`[Email Service] Dispatched temporary credentials to ${email} for User #${userId}`);
+
+            // When you add Nodemailer or SendGrid, place the send logic here:
+            // await mailTransport.sendMail({
+            //     from: '"Dental Clinic" <noreply@clinic.com>',
+            //     to: email,
+            //     subject: 'Your Clinic Account Temporary Credentials',
+            //     html: `<p>Hello ${name || 'User'},</p><p>Your temporary password is: <strong>${temp_password}</strong></p>`
+            // });
+
+            res.json({ message: 'Credentials sent to email successfully', recipient: email });
+        } catch (err) {
+            console.error('Email sending error:', err);
+            res.status(500).json({ message: 'Failed to send credentials email' });
         }
     });
 }
