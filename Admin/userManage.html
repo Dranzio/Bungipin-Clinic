@@ -25,8 +25,7 @@
 <script>
     function syncContentOffset() {
         const placeholder = document.getElementById('sidebar-placeholder');
-        const sidebar = Array.from(placeholder.children)
-            .find(el => !['SCRIPT', 'STYLE', 'LINK'].includes(el.tagName));
+        const sidebar = Array.from(placeholder?.children || []).find(el => !['SCRIPT', 'STYLE', 'LINK'].includes(el.tagName));
         if (!sidebar) return;
 
         const set = (el, prop, value) => { if (el.style[prop] !== value) el.style[prop] = value; };
@@ -69,53 +68,70 @@
 
 <div id="main-content" class="flex-1 min-w-0 md:min-h-0 md:overflow-y-auto">
 
-    <!-- CONTENT WRAPPER -->
-    <div class="flex-1 flex flex-col w-full min-h-screen md:min-h-0">
-
-        <!-- Header -->
-        <div class="flex justify-between items-start pt-5 pl-4 pr-4 sm:pl-6 sm:pr-6 md:pl-12 md:pr-8">
-            <h1 class="text-2xl sm:text-3xl md:text-5xl pt-5 font-bold text-[#2A1001]">
+        <!-- Header with Logo (100% Consistent with Queue & Patient Records) -->
+        <div class="flex justify-between items-start pt-5 pl-6 pr-4 md:pl-24 md:pr-8">
+            <h1 class="text-2xl sm:text-3xl md:text-5xl 2xl:text-[73px] pt-5 font-bold text-[#2A1001] font-['Poppins']">
                 User Management
             </h1>
-            <img src="../assets/logowithtitle.png" class="w-16 sm:w-20 md:w-28 h-auto object-contain shrink-0" alt="Logo"/>
+            <img
+                src="../assets/logowithtitle.png"
+                class="w-20 sm:w-24 md:w-28 h-auto object-contain shrink-0"
+                onerror="this.style.display='none'"
+                alt="Logo"/>
         </div>
+
         <hr class="border-t border-[#2A1001] mt-2 mb-6" />
 
-        <div class="px-4 sm:px-6 md:px-12">
+        <!-- Main Page Container with Balanced Max Width -->
+        <div class="px-4 sm:px-6 md:px-12 max-w-6xl w-full mx-auto">
 
-            <!-- Search + Role filter + Create button -->
-            <div class="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3 mb-6">
-                <input
-                    type="text"
-                    id="searchInput"
-                    placeholder="Search name, email, specialization, or ID..."
-                    class="w-full h-14 sm:h-11 sm:flex-1 sm:min-w-[200px] rounded-full border border-[#2A1001]/20 bg-white px-6 sm:px-5 outline-none shadow-sm text-base sm:text-sm focus:ring-2 focus:ring-[#667733]/40"
-                />
+            <!-- Controls Bar: Compact Balanced Search Bar + Grouped Action Buttons -->
+            <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 mb-6">
+                
+                    <!-- Search Bar with Perfectly Centered Icon -->
+                <div class="relative w-full sm:max-w-md flex items-center">
+                    <span class="absolute left-4 flex items-center pointer-events-none text-gray-400">
+                        <i class="fa-solid fa-magnifying-glass text-sm"></i>
+                    </span>
+                    <input
+                        type="text"
+                        id="searchInput"
+                        placeholder="Search name, email, specialization, or ID..."
+                        class="w-full h-11 pl-11 pr-4 rounded-full border border-[#2A1001]/20 bg-white outline-none shadow-sm text-sm focus:ring-2 focus:ring-[#667733]/40 transition"
+                    />
+                </div>
 
-                <div class="flex items-center gap-2">
-                    <div class="relative flex-1 sm:flex-initial">
-                        <select id="roleFilter" class="w-full sm:w-auto h-11 pl-4 pr-8 rounded-full bg-[#D5C04D] font-bold text-[#2A1001] outline-none cursor-pointer appearance-none text-sm">
+                <!-- Action Controls: Role Filter & New Account Button -->
+                <div class="flex items-center gap-2.5 justify-end shrink-0">
+                   <!-- Role Filter Dropdown with Centered FontAwesome Chevron -->
+                    <div class="relative inline-flex items-center">
+                        <select id="roleFilter" class="appearance-none h-11 pl-5 pr-10 rounded-full bg-[#D5C04D] hover:bg-[#c2ad3c] font-bold text-[#2A1001] outline-none cursor-pointer text-sm shadow-sm transition">
                             <option value="All" class="bg-white text-[#2A1001]">All Roles</option>
                             <option value="patient" class="bg-white text-[#2A1001]">Patient</option>
                             <option value="employee" class="bg-white text-[#2A1001]">Employee</option>
                             <option value="admin" class="bg-white text-[#2A1001]">Admin</option>
                         </select>
-                        <div class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[#2A1001] text-xs">▼</div>
+                        
+                        <!-- Centered FontAwesome Chevron Arrow Icon -->
+                        <span class="pointer-events-none absolute right-4 flex items-center text-[#2A1001]">
+                            <i class="fa-solid fa-chevron-down text-xs font-bold"></i>
+                        </span>
                     </div>
 
-                    <button id="createAccountBtn" class="flex-1 sm:flex-initial h-11 px-6 rounded-full bg-[#D5C04D] hover:bg-[#c2ad3c] transition text-[#2A1001] font-bold cursor-pointer shadow-sm active:scale-95 text-sm whitespace-nowrap">
-                        + New Account
+                    <!-- New Account Button -->
+                    <button id="createAccountBtn" class="h-11 px-5 rounded-full bg-[#D5C04D] hover:bg-[#c2ad3c] transition text-[#2A1001] font-bold cursor-pointer shadow-sm active:scale-95 text-sm whitespace-nowrap flex items-center gap-2">
+                        <i class="fa-solid fa-plus text-xs"></i>
+                        <span>New Account</span>
                     </button>
                 </div>
             </div>
 
-            <!-- user list cards -->
+            <!-- User List Cards Container -->
             <div id="user-container" class="space-y-4 mb-10">
-                <!-- rows injected by JS -->
+                <!-- Rows injected dynamically by JS -->
             </div>
 
         </div>
-    </div>
 
     <!-- ===== EDIT ACCOUNT MODAL (White Modal) ===== -->
     <div id="editModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
@@ -218,7 +234,7 @@
         </div>
     </div>
 
-    <!-- ===== CREDENTIALS MODAL (For both Creation & Password Reset with Copy & Send to Email) ===== -->
+    <!-- ===== CREDENTIALS MODAL ===== -->
     <div id="passResultModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
         <div class="bg-white rounded-[28px] w-full max-w-sm p-7 text-center shadow-2xl border-2 border-black/10">
             <div class="w-14 h-14 mx-auto mb-3.5 rounded-full bg-green-100 text-green-700 flex items-center justify-center text-2xl">
@@ -248,7 +264,7 @@
         </div>
     </div>
 
-    <!-- ===== DOCTOR SCHEDULE TIMECARD MODAL (White) ===== -->
+    <!-- ===== DOCTOR SCHEDULE TIMECARD MODAL ===== -->
     <div id="doctorScheduleModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
         <div class="bg-white rounded-[32px] w-full max-w-4xl p-6 sm:p-8 relative max-h-[92vh] overflow-y-auto shadow-2xl border-2 border-black/10">
             <button id="closeDoctorScheduleModal" type="button" class="absolute top-4 right-5 text-3xl font-extrabold text-[#2A1001]/50 hover:text-[#2A1001] transition leading-none cursor-pointer">&times;</button>
@@ -272,8 +288,7 @@
                     <div class="col-span-4">Lunch Break Hours</div>
                 </div>
 
-                <div class="flex flex-col gap-2.5" id="weeklyScheduleRows">
-                </div>
+                <div class="flex flex-col gap-2.5" id="weeklyScheduleRows"></div>
 
                 <div class="flex justify-center sm:justify-end gap-3 mt-6 pt-4 border-t border-black/10">
                     <button type="button" id="cancelScheduleBtn" class="bg-white border border-[#2A1001]/20 hover:bg-gray-100 text-[#2A1001] font-bold px-6 py-2.5 rounded-full transition cursor-pointer text-sm">
@@ -287,7 +302,7 @@
         </div>
     </div>
 
-    <!-- ======= DISABLE / ENABLE MODAL (White) =========== -->
+    <!-- ======= DISABLE / ENABLE MODAL =========== -->
     <div id="statusModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
         <div class="bg-white rounded-[28px] w-full max-w-sm p-8 text-center shadow-2xl border-2 border-black/10">
             <div class="w-14 h-14 mx-auto mb-3.5 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center text-2xl">
@@ -302,7 +317,7 @@
         </div>
     </div>
 
-    <!-- ========== DELETE MODAL (White) ========== -->
+    <!-- ========== DELETE MODAL ========== -->
     <div id="deleteModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
         <div class="bg-white rounded-[28px] w-full max-w-sm p-8 text-center shadow-2xl border-2 border-black/10">
             <div class="w-14 h-14 mx-auto mb-3.5 rounded-full bg-red-50 text-red-500 flex items-center justify-center text-2xl">
@@ -317,7 +332,7 @@
         </div>
     </div>
 
-    <!-- ======= CREATE ACCOUNT MODAL (White) ========== -->
+    <!-- ======= CREATE ACCOUNT MODAL ========== -->
     <div id="createModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
         <div class="bg-white rounded-[32px] w-full max-w-md p-6 sm:p-8 relative max-h-[90vh] overflow-y-auto shadow-2xl border-2 border-black/10">
             <button id="closeCreateModal" type="button" class="absolute top-4 right-5 text-2xl font-bold text-[#2A1001]/60 hover:text-[#2A1001] cursor-pointer">&times;</button>
@@ -374,7 +389,6 @@
                     </select>
                 </div>
 
-                <!-- Dentist Specialization in Create Modal -->
                 <div id="newSpecializationWrapper" class="mb-4 hidden">
                     <label class="block text-xs font-bold text-[#2A1001] uppercase mb-1">Dentist Specialization</label>
                     <select id="newSpecialization" class="w-full h-10 px-4 rounded-full border border-[#2A1001]/20 bg-white outline-none cursor-pointer text-sm font-semibold shadow-inner focus:ring-2 focus:ring-[#667733]/40">
@@ -505,7 +519,6 @@
     let pendingDeleteId = null;
     let pendingResetPassId = null;
 
-    // Credentials state holder for the Send Email button
     let currentCredentials = {
         userId: null,
         email: '',
@@ -751,7 +764,7 @@
                     </p>
                 </div>
 
-                <!-- Responsive Action Buttons Strip -->
+                <!-- Action Buttons -->
                 <div class="flex flex-wrap items-center gap-2 shrink-0 pt-2 lg:pt-0 border-t lg:border-t-0 border-gray-100">
                     ${isDentist ? `
                     <button class="scheduleBtn w-9 h-9 flex items-center justify-center rounded-lg bg-[#667733] hover:bg-[#556022] transition text-white shadow-sm cursor-pointer" data-id="${cleanId}" title="Manage Doctor Schedule">
@@ -775,12 +788,10 @@
                         <img src="../assets/trashIcon.png" alt="Delete" class="w-4 h-4 object-contain" />
                     </button>
 
-                    <!-- Reset Password Key Button -->
                     <button class="resetPassBtn w-9 h-9 flex items-center justify-center rounded-lg bg-[#2A1001] hover:bg-black transition shadow-sm cursor-pointer" data-id="${cleanId}" title="Reset Password">
                         <i class="fa-solid fa-key text-white text-xs pointer-events-none"></i>
                     </button>
 
-                    <!-- Reset Login Lock Button -->
                     <button class="resetLoginBtn w-9 h-9 flex items-center justify-center rounded-lg bg-[#8A925F] hover:bg-[#707746] disabled:bg-gray-200 disabled:hover:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed transition shadow-sm cursor-pointer text-white font-bold" data-id="${cleanId}" title="${u.is_locked ? 'Reset login session lock' : 'No lock on session'}" ${u.is_locked ? '' : 'disabled'}>
                         <i class="fa-solid fa-arrows-rotate text-xs"></i>
                     </button>
@@ -790,7 +801,6 @@
         });
     }
 
-    // Function to display the credentials modal with target email for both Create & Reset
     function showCredentialsModal(title, name, email, userId, tempPassword) {
         currentCredentials = {
             userId: parseInt(userId, 10),
@@ -810,7 +820,6 @@
         document.getElementById('passResultModal').classList.remove('hidden');
     }
 
-    // ── SEND EMAIL BUTTON LISTENER (WORKS FOR BOTH CREATE AND RESET) ──
     document.getElementById('sendEmailBtn').addEventListener('click', async function() {
         if (!currentCredentials.userId || !currentCredentials.tempPassword) return;
 
@@ -858,7 +867,6 @@
         }
     });
 
-    // ── CLICK HANDLER FOR USER LIST CARDS ──
     document.getElementById('user-container').addEventListener('click', async function (e) {
         const btn = e.target.closest('button');
         if (!btn) return;
@@ -899,7 +907,6 @@
             return;
         }
 
-        // RESET PASSWORD ACTION -> OPENS CONFIRMATION MODAL
         if (btn.classList.contains('resetPassBtn')) {
             const u = users.find(user => parseInt(user.user_id, 10) === id);
             if (!u) return;
@@ -929,7 +936,6 @@
         }
     });
 
-    // ── PASSWORD RESET CONFIRMATION HANDLERS ──
     document.getElementById('cancelResetPassBtn').addEventListener('click', () => {
         pendingResetPassId = null;
         document.getElementById('resetPassModal').classList.add('hidden');
@@ -957,7 +963,6 @@
             await getUsers();
             renderUsers();
 
-            // Open credentials modal with email and temp password
             showCredentialsModal(
                 'Password Reset Complete',
                 user ? `${user.first_name} ${user.last_name}` : 'User',
@@ -995,7 +1000,6 @@
         if (e.target === this) this.classList.add('hidden');
     });
 
-    // ── DOCTOR SCHEDULE LOGIC ──
     async function openDoctorScheduleModal(doctorId) {
         const doc = users.find(u => parseInt(u.user_id, 10) === doctorId);
         if (!doc) return;
@@ -1140,7 +1144,6 @@
         }
     });
 
-    // ── EDIT MODAL LOCK / UNLOCK ──
     let originalUserSnapshot = null;
 
     function setFormLocked(locked) {
@@ -1247,7 +1250,6 @@
         if (e.target === this) this.classList.add('hidden');
     });
 
-    // ── EDIT ACCOUNT SUBMIT ──
     document.getElementById('editAccountForm').addEventListener('submit', async function (e) {
         e.preventDefault();
 
@@ -1319,7 +1321,6 @@
         }
     });
 
-    // ── STATUS MODAL HANDLERS ──
     document.getElementById('cancelStatusBtn').addEventListener('click', () => {
         pendingStatusId = null;
         document.getElementById('statusModal').classList.add('hidden');
@@ -1354,7 +1355,6 @@
         }
     });
 
-    // ── DELETE MODAL HANDLERS ──
     document.getElementById('cancelDeleteBtn').addEventListener('click', () => {
         pendingDeleteId = null;
         document.getElementById('deleteModal').classList.add('hidden');
@@ -1389,7 +1389,6 @@
         }
     });
 
-    // ── CREATE ACCOUNT SUBMIT ──
     const createAccountForm = document.getElementById('createAccountForm');
     const saveCreateBtn = document.getElementById('saveCreateBtn');
     const userClearBtn = document.getElementById('userClearBtn');
@@ -1536,7 +1535,6 @@
             createAccountForm.reset();
             renderUsers();
 
-            // Open credentials modal with recipient email and temp password
             showCredentialsModal(
                 'Account Created Successfully',
                 `${createdUser.first_name} ${createdUser.last_name}`,

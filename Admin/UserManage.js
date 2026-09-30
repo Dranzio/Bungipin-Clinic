@@ -156,7 +156,7 @@ function registerUserManagementRoutes(app, db) {
             if (rows.length === 0) return res.status(404).json({ message: 'User not found' });
 
             await db.query(
-                'UPDATE users SET is_locked = FALSE, login_attempts = 0 WHERE user_id = ?', 
+                'UPDATE users SET is_locked = FALSE, login_attempts = 0 WHERE user_id = ?',
                 [userId]
             );
 
@@ -320,16 +320,16 @@ function registerUserManagementRoutes(app, db) {
             const passwordHash = await bcrypt.hash(tempPassword, SALT_ROUNDS);
 
             const [result] = await db.query(
-                'UPDATE users SET password_hash = ?, is_locked = FALSE, login_attempts = 0 WHERE user_id = ?', 
+                'UPDATE users SET password_hash = ?, is_locked = FALSE, login_attempts = 0 WHERE user_id = ?',
                 [passwordHash, userId]
             );
 
             if (result.affectedRows === 0) return res.status(404).json({ message: 'User not found' });
 
-            res.json({ 
-                message: 'Password reset successful', 
+            res.json({
+                message: 'Password reset successful',
                 temp_password: tempPassword,
-                user_id: userId 
+                user_id: userId
             });
         } catch (err) {
             console.error('Password reset error:', err);
@@ -496,7 +496,7 @@ function registerUserManagementRoutes(app, db) {
     });
 
 
-        // POST /api/users/:id/send-credentials — Sends temporary password to user's email
+    // POST /api/users/:id/send-credentials — Sends temporary password to user's email
     app.post('/api/users/:id/send-credentials', authenticateToken, requireAdmin, async (req, res) => {
         const userId = Number(req.params.id);
         const { email, name, temp_password } = req.body;
