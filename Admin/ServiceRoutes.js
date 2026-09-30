@@ -76,7 +76,7 @@ function toService(row) {
     return { ...row, price: Number(row.price) };
 }
 
-// Validates title and price while allowing valid parentheses (e.g. "Root Canal (Molar)")
+// Validates title and price while allowing valid parentheses (e.g. "Root Canal (Molar)")//
 function validate(body) {
     const label = typeof body.label === 'string' ? body.label.trim() : '';
     const price = Number(body.price);
