@@ -6,6 +6,7 @@ DROP PROCEDURE IF EXISTS sp_get_all_patient_records;
 DROP PROCEDURE IF EXISTS sp_get_patient_record;
 DROP PROCEDURE IF EXISTS sp_get_employee_record;
 DROP PROCEDURE IF EXISTS sp_register_user;
+DROP TABLE IF EXISTS activity_logs;
 DROP TABLE IF EXISTS notifications;
 DROP TABLE IF EXISTS password_resets;
 DROP TABLE IF EXISTS messages;
@@ -116,6 +117,26 @@ CREATE TABLE audit_logs (
     notes         TEXT,
     created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (admin_id) REFERENCES admin_profiles(admin_id) ON DELETE CASCADE
+);
+
+CREATE TABLE activity_logs (
+    log_id        INT AUTO_INCREMENT PRIMARY KEY,
+    user_id       INT NULL,
+    user_email    VARCHAR(100) NULL,
+    user_role     ENUM('admin','employee','patient','unregistered') NOT NULL DEFAULT 'unregistered',
+    action        VARCHAR(80) NOT NULL,
+    target_table  VARCHAR(60) NOT NULL DEFAULT 'system',
+    target_id     INT NULL,
+    notes         TEXT NULL,
+    ip_address    VARCHAR(45) NULL,
+    created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    -- SET NULL, not CASCADE: deleting a user should never erase the audit
+    -- trail of what that user did. Every other FK in this schema cascades,
+    -- but that pattern is wrong specifically for a log table.
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE SET NULL,
+    INDEX idx_created_at (created_at),
+    INDEX idx_user_role (user_role),
+    INDEX idx_action (action)
 );
 
 CREATE TABLE doctor_schedules (
@@ -502,3 +523,4 @@ FROM users
 WHERE is_locked = 1
    OR login_attempts > 0
 ORDER BY login_attempts DESC;
+

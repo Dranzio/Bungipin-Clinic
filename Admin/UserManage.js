@@ -1,8 +1,13 @@
 const bcrypt = require('bcrypt');
 const crypto = require('crypto');
 const authenticateToken = require('../authMiddleware');
+const { logActivity } = require('./auditLogRoutes');
 
 const SALT_ROUNDS = 10;
+
+function getIp(req) {
+    return req.ip || req.headers['x-forwarded-for'];
+}
 
 const ALLOWED_ROLES = ['employee', 'admin', 'patient'];
 const ALLOWED_POSITIONS = ['Dentist', 'Receptionist'];
@@ -160,6 +165,16 @@ function registerUserManagementRoutes(app, db) {
                 [userId]
             );
 
+            await logActivity(db, {
+                user_id: req.user.user_id,
+                user_role: req.user.role,
+                action: 'ACCOUNT_UNLOCKED',
+                target_table: 'users',
+                target_id: userId,
+                notes: 'Login lock cleared by admin.',
+                ip_address: getIp(req)
+            });
+
             res.json({ message: 'Login session reset successfully', user_id: userId });
         } catch (err) {
             console.error('Login lock reset error:', err);
@@ -206,6 +221,16 @@ function registerUserManagementRoutes(app, db) {
             }
 
             await connection.commit();
+
+            await logActivity(db, {
+                user_id: req.user.user_id,
+                user_role: req.user.role,
+                action: 'CREATE_USER',
+                target_table: 'users',
+                target_id: newUserId,
+                notes: `Created ${role} account for ${first_name} ${last_name} (${email}).`,
+                ip_address: getIp(req)
+            });
 
             const user = await fetchUser(db, newUserId);
             res.status(201).json({ ...user, temp_password: tempPassword });
@@ -266,6 +291,17 @@ function registerUserManagementRoutes(app, db) {
             }
 
             await connection.commit();
+
+            await logActivity(db, {
+                user_id: req.user.user_id,
+                user_role: req.user.role,
+                action: 'UPDATE_USER',
+                target_table: 'users',
+                target_id: userId,
+                notes: `Updated account details for ${first_name} ${last_name} (${email}).`,
+                ip_address: getIp(req)
+            });
+
             res.json(await fetchUser(db, userId));
 
         } catch (err) {
@@ -301,6 +337,17 @@ function registerUserManagementRoutes(app, db) {
                 [account_status, userId]
             );
             if (result.affectedRows === 0) return res.status(404).json({ message: 'User not found' });
+
+            await logActivity(db, {
+                user_id: req.user.user_id,
+                user_role: req.user.role,
+                action: account_status === 'suspended' ? 'DEACTIVATE_USER' : 'ACTIVATE_USER',
+                target_table: 'users',
+                target_id: userId,
+                notes: account_status === 'suspended' ? 'Account suspended by admin.' : 'Account re-activated by admin.',
+                ip_address: getIp(req)
+            });
+
             res.json({ user_id: userId, account_status });
         } catch (err) {
             console.error('Status update error:', err);
@@ -325,6 +372,16 @@ function registerUserManagementRoutes(app, db) {
             );
 
             if (result.affectedRows === 0) return res.status(404).json({ message: 'User not found' });
+
+            await logActivity(db, {
+                user_id: req.user.user_id,
+                user_role: req.user.role,
+                action: 'PASSWORD_CHANGED',
+                target_table: 'users',
+                target_id: userId,
+                notes: 'Password reset by admin (temporary password issued).',
+                ip_address: getIp(req)
+            });
 
             res.json({
                 message: 'Password reset successful',
@@ -353,6 +410,17 @@ function registerUserManagementRoutes(app, db) {
         try {
             const [result] = await db.query('DELETE FROM users WHERE user_id = ?', [userId]);
             if (result.affectedRows === 0) return res.status(404).json({ message: 'User not found' });
+
+            await logActivity(db, {
+                user_id: req.user.user_id,
+                user_role: req.user.role,
+                action: 'DELETE_USER',
+                target_table: 'users',
+                target_id: userId,
+                notes: 'Account permanently deleted by admin.',
+                ip_address: getIp(req)
+            });
+
             res.json({ message: 'User deleted' });
         } catch (err) {
             if (err.code === 'ER_ROW_IS_REFERENCED_2') {
@@ -516,6 +584,16 @@ function registerUserManagementRoutes(app, db) {
             //     subject: 'Your Clinic Account Temporary Credentials',
             //     html: `<p>Hello ${name || 'User'},</p><p>Your temporary password is: <strong>${temp_password}</strong></p>`
             // });
+
+            await logActivity(db, {
+                user_id: req.user.user_id,
+                user_role: req.user.role,
+                action: 'SEND_CREDENTIALS_EMAIL',
+                target_table: 'users',
+                target_id: userId,
+                notes: `Temporary credentials dispatched to ${email}.`,
+                ip_address: getIp(req)
+            });
 
             res.json({ message: 'Credentials sent to email successfully', recipient: email });
         } catch (err) {
