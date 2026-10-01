@@ -1,4 +1,9 @@
 const authenticateToken = require('../authMiddleware');
+const { logActivity } = require('../Admin/auditLogRoutes');
+
+function getIp(req) {
+    return req.ip || req.headers['x-forwarded-for'];
+}
 
 function registerHistoryRoutes(app, db, io) {
 
@@ -120,6 +125,16 @@ function registerHistoryRoutes(app, db, io) {
 
             await connection.commit();
 
+            await logActivity(db, {
+                user_id: req.user.user_id,
+                user_role: 'patient',
+                action: 'CANCEL_APPOINTMENT',
+                target_table: 'appointments',
+                target_id: Number(appointmentId),
+                notes: `Cancelled by patient.${reason ? ' Reason: ' + reason : ''}`,
+                ip_address: getIp(req)
+            });
+
             // Real-time broadcast to BookingRequest & Queue
             if (io) {
                 io.emit('appointment-updated', { appointment_id: Number(appointmentId) });
@@ -238,6 +253,16 @@ function registerHistoryRoutes(app, db, io) {
             }
 
             await connection.commit();
+
+            await logActivity(db, {
+                user_id: req.user.user_id,
+                user_role: 'patient',
+                action: 'RESCHEDULE_REQUESTED',
+                target_table: 'appointments',
+                target_id: Number(appointmentId),
+                notes: `Requested reschedule to ${requested_date} at ${requested_time}. Reason: ${reschedule_reason.trim()}`,
+                ip_address: getIp(req)
+            });
 
             // Real-time broadcast to BookingRequest & Queue!
             if (io) {
