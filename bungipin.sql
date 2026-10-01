@@ -1,11 +1,12 @@
 CREATE DATABASE IF NOT EXISTS defaultdb;
 USE defaultdb;
 
--- Drop Instances
+-- ================= DROP INSTANCES =================
 DROP PROCEDURE IF EXISTS sp_get_all_patient_records;
 DROP PROCEDURE IF EXISTS sp_get_patient_record;
 DROP PROCEDURE IF EXISTS sp_get_employee_record;
 DROP PROCEDURE IF EXISTS sp_register_user;
+DROP TABLE IF EXISTS activity_logs;
 DROP TABLE IF EXISTS notifications;
 DROP TABLE IF EXISTS password_resets;
 DROP TABLE IF EXISTS messages;
@@ -24,6 +25,7 @@ DROP TABLE IF EXISTS employee_profiles;
 DROP TABLE IF EXISTS patient_profiles;
 DROP TABLE IF EXISTS users;
 
+-- ================= USERS & PROFILES =================
 CREATE TABLE users (
     user_id         INT AUTO_INCREMENT PRIMARY KEY,
     public_id       VARCHAR(10) UNIQUE,       
@@ -54,10 +56,11 @@ CREATE TABLE patient_profiles (
 );
 
 CREATE TABLE employee_profiles (
-    employee_id   INT PRIMARY KEY,
-    staff_code    VARCHAR(30) UNIQUE,
-    position      VARCHAR(30),
-    birthday      DATE,
+    employee_id    INT PRIMARY KEY,
+    staff_code     VARCHAR(30) UNIQUE,
+    position       VARCHAR(30),                              -- 'Dentist', 'Receptionist'
+    specialization VARCHAR(255) DEFAULT 'General Dentist',   -- 👈 Supports Dual Specialization (e.g. 'General Dentist, Orthodontist')
+    birthday       DATE,
     FOREIGN KEY (employee_id) REFERENCES users(user_id) ON DELETE CASCADE
 );
 
@@ -118,6 +121,23 @@ CREATE TABLE audit_logs (
     FOREIGN KEY (admin_id) REFERENCES admin_profiles(admin_id) ON DELETE CASCADE
 );
 
+CREATE TABLE activity_logs (
+    log_id        INT AUTO_INCREMENT PRIMARY KEY,
+    user_id       INT NULL,
+    user_email    VARCHAR(100) NULL,
+    user_role     ENUM('admin','employee','patient','unregistered') NOT NULL DEFAULT 'unregistered',
+    action        VARCHAR(80) NOT NULL,
+    target_table  VARCHAR(60) NOT NULL DEFAULT 'system',
+    target_id     INT NULL,
+    notes         TEXT NULL,
+    ip_address    VARCHAR(45) NULL,
+    created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE SET NULL,
+    INDEX idx_created_at (created_at),
+    INDEX idx_user_role (user_role),
+    INDEX idx_action (action)
+);
+
 CREATE TABLE doctor_schedules (
     schedule_id   INT AUTO_INCREMENT PRIMARY KEY,
     employee_id   INT NOT NULL,
@@ -154,11 +174,13 @@ CREATE TABLE allergies (
 );
 
 CREATE TABLE services (
-    service_id    INT AUTO_INCREMENT PRIMARY KEY,
-    label         VARCHAR(100) NOT NULL,
-    price         DECIMAL(10,2) NOT NULL DEFAULT 0.00,
-    icon          VARCHAR(255),
-    is_available  BOOLEAN NOT NULL DEFAULT TRUE
+    service_id              INT AUTO_INCREMENT PRIMARY KEY,
+    label                   VARCHAR(100) NOT NULL,
+    price                   DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+    duration_minutes        INT NOT NULL DEFAULT 30,
+    required_specialization VARCHAR(100) NOT NULL DEFAULT 'General Dentist',
+    icon                    VARCHAR(255),
+    is_available            BOOLEAN NOT NULL DEFAULT TRUE
 );
 
 -- ================= APPOINTMENTS =================
@@ -169,9 +191,11 @@ CREATE TABLE appointments (
     service_id          INT NOT NULL,
     appointment_date    DATE NOT NULL,
     time_slot           TIME NOT NULL,
+    end_time            TIME NOT NULL,
     appointment_status  ENUM('pending','approved','completed','cancelled') NOT NULL DEFAULT 'pending',
     queue_status        ENUM('pending','waiting','ongoing','completed') NOT NULL DEFAULT 'pending',
     reschedule_status   ENUM('none','requested','approved','declined') NOT NULL DEFAULT 'none',
+    reschedule_count    INT NOT NULL DEFAULT 0,  -- 👈 Tracks Reschedule Limit (Max 2)
     requested_date      DATE NULL,
     requested_time      TIME NULL,
     reschedule_reason   VARCHAR(255) NULL,
@@ -256,7 +280,7 @@ CREATE TABLE password_resets (
     INDEX idx_token_hash (token_hash)
 );
 
--- ================= PROCEDURES (WITH PATIENT_DOCUMENTS SUPPORT) =================
+-- ================= PROCEDURES =================
 DELIMITER $$
 CREATE PROCEDURE sp_get_patient_record(IN p_patient_id INT)
 BEGIN
@@ -421,6 +445,7 @@ BEGIN
         'public_id', u.public_id,
         'staff_code', ep.staff_code,
         'position', ep.position,
+        'specialization', ep.specialization,
         'first_name', u.first_name,
         'last_name', u.last_name,
         'sex', u.sex,
@@ -440,55 +465,46 @@ CALL sp_register_user('Juan', 'Dela Cruz', 'juan.delacruz@example.com', '0917987
 CALL sp_register_user('Ramon', 'Cruz', 'ramon.cruz@example.com', '09201112222', '$2b$10$PFUiFjV7FngVMIZ2u/chOOV3l.cVQ84nz4Os8DipZlw72yiqAKKJi', 'M', 'employee', @uid3);
 CALL sp_register_user('Liza', 'Tan', 'liza.tan@example.com', '09203334444', '$2b$10$PFUiFjV7FngVMIZ2u/chOOV3l.cVQ84nz4Os8DipZlw72yiqAKKJi', 'F', 'employee', @uid4);
 CALL sp_register_user('Carla', 'Reyes', 'carla.reyes@example.com', '09051119999', '$2b$10$PFUiFjV7FngVMIZ2u/chOOV3l.cVQ84nz4Os8DipZlw72yiqAKKJi', 'F', 'admin', @uid5);
+CALL sp_register_user('Maria', 'Gomez', 'maria.gomez@example.com', '09171112223', '$2b$10$PFUiFjV7FngVMIZ2u/chOOV3l.cVQ84nz4Os8DipZlw72yiqAKKJi', 'F', 'employee', @uid6);
 
 UPDATE patient_profiles SET birthday = '1990-04-12', address = '123 Mabini St, Quezon City', address_street = '123 Mabini St', address_city = 'Quezon City', address_province = 'Metro Manila' WHERE patient_id = 1;
 UPDATE patient_profiles SET birthday = '1985-11-02', address = '45 Rizal Ave, Manila', address_street = '45 Rizal Ave', address_city = 'Manila', address_province = 'Metro Manila' WHERE patient_id = 2;
 
-UPDATE employee_profiles SET staff_code = 'STF-2026-001', position = 'Dentist', birthday = '1985-06-10' WHERE employee_id = 3;
-UPDATE employee_profiles SET staff_code = 'STF-2026-002', position = 'Dentist', birthday = '1990-02-20' WHERE employee_id = 4;
+-- Dual Specialization Seeds
+UPDATE employee_profiles SET staff_code = 'STF-2026-001', position = 'Dentist', specialization = 'General Dentist', birthday = '1985-06-10' WHERE employee_id = 3;
+UPDATE employee_profiles SET staff_code = 'STF-2026-002', position = 'Dentist', specialization = 'General Dentist, Orthodontist', birthday = '1990-02-20' WHERE employee_id = 4;
+UPDATE employee_profiles SET staff_code = 'STF-2026-003', position = 'Dentist', specialization = 'General Dentist, Endodontist', birthday = '1988-09-03' WHERE employee_id = @uid6;
 
 UPDATE admin_profiles SET permission_level = 'full_access' WHERE admin_id = 5;
 
-INSERT INTO services (label, price, icon, is_available) VALUES
-('Dental Cleaning', 1500.00, 'cleaning-icon', TRUE),
-('Pasta', 2500.00, 'pasta-icon', TRUE),
-('Checkup', 500.00, 'checkup-icon', TRUE),
-('Whitening', 3000.00, 'whitening-icon', TRUE);
+-- Clinic Services with Durations & Required Specializations
+INSERT INTO services (label, price, duration_minutes, required_specialization, icon, is_available) VALUES
+('Dental Checkup & Consultation', 500.00, 30, 'General Dentist', '../assets/Checkup.png', TRUE),
+('Oral Prophylaxis (Cleaning)', 1500.00, 45, 'General Dentist', '../assets/cleaning.png', TRUE),
+('Tooth Restoration (Pasta)', 1200.00, 30, 'General Dentist', '../assets/pasta.png', TRUE),
+('Laser Teeth Whitening', 4500.00, 60, 'General Dentist', '../assets/whitening.png', TRUE),
+('Braces Installation / Adjustment', 3500.00, 60, 'Orthodontist', '../assets/logo.png', TRUE),
+('Root Canal Treatment', 6500.00, 90, 'Endodontist', '../assets/logo.png', TRUE),
+('Impacted Wisdom Tooth Surgery', 5000.00, 60, 'Oral Surgeon', '../assets/logo.png', TRUE);
 
-INSERT INTO appointments (patient_id, employee_id, service_id, appointment_date, time_slot, appointment_status, queue_status, reschedule_status, patient_note) VALUES
-(1, 3, 1, '2026-09-10', '10:00:00', 'approved', 'completed', 'none', 'First-time patient'),
-(2, NULL, 2, '2026-09-12', '11:00:00', 'pending', 'pending', 'none', NULL);
-
-INSERT INTO payments (appointment_id, amount, payment_date, method, status) VALUES
-(1, 1500.00, '2026-09-10', 'card', 'paid');
-
-INSERT INTO xrays (patient_id, appointment_id, uploaded_by, file_url) VALUES
-(1, 1, 3, '/xrays/patient1_visit1.png');
-
-INSERT INTO messages (sender_id, receiver_id, content, is_read) VALUES
-(3, 1, 'Please arrive 10 minutes early for your cleaning.', FALSE);
-
-INSERT INTO notifications (user_id, type, title, message, appointment_id) VALUES
-(1, 'appointment_status', 'Appointment Approved', 'Your appointment on 2026-09-10 has been approved.', 1);
-
+-- Weekly Doctor Duty Schedules with 12:00 PM - 1:00 PM Lunch Break
 INSERT INTO doctor_schedules (employee_id, day_of_week, start_time, end_time, break_start, break_end, is_active) VALUES
-(4, 0, NULL, NULL, NULL, NULL, 0),
-(4, 1, '08:00:00', '17:00:00', '12:00:00', '13:00:00', 1),
-(4, 2, '08:00:00', '17:00:00', '12:00:00', '13:00:00', 1),
-(4, 3, '08:00:00', '17:00:00', '12:00:00', '13:00:00', 1),
-(4, 4, '08:00:00', '17:00:00', '12:00:00', '13:00:00', 1),
-(4, 5, '08:00:00', '17:00:00', '12:00:00', '13:00:00', 1),
-(4, 6, '08:00:00', '17:00:00', '12:00:00', '13:00:00', 1);
+(3, 0, NULL, NULL, NULL, NULL, FALSE),
+(3, 1, '08:00:00', '17:00:00', '12:00:00', '13:00:00', TRUE),
+(3, 2, '08:00:00', '17:00:00', '12:00:00', '13:00:00', TRUE),
+(3, 3, '08:00:00', '17:00:00', '12:00:00', '13:00:00', TRUE),
+(3, 4, '08:00:00', '17:00:00', '12:00:00', '13:00:00', TRUE),
+(3, 5, '08:00:00', '17:00:00', '12:00:00', '13:00:00', TRUE),
+(3, 6, '08:00:00', '17:00:00', '12:00:00', '13:00:00', TRUE),
 
-CALL sp_register_user(
-    'Maria', 'Gomez', 'maria.gomez@example.com', '09171112223',
-    '$2b$10$PFUiFjV7FngVMIZ2u/chOOV3l.cVQ84nz4Os8DipZlw72yiqAKKJi',
-    'F', 'employee', @uid6
-);
- 
-UPDATE employee_profiles SET staff_code = 'STF-2026-003', position = 'Dentist', birthday = '1988-09-03' WHERE employee_id = @uid6;
+(4, 0, NULL, NULL, NULL, NULL, FALSE),
+(4, 1, '08:00:00', '17:00:00', '12:00:00', '13:00:00', TRUE),
+(4, 2, '08:00:00', '17:00:00', '12:00:00', '13:00:00', TRUE),
+(4, 3, '08:00:00', '17:00:00', '12:00:00', '13:00:00', TRUE),
+(4, 4, '08:00:00', '17:00:00', '12:00:00', '13:00:00', TRUE),
+(4, 5, '08:00:00', '17:00:00', '12:00:00', '13:00:00', TRUE),
+(4, 6, '08:00:00', '17:00:00', '12:00:00', '13:00:00', TRUE),
 
-INSERT INTO doctor_schedules (employee_id, day_of_week, start_time, end_time, break_start, break_end, is_active) VALUES
 (@uid6, 0, NULL, NULL, NULL, NULL, FALSE),
 (@uid6, 1, '08:00:00', '17:00:00', '12:00:00', '13:00:00', TRUE),
 (@uid6, 2, '08:00:00', '17:00:00', '12:00:00', '13:00:00', TRUE),
@@ -497,8 +513,10 @@ INSERT INTO doctor_schedules (employee_id, day_of_week, start_time, end_time, br
 (@uid6, 5, '08:00:00', '17:00:00', '12:00:00', '13:00:00', TRUE),
 (@uid6, 6, '08:00:00', '12:00:00', NULL, NULL, TRUE);
 
-SELECT user_id, public_id, email, role, account_status, is_locked, login_attempts
-FROM users
-WHERE is_locked = 1
-   OR login_attempts > 0
-ORDER BY login_attempts DESC;
+-- Initial Appointments with Accurate End Times & Reschedule Count
+INSERT INTO appointments (patient_id, employee_id, service_id, appointment_date, time_slot, end_time, appointment_status, queue_status, reschedule_status, reschedule_count, patient_note) VALUES
+(1, 3, 2, '2026-09-10', '10:00:00', '10:45:00', 'approved', 'completed', 'none', 0, 'First-time patient'),
+(2, NULL, 3, '2026-09-12', '11:00:00', '11:30:00', 'pending', 'pending', 'none', 0, NULL);
+
+INSERT INTO payments (appointment_id, amount, payment_date, method, status) VALUES
+(1, 1500.00, '2026-09-10', 'card', 'paid');
