@@ -12,8 +12,22 @@ function clearAuthCookie(res) {
     );
 }
 
-async function authenticateToken(req, res, next) {
+// Pulls the token out of either the Authorization header or the authToken
+// cookie. Exported so routes that need best-effort access to the current
+// user (e.g. /logout, which must succeed even with a stale/invalid token)
+// can reuse this without duplicating the cookie-parsing logic.
+function extractToken(req) {
     const authHeader = req.headers['authorization'];
+    const cookies = Object.fromEntries(
+        (req.headers.cookie || '').split(';').filter(Boolean).map(cookie => {
+            const separator = cookie.indexOf('=');
+            return [cookie.slice(0, separator).trim(), decodeURIComponent(cookie.slice(separator + 1).trim())];
+        })
+    );
+    return (authHeader && authHeader.split(' ')[1]) || cookies.authToken;
+}
+
+async function authenticateToken(req, res, next) {
     const isPageRequest = !req.path.startsWith('/api') && req.accepts('html');
 
     function denyPageAccess(status, error) {
@@ -24,14 +38,7 @@ async function authenticateToken(req, res, next) {
         return res.status(status).json({ error });
     }
 
-    // DENIES DIRECT PAGE ACCESS VIA URL
-    const cookies = Object.fromEntries(
-        (req.headers.cookie || '').split(';').filter(Boolean).map(cookie => {
-            const separator = cookie.indexOf('=');
-            return [cookie.slice(0, separator).trim(), decodeURIComponent(cookie.slice(separator + 1).trim())];
-        })
-    );
-    const token = (authHeader && authHeader.split(' ')[1]) || cookies.authToken;
+    const token = extractToken(req);
 
     if (!token) {
         return denyPageAccess(401, 'Access token required');
@@ -78,3 +85,4 @@ async function authenticateToken(req, res, next) {
 
 module.exports = authenticateToken;
 module.exports.clearAuthCookie = clearAuthCookie;
+module.exports.extractToken = extractToken;

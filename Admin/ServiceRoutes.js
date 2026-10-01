@@ -3,6 +3,11 @@ const path = require('path');
 const crypto = require('crypto');
 const { put } = require('@vercel/blob');
 const authenticateToken = require('../authMiddleware');
+const { logActivity } = require('./auditLogRoutes');
+
+function getIp(req) {
+    return req.ip || req.headers['x-forwarded-for'];
+}
 
 const ICON_DIR = path.join(__dirname, '..', 'uploads', 'services');
 const MAX_ICON_BYTES = 2 * 1024 * 1024;
@@ -166,6 +171,17 @@ function registerServiceRoutes(app, db) {
                 [v.label, v.price, v.duration_minutes, v.required_specialization, icon]
             );
             const [[row]] = await db.query('SELECT * FROM services WHERE service_id = ?', [result.insertId]);
+
+            await logActivity(db, {
+                user_id: req.user.user_id,
+                user_role: req.user.role,
+                action: 'CREATE_SERVICE',
+                target_table: 'services',
+                target_id: result.insertId,
+                notes: `Created service "${v.label}" at ₱${v.price}.`,
+                ip_address: getIp(req)
+            });
+
             res.status(201).json(toService(row));
         } catch (err) {
             if (err.status) return res.status(err.status).json({ message: err.message });
@@ -193,6 +209,17 @@ function registerServiceRoutes(app, db) {
             if (result.affectedRows === 0) return res.status(404).json({ message: 'Service not found' });
 
             const [[row]] = await db.query('SELECT * FROM services WHERE service_id = ?', [id]);
+
+            await logActivity(db, {
+                user_id: req.user.user_id,
+                user_role: req.user.role,
+                action: 'UPDATE_SERVICE',
+                target_table: 'services',
+                target_id: id,
+                notes: `Updated service "${v.label}" to ₱${v.price}.`,
+                ip_address: getIp(req)
+            });
+
             res.json(toService(row));
         } catch (err) {
             if (err.status) return res.status(err.status).json({ message: err.message });
@@ -207,8 +234,20 @@ function registerServiceRoutes(app, db) {
         if (!Number.isInteger(id)) return res.status(400).json({ message: 'Invalid service id' });
 
         try {
+            const [[existing] = []] = await db.query('SELECT label FROM services WHERE service_id = ?', [id]);
             const [result] = await db.query('DELETE FROM services WHERE service_id = ?', [id]);
             if (result.affectedRows === 0) return res.status(404).json({ message: 'Service not found' });
+
+            await logActivity(db, {
+                user_id: req.user.user_id,
+                user_role: req.user.role,
+                action: 'DELETE_SERVICE',
+                target_table: 'services',
+                target_id: id,
+                notes: existing ? `Deleted service "${existing.label}".` : `Deleted service #${id}.`,
+                ip_address: getIp(req)
+            });
+
             res.json({ message: 'Service deleted' });
         } catch (err) {
             if (err.code === 'ER_ROW_IS_REFERENCED_2') {

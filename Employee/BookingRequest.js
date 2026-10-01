@@ -1,4 +1,9 @@
 const authenticateToken = require('../authMiddleware');
+const { logActivity } = require('../Admin/auditLogRoutes');
+
+function getIp(req) {
+    return req.ip || req.headers['x-forwarded-for'];
+}
 
 function registerBookingRequestRoutes(app, db, io) {
 
@@ -37,11 +42,11 @@ function registerBookingRequestRoutes(app, db, io) {
 
         try {
             let query = `
-                SELECT 
-                    a.appointment_id, 
+                SELECT
+                    a.appointment_id,
                     a.appointment_status,
                     a.queue_status,
-                    a.appointment_date, 
+                    a.appointment_date,
                     a.time_slot,
                     a.end_time AS end_time_slot,
                     a.reschedule_status,
@@ -53,8 +58,8 @@ function registerBookingRequestRoutes(app, db, io) {
                     a.dentist_note,
                     a.created_at,
                     u.user_id AS patient_id,
-                    u.public_id, 
-                    u.first_name, 
+                    u.public_id,
+                    u.first_name,
                     u.last_name,
                     u.email AS patient_email,
                     u.phone AS patient_phone,
@@ -69,10 +74,10 @@ function registerBookingRequestRoutes(app, db, io) {
                     doc.first_name AS dentist_first_name,
                     doc.last_name AS dentist_last_name
                 FROM appointments a
-                JOIN users u ON a.patient_id = u.user_id
-                JOIN services s ON a.service_id = s.service_id
-                LEFT JOIN payments p ON a.appointment_id = p.appointment_id
-                LEFT JOIN users doc ON a.employee_id = doc.user_id
+                         JOIN users u ON a.patient_id = u.user_id
+                         JOIN services s ON a.service_id = s.service_id
+                         LEFT JOIN payments p ON a.appointment_id = p.appointment_id
+                         LEFT JOIN users doc ON a.employee_id = doc.user_id
             `;
             const params = [];
 
@@ -145,8 +150,8 @@ function registerBookingRequestRoutes(app, db, io) {
             if (appointment_status === 'approved') {
                 const assignedEmployeeId = req.user.role === 'employee' ? req.user.user_id : null;
                 await connection.query(
-                    `UPDATE appointments 
-                     SET appointment_status = 'approved', 
+                    `UPDATE appointments
+                     SET appointment_status = 'approved',
                          employee_id = COALESCE(employee_id, ?),
                          queue_status = 'pending'
                      WHERE appointment_id = ?`,
@@ -154,8 +159,8 @@ function registerBookingRequestRoutes(app, db, io) {
                 );
             } else {
                 await connection.query(
-                    `UPDATE appointments 
-                     SET appointment_status = 'cancelled' 
+                    `UPDATE appointments
+                     SET appointment_status = 'cancelled'
                      WHERE appointment_id = ?`,
                     [appointmentId]
                 );
@@ -174,6 +179,17 @@ function registerBookingRequestRoutes(app, db, io) {
 
             await connection.commit();
 
+            await logActivity(db, {
+                user_id: req.user.user_id,
+                user_role: req.user.role,
+                action: appointment_status === 'approved' ? 'APPROVE_APPOINTMENT' : 'CANCEL_APPOINTMENT',
+                target_table: 'appointments',
+                target_id: appointmentId,
+                notes: appointment_status === 'approved' ? 'Booking request approved.' : 'Booking request declined.',
+                ip_address: getIp(req)
+            });
+
+            // Real-time broadcast
             if (io) {
                 io.emit('appointment-updated', { appointment_id: appointmentId, status: appointment_status });
             }
@@ -211,7 +227,7 @@ function registerBookingRequestRoutes(app, db, io) {
                 `SELECT a.appointment_id, a.patient_id, a.appointment_date, a.time_slot,
                         a.reschedule_status, a.requested_date, a.requested_time, s.label AS service_label
                  FROM appointments a
-                 JOIN services s ON a.service_id = s.service_id
+                          JOIN services s ON a.service_id = s.service_id
                  WHERE a.appointment_id = ? FOR UPDATE`,
                 [appointmentId]
             );
@@ -236,7 +252,7 @@ function registerBookingRequestRoutes(app, db, io) {
                 // Interval conflict check
                 const [existing] = await connection.query(
                     `SELECT appointment_id, time_slot, end_time FROM appointments
-                     WHERE appointment_date = ? 
+                     WHERE appointment_date = ?
                        AND appointment_status = 'approved'
                        AND appointment_id != ?`,
                     [appt.requested_date, appointmentId]
@@ -250,8 +266,8 @@ function registerBookingRequestRoutes(app, db, io) {
 
                 if (hasOverlap) {
                     await connection.rollback();
-                    return res.status(409).json({ 
-                        message: 'Requested slot overlaps with another confirmed patient. Please use "Pick Other Slot".' 
+                    return res.status(409).json({
+                        message: 'Requested slot is already booked by another confirmed patient. Please use "Pick Other Slot".'
                     });
                 }
 
@@ -289,7 +305,7 @@ function registerBookingRequestRoutes(app, db, io) {
 
                 const reasonText = decline_reason ? ` Note: ${decline_reason}` : '';
                 const notifMsg = `Your reschedule request was declined. Your confirmed appointment remains on ${appt.appointment_date} at ${appt.time_slot}.${reasonText}`;
-                
+
                 await connection.query(
                     `INSERT INTO notifications (user_id, type, title, message, appointment_id)
                      VALUES (?, 'reschedule_declined', 'Reschedule Request Declined', ?, ?)`,
@@ -299,6 +315,19 @@ function registerBookingRequestRoutes(app, db, io) {
 
             await connection.commit();
 
+            await logActivity(db, {
+                user_id: req.user.user_id,
+                user_role: req.user.role,
+                action: action === 'approve' ? 'APPROVE_RESCHEDULE' : 'DECLINE_RESCHEDULE',
+                target_table: 'appointments',
+                target_id: appointmentId,
+                notes: action === 'approve'
+                    ? `Reschedule approved — moved to ${appt.requested_date} at ${appt.requested_time}.`
+                    : `Reschedule request declined.${decline_reason ? ' Reason: ' + decline_reason : ''}`,
+                ip_address: getIp(req)
+            });
+
+            // Real-time broadcast
             if (io) {
                 io.emit('appointment-updated', { appointment_id: appointmentId });
             }
@@ -395,6 +424,16 @@ function registerBookingRequestRoutes(app, db, io) {
             );
 
             await connection.commit();
+
+            await logActivity(db, {
+                user_id: req.user.user_id,
+                user_role: req.user.role,
+                action: 'RESCHEDULE_APPOINTMENT',
+                target_table: 'appointments',
+                target_id: appointmentId,
+                notes: `Rescheduled by staff to ${appointment_date} at ${time_slot}.${reason ? ' Reason: ' + reason : ''}`,
+                ip_address: getIp(req)
+            });
 
             if (io) {
                 io.emit('appointment-updated', { appointment_id: appointmentId });

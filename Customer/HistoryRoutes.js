@@ -1,4 +1,9 @@
 const authenticateToken = require('../authMiddleware');
+const { logActivity } = require('../Admin/auditLogRoutes');
+
+function getIp(req) {
+    return req.ip || req.headers['x-forwarded-for'];
+}
 
 const MAX_RESCHEDULE_LIMIT = 2; // Maximum allowed reschedules per appointment
 
@@ -13,41 +18,41 @@ function registerHistoryRoutes(app, db, io) {
         try {
             const [rows] = await db.query(
                 `SELECT
-                    a.appointment_id,
-                    s.service_id,
-                    s.label,
-                    a.appointment_date,
-                    a.time_slot,
-                    a.end_time AS end_time_slot,
-                    a.created_at,
-                    a.appointment_status,
-                    a.dentist_note,
-                    a.patient_note,
-                    a.reschedule_status,
-                    COALESCE(a.reschedule_count, 0) AS reschedule_count,
-                    a.requested_date,
-                    a.requested_time,
-                    a.reschedule_reason,
-                    pay.amount,
-                    pay.method,
-                    pay.status AS payment_status,
-                    emp.user_id AS dentist_id,
-                    emp.first_name AS dentist_first_name,
-                    emp.last_name  AS dentist_last_name,
-                    u.public_id,
-                    u.first_name AS patient_first_name,  
-                    u.last_name  AS patient_last_name,   
-                    u.phone,
-                    u.email,
-                    pp.address
-                FROM appointments a
-                JOIN services s ON a.service_id = s.service_id
-                JOIN users u ON a.patient_id = u.user_id
-                LEFT JOIN patient_profiles pp ON a.patient_id = pp.patient_id
-                LEFT JOIN payments pay ON a.appointment_id = pay.appointment_id
-                LEFT JOIN users emp ON a.employee_id = emp.user_id
-                WHERE a.patient_id = ?
-                ORDER BY a.created_at DESC, a.appointment_id DESC`,
+                     a.appointment_id,
+                     s.service_id,
+                     s.label,
+                     a.appointment_date,
+                     a.time_slot,
+                     a.end_time AS end_time_slot,
+                     a.created_at,
+                     a.appointment_status,
+                     a.dentist_note,
+                     a.patient_note,
+                     a.reschedule_status,
+                     COALESCE(a.reschedule_count, 0) AS reschedule_count,
+                     a.requested_date,
+                     a.requested_time,
+                     a.reschedule_reason,
+                     pay.amount,
+                     pay.method,
+                     pay.status AS payment_status,
+                     emp.user_id AS dentist_id,
+                     emp.first_name AS dentist_first_name,
+                     emp.last_name  AS dentist_last_name,
+                     u.public_id,
+                     u.first_name AS patient_first_name,
+                     u.last_name  AS patient_last_name,
+                     u.phone,
+                     u.email,
+                     pp.address
+                 FROM appointments a
+                          JOIN services s ON a.service_id = s.service_id
+                          JOIN users u ON a.patient_id = u.user_id
+                          LEFT JOIN patient_profiles pp ON a.patient_id = pp.patient_id
+                          LEFT JOIN payments pay ON a.appointment_id = pay.appointment_id
+                          LEFT JOIN users emp ON a.employee_id = emp.user_id
+                 WHERE a.patient_id = ?
+                 ORDER BY a.created_at DESC, a.appointment_id DESC`,
                 [req.user.user_id]
             );
 
@@ -76,7 +81,7 @@ function registerHistoryRoutes(app, db, io) {
                 `SELECT patient_id, appointment_status
                  FROM appointments
                  WHERE appointment_id = ?
-                 FOR UPDATE`,
+                     FOR UPDATE`,
                 [appointmentId]
             );
 
@@ -128,6 +133,17 @@ function registerHistoryRoutes(app, db, io) {
 
             await connection.commit();
 
+            await logActivity(db, {
+                user_id: req.user.user_id,
+                user_role: 'patient',
+                action: 'CANCEL_APPOINTMENT',
+                target_table: 'appointments',
+                target_id: Number(appointmentId),
+                notes: `Cancelled by patient.${reason ? ' Reason: ' + reason : ''}`,
+                ip_address: getIp(req)
+            });
+
+            // Real-time broadcast to BookingRequest & Queue
             if (io) {
                 io.emit('appointment-updated', { appointment_id: Number(appointmentId) });
             }
@@ -198,7 +214,7 @@ function registerHistoryRoutes(app, db, io) {
                 `SELECT patient_id, appointment_status, reschedule_status, COALESCE(reschedule_count, 0) AS reschedule_count
                  FROM appointments
                  WHERE appointment_id = ?
-                 FOR UPDATE`,
+                     FOR UPDATE`,
                 [appointmentId]
             );
 
@@ -222,8 +238,8 @@ function registerHistoryRoutes(app, db, io) {
             // ⚠️ Enforce maximum 2 reschedules limit
             if (appt.reschedule_count >= MAX_RESCHEDULE_LIMIT && appt.reschedule_status !== 'requested') {
                 await connection.rollback();
-                return res.status(400).json({ 
-                    message: `You have reached the maximum reschedule limit (${MAX_RESCHEDULE_LIMIT} times) for this appointment.` 
+                return res.status(400).json({
+                    message: `You have reached the maximum reschedule limit (${MAX_RESCHEDULE_LIMIT} times) for this appointment.`
                 });
             }
 
@@ -255,6 +271,17 @@ function registerHistoryRoutes(app, db, io) {
 
             await connection.commit();
 
+            await logActivity(db, {
+                user_id: req.user.user_id,
+                user_role: 'patient',
+                action: 'RESCHEDULE_REQUESTED',
+                target_table: 'appointments',
+                target_id: Number(appointmentId),
+                notes: `Requested reschedule to ${requested_date} at ${requested_time}. Reason: ${reschedule_reason.trim()}`,
+                ip_address: getIp(req)
+            });
+
+            // Real-time broadcast to BookingRequest & Queue!
             if (io) {
                 io.emit('appointment-updated', { appointment_id: Number(appointmentId) });
             }
@@ -290,7 +317,7 @@ function registerHistoryRoutes(app, db, io) {
                 `SELECT patient_id, reschedule_status
                  FROM appointments
                  WHERE appointment_id = ?
-                 FOR UPDATE`,
+                     FOR UPDATE`,
                 [appointmentId]
             );
 
