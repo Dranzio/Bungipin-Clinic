@@ -6,7 +6,7 @@ function getIp(req) {
 }
 
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
-const MAX_ACTIVE_BOOKINGS_LIMIT = 3; // Max active (pending/approved) bookings per patient
+const MAX_ACTIVE_BOOKINGS_LIMIT = 3; // Max active (pend/ing/approved) bookings per patient
 
 function registerBookingRoute(app, db) {
 
