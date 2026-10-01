@@ -5,6 +5,7 @@ const crypto = require('crypto');
 const router = express.Router();
 const db = require('./db');
 const { sendEmail } = require('./Mailer');
+const { passwordReset, verifyRegistration } = require('./emailTemplates');
 const authenticateToken = require('./authMiddleware');
 const { clearAuthCookie, extractToken } = authenticateToken;
 const { logActivity } = require('./Admin/auditLogRoutes');
@@ -113,9 +114,7 @@ router.post('/register', async (req, res) => {
         try {
             await sendEmail({
                 to: email,
-                subject: 'Confirm your Bungipin Dental Clinic account',
-                text: `Hi ${first_name},\n\nThanks for signing up! Confirm your email to finish creating your account. This link expires in ${VERIFY_TOKEN_TTL_HOURS} hours:\n\n${verifyLink}\n\nIf you didn't sign up, you can ignore this email and no account will be created.`,
-                html: `<p>Hi ${safeName},</p><p>Thanks for signing up! Confirm your email to finish creating your account. This link expires in ${VERIFY_TOKEN_TTL_HOURS} hours:</p><p><a href="${verifyLink}">${verifyLink}</a></p><p>If you didn't sign up, you can ignore this email and no account will be created.</p>`
+                ...verifyRegistration({ firstName: first_name, link: verifyLink, hours: VERIFY_TOKEN_TTL_HOURS })
             });
         } catch (mailErr) {
             // Don't leave a pending row nobody can ever activate.
@@ -293,7 +292,7 @@ router.post('/login', async (req, res) => {
             // UPDATE with a comparison, because assignments inside a single
             // UPDATE are evaluated left-to-right and that ordering is easy
             // to get subtly wrong.)
-            
+
             const newAttempts = user.login_attempts + 1;
             const isLocked = newAttempts >= MAX_LOGIN_ATTEMPTS;
             await db.query(
@@ -306,7 +305,7 @@ router.post('/login', async (req, res) => {
                 // eli: moved io initialization up to fix ReferenceError
                 const io = req.app.get('io');
                 if (io) io.emit('user-locked', {userId: user.user_id});
-                
+
                 // update userManage of the account lockout
                 await db.query('UPDATE users SET is_locked = TRUE WHERE user_id = ?', [user.user_id]);
                 await logActivity(db, {
@@ -322,7 +321,7 @@ router.post('/login', async (req, res) => {
                 return res.status(429).json({ error: LOCKED_MESSAGE });
             }
 
-            
+
             await logActivity(db, {
                 user_id: user.user_id,
                 user_email: user.email,
@@ -429,9 +428,7 @@ router.post('/forgot-password', async (req, res) => {
 
         await sendEmail({
             to: email,
-            subject: 'Reset your password',
-            text: `We received a request to reset your password. This link expires in ${RESET_TOKEN_TTL_MINUTES} minutes:\n\n${resetLink}\n\nIf you didn't request this, you can ignore this email.`,
-            html: `<p>We received a request to reset your password. This link expires in ${RESET_TOKEN_TTL_MINUTES} minutes:</p><p><a href="${resetLink}">${resetLink}</a></p><p>If you didn't request this, you can ignore this email.</p>`
+            ...passwordReset({ resetLink, minutes: RESET_TOKEN_TTL_MINUTES })
         });
 
         await logActivity(db, {

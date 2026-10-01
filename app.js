@@ -17,9 +17,8 @@ const registerDoctorScheduleRoutes = require('./Employee/doctorScheduleRoutes');
 const { registerActivityLogRoutes } = require('./Admin/auditLogRoutes');
 
 // payment stuff
-const registerPaymongoWebhook = require("../Services/PaymongoWebhook");
-const registerPaymentRoutes = require("../Services/PaymentRoutes");
-const registerBookingRoute = rerequire("../Customer/BookingRoutes");
+const registerPaymongoWebhook = require("./Services/PaymongoWebhook");
+const registerPaymentRoutes = require("./Services/PaymentRoutes");
 
 
 // show IO in routes

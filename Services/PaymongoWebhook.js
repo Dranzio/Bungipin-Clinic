@@ -7,7 +7,7 @@
 // because signature checking needs the raw, unparsed body.
 
 const express = require('express');
-const { logActivity } = require('./Admin/auditLogRoutes');
+const { logActivity } = require('../Admin/auditLogRoutes');
 const { verifyWebhookSignature, BLOCKING_SQL } = require('./paymongo');
 
 async function handlePaid(db, session) {
