@@ -7,9 +7,14 @@
   <script src="../pageProtection.js"></script>
   <script src="/passwordGate.js"></script>
   <link href="/output.css" rel="stylesheet">
-  <title>Employee Dashboard - Profile</title>
+  <title>Receptionist Dashboard</title>
   <script src="https://kit.fontawesome.com/fc8c3f4103.js" crossorigin="anonymous"></script>
   <script src="../Taskbar/Employee_Sidebar.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
+    body { font-family: 'Poppins', sans-serif; }
+    #paymentModal { transition: opacity 0.2s ease; }
+  </style>
 </head>
 
 <body class="min-h-screen bg-[#F3EFE4] relative flex flex-col md:flex-row antialiased">
@@ -22,22 +27,18 @@
       const sidebar = Array.from(placeholder?.children || [])
         .find(el => !['SCRIPT', 'STYLE', 'LINK'].includes(el.tagName));
       if (!sidebar) return;
-
       const set = (el, prop, value) => { if (el.style[prop] !== value) el.style[prop] = value; };
-
       const apply = () => {
         const desktop = window.innerWidth >= 768;
         set(placeholder, 'flexShrink', '0');
-        set(sidebar, 'position', desktop ? 'sticky' : 'relative');  
+        set(sidebar, 'position', desktop ? 'sticky' : 'relative');
         set(sidebar, 'top', desktop ? '0px' : 'auto');
         set(sidebar, 'height', desktop ? '100vh' : '');
-        set(sidebar, 'overflowY', desktop ? 'auto' : '');           
+        set(sidebar, 'overflowY', desktop ? 'auto' : '');
       };
-
       window.addEventListener('resize', apply);
       apply();
     }
-
     (async () => {
       try {
         const response = await fetch('/Taskbar/Receptionist_Task.html');
@@ -46,38 +47,150 @@
           document.getElementById('sidebar-placeholder').innerHTML = data;
           const currentPage = window.location.pathname.split("/").pop();
           document.querySelectorAll('.nav-link').forEach(link => {
-            if (link.getAttribute('data-page') === currentPage) {
-              link.classList.add('bg-[#FDFCE9]');
-            }
+            if (link.getAttribute('data-page') === currentPage) link.classList.add('bg-[#FDFCE9]');
           });
-          if (typeof initSidebar === 'function') {
-            initSidebar();
-          }
+          if (typeof initSidebar === 'function') initSidebar();
           syncContentOffset();
         }
-      } catch (error) {
-        console.log('Sidebar fallback:', error);
-      }
+      } catch (error) { console.log('Sidebar fallback:', error); }
     })();
   </script>
 
   <!-- CONTENT WRAPPER -->
   <div id="main-content" class="flex-1 min-w-0 min-h-0 overflow-y-auto">
 
+    <!-- Page header -->
     <div class="flex justify-between items-start pt-5 pl-6 pr-4 md:pl-24 md:pr-8">
       <h1 class="text-2xl sm:text-3xl md:text-5xl 2xl:text-[73px] pt-5 font-bold text-[#2A1001] font-['Poppins']">
-        Receptionist Dashboard
+        Payment Management
       </h1>
-      <img
-        src="../assets/logowithtitle.png"
+      <img src="../assets/logowithtitle.png"
         class="w-20 sm:w-24 md:w-28 h-auto object-contain shrink-0"
-        onerror="this.style.display='none'"
-        alt="Logo"/>
+        onerror="this.style.display='none'" alt="Logo"/>
     </div>
     <hr class="border-t border-[#2A1001] mt-2 mb-6" />
 
+    <div class="px-6 md:px-24 mb-10">
+
+      <!-- Header row: title + search -->
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+        <h2 class="text-2xl font-bold text-[#2A1001]">Appointments &amp; Payments</h2>
+        <div class="relative w-full sm:w-72">
+          <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+          <input id="search-input" type="text" placeholder="Search patient or service…"
+            class="w-full pl-9 pr-4 py-2 rounded-full border border-gray-300 bg-white text-sm outline-none focus:ring-2 focus:ring-[#2A1001]/20">
+        </div>
+      </div>
+
+      <!-- Status filter tabs -->
+      <div class="flex gap-4 mb-4 flex-wrap ml-2">
+        <button data-filter="all"      class="filter-tab px-4 py-1.5 rounded-full text-sm font-semibold bg-white text-[#2A1001] cursor-pointer transition-all duration-200 scale-125 ">All</button>
+        <button data-filter="pending"  class="filter-tab px-4 py-1.5 rounded-full text-sm font-semibold bg-[#D5C04D] text-[#2A1001] cursor-pointer transition-all duration-200 hover:opacity-100 hover:scale-125">Pending</button>
+        <button data-filter="paid"     class="filter-tab px-4 py-1.5 rounded-full text-sm font-semibold bg-[#667733] text-[#ECF5E2] cursor-pointer transition-all duration-200 hover:opacity-100 hover:scale-125">Paid</button>
+        <button data-filter="refunded" class="filter-tab px-4 py-1.5 rounded-full text-sm font-semibold bg-[#d8544e] text-[#ECF5E2] cursor-pointer transition-all duration-200 hover:opacity-100 hover:scale-125">Refunded</button>
+      </div>
+
+      <!-- Payments table -->
+      <div class="bg-[#F6F8F3] rounded-2xl shadow overflow-x-auto border border-[#E8ECE1]">
+        <table class="w-full text-left border-collapse">
+          <thead>
+            <tr class="bg-[#667733] text-white text-xs uppercase tracking-wider">
+              <th class="p-4 font-bold rounded-tl-2xl">Patient &amp; Service</th>
+              <th class="p-4 font-bold">Schedule</th>
+              <th class="p-4 font-bold">Amount &amp; Method</th>
+              <th class="p-4 font-bold">Status</th>
+              <th class="p-4 font-bold rounded-tr-2xl">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="payments-tbody">
+            <!-- Dynamically rendered rows -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Empty state -->
+      <div id="empty-state" class="hidden text-center py-16 text-gray-400">
+        <i class="fa-solid fa-calendar-xmark text-4xl mb-3"></i>
+        <p class="text-sm font-medium">No appointments match your filter.</p>
+      </div>
+
+    </div>
   </div>
+  <!-- End Content Wrapper -->
+
+  <!-- ════════════════════════════════════════════
+       ACCEPT PAYMENT MODAL
+  ═════════════════════════════════════════════ -->
+  <div id="paymentModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
+    <div class="bg-white rounded-2xl w-full max-w-md shadow-2xl relative overflow-hidden">
+
+      <!-- Modal header -->
+      <div class="bg-[#667733] px-6 py-4 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <i class="fa-solid fa-money-bill-wave text-[#ECF5E2] text-lg"></i>
+          <h3 class="text-white font-bold text-lg">Accept Payment</h3>
+        </div>
+        <button id="closeModal" class="text-white/70 hover:text-white text-2xl leading-none transition">&times;</button>
+      </div>
+
+      <!-- Form section -->
+      <div id="paymentForm" class="px-6 pt-5 pb-4">
+
+        <!-- Appointment summary card -->
+        <div class="bg-[#FDFCE9] border border-[#D5C04D]/40 rounded-xl p-4 mb-5 flex flex-col gap-2 text-sm text-[#2A1001]">
+          <div class="flex justify-between">
+            <span class="font-semibold text-[#667733] uppercase text-[11px] tracking-wider">Patient</span>
+            <span id="modal-patient" class="font-bold text-right"></span>
+          </div>
+          <div class="flex justify-between">
+            <span class="font-semibold text-[#667733] uppercase text-[11px] tracking-wider">Service</span>
+            <span id="modal-service" class="text-right max-w-[55%] leading-snug"></span>
+          </div>
+          <div class="flex justify-between">
+            <span class="font-semibold text-[#667733] uppercase text-[11px] tracking-wider">Date &amp; Time</span>
+            <span id="modal-datetime" class="text-right"></span>
+          </div>
+          <hr class="border-[#D5C04D]/40 my-0.5">
+          <div class="flex justify-between items-center">
+            <span class="font-semibold text-[#667733] uppercase text-[11px] tracking-wider">Amount Due</span>
+            <span id="modal-amount" class="text-xl font-black text-[#2A1001]"></span>
+          </div>
+        </div>
+
+        <!-- Payment method selector -->
+        <p class="text-[11px] font-extrabold tracking-wider text-[#2A1001] uppercase mb-2">Payment Method</p>
+        <div id="modal-method" class="mb-5 flex items-center justify-center gap-2 p-3 rounded-xl border-2 border-[#2A1001] bg-[#FDFCE9] text-[#2A1001]"> 
+        </div>
+
+        <!-- Confirm & Cancel buttons -->
+        <button id="confirmPayBtn"
+          class="w-full py-3 rounded-full bg-[#667733] hover:bg-[#c2ae3b] text-[#ECF5E2] font-black text-base transition active:scale-95 flex items-center justify-center gap-2 cursor-pointer">
+          <i class="fa-solid fa-check-circle"></i> Confirm Payment
+        </button>
+        <button id="cancelPayBtn"
+          class="w-full mt-2 py-2.5 rounded-full border border-gray-300 text-gray-500 hover:bg-gray-50 font-semibold text-sm transition cursor-pointer">
+          Cancel
+        </button>
+      </div>
+
+      <!-- Success state -->
+      <div id="paymentSuccess" class="hidden px-6 pb-8 pt-4 flex flex-col items-center text-center gap-3">
+        <div class="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center text-green-600 text-3xl">
+          <i class="fa-solid fa-circle-check"></i>
+        </div>
+        <p class="text-lg font-bold text-[#2A1001]">Payment Accepted!</p>
+        <p id="success-summary" class="text-sm text-gray-500 leading-relaxed"></p>
+        <button id="doneBtn"
+          class="mt-2 px-10 py-2.5 rounded-full bg-[#2A1001] text-white font-bold text-sm transition hover:bg-[#3d1a00] cursor-pointer">
+          Done
+        </button>
+      </div>
+
+    </div>
+  </div>
+  <!-- End Modal -->
 
   <script src="/InactivityTimer/InactivityTimer.js"></script>
+  <script src="ReceptionistDashboard.js"></script>
 </body>
 </html>

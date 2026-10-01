@@ -1772,6 +1772,24 @@
       successMessage.classList.add('hidden');
       errorMessage.classList.add('hidden');
 
+      // Repetitive spam check
+      const textInputs = form.querySelectorAll('input[type="text"]:not([readonly]), input[type="email"]:not([readonly]), input[type="password"]');
+      for (const input of textInputs) {
+          const val = input.value.trim();
+          if (val) {
+              const hasRepeatChar = /(.)\1{2,}/.test(val);
+              const hasRepeatPattern = /(.{2,})\1{2,}/.test(val);
+              if (hasRepeatChar || hasRepeatPattern) {
+                  showNotification('error', 'Inputs with highly repetitive characters (e.g. "aaaa", "ababab") are not allowed.');
+                  input.focus();
+                  input.classList.add('input-error');
+                  return;
+              } else {
+                  input.classList.remove('input-error');
+              }
+          }
+      }
+
       if (!validateCompleteForm()) {
         showNotification('error', 'Please answer all required medical sections and resolve errors before saving.');
         return;

@@ -45,8 +45,7 @@
 
     (async () => {
         try {
-            let response = await fetch('/Taskbar/Employee_Task.html');
-            if (!response.ok) response = await fetch('/Taskbar/Admin_Task.html');
+            const response = await fetch('/Taskbar/Receptionist_Task.html');
             if (response.ok) {
                 const data = await response.text();
                 document.getElementById('sidebar-placeholder').innerHTML = data;

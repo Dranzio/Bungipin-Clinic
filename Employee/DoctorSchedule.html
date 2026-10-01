@@ -156,9 +156,27 @@
                     </button>
                 </div>
 
-                <!-- 7-Day Shift Grid Container -->
-                <div id="weeklyShiftGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3.5 transition-all">
-                    <!-- Populated dynamically via JS -->
+                <!-- Week Navigation Toolbar (MS Teams Style) -->
+                <div class="flex items-center gap-2 flex-wrap">
+                    <button type="button" id="calWeekTodayBtn" class="bg-[#FDFCE9] hover:bg-[#D7E3A5] text-[#2A1001] border border-black/15 font-bold text-xs px-4 py-2 rounded-full transition shadow-sm cursor-pointer flex items-center gap-1.5">
+                        <i class="fa-regular fa-calendar"></i> Today
+                    </button>
+                    <button type="button" id="calWeekPrevBtn" class="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 hover:bg-[#D7E3A5] text-[#2A1001] border border-black/10 transition cursor-pointer text-sm">
+                        <i class="fa-solid fa-chevron-left"></i>
+                    </button>
+                    <button type="button" id="calWeekNextBtn" class="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 hover:bg-[#D7E3A5] text-[#2A1001] border border-black/10 transition cursor-pointer text-sm">
+                        <i class="fa-solid fa-chevron-right"></i>
+                    </button>
+                    <span id="calWeekLabel" class="font-extrabold text-base sm:text-lg text-[#2A1001] font-['Poppins'] ml-1">
+                        October 2026
+                    </span>
+                </div>
+
+                <!-- 7-Day Shift Calendar Container (MS Teams Style) -->
+                <div class="w-full overflow-x-auto pb-2">
+                    <div id="weeklyShiftGrid" class="min-w-[700px] sm:min-w-[800px] flex flex-col bg-white border border-[#2A1001]/10 rounded-xl overflow-hidden shadow-sm transition-all">
+                        <!-- Populated dynamically via JS -->
+                    </div>
                 </div>
             </div>
 
