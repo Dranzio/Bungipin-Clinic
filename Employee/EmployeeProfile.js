@@ -36,7 +36,7 @@ function registerEmployeeProfileRoute(app, db) {
         }
 
         const employeeId = req.user.user_id;
-        const { birthday, civil_status, phone, new_password } = req.body;
+        const { birthday, phone, new_password } = req.body;
 
         const connection = await db.getConnection();
 
@@ -58,9 +58,9 @@ function registerEmployeeProfileRoute(app, db) {
 
             await connection.query(
                 `UPDATE employee_profiles
-                 SET birthday = ?, civil_status = ?
+                 SET birthday = ?
                  WHERE employee_id = ?`,
-                [birthday || null, civil_status, employeeId]
+                [birthday || null, employeeId]
             );
 
             await connection.commit();

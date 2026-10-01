@@ -493,15 +493,6 @@ INSERT INTO services (label, price, duration_minutes, required_specialization, i
        ('Root Canal Treatment', 6500.00, 90, 'Endodontist', '../assets/logo.png', TRUE),
        ('Impacted Wisdom Tooth Surgery', 5000.00, 60, 'Oral Surgeon', '../assets/logo.png', TRUE);
 
-INSERT INTO xrays (patient_id, appointment_id, uploaded_by, file_url) VALUES
-    (1, 1, 3, '/xrays/patient1_visit1.png');
-
-INSERT INTO messages (sender_id, receiver_id, content, is_read) VALUES
-    (3, 1, 'Please arrive 10 minutes early for your cleaning.', FALSE);
-
-INSERT INTO notifications (user_id, type, title, message, appointment_id) VALUES
-    (1, 'appointment_status', 'Appointment Approved', 'Your appointment on 2026-09-10 has been approved.', 1);
-
 -- Weekly Doctor Duty Schedules with 12:00 PM - 1:00 PM Lunch Break
 INSERT INTO doctor_schedules (employee_id, day_of_week, start_time, end_time, break_start, break_end, is_active) VALUES
      (3, 0, NULL, NULL, NULL, NULL, FALSE),
@@ -529,9 +520,20 @@ INSERT INTO doctor_schedules (employee_id, day_of_week, start_time, end_time, br
      (@uid6, 6, '08:00:00', '12:00:00', NULL, NULL, TRUE);
 
 -- Initial Appointments with Accurate End Times & Reschedule Count
+-- (moved above xrays/messages/notifications — they reference appointment_id
+-- via foreign key, so the appointments rows must exist first)
 INSERT INTO appointments (patient_id, employee_id, service_id, appointment_date, time_slot, end_time, appointment_status, queue_status, reschedule_status, reschedule_count, patient_note) VALUES
-                                                                                                                                                                                               (1, 3, 2, '2026-09-10', '10:00:00', '10:45:00', 'approved', 'completed', 'none', 0, 'First-time patient'),
-                                                                                                                                                                                               (2, NULL, 3, '2026-09-12', '11:00:00', '11:30:00', 'pending', 'pending', 'none', 0, NULL);
+    (1, 3, 2, '2026-09-10', '10:00:00', '10:45:00', 'approved', 'completed', 'none', 0, 'First-time patient'),
+    (2, NULL, 3, '2026-09-12', '11:00:00', '11:30:00', 'pending', 'pending', 'none', 0, NULL);
 
 INSERT INTO payments (appointment_id, amount, payment_date, method, status) VALUES
     (1, 1500.00, '2026-09-10', 'card', 'paid');
+
+INSERT INTO xrays (patient_id, appointment_id, uploaded_by, file_url) VALUES
+    (1, 1, 3, '/xrays/patient1_visit1.png');
+
+INSERT INTO messages (sender_id, receiver_id, content, is_read) VALUES
+    (3, 1, 'Please arrive 10 minutes early for your cleaning.', FALSE);
+
+INSERT INTO notifications (user_id, type, title, message, appointment_id) VALUES
+    (1, 'appointment_status', 'Appointment Approved', 'Your appointment on 2026-09-10 has been approved.', 1);
