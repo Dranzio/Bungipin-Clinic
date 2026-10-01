@@ -1,8 +1,6 @@
 const authenticateToken = require('../authMiddleware');
 const { logActivity } = require('../Admin/auditLogRoutes');
-
-// paymongo import
-const { createCheckoutSession, BLOCKING_SQL, HOLD_MINUTES } = require('../Services/paymongo');
+const { sendAppointmentEmail } = require('../appointmentEmails');
 
 function getIp(req) {
     return req.ip || req.headers['x-forwarded-for'];
@@ -73,14 +71,12 @@ function registerBookingRoute(app, db) {
             }
 
             // Existing bookings for this dentist on this date block out the time they occupy
-
-            // eli: updated query to use BLOCKING_SQL to block temporary "awaiting_payment"
             const [bookedRows] = await db.query(
                 `SELECT a.time_slot, a.end_time, s.duration_minutes
-                FROM appointments a
-                LEFT JOIN services s ON a.service_id = s.service_id
-                WHERE a.employee_id = ? AND a.appointment_date = ?
-                   AND ${BLOCKING_SQL}`,
+                 FROM appointments a
+                          LEFT JOIN services s ON a.service_id = s.service_id
+                 WHERE a.employee_id = ? AND a.appointment_date = ?
+                   AND a.appointment_status IN ('pending', 'approved')`,
                 [doctorId, date]
             );
 
@@ -185,21 +181,14 @@ function registerBookingRoute(app, db) {
             return res.status(400).json({ message: 'Appointments must be scheduled for a future date and time' });
         }
 
-
-        // eli: check if payment is online to set status and holds properly
-        const methodEnum = ['cash', 'card', 'online'].includes(String(payment_method).toLowerCase())
-            ? String(payment_method).toLowerCase()
-            : 'online';
-        const isOnline = methodEnum === 'online';
-
         // 2. Enforce Max Advance Booking Limit (e.g. 6 Months from today)
         const maxAllowedDate = new Date();
         maxAllowedDate.setMonth(maxAllowedDate.getMonth() + MAX_ADVANCE_MONTHS);
         maxAllowedDate.setHours(23, 59, 59, 999);
 
         if (appointmentDateTime > maxAllowedDate) {
-            return res.status(400).json({ 
-                message: `Appointments can only be scheduled up to ${MAX_ADVANCE_MONTHS} months in advance.` 
+            return res.status(400).json({
+                message: `Appointments can only be scheduled up to ${MAX_ADVANCE_MONTHS} months in advance.`
             });
         }
 
@@ -209,12 +198,11 @@ function registerBookingRoute(app, db) {
             await connection.beginTransaction();
 
             // Active-bookings cap (Max 3)
-            // eli: update active count check to use BLOCKING_SQL so holds count against patient limits
             const [activeRows] = await connection.query(
                 `SELECT COUNT(*) AS active_count
-                FROM appointments a
-                WHERE a.patient_id = ?
-                    AND ${BLOCKING_SQL}`,
+                 FROM appointments
+                 WHERE patient_id = ?
+                   AND appointment_status IN ('pending', 'approved')`,
                 [patientId]
             );
 
@@ -226,9 +214,8 @@ function registerBookingRoute(app, db) {
             }
 
             // Look up every selected service
-            // eli: select 'label" column with price n duration for paymongo checkout session
             const [serviceRows] = await connection.query(
-                'SELECT service_id, COALESCE(service_name, "Dental Service") AS label, price, duration_minutes, is_available FROM services WHERE service_id IN (?)',
+                'SELECT service_id, label, price, duration_minutes, is_available FROM services WHERE service_id IN (?)',
                 [allServiceIds]
             );
 
@@ -248,9 +235,9 @@ function registerBookingRoute(app, db) {
             const [doctorRows] = await connection.query(
                 `SELECT ep.employee_id
                  FROM employee_profiles ep
-                 JOIN users u ON ep.employee_id = u.user_id
+                          JOIN users u ON ep.employee_id = u.user_id
                  WHERE ep.employee_id = ? AND ep.position = 'Dentist' AND u.account_status = 'active'
-                 FOR UPDATE`,
+                     FOR UPDATE`,
                 [employeeId]
             );
             if (doctorRows.length === 0) {
@@ -267,13 +254,12 @@ function registerBookingRoute(app, db) {
             const endTime = `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}:00`;
 
             // Check for overlapping bookings inside the transaction
-            // eli: updated query to use BLOCKING_SQL to block temporary "awaiting_payment"
             const [clashRows] = await connection.query(
-                `SELECT a.appointment_id FROM appointments a
-                WHERE a.employee_id = ? AND a.appointment_date = ?
-                AND ${BLOCKING_SQL}
-                AND a.time_slot < ? AND ? < a.end_time
-                FOR UPDATE`,
+                `SELECT appointment_id FROM appointments
+                 WHERE employee_id = ? AND appointment_date = ?
+                   AND appointment_status IN ('pending', 'approved')
+                   AND time_slot < ? AND ? < end_time
+                     FOR UPDATE`,
                 [employeeId, appointment_date, endTime, time_slot]
             );
             if (clashRows.length > 0) {
@@ -281,20 +267,11 @@ function registerBookingRoute(app, db) {
                 return res.status(409).json({ message: 'This time slot has just been reserved by another patient. Please choose a different slot.' });
             }
 
-            
-            
-            // eli: insert appointment status as 'awaiting_payment' + hold_expires_at if online
-            const statusVal = isOnline ? 'awaiting_payment' : 'pending';
             const [result] = await connection.query(
                 `INSERT INTO appointments
-                 (patient_id, employee_id, service_id, appointment_date, time_slot, end_time, appointment_status, hold_expires_at, queue_status, reschedule_status, reschedule_count, patient_note)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ${isOnline ? 'DATE_ADD(NOW(), INTERVAL ? MINUTE)' : 'NULL'}, 'pending', 'none', 0, ?)`,
-                [
-                    patientId, employeeId, allServiceIds[0], appointment_date, time_slot, endTime,
-                    isOnline ? 'awaiting_payment' : 'pending',
-                    ...(isOnline ? [HOLD_MINUTES] : []),
-                    patient_note || null
-                ]
+                 (patient_id, employee_id, service_id, appointment_date, time_slot, end_time, appointment_status, queue_status, reschedule_status, reschedule_count, patient_note)
+                 VALUES (?, ?, ?, ?, ?, ?, 'pending', 'pending', 'none', 0, ?)`,
+                [patientId, employeeId, allServiceIds[0], appointment_date, time_slot, endTime, patient_note || null]
             );
             const appointmentId = result.insertId;
 
@@ -320,41 +297,10 @@ function registerBookingRoute(app, db) {
                 ip_address: getIp(req)
             });
 
-
-            // eli: generate paymongo checkout session if online payment; CHECK FOR URL CHANGE FOR HOSTING VERCEL AAAAA
-            if (isOnline) {
-                const base = process.env.APP_BASE_URL || 'http://localhost:3000';
-
-                try {
-                    const session = await createCheckoutSession({
-                        appointmentId,
-                        items: serviceRows.map(s => ({ name: s.label, price: s.price })),
-                        successUrl: `${base}/Customer/PaymentSuccess.html?appointment_id=${appointmentId}`,
-                        cancelUrl: `${base}/Customer/Booking.html`
-                    });
-
-                    await db.query(
-                        `UPDATE payments SET paymongo_session_id = ?, checkout_url = ? WHERE appointment_id = ?`,
-                        [session.id, session.checkoutUrl, appointmentId]
-                    );
-
-                    return res.status(201).json({
-                        success: true,
-                        appointment_id: appointmentId,
-                        checkout_url: session.checkoutUrl,
-                        hold_minutes: HOLD_MINUTES
-                    });
-                } catch (payErr) {
-                    console.error('Checkout session error:', payErr.details || payErr);
-                    // Release the held slot immediately if PayMongo API fails
-                    await db.query(
-                        `UPDATE appointments SET appointment_status = 'cancelled', hold_expires_at = NULL WHERE appointment_id = ?`,
-                        [appointmentId]
-                    );
-                    return res.status(502).json({ message: 'Could not start online payment. Please try again or choose Pay in Clinic.' });
-                }
-            }
-
+            await sendAppointmentEmail(db, appointmentId, 'booked', {
+                // appointments only stores the first service; list them all in the email
+                service: serviceRows.map(sv => sv.label).filter(Boolean).join(', ')
+            });
 
             res.status(201).json({
                 success: true,
@@ -372,26 +318,26 @@ function registerBookingRoute(app, db) {
     });
 
     // Automatically cancel past pending appointments that were never attended/approved
-async function autoCancelExpiredAppointments(db, io = null) {
-    try {
-        const [result] = await db.query(`
-            UPDATE appointments
-            SET appointment_status = 'cancelled',
-                patient_note = CONCAT(COALESCE(patient_note, ''), ' [System: Auto-cancelled due to expired schedule]')
-            WHERE appointment_status = 'pending'
-              AND (
-                  appointment_date < CURDATE()
-                  OR (appointment_date = CURDATE() AND end_time < CURTIME())
-              )
-        `);
+    async function autoCancelExpiredAppointments(db, io = null) {
+        try {
+            const [result] = await db.query(`
+                UPDATE appointments
+                SET appointment_status = 'cancelled',
+                    patient_note = CONCAT(COALESCE(patient_note, ''), ' [System: Auto-cancelled due to expired schedule]')
+                WHERE appointment_status = 'pending'
+                  AND (
+                    appointment_date < CURDATE()
+                        OR (appointment_date = CURDATE() AND end_time < CURTIME())
+                    )
+            `);
 
-        if (result.affectedRows > 0 && io) {
-            io.emit('appointment-updated');
+            if (result.affectedRows > 0 && io) {
+                io.emit('appointment-updated');
+            }
+        } catch (err) {
+            console.error('Auto-cancel expired appointments error:', err);
         }
-    } catch (err) {
-        console.error('Auto-cancel expired appointments error:', err);
     }
-}
 
 }
 

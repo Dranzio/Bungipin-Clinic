@@ -1,5 +1,6 @@
 const authenticateToken = require('../authMiddleware');
 const { logActivity } = require('../Admin/auditLogRoutes');
+const { sendAppointmentEmail } = require('../appointmentEmails');
 
 function getIp(req) {
     return req.ip || req.headers['x-forwarded-for'];
@@ -149,6 +150,8 @@ function registerHistoryRoutes(app, db, io) {
                 io.emit('appointment-updated', { appointment_id: Number(appointmentId) });
             }
 
+            await sendAppointmentEmail(db, appointmentId, 'cancelled', { cancelledBy: 'customer', reason });
+
             res.json({
                 message: 'Appointment cancelled successfully',
                 appointment_id: Number(appointmentId)
@@ -216,8 +219,8 @@ function registerHistoryRoutes(app, db, io) {
         maxAllowedDate.setHours(23, 59, 59, 999);
 
         if (reschedDateTime > maxAllowedDate) {
-            return res.status(400).json({ 
-                message: `Rescheduling can only be requested up to ${MAX_ADVANCE_MONTHS} months in advance.` 
+            return res.status(400).json({
+                message: `Rescheduling can only be requested up to ${MAX_ADVANCE_MONTHS} months in advance.`
             });
         }
 
@@ -387,9 +390,9 @@ function registerHistoryRoutes(app, db, io) {
                     patient_note = CONCAT(COALESCE(patient_note, ''), ' [System: Auto-cancelled due to expired schedule]')
                 WHERE appointment_status = 'pending'
                   AND (
-                      appointment_date < CURDATE()
-                      OR (appointment_date = CURDATE() AND end_time < CURTIME())
-                  )
+                    appointment_date < CURDATE()
+                        OR (appointment_date = CURDATE() AND end_time < CURTIME())
+                    )
             `);
 
             if (result.affectedRows > 0 && io) {

@@ -43,7 +43,6 @@
             // From patient_profiles table
             // Ensure date format is YYYY-MM-DD for <input type="date">
             document.getElementById('birthday').value = profileData.birthday ? profileData.birthday.split('T')[0] : '';
-            document.getElementById('civil-status').value = profileData.civil_status || '';
             document.getElementById('secondary-email').value = profileData.secondary_email || '';
             document.getElementById('address').value = profileData.address || '';
             document.getElementById('pregnancy-status').value = profileData.pregnancy_status || 'N/A';
@@ -77,7 +76,6 @@
                 
                 // Fields mapping to patient_profiles table
                 birthday: document.getElementById('birthday').value,
-                civil_status: document.getElementById('civil-status').value,
                 secondary_email: document.getElementById('secondary-email').value,
                 address: document.getElementById('address').value,
                 pregnancy_status: document.getElementById('pregnancy-status').value,
