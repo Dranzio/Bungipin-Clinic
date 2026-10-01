@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Confirm your email</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-[#f5f2eb] min-h-screen flex items-center justify-center p-4">
+<div class="bg-[#ccd6be] p-8 sm:p-10 rounded-3xl shadow-sm w-full max-w-md flex flex-col justify-center">
+
+    <h1 id="heading" class="text-2xl sm:text-3xl font-bold text-[#38220f] mb-2">Confirming your email...</h1>
+    <p id="subtext" class="text-[#38220f]/80 text-sm sm:text-base mb-6">Please wait while we finish setting up your account.</p>
+
+    <div id="statusMessage" class="hidden mb-5 px-4 py-3 rounded-xl text-sm"></div>
+
+    <div class="text-center mt-2">
+        <a id="loginLink" href="login.html" class="hidden text-sm font-medium text-[#38220f] underline hover:text-black transition-colors">Go to Login</a>
+        <a id="registerLink" href="register.html" class="hidden text-sm font-medium text-[#38220f] underline hover:text-black transition-colors">Back to Register</a>
+    </div>
+</div>
+
+<script>
+    const heading = document.getElementById('heading');
+    const subtext = document.getElementById('subtext');
+    const statusMessage = document.getElementById('statusMessage');
+    const loginLink = document.getElementById('loginLink');
+    const registerLink = document.getElementById('registerLink');
+
+    // The token travels as a URL query param from the emailed link (?token=...).
+    const token = new URLSearchParams(window.location.search).get('token');
+
+    function showStatus(text, isError) {
+        statusMessage.textContent = text;
+        statusMessage.classList.remove('hidden', 'bg-red-100', 'text-red-800', 'bg-green-100', 'text-green-800');
+        statusMessage.classList.add(isError ? 'bg-red-100' : 'bg-green-100', isError ? 'text-red-800' : 'text-green-800');
+    }
+
+    function finish(success, message, alreadyConfirmed) {
+        subtext.classList.add('hidden');
+        showStatus(message, !success && !alreadyConfirmed);
+        if (success || alreadyConfirmed) {
+            heading.textContent = 'Email confirmed';
+            loginLink.classList.remove('hidden');
+        } else {
+            heading.textContent = 'Confirmation failed';
+            registerLink.classList.remove('hidden');
+        }
+    }
+
+    async function verify() {
+        if (!token) {
+            finish(false, 'This link is missing its confirmation token. Please use the link from your email, or register again.');
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/auth/verify-registration', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ token })
+            });
+            const result = await response.json().catch(() => ({}));
+
+            if (response.ok) {
+                finish(true, 'Your email is confirmed and your account is ready. You can close this tab and log in from the original page.');
+            } else if (response.status === 409) {
+                finish(false, result.error, true);
+            } else {
+                finish(false, result.error || 'Something went wrong. Please try again.');
+            }
+        } catch (err) {
+            console.error('Verify registration request failed:', err);
+            finish(false, 'Network error. Please check your connection and reload this page.');
+        }
+    }
+
+    verify();
+</script>
+</body>
+</html>

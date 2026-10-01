@@ -24,6 +24,7 @@ DROP TABLE IF EXISTS doctor_schedules;
 DROP TABLE IF EXISTS employee_profiles;
 DROP TABLE IF EXISTS patient_profiles;
 DROP TABLE IF EXISTS users;
+DROP TABLE IF EXISTS pending_registrations;
 
 -- ================= USERS & PROFILES =================
 CREATE TABLE users (
@@ -68,6 +69,21 @@ CREATE TABLE admin_profiles (
        admin_id          INT PRIMARY KEY,
        permission_level  VARCHAR(30),
        FOREIGN KEY (admin_id) REFERENCES users(user_id) ON DELETE CASCADE
+);
+
+CREATE TABLE pending_registrations (
+    pending_id    INT AUTO_INCREMENT PRIMARY KEY,
+    first_name    VARCHAR(50)  NOT NULL,
+    last_name     VARCHAR(50)  NOT NULL,
+    email         VARCHAR(150) NOT NULL,
+    phone         VARCHAR(15)  NOT NULL DEFAULT '',
+    password_hash VARCHAR(255) NOT NULL,
+    sex           CHAR(1)      NOT NULL,
+    token_hash    CHAR(64)     NOT NULL,
+    expires_at    DATETIME     NOT NULL,
+    created_at    TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uq_pending_email (email),
+    UNIQUE KEY uq_pending_token (token_hash)
 );
 
 -- Public ID & Registration Procedure
