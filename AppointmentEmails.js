@@ -1,4 +1,4 @@
-// appointmentEmails.js
+// AppointmentEmails.js
 // One call per route:  await sendAppointmentEmail(db, appointmentId, 'approved');
 //
 // It looks up the patient, service, dentist and schedule from the database,

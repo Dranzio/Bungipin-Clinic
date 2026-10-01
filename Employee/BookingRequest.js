@@ -1,6 +1,6 @@
 const authenticateToken = require('../authMiddleware');
 const { logActivity } = require('../Admin/auditLogRoutes');
-const { sendAppointmentEmail } = require('../appointmentEmails');
+const { sendAppointmentEmail } = require('../AppointmentEmails');
 
 function getIp(req) {
     return req.ip || req.headers['x-forwarded-for'];
