@@ -1,4 +1,9 @@
 const authenticateToken = require('../authMiddleware');
+const { logActivity } = require('../Admin/auditLogRoutes');
+
+function getIp(req) {
+    return req.ip || req.headers['x-forwarded-for'];
+}
 
 function registerBookingRequestRoutes(app, db, io) {
 
@@ -147,6 +152,16 @@ function registerBookingRequestRoutes(app, db, io) {
 
             await connection.commit();
 
+            await logActivity(db, {
+                user_id: req.user.user_id,
+                user_role: req.user.role,
+                action: appointment_status === 'approved' ? 'APPROVE_APPOINTMENT' : 'CANCEL_APPOINTMENT',
+                target_table: 'appointments',
+                target_id: appointmentId,
+                notes: appointment_status === 'approved' ? 'Booking request approved.' : 'Booking request declined.',
+                ip_address: getIp(req)
+            });
+
             // Real-time broadcast
             if (io) {
                 io.emit('appointment-updated', { appointment_id: appointmentId, status: appointment_status });
@@ -213,8 +228,8 @@ function registerBookingRequestRoutes(app, db, io) {
 
                 if (conflict.length > 0) {
                     await connection.rollback();
-                    return res.status(409).json({ 
-                        message: 'Requested slot is already booked by another confirmed patient. Please use "Pick Other Slot".' 
+                    return res.status(409).json({
+                        message: 'Requested slot is already booked by another confirmed patient. Please use "Pick Other Slot".'
                     });
                 }
 
@@ -251,7 +266,7 @@ function registerBookingRequestRoutes(app, db, io) {
 
                 const reasonText = decline_reason ? ` Note: ${decline_reason}` : '';
                 const notifMsg = `Your reschedule request was declined. Your confirmed appointment remains on ${appt.appointment_date} at ${appt.time_slot}.${reasonText}`;
-                
+
                 await connection.query(
                     `INSERT INTO notifications (user_id, type, title, message, appointment_id)
                      VALUES (?, 'reschedule_declined', 'Reschedule Request Declined', ?, ?)`,
@@ -260,6 +275,18 @@ function registerBookingRequestRoutes(app, db, io) {
             }
 
             await connection.commit();
+
+            await logActivity(db, {
+                user_id: req.user.user_id,
+                user_role: req.user.role,
+                action: action === 'approve' ? 'APPROVE_RESCHEDULE' : 'DECLINE_RESCHEDULE',
+                target_table: 'appointments',
+                target_id: appointmentId,
+                notes: action === 'approve'
+                    ? `Reschedule approved — moved to ${appt.requested_date} at ${appt.requested_time}.`
+                    : `Reschedule request declined.${decline_reason ? ' Reason: ' + decline_reason : ''}`,
+                ip_address: getIp(req)
+            });
 
             // Real-time broadcast
             if (io) {
@@ -343,6 +370,16 @@ function registerBookingRequestRoutes(app, db, io) {
 
             await connection.commit();
 
+            await logActivity(db, {
+                user_id: req.user.user_id,
+                user_role: req.user.role,
+                action: 'RESCHEDULE_APPOINTMENT',
+                target_table: 'appointments',
+                target_id: appointmentId,
+                notes: `Rescheduled by staff to ${appointment_date} at ${time_slot}.${reason ? ' Reason: ' + reason : ''}`,
+                ip_address: getIp(req)
+            });
+
             if (io) {
                 io.emit('appointment-updated', { appointment_id: appointmentId });
             }
@@ -358,7 +395,7 @@ function registerBookingRequestRoutes(app, db, io) {
         }
     });
 
-    
+
 }
 
 module.exports = registerBookingRequestRoutes;

@@ -1,4 +1,9 @@
 const authenticateToken = require('../authMiddleware');
+const { logActivity } = require('../Admin/auditLogRoutes');
+
+function getIp(req) {
+    return req.ip || req.headers['x-forwarded-for'];
+}
 
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -259,6 +264,17 @@ function registerBookingRoute(app, db) {
             );
 
             await connection.commit();
+
+            await logActivity(db, {
+                user_id: patientId,
+                user_role: 'patient',
+                action: 'BOOK_APPOINTMENT',
+                target_table: 'appointments',
+                target_id: appointmentId,
+                notes: `Booked ${allServiceIds.length > 1 ? allServiceIds.length + ' services' : 'an appointment'} for ${appointment_date} at ${time_slot}.`,
+                ip_address: getIp(req)
+            });
+
             res.status(201).json({
                 message: 'Booking successfully recorded!',
                 appointment_id: appointmentId
