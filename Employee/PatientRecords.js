@@ -59,7 +59,6 @@ function registerPatientRecordsRoutes(app, db) {
                         u.phone,
                         u.sex,
                         pp.birthday,
-                        pp.civil_status,
                         pp.secondary_email,
                         pp.address,
                         pp.address_street,
