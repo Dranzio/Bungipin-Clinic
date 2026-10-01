@@ -1,7 +1,6 @@
 CREATE DATABASE IF NOT EXISTS defaultdb;
 USE defaultdb;
 
--- ================= DROP INSTANCES =================
 DROP PROCEDURE IF EXISTS sp_get_all_patient_records;
 DROP PROCEDURE IF EXISTS sp_get_patient_record;
 DROP PROCEDURE IF EXISTS sp_get_employee_record;
@@ -58,8 +57,13 @@ CREATE TABLE patient_profiles (
 CREATE TABLE employee_profiles (
     employee_id    INT PRIMARY KEY,
     staff_code     VARCHAR(30) UNIQUE,
+<<<<<<< Updated upstream
     position       VARCHAR(30),                              -- 'Dentist', 'Receptionist'
     specialization VARCHAR(255) DEFAULT 'General Dentist',   -- 👈 Supports Dual Specialization (e.g. 'General Dentist, Orthodontist')
+=======
+    position       VARCHAR(30),                              -- e.g. 'Dentist', 'Receptionist'
+    specialization VARCHAR(100) DEFAULT 'General Dentist',   -- e.g. 'Orthodontist', 'Endodontist'
+>>>>>>> Stashed changes
     birthday       DATE,
     FOREIGN KEY (employee_id) REFERENCES users(user_id) ON DELETE CASCADE
 );
@@ -70,7 +74,7 @@ CREATE TABLE admin_profiles (
     FOREIGN KEY (admin_id) REFERENCES users(user_id) ON DELETE CASCADE
 );
 
--- Public ID Procedure
+-- Public ID & Registration Procedure
 DELIMITER $$
 CREATE PROCEDURE sp_register_user(
     IN p_first_name  VARCHAR(50),
@@ -110,6 +114,7 @@ BEGIN
 END$$
 DELIMITER ;
 
+-- ================= AUDITING & LOGS =================
 CREATE TABLE audit_logs (
     log_id        INT AUTO_INCREMENT PRIMARY KEY,
     admin_id      INT NOT NULL,
@@ -138,19 +143,21 @@ CREATE TABLE activity_logs (
     INDEX idx_action (action)
 );
 
+-- ================= DOCTOR SCHEDULES =================
 CREATE TABLE doctor_schedules (
     schedule_id   INT AUTO_INCREMENT PRIMARY KEY,
     employee_id   INT NOT NULL,
-    day_of_week   TINYINT NOT NULL,          -- 0=Sunday ... 6=Saturday
+    day_of_week   TINYINT NOT NULL CHECK (day_of_week BETWEEN 0 AND 6), -- 0=Sunday ... 6=Saturday
     start_time    TIME NULL,
     end_time      TIME NULL,
     break_start   TIME NULL,
     break_end     TIME NULL,
-    is_active     BOOLEAN NOT NULL DEFAULT FALSE,
+    is_active     BOOLEAN NOT NULL DEFAULT TRUE,
     FOREIGN KEY (employee_id) REFERENCES employee_profiles(employee_id) ON DELETE CASCADE,
     UNIQUE KEY unique_employee_day (employee_id, day_of_week)
 );
 
+-- ================= PATIENT MEDICAL HISTORY =================
 CREATE TABLE health_conditions (
     condition_id  INT AUTO_INCREMENT PRIMARY KEY,
     patient_id    INT NOT NULL,
@@ -173,12 +180,17 @@ CREATE TABLE allergies (
     FOREIGN KEY (patient_id) REFERENCES patient_profiles(patient_id) ON DELETE CASCADE
 );
 
+-- ================= SERVICES & CATALOG =================
 CREATE TABLE services (
     service_id              INT AUTO_INCREMENT PRIMARY KEY,
     label                   VARCHAR(100) NOT NULL,
     price                   DECIMAL(10,2) NOT NULL DEFAULT 0.00,
     duration_minutes        INT NOT NULL DEFAULT 30,
+<<<<<<< Updated upstream
     required_specialization VARCHAR(100) NOT NULL DEFAULT 'General Dentist',
+=======
+    required_specialization VARCHAR(50) NOT NULL DEFAULT 'General Dentistry',
+>>>>>>> Stashed changes
     icon                    VARCHAR(255),
     is_available            BOOLEAN NOT NULL DEFAULT TRUE
 );
@@ -195,7 +207,11 @@ CREATE TABLE appointments (
     appointment_status  ENUM('pending','approved','completed','cancelled') NOT NULL DEFAULT 'pending',
     queue_status        ENUM('pending','waiting','ongoing','completed') NOT NULL DEFAULT 'pending',
     reschedule_status   ENUM('none','requested','approved','declined') NOT NULL DEFAULT 'none',
+<<<<<<< Updated upstream
     reschedule_count    INT NOT NULL DEFAULT 0,  -- 👈 Tracks Reschedule Limit (Max 2)
+=======
+    reschedule_count    INT NOT NULL DEFAULT 0,  -- 👈 Tracks number of reschedules (Max 2)
+>>>>>>> Stashed changes
     requested_date      DATE NULL,
     requested_time      TIME NULL,
     reschedule_reason   VARCHAR(255) NULL,
@@ -209,6 +225,7 @@ CREATE TABLE appointments (
     UNIQUE KEY unique_employee_slot (employee_id, appointment_date, time_slot)
 );
 
+-- ================= PAYMENTS =================
 CREATE TABLE payments (
     payment_id       INT AUTO_INCREMENT PRIMARY KEY,
     appointment_id   INT NOT NULL UNIQUE,
@@ -219,6 +236,7 @@ CREATE TABLE payments (
     FOREIGN KEY (appointment_id) REFERENCES appointments(appointment_id) ON DELETE CASCADE
 );
 
+-- ================= DOCUMENTS, XRAYS & MESSAGES =================
 CREATE TABLE xrays (
     xray_id         INT AUTO_INCREMENT PRIMARY KEY,
     patient_id      INT NOT NULL,
@@ -470,10 +488,16 @@ CALL sp_register_user('Maria', 'Gomez', 'maria.gomez@example.com', '09171112223'
 UPDATE patient_profiles SET birthday = '1990-04-12', address = '123 Mabini St, Quezon City', address_street = '123 Mabini St', address_city = 'Quezon City', address_province = 'Metro Manila' WHERE patient_id = 1;
 UPDATE patient_profiles SET birthday = '1985-11-02', address = '45 Rizal Ave, Manila', address_street = '45 Rizal Ave', address_city = 'Manila', address_province = 'Metro Manila' WHERE patient_id = 2;
 
+<<<<<<< Updated upstream
 -- Dual Specialization Seeds
 UPDATE employee_profiles SET staff_code = 'STF-2026-001', position = 'Dentist', specialization = 'General Dentist', birthday = '1985-06-10' WHERE employee_id = 3;
 UPDATE employee_profiles SET staff_code = 'STF-2026-002', position = 'Dentist', specialization = 'General Dentist, Orthodontist', birthday = '1990-02-20' WHERE employee_id = 4;
 UPDATE employee_profiles SET staff_code = 'STF-2026-003', position = 'Dentist', specialization = 'General Dentist, Endodontist', birthday = '1988-09-03' WHERE employee_id = @uid6;
+=======
+UPDATE employee_profiles SET staff_code = 'STF-2026-001', position = 'Dentist', specialization = 'General Dentist', birthday = '1985-06-10' WHERE employee_id = 3;
+UPDATE employee_profiles SET staff_code = 'STF-2026-002', position = 'Dentist', specialization = 'Orthodontist', birthday = '1990-02-20' WHERE employee_id = 4;
+UPDATE employee_profiles SET staff_code = 'STF-2026-003', position = 'Dentist', specialization = 'Endodontist', birthday = '1988-09-03' WHERE employee_id = @uid6;
+>>>>>>> Stashed changes
 
 UPDATE admin_profiles SET permission_level = 'full_access' WHERE admin_id = 5;
 
