@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- DENIED DIRECT PAGE ACCESS VIA URL -->
+    <!-- DENIED DIRECT PAGE ACCESS VI/A URL -->
     <script src="../pageProtection.js"></script>
     <script src="/passwordGate.js"></script>
     <link href="/output.css" rel="stylesheet">
@@ -68,7 +68,7 @@
 
 <div id="main-content" class="flex-1 min-w-0 md:min-h-0 md:overflow-y-auto">
 
-        <!-- Header with Logo (100% Consistent with Queue & Patient Records) -->
+        <!-- Header with Logo -->
         <div class="flex justify-between items-start pt-5 pl-6 pr-4 md:pl-24 md:pr-8">
             <h1 class="text-2xl sm:text-3xl md:text-5xl 2xl:text-[73px] pt-5 font-bold text-[#2A1001] font-['Poppins']">
                 User Management
@@ -85,10 +85,10 @@
         <!-- Main Page Container with Balanced Max Width -->
         <div class="px-4 sm:px-6 md:px-12 max-w-6xl w-full mx-auto">
 
-            <!-- Controls Bar: Compact Balanced Search Bar + Grouped Action Buttons -->
+            <!-- Controls Bar: Search Bar + Grouped Action Buttons -->
             <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 mb-6">
                 
-                    <!-- Search Bar with Perfectly Centered Icon -->
+                <!-- Search Bar -->
                 <div class="relative w-full sm:max-w-md flex items-center">
                     <span class="absolute left-4 flex items-center pointer-events-none text-gray-400">
                         <i class="fa-solid fa-magnifying-glass text-sm"></i>
@@ -103,7 +103,6 @@
 
                 <!-- Action Controls: Role Filter & New Account Button -->
                 <div class="flex items-center gap-2.5 justify-end shrink-0">
-                   <!-- Role Filter Dropdown with Centered FontAwesome Chevron -->
                     <div class="relative inline-flex items-center">
                         <select id="roleFilter" class="appearance-none h-11 pl-5 pr-10 rounded-full bg-[#D5C04D] hover:bg-[#c2ad3c] font-bold text-[#2A1001] outline-none cursor-pointer text-sm shadow-sm transition">
                             <option value="All" class="bg-white text-[#2A1001]">All Roles</option>
@@ -112,13 +111,11 @@
                             <option value="admin" class="bg-white text-[#2A1001]">Admin</option>
                         </select>
                         
-                        <!-- Centered FontAwesome Chevron Arrow Icon -->
                         <span class="pointer-events-none absolute right-4 flex items-center text-[#2A1001]">
                             <i class="fa-solid fa-chevron-down text-xs font-bold"></i>
                         </span>
                     </div>
 
-                    <!-- New Account Button -->
                     <button id="createAccountBtn" class="h-11 px-5 rounded-full bg-[#D5C04D] hover:bg-[#c2ad3c] transition text-[#2A1001] font-bold cursor-pointer shadow-sm active:scale-95 text-sm whitespace-nowrap flex items-center gap-2">
                         <i class="fa-solid fa-plus text-xs"></i>
                         <span>New Account</span>
@@ -177,19 +174,47 @@
                     </select>
                 </div>
 
+                <!-- Multi-select Specialization Container for Editing -->
                 <div id="editSpecializationWrapper" class="mb-6 hidden">
-                    <label class="block text-xs font-bold text-[#2A1001] uppercase mb-1">Dentist Specialization</label>
-                    <select id="editSpecialization" disabled class="w-full h-10 px-4 rounded-full border border-[#2A1001]/20 outline-none bg-[#dedede] text-[#2c3e2b]/70 font-semibold text-sm transition cursor-not-allowed shadow-inner">
-                        <option value="General Dentist">General Dentist</option>
-                        <option value="Pediatric Dentist">Pediatric Dentist</option>
-                        <option value="Orthodontist">Orthodontist</option>
-                        <option value="Endodontist">Endodontist</option>
-                        <option value="Oral Surgeon">Oral Surgeon</option>
-                        <option value="Periodontist">Periodontist</option>
-                        <option value="Prosthodontist">Prosthodontist</option>
-                        <option value="Oral Pathologist">Oral Pathologist</option>
-                        <option value="Oral Radiologist">Oral Radiologist</option>
-                    </select>
+                    <label class="block text-xs font-bold text-[#2A1001] uppercase mb-1.5">Dentist Specialization (Select multiple if applicable)</label>
+                    <div id="editSpecializationContainer" class="p-3.5 rounded-2xl border border-[#2A1001]/20 bg-[#dedede] transition shadow-inner max-h-48 overflow-y-auto space-y-2">
+                        <label class="flex items-center gap-2 text-xs font-semibold text-[#2A1001] cursor-pointer">
+                            <input type="checkbox" name="editSpecializationOption" value="General Dentist" disabled class="w-4 h-4 accent-[#667733] rounded cursor-not-allowed">
+                            <span>General Dentist</span>
+                        </label>
+                        <label class="flex items-center gap-2 text-xs font-semibold text-[#2A1001] cursor-pointer">
+                            <input type="checkbox" name="editSpecializationOption" value="Pediatric Dentist" disabled class="w-4 h-4 accent-[#667733] rounded cursor-not-allowed">
+                            <span>Pediatric Dentist</span>
+                        </label>
+                        <label class="flex items-center gap-2 text-xs font-semibold text-[#2A1001] cursor-pointer">
+                            <input type="checkbox" name="editSpecializationOption" value="Orthodontist" disabled class="w-4 h-4 accent-[#667733] rounded cursor-not-allowed">
+                            <span>Orthodontist</span>
+                        </label>
+                        <label class="flex items-center gap-2 text-xs font-semibold text-[#2A1001] cursor-pointer">
+                            <input type="checkbox" name="editSpecializationOption" value="Endodontist" disabled class="w-4 h-4 accent-[#667733] rounded cursor-not-allowed">
+                            <span>Endodontist</span>
+                        </label>
+                        <label class="flex items-center gap-2 text-xs font-semibold text-[#2A1001] cursor-pointer">
+                            <input type="checkbox" name="editSpecializationOption" value="Oral Surgeon" disabled class="w-4 h-4 accent-[#667733] rounded cursor-not-allowed">
+                            <span>Oral Surgeon</span>
+                        </label>
+                        <label class="flex items-center gap-2 text-xs font-semibold text-[#2A1001] cursor-pointer">
+                            <input type="checkbox" name="editSpecializationOption" value="Periodontist" disabled class="w-4 h-4 accent-[#667733] rounded cursor-not-allowed">
+                            <span>Periodontist</span>
+                        </label>
+                        <label class="flex items-center gap-2 text-xs font-semibold text-[#2A1001] cursor-pointer">
+                            <input type="checkbox" name="editSpecializationOption" value="Prosthodontist" disabled class="w-4 h-4 accent-[#667733] rounded cursor-not-allowed">
+                            <span>Prosthodontist</span>
+                        </label>
+                        <label class="flex items-center gap-2 text-xs font-semibold text-[#2A1001] cursor-pointer">
+                            <input type="checkbox" name="editSpecializationOption" value="Oral Pathologist" disabled class="w-4 h-4 accent-[#667733] rounded cursor-not-allowed">
+                            <span>Oral Pathologist</span>
+                        </label>
+                        <label class="flex items-center gap-2 text-xs font-semibold text-[#2A1001] cursor-pointer">
+                            <input type="checkbox" name="editSpecializationOption" value="Oral Radiologist" disabled class="w-4 h-4 accent-[#667733] rounded cursor-not-allowed">
+                            <span>Oral Radiologist</span>
+                        </label>
+                    </div>
                 </div>
 
                 <div id="editPermissionWrapper" class="mb-6 hidden">
@@ -365,7 +390,7 @@
                         <label class="block text-xs font-bold text-[#2A1001] uppercase mb-1">Sex</label>
                         <div class="flex flex-nowrap items-center justify-center gap-3 h-10 px-3 rounded-full bg-white border border-[#2A1001]/20 shadow-inner">
                             <label class="flex items-center gap-1.5 text-sm text-[#2A1001] font-medium cursor-pointer whitespace-nowrap">
-                                <input type="radio" name="newSex" value="M" checked class="w-4 h-4 shrink-0 accent-[#2A1001]" /> Male
+                                <input type="radio" name="newSex" value="M" class="w-4 h-4 shrink-0 accent-[#2A1001]" /> Male
                             </label>
                             <label class="flex items-center gap-1.5 text-sm text-[#2A1001] font-medium cursor-pointer whitespace-nowrap">
                                 <input type="radio" name="newSex" value="F" class="w-4 h-4 shrink-0 accent-[#2A1001]" /> Female
@@ -389,19 +414,47 @@
                     </select>
                 </div>
 
+                <!-- Multi-select Specialization Container for New Account (ALL UNCHECKED BY DEFAULT) -->
                 <div id="newSpecializationWrapper" class="mb-4 hidden">
-                    <label class="block text-xs font-bold text-[#2A1001] uppercase mb-1">Dentist Specialization</label>
-                    <select id="newSpecialization" class="w-full h-10 px-4 rounded-full border border-[#2A1001]/20 bg-white outline-none cursor-pointer text-sm font-semibold shadow-inner focus:ring-2 focus:ring-[#667733]/40">
-                        <option value="General Dentist">General Dentist</option>
-                        <option value="Pediatric Dentist">Pediatric Dentist</option>
-                        <option value="Orthodontist">Orthodontist</option>
-                        <option value="Endodontist">Endodontist</option>
-                        <option value="Oral Surgeon">Oral Surgeon</option>
-                        <option value="Periodontist">Periodontist</option>
-                        <option value="Prosthodontist">Prosthodontist</option>
-                        <option value="Oral Pathologist">Oral Pathologist</option>
-                        <option value="Oral Radiologist">Oral Radiologist</option>
-                    </select>
+                    <label class="block text-xs font-bold text-[#2A1001] uppercase mb-1.5">Dentist Specialization (Select multiple if applicable)</label>
+                    <div id="newSpecializationContainer" class="p-3.5 rounded-2xl border border-[#2A1001]/20 bg-white shadow-inner max-h-48 overflow-y-auto space-y-2">
+                        <label class="flex items-center gap-2 text-xs font-semibold text-[#2A1001] cursor-pointer">
+                            <input type="checkbox" name="newSpecializationOption" value="General Dentist" class="w-4 h-4 accent-[#667733] rounded cursor-pointer">
+                            <span>General Dentist</span>
+                        </label>
+                        <label class="flex items-center gap-2 text-xs font-semibold text-[#2A1001] cursor-pointer">
+                            <input type="checkbox" name="newSpecializationOption" value="Pediatric Dentist" class="w-4 h-4 accent-[#667733] rounded cursor-pointer">
+                            <span>Pediatric Dentist</span>
+                        </label>
+                        <label class="flex items-center gap-2 text-xs font-semibold text-[#2A1001] cursor-pointer">
+                            <input type="checkbox" name="newSpecializationOption" value="Orthodontist" class="w-4 h-4 accent-[#667733] rounded cursor-pointer">
+                            <span>Orthodontist</span>
+                        </label>
+                        <label class="flex items-center gap-2 text-xs font-semibold text-[#2A1001] cursor-pointer">
+                            <input type="checkbox" name="newSpecializationOption" value="Endodontist" class="w-4 h-4 accent-[#667733] rounded cursor-pointer">
+                            <span>Endodontist</span>
+                        </label>
+                        <label class="flex items-center gap-2 text-xs font-semibold text-[#2A1001] cursor-pointer">
+                            <input type="checkbox" name="newSpecializationOption" value="Oral Surgeon" class="w-4 h-4 accent-[#667733] rounded cursor-pointer">
+                            <span>Oral Surgeon</span>
+                        </label>
+                        <label class="flex items-center gap-2 text-xs font-semibold text-[#2A1001] cursor-pointer">
+                            <input type="checkbox" name="newSpecializationOption" value="Periodontist" class="w-4 h-4 accent-[#667733] rounded cursor-pointer">
+                            <span>Periodontist</span>
+                        </label>
+                        <label class="flex items-center gap-2 text-xs font-semibold text-[#2A1001] cursor-pointer">
+                            <input type="checkbox" name="newSpecializationOption" value="Prosthodontist" class="w-4 h-4 accent-[#667733] rounded cursor-pointer">
+                            <span>Prosthodontist</span>
+                        </label>
+                        <label class="flex items-center gap-2 text-xs font-semibold text-[#2A1001] cursor-pointer">
+                            <input type="checkbox" name="newSpecializationOption" value="Oral Pathologist" class="w-4 h-4 accent-[#667733] rounded cursor-pointer">
+                            <span>Oral Pathologist</span>
+                        </label>
+                        <label class="flex items-center gap-2 text-xs font-semibold text-[#2A1001] cursor-pointer">
+                            <input type="checkbox" name="newSpecializationOption" value="Oral Radiologist" class="w-4 h-4 accent-[#667733] rounded cursor-pointer">
+                            <span>Oral Radiologist</span>
+                        </label>
+                    </div>
                 </div>
 
                 <div id="newPermissionWrapper" class="mb-4 hidden">
@@ -494,6 +547,19 @@
     document.getElementById('appAlertModal').addEventListener('click', function(e) {
         if (e.target === this) this.classList.add('hidden');
     });
+
+    // Helper functions for multi-select specializations
+    function getSelectedSpecializations(name) {
+        const checked = Array.from(document.querySelectorAll(`input[name="${name}"]:checked`)).map(cb => cb.value.trim());
+        return checked.join(', ');
+    }
+
+    function setSelectedSpecializations(name, specString) {
+        const specs = (specString || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+        document.querySelectorAll(`input[name="${name}"]`).forEach(cb => {
+            cb.checked = specs.includes(cb.value.trim().toLowerCase());
+        });
+    }
 
     // Real-Time Sanitizers for Name inputs
     document.querySelectorAll('.name-sanitized').forEach(input => {
@@ -750,9 +816,9 @@
 
                 <!-- Roles, Email & Session Indicators -->
                 <div class="flex-1">
-                    <p class="font-bold text-[#2A1001] text-sm">
+                    <p class="font-bold text-[#2A1001] text-sm flex flex-wrap items-center gap-1.5">
                         Role: ${escapeHtml(roleLabel(u))}
-                        ${isDentist && u.specialization ? `<span class="ml-2 inline-block px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[#D7E3A5] text-[#2c3e2b] border border-[#c1ccab]">${escapeHtml(u.specialization)}</span>` : ''}
+                        ${isDentist && u.specialization ? `<span class="inline-block px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[#D7E3A5] text-[#2c3e2b] border border-[#c1ccab]">${escapeHtml(u.specialization)}</span>` : ''}
                     </p>
                     <p class="text-sm text-[#2A1001]/70 break-all">${escapeHtml(u.email || '')}</p>
                     ${u.account_status === 'suspended' ? '<span class="text-xs font-bold text-red-600 block mt-0.5">Account Disabled</span>' : ''}
@@ -1052,9 +1118,9 @@
 
                     <div class="col-span-1 sm:col-span-4 flex items-center gap-1.5 schedule-inputs ${isActive ? '' : 'pointer-events-none opacity-40'}">
                         <span class="text-[11px] font-bold text-gray-600 sm:hidden">Lunch:</span>
-                        <input type="time" class="break-start-input flex-1 bg-white border border-[#2A1001]/20 rounded-xl px-2.5 py-1.5 font-bold text-xs text-[#2A1001] outline-none shadow-inner" value="${(sched.break_start || '12:00:00').slice(0, 5)}">
+                        <input type="time" class="break-start-input flex-1 bg-white border border-[#2A1001]/20 rounded-xl px-2.5 py-1.5 font-bold text-xs text-[#2A1001] outline-none shadow-inner" value="${sched.break_start ? String(sched.break_start).slice(0, 5) : '12:00'}">
                         <span class="text-xs font-bold text-[#2A1001]/60">to</span>
-                        <input type="time" class="break-end-input flex-1 bg-white border border-[#2A1001]/20 rounded-xl px-2.5 py-1.5 font-bold text-xs text-[#2A1001] outline-none shadow-inner" value="${(sched.break_end || '13:00:00').slice(0, 5)}">
+                        <input type="time" class="break-end-input flex-1 bg-white border border-[#2A1001]/20 rounded-xl px-2.5 py-1.5 font-bold text-xs text-[#2A1001] outline-none shadow-inner" value="${sched.break_end ? String(sched.break_end).slice(0, 5) : '13:00'}">
                     </div>
                 </div>
                 `;
@@ -1093,6 +1159,14 @@
         document.getElementById('doctorScheduleModal').classList.add('hidden');
     });
 
+    function sanitizeTimeStr(val) {
+        if (!val || typeof val !== 'string') return null;
+        val = val.trim();
+        if (!val) return null;
+        if (val.length === 5) return val + ':00';
+        return val;
+    }
+
     document.getElementById('doctorScheduleForm').addEventListener('submit', async function(e) {
         e.preventDefault();
         const doctorId = document.getElementById('scheduleDoctorId').value;
@@ -1106,18 +1180,17 @@
         const schedules = Array.from(rows).map(r => {
             const dayOfWeek = parseInt(r.dataset.day, 10);
             const isActive = r.querySelector('.day-active-check').checked;
-            const startTime = r.querySelector('.start-time-input').value + ':00';
-            const endTime = r.querySelector('.end-time-input').value + ':00';
-            const breakStart = r.querySelector('.break-start-input').value + ':00';
-            const breakEnd = r.querySelector('.break-end-input').value + ':00';
+            const startVal = r.querySelector('.start-time-input')?.value || '';
+            const endVal = r.querySelector('.end-time-input')?.value || '';
+            const breakStartVal = r.querySelector('.break-start-input')?.value || '';
+            const breakEndVal = r.querySelector('.break-end-input')?.value || '';
 
             return {
                 day_of_week: dayOfWeek,
-                start_time: startTime,
-                end_time: endTime,
-                break_start: breakStart,
-                break_end: breakEnd,
-                slot_interval_minutes: 30,
+                start_time: sanitizeTimeStr(startVal),
+                end_time: sanitizeTimeStr(endVal),
+                break_start: sanitizeTimeStr(breakStartVal),
+                break_end: sanitizeTimeStr(breakEndVal),
                 is_active: isActive ? 1 : 0
             };
         });
@@ -1132,10 +1205,18 @@
                 },
                 body: JSON.stringify({ schedules })
             });
-            if (!res.ok) throw new Error('Failed to update doctor schedule');
+
+            const contentType = res.headers.get('content-type') || '';
+            const result = contentType.includes('application/json')
+                ? await res.json()
+                : { message: await res.text() };
+
+            if (!res.ok) {
+                throw new Error(result.message || 'Failed to update doctor schedule');
+            }
             
             document.getElementById('doctorScheduleModal').classList.add('hidden');
-            showAlert('Schedule Saved', 'Doctor schedule updated successfully.', 'success');
+            showAlert('Schedule Saved', 'Doctor weekly schedule updated successfully.', 'success');
         } catch (err) {
             showAlert('Schedule Update Failed', err.message, 'error');
         } finally {
@@ -1159,7 +1240,7 @@
             el.classList.toggle('cursor-text', !locked);
         });
 
-        ['editPosition', 'editSpecialization', 'editPermission'].forEach(id => {
+        ['editPosition', 'editPermission'].forEach(id => {
             const el = document.getElementById(id);
             if (!el) return;
             el.disabled = locked;
@@ -1167,6 +1248,18 @@
             el.classList.toggle('bg-white', !locked);
             el.classList.toggle('cursor-not-allowed', locked);
             el.classList.toggle('cursor-pointer', !locked);
+        });
+
+        const specContainer = document.getElementById('editSpecializationContainer');
+        if (specContainer) {
+            specContainer.classList.toggle('bg-[#dedede]', locked);
+            specContainer.classList.toggle('bg-white', !locked);
+        }
+
+        document.querySelectorAll('input[name="editSpecializationOption"]').forEach(cb => {
+            cb.disabled = locked;
+            cb.classList.toggle('cursor-not-allowed', locked);
+            cb.classList.toggle('cursor-pointer', !locked);
         });
 
         document.getElementById('submitGroup').classList.toggle('hidden', locked);
@@ -1185,7 +1278,7 @@
             document.getElementById('editEmail').value = originalUserSnapshot.email || '';
             document.getElementById('editPhone').value = originalUserSnapshot.phone || '';
             document.getElementById('editPosition').value = originalUserSnapshot.position || 'Dentist';
-            document.getElementById('editSpecialization').value = originalUserSnapshot.specialization || 'General Dentist';
+            setSelectedSpecializations('editSpecializationOption', originalUserSnapshot.specialization || '');
             document.getElementById('editPermission').value = originalUserSnapshot.permission_level || 'Regular Admin';
         }
         setFormLocked(true);
@@ -1204,7 +1297,7 @@
             const isDentist = (position || 'Dentist') === 'Dentist';
             specWrapper.classList.toggle('hidden', !isDentist);
             if (isDentist) {
-                document.getElementById('editSpecialization').value = specialization || 'General Dentist';
+                setSelectedSpecializations('editSpecializationOption', specialization || '');
             }
         } else if (role === 'admin') {
             posWrapper.classList.add('hidden');
@@ -1299,7 +1392,14 @@
         if (user.role === 'employee') {
             payload.position = document.getElementById('editPosition').value;
             if (payload.position === 'Dentist') {
-                payload.specialization = document.getElementById('editSpecialization').value;
+                const specs = getSelectedSpecializations('editSpecializationOption');
+                if (!specs) {
+                    saveEditBtn.disabled = false;
+                    saveEditBtn.innerHTML = originalText;
+                    showAlert('Validation Error', 'Please select at least one dentist specialization.', 'error');
+                    return;
+                }
+                payload.specialization = specs;
             }
         }
 
@@ -1406,6 +1506,13 @@
         const sexSelected = createAccountForm.querySelector('input[name="newSex"]:checked');
         if (!sexSelected) allFilled = false;
 
+        const role = document.getElementById('newRole').value;
+        const pos = document.getElementById('newPosition').value;
+        if (role === 'employee' && pos === 'Dentist') {
+            const hasSpec = Array.from(document.querySelectorAll('input[name="newSpecializationOption"]:checked')).length > 0;
+            if (!hasSpec) allFilled = false;
+        }
+
         saveCreateBtn.disabled = !allFilled;
 
         const clearFields = [
@@ -1416,15 +1523,19 @@
         ];
 
         const somethingFilled = clearFields.some(field => field.value.trim() !== '');
-        userClearBtn.disabled = !somethingFilled;
+        const hasCheckedSpec = Array.from(document.querySelectorAll('input[name="newSpecializationOption"]:checked')).length > 0;
+        userClearBtn.disabled = !somethingFilled && !sexSelected && !hasCheckedSpec;
     }
 
     document.getElementById('createAccountBtn').addEventListener('click', () => {
         createAccountForm.reset();
 
+        // Ensure sex radio buttons and specialization checkboxes are unselected by default
+        document.querySelectorAll('input[name="newSex"]').forEach(r => { r.checked = false; });
+        document.querySelectorAll('input[name="newSpecializationOption"]').forEach(cb => { cb.checked = false; });
+
         document.getElementById('newRole').value = 'employee';
         document.getElementById('newPosition').value = 'Dentist';
-        document.getElementById('newSpecialization').value = 'General Dentist';
         document.getElementById('newPermission').value = 'Regular Admin';
 
         document.getElementById('newPositionWrapper').classList.remove('hidden');
@@ -1453,13 +1564,17 @@
     document.getElementById('newPosition').addEventListener('change', function () {
         const isDentist = this.value === 'Dentist' && document.getElementById('newRole').value === 'employee';
         document.getElementById('newSpecializationWrapper').classList.toggle('hidden', !isDentist);
+        checkForm();
     });
 
     userClearBtn.addEventListener('click', () => {
         createAccountForm.reset();
+
+        document.querySelectorAll('input[name="newSex"]').forEach(r => { r.checked = false; });
+        document.querySelectorAll('input[name="newSpecializationOption"]').forEach(cb => { cb.checked = false; });
+
         document.getElementById('newRole').value = 'employee';
         document.getElementById('newPosition').value = 'Dentist';
-        document.getElementById('newSpecialization').value = 'General Dentist';
         document.getElementById('newPermission').value = 'Regular Admin';
 
         document.getElementById('newPositionWrapper').classList.remove('hidden');
@@ -1486,6 +1601,11 @@
         const phoneVal = document.getElementById('newPhone').value.trim();
         const role = document.getElementById('newRole').value;
         const selectedSex = document.querySelector('input[name="newSex"]:checked');
+
+        if (!selectedSex) {
+            showAlert('Validation Error', 'Please select a sex (Male or Female).', 'error');
+            return;
+        }
 
         const nameRegex = /^[A-Za-zÀ-ÖØ-öø-ÿ]+([ '-][A-Za-zÀ-ÖØ-öø-ÿ]+)*$/;
         if (!nameRegex.test(firstName) || firstName.length < 2) {
@@ -1521,7 +1641,14 @@
         if (role === 'employee') {
             payload.position = document.getElementById('newPosition').value;
             if (payload.position === 'Dentist') {
-                payload.specialization = document.getElementById('newSpecialization').value;
+                const specs = getSelectedSpecializations('newSpecializationOption');
+                if (!specs) {
+                    saveCreateBtn.disabled = false;
+                    saveCreateBtn.innerHTML = originalText;
+                    showAlert('Validation Error', 'Please select at least one dentist specialization.', 'error');
+                    return;
+                }
+                payload.specialization = specs;
             }
         }
 
@@ -1533,6 +1660,8 @@
             const createdUser = await createUser(payload);
             document.getElementById('createModal').classList.add('hidden');
             createAccountForm.reset();
+            document.querySelectorAll('input[name="newSex"]').forEach(r => { r.checked = false; });
+            document.querySelectorAll('input[name="newSpecializationOption"]').forEach(cb => { cb.checked = false; });
             renderUsers();
 
             showCredentialsModal(
@@ -1549,6 +1678,44 @@
             saveCreateBtn.disabled = false;
             saveCreateBtn.innerHTML = originalText;
             checkForm();
+        }
+    });
+
+    // ================= GLOBAL CTRL + S KEYBOARD SHORTCUT =================
+    window.addEventListener('keydown', function(e) {
+        if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S')) {
+            e.preventDefault(); // Stop default browser page save
+
+            // 1. Doctor Schedule Modal is open
+            const scheduleModal = document.getElementById('doctorScheduleModal');
+            if (scheduleModal && !scheduleModal.classList.contains('hidden')) {
+                const saveScheduleBtn = document.getElementById('saveScheduleBtn');
+                if (saveScheduleBtn && !saveScheduleBtn.disabled) {
+                    document.getElementById('doctorScheduleForm').requestSubmit();
+                }
+                return;
+            }
+
+            // 2. Edit Profile Modal is open and editing is active
+            const editModal = document.getElementById('editModal');
+            if (editModal && !editModal.classList.contains('hidden')) {
+                const submitGroup = document.getElementById('submitGroup');
+                const saveEditBtn = document.getElementById('saveEditBtn');
+                if (submitGroup && !submitGroup.classList.contains('hidden') && saveEditBtn && !saveEditBtn.disabled) {
+                    document.getElementById('editAccountForm').requestSubmit();
+                }
+                return;
+            }
+
+            // 3. Create Account Modal is open
+            const createModal = document.getElementById('createModal');
+            if (createModal && !createModal.classList.contains('hidden')) {
+                const saveCreateBtn = document.getElementById('saveCreateBtn');
+                if (saveCreateBtn && !saveCreateBtn.disabled) {
+                    document.getElementById('createAccountForm').requestSubmit();
+                }
+                return;
+            }
         }
     });
 
