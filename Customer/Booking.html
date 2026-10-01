@@ -348,7 +348,7 @@
         </p>
 
         <div id="success-modal-details" class="w-full bg-[#FDFCE9] border border-black/10 rounded-2xl p-4 text-sm text-left flex flex-col gap-1.5 mt-1">
-            <!-- Injec/ted dynamica//lly: date, time, doctor, services, amount -->
+            <!-- Injected dynamically: date, time, doctor, services, amount -->
         </div>
 
         <button type="button" id="success-modal-ok" class="mt-2 w-full py-2.5 bg-[#667733] hover:bg-[#556022] text-white font-bold rounded-full shadow-md active:scale-95 transition cursor-pointer text-sm">
@@ -356,6 +356,23 @@
         </button>
     </div>
 </div>
+
+<script>
+    // Logic to automatically display the Thank You Modal when returning with payment=success
+    document.addEventListener('DOMContentLoaded', () => {
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('payment') === 'success') {
+            const thankYouModal = document.getElementById('thank-you-modal');
+            thankYouModal?.classList.remove('hidden');
+
+            document.getElementById('thank-you-modal-ok')?.addEventListener('click', () => {
+                thankYouModal.classList.add('hidden');
+                // Clean the URL query string
+                window.history.replaceState({}, document.title, window.location.pathname);
+            });
+        }
+    });
+</script>
 
 </body>
 </html>

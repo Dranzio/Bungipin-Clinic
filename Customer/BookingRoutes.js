@@ -1,6 +1,9 @@
 const authenticateToken = require('../authMiddleware');
 const { logActivity } = require('../Admin/auditLogRoutes');
 
+// paymongo import
+const { createCheckoutSession, BLOCKING_SQL, HOLD_MINUTES } = require('../Services/paymongo');
+
 function getIp(req) {
     return req.ip || req.headers['x-forwarded-for'];
 }
@@ -75,12 +78,14 @@ function registerBookingRoute(app, db) {
             // necessarily in the past so can't collide with a future slot.
             // duration_minutes is pulled in only as a fallback for any legacy
             // row whose end_time wasn't set correctly.
+
+            // eli: updated query to use BLOCKING_SQL to block temporary "awaiting_payment"
             const [bookedRows] = await db.query(
                 `SELECT a.time_slot, a.end_time, s.duration_minutes
-                 FROM appointments a
-                 LEFT JOIN services s ON a.service_id = s.service_id
-                 WHERE a.employee_id = ? AND a.appointment_date = ?
-                   AND a.appointment_status IN ('pending', 'approved')`,
+                FROM appointments a
+                LEFT JOIN services s ON a.service_id = s.service_id
+                WHERE a.employee_id = ? AND a.appointment_date = ?
+                   AND ${BLOCKING_SQL}`,
                 [doctorId, date]
             );
 
@@ -194,6 +199,14 @@ function registerBookingRoute(app, db) {
             return res.status(400).json({ message: 'Appointments must be scheduled for a future date and time' });
         }
 
+
+        // eli: check if payment is online to set status and holds properly
+        const methodEnum = ['cash', 'card', 'online'].includes(String(payment_method).toLowerCase())
+            ? String(payment_method).toLowerCase()
+            : 'online';
+        const isOnline = methodEnum === 'online';
+
+
         const connection = await db.getConnection();
 
         try {
@@ -202,11 +215,13 @@ function registerBookingRoute(app, db) {
             // Active-bookings cap: a patient sitting on several unresolved
             // pending/approved requests at once gets blocked from queuing up
             // more until staff act on (or the patient cancels) an existing one.
+
+            // eli: update active count check to use BLOCKING_SQL so holds count against patient limits
             const [activeRows] = await connection.query(
                 `SELECT COUNT(*) AS active_count
-                 FROM appointments
-                 WHERE patient_id = ?
-                   AND appointment_status IN ('pending', 'approved')`,
+                FROM appointments a
+                WHERE a.patient_id = ?
+                    AND ${BLOCKING_SQL}`,
                 [patientId]
             );
 
@@ -219,8 +234,10 @@ function registerBookingRoute(app, db) {
 
             // Price AND duration both come from the database, never the
             // client — look up every selected service in one go.
+
+            // eli: select 'label" column with price n duration for paymongo checkout session
             const [serviceRows] = await connection.query(
-                'SELECT service_id, price, duration_minutes, is_available FROM services WHERE service_id IN (?)',
+                'SELECT service_id, COALESCE(service_name, "Dental Service") AS label, price, duration_minutes, is_available FROM services WHERE service_id IN (?)',
                 [allServiceIds]
             );
 
@@ -269,12 +286,14 @@ function registerBookingRoute(app, db) {
             // block slots that start partway through it. 'completed'
             // appointments are excluded since they're necessarily in the
             // past and can't overlap a future slot being booked here.
+            
+            // eli: updated query to use BLOCKING_SQL to block temporary "awaiting_payment"
             const [clashRows] = await connection.query(
-                `SELECT appointment_id FROM appointments
-                 WHERE employee_id = ? AND appointment_date = ?
-                   AND appointment_status IN ('pending', 'approved')
-                   AND time_slot < ? AND ? < end_time
-                 FOR UPDATE`,
+                `SELECT a.appointment_id FROM appointments a
+                WHERE a.employee_id = ? AND a.appointment_date = ?
+                AND ${BLOCKING_SQL}
+                AND a.time_slot < ? AND ? < a.end_time
+                FOR UPDATE`,
                 [employeeId, appointment_date, endTime, time_slot]
             );
             if (clashRows.length > 0) {
@@ -297,11 +316,19 @@ function registerBookingRoute(app, db) {
             // reschedule feature, but please confirm these columns actually
             // exist (and on main's copy of the table too) before running
             // this, or the INSERT will fail with an unknown-column error.
+            
+            // eli: insert appointment status as 'awaiting_payment' + hold_expires_at if online
+            const statusVal = isOnline ? 'awaiting_payment' : 'pending';
             const [result] = await connection.query(
                 `INSERT INTO appointments
-                 (patient_id, employee_id, service_id, appointment_date, time_slot, end_time, appointment_status, queue_status, reschedule_status, reschedule_count, patient_note)
-                 VALUES (?, ?, ?, ?, ?, ?, 'pending', 'pending', 'none', 0, ?)`,
-                [patientId, employeeId, allServiceIds[0], appointment_date, time_slot, endTime, patient_note || null]
+                 (patient_id, employee_id, service_id, appointment_date, time_slot, end_time, appointment_status, hold_expires_at, queue_status, reschedule_status, reschedule_count, patient_note)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ${isOnline ? 'DATE_ADD(NOW(), INTERVAL ? MINUTE)' : 'NULL'}, 'pending', 'none', 0, ?)`,
+                [
+                    patientId, employeeId, allServiceIds[0], appointment_date, time_slot, endTime,
+                    isOnline ? 'awaiting_payment' : 'pending',
+                    ...(isOnline ? [HOLD_MINUTES] : []),
+                    patient_note || null
+                ]
             );
             const appointmentId = result.insertId;
 
@@ -329,6 +356,42 @@ function registerBookingRoute(app, db) {
                 notes: `Booked ${allServiceIds.length > 1 ? allServiceIds.length + ' services' : 'an appointment'} for ${appointment_date} at ${time_slot}.`,
                 ip_address: getIp(req)
             });
+
+
+            // eli: generate paymongo checkout session if online payment; CHECK FOR URL CHANGE FOR HOSTING VERCEL AAAAA
+            if (isOnline) {
+                const base = process.env.APP_BASE_URL || 'http://localhost:3000';
+
+                try {
+                    const session = await createCheckoutSession({
+                        appointmentId,
+                        items: serviceRows.map(s => ({ name: s.label, price: s.price })),
+                        successUrl: `${base}/Customer/PaymentSuccess.html?appointment_id=${appointmentId}`,
+                        cancelUrl: `${base}/Customer/Booking.html`
+                    });
+
+                    await db.query(
+                        `UPDATE payments SET paymongo_session_id = ?, checkout_url = ? WHERE appointment_id = ?`,
+                        [session.id, session.checkoutUrl, appointmentId]
+                    );
+
+                    return res.status(201).json({
+                        success: true,
+                        appointment_id: appointmentId,
+                        checkout_url: session.checkoutUrl,
+                        hold_minutes: HOLD_MINUTES
+                    });
+                } catch (payErr) {
+                    console.error('Checkout session error:', payErr.details || payErr);
+                    // Release the held slot immediately if PayMongo API fails
+                    await db.query(
+                        `UPDATE appointments SET appointment_status = 'cancelled', hold_expires_at = NULL WHERE appointment_id = ?`,
+                        [appointmentId]
+                    );
+                    return res.status(502).json({ message: 'Could not start online payment. Please try again or choose Pay in Clinic.' });
+                }
+            }
+
 
             res.status(201).json({
                 success: true,
