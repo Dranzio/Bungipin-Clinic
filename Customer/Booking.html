@@ -7,7 +7,7 @@
     <script src="../pageProtection.js"></script>
     <title>Booking Dental Appointment</title>
     <link rel="stylesheet" href="../output.css">
-    <!-- Tailwind CDN Fallback -->
+    <!-- Tailwind CDN Fallback for mi/ssing builds -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://kit.fontawesome.com/fc8c3f4103.js" crossorigin="anonymous"></script>
     <script src="/Taskbar/Customer_Sidebar.js"></script>
@@ -113,7 +113,7 @@
                     <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-2">
                         <div>
                             <h2 class="font-extrabold text-lg sm:text-xl text-[#2A1001]">Select Treatment Services</h2>
-                            <p class="text-xs text-[#2A1001]/70">Tap cards to select. Tap <span class="font-bold text-[#667733]">"Details"</span> to read procedure explanations.</p>
+                            <p class="text-xs text-[#2A1001]/70">Click treatments to add them. We automatically calculate total procedure duration &amp; bill.</p>
                         </div>
                         <div class="flex flex-wrap items-center gap-2">
                             <!-- Live Duration Badge -->
@@ -200,44 +200,6 @@
     </div>
 </div>
 
-<!-- ================= PROCEDURE DETAILS MODAL ================= -->
-<div id="procedure-details-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center hidden z-50 p-4">
-    <div class="bg-white rounded-3xl w-full max-w-md p-5 sm:p-6 flex flex-col gap-3.5 relative shadow-2xl border-2 border-black/10 max-h-[85vh] overflow-hidden">
-        <button type="button" id="close-procedure-modal-btn" class="absolute top-4 right-4 w-8 h-8 flex items-center justify-center text-xl font-extrabold text-[#382414]/60 hover:text-[#382414] hover:bg-gray-100 rounded-full transition cursor-pointer" aria-label="Close">&times;</button>
-        
-        <div class="flex items-center gap-3 border-b border-black/10 pb-3 pr-8">
-            <div id="proc-modal-icon-wrap" class="w-12 h-12 rounded-2xl bg-[#D7E3A5] flex items-center justify-center shrink-0 border border-black/10">
-                <img id="proc-modal-icon" src="../assets/Checkup.png" class="w-8 h-8 object-contain" alt="Service Icon">
-            </div>
-            <div>
-                <span id="proc-modal-spec-badge" class="text-[10px] font-black uppercase tracking-wider text-[#667733] bg-[#D7E3A5]/40 px-2 py-0.5 rounded-md">General Dentist</span>
-                <h3 id="proc-modal-title" class="font-extrabold text-base sm:text-lg text-[#2A1001] leading-tight mt-0.5">Dental Service</h3>
-            </div>
-        </div>
-
-        <div class="flex items-center justify-between bg-[#FDFCE9] border border-black/10 rounded-xl px-3.5 py-2 text-xs font-bold">
-            <span class="text-[#2A1001]/70"><i class="fa-regular fa-clock mr-1 text-amber-600"></i>Duration: <strong id="proc-modal-duration" class="text-[#2A1001]">30 mins</strong></span>
-            <span class="text-[#667733] text-sm font-black" id="proc-modal-price">₱0.00</span>
-        </div>
-
-        <div>
-            <span class="text-[11px] font-extrabold uppercase tracking-wider text-[#2A1001]/60 block mb-1">Procedure Details &amp; Clinical Explanation:</span>
-            <div id="proc-modal-description" class="bg-[#F8F6F0] rounded-2xl p-3.5 border border-black/10 text-xs sm:text-sm text-[#2A1001]/90 leading-relaxed font-medium max-h-48 overflow-y-auto break-words whitespace-pre-line">
-                <!-- Text injected dynamically -->
-            </div>
-        </div>
-
-        <div class="pt-2 border-t border-black/10 flex gap-2.5">
-            <button type="button" id="proc-modal-toggle-btn" class="flex-1 py-3 bg-[#667733] hover:bg-[#556022] text-white font-bold rounded-full shadow-md active:scale-95 transition cursor-pointer text-xs sm:text-sm flex items-center justify-center gap-1.5">
-                <i class="fa-solid fa-check"></i> Select This Treatment
-            </button>
-            <button type="button" id="proc-modal-close-btn" class="px-5 py-3 bg-gray-100 hover:bg-gray-200 text-[#2A1001] font-bold rounded-full transition cursor-pointer text-xs sm:text-sm">
-                Close
-            </button>
-        </div>
-    </div>
-</div>
-
 <!-- ================= 1. APPOINTMENT SUMMARY RECEIPT MODAL ================= -->
 <div id="receipt-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center hidden z-50 p-3 sm:p-4">
     <div class="bg-white rounded-3xl w-full max-w-lg p-5 sm:p-7 flex flex-col gap-4 relative shadow-2xl border-2 border-black/10 max-h-[90vh] overflow-y-auto">
@@ -268,77 +230,22 @@
                     <i class="fa-solid fa-money-bill-wave"></i> Pay in Clinic (Cash)
                 </button>
             </div>
+            <p class="text-[11px] text-[#2A1001]/60 text-center leading-snug">
+                <i class="fa-solid fa-lock mr-1"></i>Pay Online opens PayMongo&rsquo;s secure page (GCash, Maya, card, QR Ph).
+                Your slot is held for 15 minutes while you pay.
+            </p>
         </div>
     </div>
 </div>
 
-<!-- ================= 2. RESPONSIVE PHILIPPINES ONLINE PAYMENT MODAL ================= -->
-<div id="online-payment-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center hidden z-[60] p-3 sm:p-4">
-    <div class="bg-white rounded-3xl w-full max-w-lg p-4 sm:p-6 flex flex-col max-h-[90vh] shadow-2xl border-2 border-black/10">
-
-        <div class="flex items-center justify-between border-b border-black/10 pb-3 shrink-0">
-            <div class="flex items-center gap-2.5">
-                <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-[#D7E3A5] flex items-center justify-center text-base sm:text-lg text-[#667733] shrink-0">
-                    <i class="fa-solid fa-shield-halved"></i>
-                </div>
-                <div>
-                    <h2 class="font-extrabold text-sm sm:text-lg text-[#2c3e2b] leading-tight">Secure Online Payment</h2>
-                    <p class="text-[10px] sm:text-xs text-[#2c3e2b]/60">Select payment channel &amp; details</p>
-                </div>
-            </div>
-            <div class="flex items-center gap-2.5 sm:gap-3">
-                <div class="text-right">
-                    <span class="text-[9px] uppercase font-bold text-[#2A1001]/60 block leading-none">Total Due</span>
-                    <span id="onlinePayAmountText" class="font-black text-sm sm:text-base text-[#667733]">₱0.00</span>
-                </div>
-                <button type="button" id="close-online-payment-btn" class="w-8 h-8 flex items-center justify-center text-xl font-extrabold text-[#382414]/60 hover:text-[#382414] hover:bg-gray-100 rounded-full transition leading-none cursor-pointer shrink-0" aria-label="Close">&times;</button>
-            </div>
-        </div>
-
-        <div class="flex-1 overflow-y-auto overscroll-contain py-3 flex flex-col gap-3 pr-0.5">
-            <div class="grid grid-cols-3 sm:grid-cols-5 gap-1.5" id="channelSelector">
-                <button type="button" data-channel="gcash" class="channel-tab-btn bg-[#D7E3A5]/20 border-2 border-[#667733] ring-1 ring-[#667733] text-[#005CEE] rounded-xl py-1.5 px-2 flex flex-col items-center justify-center gap-0.5 font-bold shadow-sm hover:scale-[1.02] transition active:scale-95 cursor-pointer">
-                    <span class="font-black text-xs sm:text-sm">GCash</span>
-                    <span class="text-[8px] sm:text-[9px] text-gray-500 font-medium">E-Wallet</span>
-                </button>
-                <button type="button" data-channel="maya" class="channel-tab-btn bg-white border border-black/15 text-gray-800 rounded-xl py-1.5 px-2 flex flex-col items-center justify-center gap-0.5 font-bold shadow-sm hover:scale-[1.02] transition active:scale-95 cursor-pointer">
-                    <span class="font-black text-xs sm:text-sm text-green-600">Maya</span>
-                    <span class="text-[8px] sm:text-[9px] text-gray-500 font-medium">E-Wallet</span>
-                </button>
-                <button type="button" data-channel="gotyme" class="channel-tab-btn bg-white border border-black/15 text-gray-800 rounded-xl py-1.5 px-2 flex flex-col items-center justify-center gap-0.5 font-bold shadow-sm hover:scale-[1.02] transition active:scale-95 cursor-pointer">
-                    <span class="font-black text-xs sm:text-sm text-purple-700">GoTyme</span>
-                    <span class="text-[8px] sm:text-[9px] text-gray-500 font-medium">Digital Bank</span>
-                </button>
-                <button type="button" data-channel="paypal" class="channel-tab-btn bg-white border border-black/15 text-gray-800 rounded-xl py-1.5 px-2 flex flex-col items-center justify-center gap-0.5 font-bold shadow-sm hover:scale-[1.02] transition active:scale-95 cursor-pointer">
-                    <i class="fa-brands fa-paypal text-xs text-[#003087]"></i>
-                    <span class="text-[10px] font-bold">PayPal</span>
-                </button>
-                <button type="button" data-channel="card" class="channel-tab-btn bg-white border border-black/15 text-gray-800 rounded-xl py-1.5 px-2 flex flex-col items-center justify-center gap-0.5 font-bold shadow-sm hover:scale-[1.02] transition active:scale-95 cursor-pointer col-span-2 sm:col-span-1">
-                    <i class="fa-solid fa-credit-card text-xs text-blue-700"></i>
-                    <span class="text-[10px] font-bold">Card</span>
-                </button>
-            </div>
-
-            <div id="channelContentBox" class="w-full bg-[#FDFCE9] border border-black/10 p-3 sm:p-4 rounded-2xl"></div>
-        </div>
-
-        <div class="pt-2 border-t border-black/10 shrink-0">
-            <button type="button" id="submitOnlineBookingBtn" class="w-full py-3 bg-[#D5C04D] hover:bg-[#c4b03f] text-[#2A1001] font-black text-sm sm:text-base rounded-full shadow-md active:scale-95 transition transform flex items-center justify-center gap-2 cursor-pointer">
-                <i class="fa-solid fa-check-circle"></i> Confirm &amp; Finalize Booking
-            </button>
-        </div>
-
-    </div>
-</div>
-
-<!-- ================= 3. VALIDATION / NOTICE MODAL ===/============== -->
+<!-- ================= 3. VALIDATION MODAL ================= -->
 <div id="validation-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center hidden z-[70] p-4">
     <div class="bg-white rounded-3xl w-full max-w-sm p-6 sm:p-8 flex flex-col items-center gap-3 text-center shadow-xl border-2 border-black/10">
-        <div id="validation-modal-icon-wrap" class="w-14 h-14 rounded-full bg-amber-100 flex items-center justify-center text-amber-600">
-            <i id="validation-modal-icon" class="fa-solid fa-triangle-exclamation text-2xl"></i>
+        <div class="w-14 h-14 rounded-full bg-amber-50 flex items-center justify-center">
+            <i class="fa-solid fa-triangle-exclamation text-amber-500 text-2xl"></i>
         </div>
-        <h2 id="validation-modal-title" class="font-extrabold text-lg text-[#2A1001]">Booking Notice</h2>
-        <p id="validation-modal-text" class="text-xs sm:text-sm text-[#2A1001]/75 leading-relaxed font-medium whitespace-pre-line"></p>
+        <h2 class="font-extrabold text-lg text-[#2A1001]">Incomplete Booking</h2>
+        <p id="validation-modal-text" class="text-xs sm:text-sm text-[#2A1001]/70 leading-relaxed"></p>
         <button type="button" id="validation-modal-ok" class="mt-2 w-full py-2.5 bg-[#667733] hover:bg-[#556022] text-white font-bold rounded-full shadow-md active:scale-95 transition cursor-pointer text-sm">
             Okay, Got It
         </button>
@@ -371,7 +278,9 @@
             Your appointment has been successfully booked. A confirmation has been logged to your account.
         </p>
 
-        <div id="success-modal-details" class="w-full bg-[#FDFCE9] border border-black/10 rounded-2xl p-4 text-sm text-left flex flex-col gap-1.5 mt-1"></div>
+        <div id="success-modal-details" class="w-full bg-[#FDFCE9] border border-black/10 rounded-2xl p-4 text-sm text-left flex flex-col gap-1.5 mt-1">
+            <!-- Injected dynamically: date, time, doctor, services, amount -->
+        </div>
 
         <button type="button" id="success-modal-ok" class="mt-2 w-full py-2.5 bg-[#667733] hover:bg-[#556022] text-white font-bold rounded-full shadow-md active:scale-95 transition cursor-pointer text-sm">
             Done
@@ -396,6 +305,5 @@
     });
 </script>
 
-  <script src="/InactivityTimer/InactivityTimer.js"></script>
 </body>
 </html>

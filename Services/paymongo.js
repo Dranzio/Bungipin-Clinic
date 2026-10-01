@@ -5,14 +5,9 @@ const BASE = 'https://api.paymongo.com';
 const HOLD_MINUTES = 15;
 
 // Which appointments currently occupy a slot. Use with the table alias "a".
-// An 'awaiting_payment' row only blocks while its hold hasn't expired, so an
+// A 'pending' row only blocks while its hold hasn't expired, so an
 // abandoned checkout frees the slot automatically (no cron required).
-const BLOCKING_SQL = `(
-    a.appointment_status IN ('pending','approved')
-    OR (
-        a.appointment_status = 'awaiting_payment' 
-        AND a.hold_expires_at > NOW()
-    ))`;
+const BLOCKING_SQL = `(a.appointment_status IN ('pending','approved')`;
 
 function authHeader() {
     // Secret key is the Basic-auth username; the trailing colon = empty password.

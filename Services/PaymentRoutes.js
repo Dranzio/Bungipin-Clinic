@@ -5,8 +5,8 @@
 //   PATCH  /api/payments/:appointmentId/mark-paid     - Receptionist marks cash/card payment as paid
 //   POST   /api/payments/:appointmentId/refund        - Admin/receptionist issues a refund via PayMongo
 
-const authenticateToken = require('./authMiddleware');
-const { logActivity } = require('./Admin/auditLogRoutes');
+const authenticateToken = require('../authMiddleware');
+const { logActivity } = require('../Admin/auditLogRoutes');
 
 // eli to eli: PayMongo uses Base64-encoded secret key as the Authorization header.
 // Buffer.from(...).toString('base64') does that encoding.
