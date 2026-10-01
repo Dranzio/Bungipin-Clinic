@@ -2,13 +2,13 @@
 // One call per route:  await sendAppointmentEmail(db, appointmentId, 'approved');
 //
 // It looks up the patient, service, dentist and schedule from the database,
-// builds the right email from emailTemplates.js and sends it. It NEVER throws,
+// builds the right email from EmailTemplates.js and sends it. It NEVER throws,
 // so a mail problem can't turn an already-committed booking/approval into a
 // 500 error. Always `await` it before sending the response: on Vercel the
 // function can be frozen the moment the response goes out, which would kill
 // an email that is still in flight.
 
-const T = require('./emailTemplates');
+const T = require('./EmailTemplates');
 
 const KINDS = {
     booked: T.appointmentBooked,

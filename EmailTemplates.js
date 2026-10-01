@@ -1,4 +1,4 @@
-// emailTemplates.js
+// EmailTemplates.js
 // One place for every email the app sends. Each builder returns
 // { subject, text, html } which can be spread straight into sendEmail():
 //
