@@ -414,21 +414,37 @@
           </div>
         </div>
 
-        <!-- ── 4. Change Password ── -->
+        <!-- ── Change Password ── -->
         <div class="relative w-full bg-[#D7E3A5] rounded-2xl p-5 sm:p-7 pt-8 sm:pt-9 shadow-sm border border-[#d2dbbe]">
           <span class="absolute -top-3.5 left-4 sm:left-6 bg-[#667733] text-white text-[10px] sm:text-xs font-bold px-3 sm:px-4 py-1.5 rounded-full tracking-wider uppercase shadow-sm">Change Password</span>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 sm:gap-y-5">
             <div class="flex flex-col gap-1.5">
               <label for="new-password" class="text-[11px] font-extrabold tracking-wider text-[#2A1001] uppercase">New Account Password:</label>
-              <input type="password" id="new-password" name="new_password" placeholder="Enter New Password (min. 8 chars)" maxlength="64"
-                class="w-full px-4 py-2.5 rounded-full bg-white text-[#2c3e2b] font-medium text-sm outline-none shadow-inner border border-[#c1ccab] focus:ring-2 focus:ring-[#4a5e3b]/50">
-              <span id="passwordError" class="text-[11px] text-red-600 font-bold hidden px-3"></span>
+              <div class="relative w-full mb-8">
+                <input type="password" id="new-password" name="new_password" placeholder="Enter New Password" maxlength="25"
+                  class="w-full px-4 py-2.5 pr-16 rounded-full bg-white text-[#2c3e2b] font-medium text-sm outline-none shadow-inner border border-[#c1ccab] focus:ring-2 focus:ring-[#4a5e3b]/50">
+                <button type="button" id="ShowPass" aria-label="Show Password"
+                  class="absolute right-4 top-0 h-full flex items-center cursor-pointer text-sm text-gray-500 hover:text-gray-700 font-medium">Show</button>
+                <div id="StrengthBars" class="flex gap-2 mt-2.5 mb-[5px] w-[95%] mx-auto">
+                    <div class="StrengthCap flex-1 h-[8px] rounded-[99px] bg-[#808a92]" id="Weak"></div>
+                    <div class="StrengthCap flex-1 h-[8px] rounded-[99px] bg-[#808a92]" id="Medium"></div>
+                    <div class="StrengthCap flex-1 h-[8px] rounded-[99px] bg-[#808a92]" id="Good"></div>
+                    <div class="StrengthCap flex-1 h-[8px] rounded-[99px] bg-[#808a92]" id="Strong"></div>
+                </div>
+                <p class="absolute left-0 top-[110%] text-xs text-[#2A1001]">
+                    Strength: <span id="PassStrength" class="font-bold"></span>
+                </p>
+              </div>
+              <div id="passwordWarning" class="text-red-700 text-xs font-semibold hidden mb-2"></div>
             </div>
             <div class="flex flex-col gap-1.5">
               <label for="confirm-password" class="text-[11px] font-extrabold tracking-wider text-[#2A1001] uppercase">Confirm Account Password:</label>
-              <input type="password" id="confirm-password" name="confirm_password" placeholder="Re-enter new password" maxlength="64"
-                class="w-full px-4 py-2.5 rounded-full bg-white text-[#2c3e2b] font-medium text-sm outline-none shadow-inner border border-[#c1ccab] focus:ring-2 focus:ring-[#4a5e3b]/50">
-              <span id="confirmPasswordError" class="text-[11px] text-red-600 font-bold hidden px-3"></span>
+              <div class="relative w-full">
+                <input type="password" id="confirm-password" name="confirm_password" placeholder="Re-enter new password" maxlength="25"
+                  class="w-full px-4 py-2.5 pr-16 rounded-full bg-white text-[#2c3e2b] font-medium text-sm outline-none shadow-inner border border-[#c1ccab] focus:ring-2 focus:ring-[#4a5e3b]/50">
+                <button type="button" id="ConShowEye" aria-label="Show Password"
+                  class="absolute right-4 top-0 h-full flex items-center cursor-pointer text-sm text-gray-500 hover:text-gray-700 font-medium">Show</button>
+              </div>
             </div>
           </div>
         </div>
@@ -489,6 +505,128 @@
     const dosageOtherInput = document.getElementById('dosageOtherInput');
     const successMessage  = document.getElementById('successMessage');
     const errorMessage    = document.getElementById('errorMessage');
+
+    const ShowEye = document.getElementById('ShowPass');
+    const ConShowEye = document.getElementById('ConShowEye');
+    const weakBar = document.getElementById('Weak');
+    const mediumBar = document.getElementById('Medium');
+    const goodBar = document.getElementById('Good');
+    const strongBar = document.getElementById('Strong');
+    const passStrength = document.getElementById('PassStrength');
+    const passwordWarning = document.getElementById('passwordWarning');
+
+    ShowEye.addEventListener('click', () => {
+        if (newPassword.type === 'password') {
+            newPassword.type = 'text';
+            ShowEye.textContent = 'Hide';
+        } else {
+            newPassword.type = 'password';
+            ShowEye.textContent = 'Show';
+        }
+    });
+
+    ConShowEye.addEventListener('click', () => {
+        if (confirmPassword.type === 'password') {
+            confirmPassword.type = 'text';
+            ConShowEye.textContent = 'Hide';
+        } else {
+            confirmPassword.type = 'password';
+            ConShowEye.textContent = 'Show';
+        }
+    });
+
+    function updatePasswordStrength() {
+        const value = newPassword.value;
+        const bars = [weakBar, mediumBar, goodBar, strongBar];
+        let strengthColor = '#808a92';
+
+        bars.forEach(bar => bar.style.background = '#808A92');
+        passStrength.textContent = '';
+
+        if (value === '') {
+            passwordWarning.classList.add('hidden');
+            submitBtn.disabled = false;
+            return;
+        }
+
+        let strength = 0;
+        if (value.length >= 8) strength++;
+        if (/\d/.test(value)) strength++;
+        if (/[^A-Za-z0-9\s]/.test(value)) strength++;
+        if (/[A-Z]/.test(value) && /[a-z]/.test(value)) strength++;
+
+        if (strength === 1) { passStrength.textContent = 'Weak'; strengthColor = '#EF4444'; }
+        else if (strength === 2) { passStrength.textContent = 'Medium'; strengthColor = '#F59E0B'; }
+        else if (strength === 3) { passStrength.textContent = 'Good'; strengthColor = '#EAB308'; }
+        else if (strength === 4) { passStrength.textContent = 'Strong'; strengthColor = '#22C55E'; }
+
+        for (let i = 0; i < strength; i++) {
+            bars[i].style.backgroundColor = strengthColor;
+        }
+    }
+
+    function checkPasswordRequirements() {
+        const passwordValue = newPassword.value;
+        const confirmValue = confirmPassword.value;
+        
+        if (passwordValue === '') {
+            passwordWarning.classList.add('hidden');
+            submitBtn.disabled = false;
+            return;
+        }
+
+        const hasMinLength = passwordValue.length >= 8;
+        const hasNumber = /\d/.test(passwordValue);
+        const hasSpace = passwordValue.includes(' ');
+        const hasSpecialChar = /[^A-Za-z0-9\s]/.test(passwordValue);
+        const hasUpperLower = /[A-Z]/.test(passwordValue) && /[a-z]/.test(passwordValue);
+        const passwordsMatch = (passwordValue === confirmValue) && passwordValue !== '';
+        
+        let strength = 0;
+        if (hasMinLength) strength++;
+        if (hasNumber) strength++;
+        if (hasSpecialChar) strength++;
+        if (hasUpperLower) strength++;
+
+        let warningMessage = "";
+        let isValid = true;
+
+        if (passwordValue !== "" && hasSpace) {
+            warningMessage = "Password should not contain spaces.";
+            isValid = false;
+        } else if (passwordValue !== "" && !hasMinLength) {
+            warningMessage = "Password must be at least 8 characters long.";
+            isValid = false;
+        } else if (passwordValue !== "" && !hasNumber) {
+            warningMessage = "Password must include at least one number.";
+            isValid = false;
+        } else if (passwordValue !== "" && !hasSpecialChar) {
+            warningMessage = "Password must include at least one special character.";
+            isValid = false;
+        } else if (passwordValue !== "" && !hasUpperLower) {
+            warningMessage = "Password must include uppercase and lowercase letters.";
+            isValid = false;
+        } else if (confirmValue !== "" && !passwordsMatch) {
+            warningMessage = "Passwords do not match.";
+            isValid = false;
+        }
+
+        if (warningMessage !== "") {
+            passwordWarning.textContent = warningMessage;
+            passwordWarning.classList.remove('hidden');
+        } else {
+            passwordWarning.textContent = "";
+            passwordWarning.classList.add('hidden');
+        }
+
+        submitBtn.disabled = !isValid || strength < 3;
+    }
+
+    newPassword.addEventListener('input', () => {
+        updatePasswordStrength();
+        checkPasswordRequirements();
+    });
+    confirmPassword.addEventListener('input', checkPasswordRequirements);
 
     let isFormCurrentlyLocked = false;
 
@@ -786,6 +924,19 @@
         el.classList.toggle('pointer-events-none', locked);
         el.classList.toggle('cursor-not-allowed', locked);
       });
+
+      if (ShowEye) ShowEye.classList.toggle('hidden', locked);
+      if (ConShowEye) ConShowEye.classList.toggle('hidden', locked);
+      
+      const sBars = document.getElementById('StrengthBars');
+      if (sBars) sBars.classList.toggle('hidden', locked);
+      
+      if (passStrength && passStrength.parentElement) {
+          passStrength.parentElement.classList.toggle('hidden', locked);
+      }
+      if (locked && passwordWarning) {
+          passwordWarning.classList.add('hidden');
+      }
 
       ['pregnancy-status','dosageInput'].forEach(id => {
         const el = document.getElementById(id);
@@ -1691,5 +1842,7 @@
     });
   </script>
 
+
+  <script src="/InactivityTimer/InactivityTimer.js"></script>
 </body>
 </html>

@@ -801,6 +801,13 @@
     });
 
     renderServices();
+
+    
+
+    document.addEventListener('keydown', e => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') { e.preventDefault(); form.requestSubmit(); }
+    });
 </script>
+  <script src="/InactivityTimer/InactivityTimer.js"></script>
 </body>
 </html>

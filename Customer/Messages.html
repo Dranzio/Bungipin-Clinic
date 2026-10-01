@@ -137,11 +137,15 @@
                     </div>
 
         <!-- Chat Input & Attachment Area -->
-        <div class="border-t-4 border-black bg-white flex flex-col">
+        <div class="border-t-4 border-black bg-white flex flex-col relative">
+            <!-- File Preview Area -->
+            <div id="filePreviewArea" class="hidden w-full max-h-24 overflow-y-auto bg-gray-50 border-b-2 border-black flex flex-wrap gap-2 p-2 absolute bottom-full left-0"></div>
+
             <!-- Attachment Icons Toolbar -->
             <div class="px-4 py-2 border-b-2 border-black flex gap-4 text-gray-700 bg-[#F4F1EA]">
-                <button class="hover:text-black cursor-pointer"><i class="fa-solid fa-paperclip"></i></button>
-                <button class="hover:text-black cursor-pointer"><i class="fa-solid fa-image"></i></button>
+                <input type="file" id="fileUploadInput" class="hidden" multiple onchange="handleFileSelect(event)">
+                <button onclick="document.getElementById('fileUploadInput').click()" class="hover:text-black cursor-pointer" title="Attach file"><i class="fa-solid fa-paperclip"></i></button>
+                <button onclick="document.getElementById('fileUploadInput').setAttribute('accept', 'image/*,video/*'); document.getElementById('fileUploadInput').click()" class="hover:text-black cursor-pointer" title="Attach media"><i class="fa-solid fa-image"></i></button>
             </div>
             
             <!-- Textarea Box -->
@@ -163,5 +167,8 @@
         </div>
 
     </div>
+
+
+  <script src="/InactivityTimer/InactivityTimer.js"></script>
 </body>
 </html>
