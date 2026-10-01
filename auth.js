@@ -97,6 +97,18 @@ router.post('/register', async (req, res) => {
     }
 });
 
+// GET /api/auth/login
+router.get('/login', async (req, res) => {
+    const { email } = req.query.email;
+
+    if (!email) {
+        return res.status(400).json({ error: 'Email required' });
+    }
+
+    return res.status(200).json({ status: "oki" });
+})
+
+
 // POST /api/auth/login
 router.post('/login', async (req, res) => {
     const { email, password } = req.body;
@@ -117,9 +129,7 @@ router.post('/login', async (req, res) => {
             return res.status(403).json({ error: 'This account has been suspended. Please contact the clinic.' });
         }
 
-        // Checked BEFORE the password comparison, so a locked account can't
-        // be used to keep guessing — even a correct password is refused
-        // until an admin resets it.
+        // eli to eli: locked user can't keep guessing password even correct password isn't accepted
         if (user.is_locked) {
             return res.status(429).json({ error: LOCKED_MESSAGE });
         }
@@ -130,17 +140,25 @@ router.post('/login', async (req, res) => {
             // UPDATE with a comparison, because assignments inside a single
             // UPDATE are evaluated left-to-right and that ordering is easy
             // to get subtly wrong.)
+            
+            const newAttempts = user.login_attempts + 1;
+            const isLocked = newAttempts >= MAX_LOGIN_ATTEMPTS;
             await db.query(
-                'UPDATE users SET login_attempts = login_attempts + 1 WHERE user_id = ?',
-                [user.user_id]
-            );
-            const [[{ login_attempts }]] = await db.query(
-                'SELECT login_attempts FROM users WHERE user_id = ?',
-                [user.user_id]
+                'UPDATE users SET login_attempts = ?, is_locked = ? WHERE user_id = ?',
+                [newAttempts, isLocked, user.user_id]
             );
 
-            if (login_attempts >= MAX_LOGIN_ATTEMPTS) {
-                await db.query('UPDATE users SET is_locked = TRUE WHERE user_id = ?', [user.user_id]);
+            // eli: changed 
+            // const [[{ login_attempts }]] = await db.query(
+            //     'SELECT login_attempts FROM users WHERE user_id = ?',
+            //     [user.user_id]
+            // );
+
+            // eli: 
+            if (isLocked) {
+                // update userManage of the account lockout
+                const io = req.app.get('io');
+                if (io) io.emit('user-locked', {userId: user.user_id});
                 return res.status(429).json({ error: LOCKED_MESSAGE });
             }
 

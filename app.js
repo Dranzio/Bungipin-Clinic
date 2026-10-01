@@ -135,7 +135,7 @@ app.get('/contact.html', (req, res) => {
 
 // MOVED THIS TO USERMANAGE.JS
 /**
- * app.get('/api/users', authenticateToken, async (req, res) => {
+ app.get('/api/users', authenticateToken, async (req, res) => {
  if (req.user.role !== 'admin') {
  return res.status(403).json({ error: 'Admins only' });
  }

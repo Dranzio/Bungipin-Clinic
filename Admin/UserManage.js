@@ -117,6 +117,9 @@ function validateUserInput(body, isCreate = false) {
 }
 
 // Single select shape for consistent frontend data
+// eli: REMOVED ep.specialization MUNA SO THE USERS CAN LOAD IN userManage.html
+// eli to eli: REMEMBER TO PUT IT BACK WHEN ADDED NA SA SCHEMA
+// nevermind 0.0
 const USER_SELECT = `
     SELECT u.user_id, u.public_id, u.first_name, u.last_name, u.email, u.phone,
            u.sex, u.role, u.account_status, u.is_locked, u.login_attempts, u.created_at,
