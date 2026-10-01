@@ -12,12 +12,11 @@ function getIp(req) {
 const xrayUploadDir = path.join(__dirname, '..', 'uploads', 'xrays');
 const isVercel = process.env.VERCEL === '1' || !!process.env.BLOB_READ_WRITE_TOKEN;
 
-// Use memoryStorage so buffers are available on both local and Vercel serverless environments
 const storage = multer.memoryStorage();
 
 const upload = multer({
     storage,
-    limits: { fileSize: 10 * 1024 * 1024, files: 10 }, // 10MB per file, 10 files per upload
+    limits: { fileSize: 10 * 1024 * 1024, files: 10 },
     fileFilter: (req, file, cb) => {
         if (!file.mimetype.startsWith('image/')) {
             return cb(new Error('Only image files are allowed'));
@@ -26,16 +25,15 @@ const upload = multer({
     }
 });
 
-function registerPatientRecordsRoutes(app, db) {
+function registerPatientRecordsRoutes(app, db, io = null) {
 
-    // GET /api/patients — Retrieve all patient records for staff/dentists/admins
+    // GET /api/patients — Retrieve all patient records
     app.get('/api/patients', authenticateToken, async (req, res) => {
         if (!['employee', 'admin'].includes(req.user.role)) {
             return res.status(403).json({ message: 'Not authorized' });
         }
 
         try {
-            // Try stored procedure first
             let patients = [];
             try {
                 const [rows] = await db.query('CALL sp_get_all_patient_records()');
@@ -48,7 +46,6 @@ function registerPatientRecordsRoutes(app, db) {
             } catch (spErr) {
                 console.warn('SP sp_get_all_patient_records fallback to query:', spErr.message);
 
-                // Comprehensive fallback query
                 const [pRows] = await db.query(`
                     SELECT
                         u.user_id AS patient_id,
@@ -150,7 +147,7 @@ function registerPatientRecordsRoutes(app, db) {
         }
     });
 
-    // PATCH /api/appointments/:id/notes — save dentist notes for the ongoing session
+    // PATCH /api/appointments/:id/notes — save dentist notes for the session
     app.patch('/api/appointments/:id/notes', authenticateToken, async (req, res) => {
         if (!['employee', 'admin'].includes(req.user.role)) {
             return res.status(403).json({ message: 'Not authorized' });
@@ -164,6 +161,10 @@ function registerPatientRecordsRoutes(app, db) {
                 'UPDATE appointments SET dentist_note = ? WHERE appointment_id = ?',
                 [dentist_note, appointmentId]
             );
+
+            if (io) {
+                io.emit('appointment-updated', { appointment_id: appointmentId });
+            }
 
             res.json({ message: 'Dentist notes saved successfully' });
         } catch (err) {
@@ -300,7 +301,7 @@ function registerPatientRecordsRoutes(app, db) {
         }
     });
 
-    // PATCH /api/appointments/:id/complete — complete appointment
+    // PATCH /api/appointments/:id/complete — complete appointment & sync queue in real-time
     app.patch('/api/appointments/:id/complete', authenticateToken, async (req, res) => {
         if (!['employee', 'admin'].includes(req.user.role)) {
             return res.status(403).json({ message: 'Not authorized' });
@@ -310,14 +311,18 @@ function registerPatientRecordsRoutes(app, db) {
         const appointmentId = Number(req.params.id);
 
         try {
-            await db.query(
+            const [result] = await db.query(
                 `UPDATE appointments
                  SET appointment_status = 'completed',
                      queue_status = 'completed',
-                     dentist_note = ?
+                     dentist_note = COALESCE(?, dentist_note)
                  WHERE appointment_id = ?`,
                 [dentist_note || null, appointmentId]
             );
+
+            if (result.affectedRows === 0) {
+                return res.status(404).json({ message: 'Appointment not found' });
+            }
 
             await logActivity(db, {
                 user_id: req.user.user_id,
@@ -328,6 +333,12 @@ function registerPatientRecordsRoutes(app, db) {
                 notes: 'Treatment marked complete.',
                 ip_address: getIp(req)
             });
+
+            // Emit to Queue and all active screens
+            if (io) {
+                io.emit('queue_updated');
+                io.emit('appointment-updated', { appointment_id: appointmentId, status: 'completed' });
+            }
 
             res.json({ message: 'Appointment completed successfully' });
         } catch (err) {
