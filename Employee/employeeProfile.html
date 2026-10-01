@@ -165,14 +165,32 @@
           <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-5">
             <div class="flex flex-col gap-1.5">
               <label for="new_password" class="text-[11px] font-extrabold tracking-wider text-[#2A1001] uppercase">New Account Password:</label>
-              <input type="password" id="new_password" name="new_password" placeholder="Enter New Password"
-                     class="w-full px-4 py-2.5 rounded-full bg-white text-[#2A1001] font-medium text-sm outline-none shadow-inner focus:ring-2 focus:ring-[#556b2f]/50">
+              <div class="relative w-full mb-8">
+                <input type="password" id="new_password" name="new_password" placeholder="Enter New Password"
+                       class="w-full px-4 py-2.5 pr-16 rounded-full bg-white text-[#2A1001] font-medium text-sm outline-none shadow-inner focus:ring-2 focus:ring-[#556b2f]/50">
+                <button type="button" id="ShowPass" aria-label="Show Password"
+                  class="absolute right-4 top-0 h-full flex items-center cursor-pointer text-sm text-gray-500 hover:text-gray-700 font-medium">Show</button>
+                <div id="StrengthBars" class="flex gap-2 mt-2.5 mb-[5px] w-[95%] mx-auto">
+                    <div class="StrengthCap flex-1 h-[8px] rounded-[99px] bg-[#808a92]" id="Weak"></div>
+                    <div class="StrengthCap flex-1 h-[8px] rounded-[99px] bg-[#808a92]" id="Medium"></div>
+                    <div class="StrengthCap flex-1 h-[8px] rounded-[99px] bg-[#808a92]" id="Good"></div>
+                    <div class="StrengthCap flex-1 h-[8px] rounded-[99px] bg-[#808a92]" id="Strong"></div>
+                </div>
+                <p class="absolute left-0 top-[110%] text-xs text-[#2A1001]">
+                    Strength: <span id="PassStrength" class="font-bold"></span>
+                </p>
+              </div>
+              <div id="passwordWarning" class="text-red-700 text-xs font-semibold hidden mb-2"></div>
             </div>
 
             <div class="flex flex-col gap-1.5">
               <label for="confirm_password" class="text-[11px] font-extrabold tracking-wider text-[#2A1001] uppercase">Confirm Account Password:</label>
-              <input type="password" id="confirm_password" name="confirm_password" placeholder="Re-enter new password"
-                     class="w-full px-4 py-2.5 rounded-full bg-white text-[#2A1001] font-medium text-sm outline-none shadow-inner focus:ring-2 focus:ring-[#556b2f]/50">
+              <div class="relative w-full">
+                <input type="password" id="confirm_password" name="confirm_password" placeholder="Re-enter new password"
+                       class="w-full px-4 py-2.5 pr-16 rounded-full bg-white text-[#2A1001] font-medium text-sm outline-none shadow-inner focus:ring-2 focus:ring-[#556b2f]/50">
+                <button type="button" id="ConShowEye" aria-label="Show Password"
+                  class="absolute right-4 top-0 h-full flex items-center cursor-pointer text-sm text-gray-500 hover:text-gray-700 font-medium">Show</button>
+              </div>
             </div>
           </div>
         </div>
@@ -214,6 +232,15 @@
     const phoneInput      = document.getElementById('phone');
     const successMessage  = document.getElementById('successMessage');
 
+    const ShowEye = document.getElementById('ShowPass');
+    const ConShowEye = document.getElementById('ConShowEye');
+    const weakBar = document.getElementById('Weak');
+    const mediumBar = document.getElementById('Medium');
+    const goodBar = document.getElementById('Good');
+    const strongBar = document.getElementById('Strong');
+    const passStrength = document.getElementById('PassStrength');
+    const passwordWarning = document.getElementById('passwordWarning');
+
     const birthdayInput = document.getElementById('birthday');
     const today = new Date();
     if (birthdayInput) {
@@ -231,6 +258,131 @@
       phoneInput.addEventListener('input', function () {
         this.value = this.value.replace(/\D/g, '').slice(0, 11);
       });
+    }
+
+    if (ShowEye && newPassword) {
+        ShowEye.addEventListener('click', () => {
+            if (newPassword.type === 'password') {
+                newPassword.type = 'text';
+                ShowEye.textContent = 'Hide';
+            } else {
+                newPassword.type = 'password';
+                ShowEye.textContent = 'Show';
+            }
+        });
+    }
+
+    if (ConShowEye && confirmPassword) {
+        ConShowEye.addEventListener('click', () => {
+            if (confirmPassword.type === 'password') {
+                confirmPassword.type = 'text';
+                ConShowEye.textContent = 'Hide';
+            } else {
+                confirmPassword.type = 'password';
+                ConShowEye.textContent = 'Show';
+            }
+        });
+    }
+
+    function updatePasswordStrength() {
+        if (!newPassword) return;
+        const value = newPassword.value;
+        const bars = [weakBar, mediumBar, goodBar, strongBar];
+        let strengthColor = '#808a92';
+
+        bars.forEach(bar => { if (bar) bar.style.background = '#808A92'; });
+        if (passStrength) passStrength.textContent = '';
+
+        if (value === '') {
+            if (passwordWarning) passwordWarning.classList.add('hidden');
+            if (submitBtn) submitBtn.disabled = false;
+            return;
+        }
+
+        let strength = 0;
+        if (value.length >= 8) strength++;
+        if (/\d/.test(value)) strength++;
+        if (/[^A-Za-z0-9\s]/.test(value)) strength++;
+        if (/[A-Z]/.test(value) && /[a-z]/.test(value)) strength++;
+
+        if (strength === 1) { if(passStrength) passStrength.textContent = 'Weak'; strengthColor = '#EF4444'; }
+        else if (strength === 2) { if(passStrength) passStrength.textContent = 'Medium'; strengthColor = '#F59E0B'; }
+        else if (strength === 3) { if(passStrength) passStrength.textContent = 'Good'; strengthColor = '#EAB308'; }
+        else if (strength === 4) { if(passStrength) passStrength.textContent = 'Strong'; strengthColor = '#22C55E'; }
+
+        for (let i = 0; i < strength; i++) {
+            if (bars[i]) bars[i].style.backgroundColor = strengthColor;
+        }
+    }
+
+    function checkPasswordRequirements() {
+        if (!newPassword || !confirmPassword) return;
+        const passwordValue = newPassword.value;
+        const confirmValue = confirmPassword.value;
+        
+        if (passwordValue === '') {
+            if (passwordWarning) passwordWarning.classList.add('hidden');
+            if (submitBtn) submitBtn.disabled = false;
+            return;
+        }
+
+        const hasMinLength = passwordValue.length >= 8;
+        const hasNumber = /\d/.test(passwordValue);
+        const hasSpace = passwordValue.includes(' ');
+        const hasSpecialChar = /[^A-Za-z0-9\s]/.test(passwordValue);
+        const hasUpperLower = /[A-Z]/.test(passwordValue) && /[a-z]/.test(passwordValue);
+        const passwordsMatch = (passwordValue === confirmValue) && passwordValue !== '';
+        
+        let strength = 0;
+        if (hasMinLength) strength++;
+        if (hasNumber) strength++;
+        if (hasSpecialChar) strength++;
+        if (hasUpperLower) strength++;
+
+        let warningMessage = "";
+        let isValid = true;
+
+        if (passwordValue !== "" && hasSpace) {
+            warningMessage = "Password should not contain spaces.";
+            isValid = false;
+        } else if (passwordValue !== "" && !hasMinLength) {
+            warningMessage = "Password must be at least 8 characters long.";
+            isValid = false;
+        } else if (passwordValue !== "" && !hasNumber) {
+            warningMessage = "Password must include at least one number.";
+            isValid = false;
+        } else if (passwordValue !== "" && !hasSpecialChar) {
+            warningMessage = "Password must include at least one special character.";
+            isValid = false;
+        } else if (passwordValue !== "" && !hasUpperLower) {
+            warningMessage = "Password must include uppercase and lowercase letters.";
+            isValid = false;
+        } else if (confirmValue !== "" && !passwordsMatch) {
+            warningMessage = "Passwords do not match.";
+            isValid = false;
+        }
+
+        if (passwordWarning) {
+            if (warningMessage !== "") {
+                passwordWarning.textContent = warningMessage;
+                passwordWarning.classList.remove('hidden');
+            } else {
+                passwordWarning.textContent = "";
+                passwordWarning.classList.add('hidden');
+            }
+        }
+
+        if (submitBtn) submitBtn.disabled = !isValid || strength < 3;
+    }
+
+    if (newPassword) {
+        newPassword.addEventListener('input', () => {
+            updatePasswordStrength();
+            checkPasswordRequirements();
+        });
+    }
+    if (confirmPassword) {
+        confirmPassword.addEventListener('input', checkPasswordRequirements);
     }
 
     if (confirmPassword && newPassword) {
@@ -274,6 +426,19 @@
         el.classList.toggle('pointer-events-none', locked);
         el.classList.toggle('cursor-not-allowed', locked);
       });
+
+      if (ShowEye) ShowEye.classList.toggle('hidden', locked);
+      if (ConShowEye) ConShowEye.classList.toggle('hidden', locked);
+      
+      const sBars = document.getElementById('StrengthBars');
+      if (sBars) sBars.classList.toggle('hidden', locked);
+      
+      if (passStrength && passStrength.parentElement) {
+          passStrength.parentElement.classList.toggle('hidden', locked);
+      }
+      if (locked && passwordWarning) {
+          passwordWarning.classList.add('hidden');
+      }
 
       submitGroup?.classList.toggle('hidden', locked);
       editBtn?.classList.toggle('hidden', !locked);
@@ -335,6 +500,24 @@
     // ── SUBMIT UPDATES ──
     form?.addEventListener('submit', async function (e) {
       e.preventDefault();
+
+      // Repetitive spam check
+      const textInputs = form.querySelectorAll('input[type="text"]:not([readonly]), input[type="email"]:not([readonly]), input[type="password"]');
+      for (const input of textInputs) {
+          const val = input.value.trim();
+          if (val) {
+              const hasRepeatChar = /(.)\1{2,}/.test(val);
+              const hasRepeatPattern = /(.{2,})\1{2,}/.test(val);
+              if (hasRepeatChar || hasRepeatPattern) {
+                  alert('Inputs with highly repetitive characters (e.g. "aaaa", "ababab") are not allowed.');
+                  input.focus();
+                  input.classList.add('border-red-500', 'bg-red-50');
+                  return;
+              } else {
+                  input.classList.remove('border-red-500', 'bg-red-50');
+              }
+          }
+      }
 
       const birthdayValue = document.getElementById('birthday')?.value;
       if (birthdayValue) {

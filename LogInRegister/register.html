@@ -27,7 +27,7 @@
             rounded-[30px] md:rounded-none md:rounded-tr-[116px] md:rounded-br-[116px]
             pt-8 pb-12 px-6 md:pt-11 md:pb-20 md:px-16
             flex flex-col relative z-10 animate-slideInLeft">
-        
+
 
         <div id="statusBanner" class="hidden w-full text-center py-3 px-4 mb-6 bg-green-100 border border-green-400 text-green-800 rounded-[20px] font-poppins font-semibold flex items-center justify-center gap-3 transition-all">
             <div id="bannerSpinner" class="w-5 h-5 border-2 border-t-transparent rounded-full animate-spin"></div>
@@ -104,15 +104,15 @@
                     <div class="relative w-full mb-12 md:mb-14">
 
                         <input type="password" id="password_hash" name="password_hash"  required minlength="8" maxlength="25"
-                            class="w-full h-8 md:h-11 px-4 pr-16 bg-white outline-none rounded-[30px] border border-gray-200"
-                            placeholder="12345678"
+                               class="w-full h-8 md:h-11 px-4 pr-16 bg-white outline-none rounded-[30px] border border-gray-200"
+                               placeholder="12345678"
                         />
 
                         <button
-                            type="button"
-                            id="ShowPass"
-                            aria-label="Show Password"
-                            class="absolute right-4 top-0 h-8 md:h-11 flex items-center cursor-pointer text-sm text-gray-500 hover:text-gray-700 font-medium"
+                                type="button"
+                                id="ShowPass"
+                                aria-label="Show Password"
+                                class="absolute right-4 top-0 h-8 md:h-11 flex items-center cursor-pointer text-sm text-gray-500 hover:text-gray-700 font-medium"
                         >
                             Show
                         </button>
@@ -130,7 +130,7 @@
                         </p>
 
                     </div>
-                    
+
                     <div id="passwordWarning"
                          class="text-red-700 text-xs md:text-sm font-poppins font-semibold mb-6 md:mb-12 hidden">
                     </div>
@@ -142,18 +142,14 @@
                     </label>
                     <div class="relative w-full mb-4 md:mb-12">
                         <input type="password" id="confirm_password" name="confirm_password" required minlength="8" maxlength="25"
-                            class="w-full h-8 md:h-11 px-4 pr-16 bg-white outline-none rounded-[30px] border border-gray-200"
-                            placeholder="Confirm Password"
-                            oninput="this.setCustomValidity(this.value !== document.getElementById('password_hash').value ? 'Passwords do not match.' : '')" />
-                        
-                        <button type="button" id="ConShowEye" aria-label="Show Password" 
-                        class="absolute right-4 top-1/2 -translate-y-1/2 cursor-pointer text-sm text-gray-500 hover:text-gray-700 font-medium">Show</button>
+                               class="w-full h-8 md:h-11 px-4 pr-16 bg-white outline-none rounded-[30px] border border-gray-200"
+                               placeholder="Confirm Password"
+                               oninput="this.setCustomValidity(this.value !== document.getElementById('password_hash').value ? 'Passwords do not match.' : '')" />
+
+                        <button type="button" id="ConShowEye" aria-label="Show Password"
+                                class="absolute right-4 top-1/2 -translate-y-1/2 cursor-pointer text-sm text-gray-500 hover:text-gray-700 font-medium">Show</button>
                     </div>
                 </div>
-            </div>
-
-            <div id="passwordWarning"
-                 class="text-red-700 text-xs md:text-sm font-poppins font-semibold mb-6 md:mb-12 hidden">
             </div>
 
             <div class="flex items-center gap-6 mb-6 md:mb-12">
@@ -177,11 +173,11 @@
                         Female
                     </label>
                 </div>
-                
 
-            <div class="w-full flex justify-end">
-                <div class="g-recaptcha" data-sitekey="6Lfjx9YtAAAAAFgaPvGxgv8qWGONXwVwwCvia4S4"></div>
-            </div>
+
+                <div class="w-full flex justify-end">
+                    <div class="g-recaptcha" data-sitekey="6Lfjx9YtAAAAAFgaPvGxgv8qWGONXwVwwCvia4S4"></div>
+                </div>
             </div>
 
             <div class="flex items-center justify-center gap-2 mt-6 mb-6 md:mb-8">
@@ -451,7 +447,7 @@
             const hasSpace = passwordValue.includes(' ');
             const hasSpecialChar = /[^A-Za-z0-9\s]/.test(passwordValue);
             const hasUpperLower = /[A-Z]/.test(passwordValue) && /[a-z]/.test(passwordValue);
-            const passwordsMatch = (passwordValue === confirmValue) && passwordValue !== '';            
+            const passwordsMatch = (passwordValue === confirmValue) && passwordValue !== '';
 
             const hasRepeatChar = /(.)\1{2,}/.test(passwordValue);
             const hasRepeatPattern = /(.{2,})\1{2,}/.test(passwordValue);
@@ -687,7 +683,7 @@
 <div class="font-poppins text-[#2A1001]">
 
     <p class="mb-4 text-sm md:text-base">
-        Bungipin respects your privacy. This Privacy Policy explains how we collect, use, disclose, and protect 
+        Bungipin respects your privacy. This Privacy Policy explains how we collect, use, disclose, and protect
         information when you visit our website, request or manage appointments, and communicate with our dentists.
     </p>
 
@@ -799,22 +795,22 @@
         let privRead = false;
 
         modalContent.addEventListener('scroll', () => {
-                const threshold = 10;
-                const isAtBottom = modalContent.scrollHeight - modalContent.scrollTop - modalContent.clientHeight <= threshold;
+            const threshold = 10;
+            const isAtBottom = modalContent.scrollHeight - modalContent.scrollTop - modalContent.clientHeight <= threshold;
 
-                if (isAtBottom) {
-                    if (modalTitle.innerText === 'Terms & Conditions') {
-                        termsRead = true;
-                    } else if (modalTitle.innerText === 'Privacy Policy') {
-                        privRead = true;
-                    }
-
-                    if (termsRead && privRead) {
-                        termsCheckbox.disabled = false;
-                        termsCheckbox.checked = true;
-                        checkForm();
-                    }
+            if (isAtBottom) {
+                if (modalTitle.innerText === 'Terms & Conditions') {
+                    termsRead = true;
+                } else if (modalTitle.innerText === 'Privacy Policy') {
+                    privRead = true;
                 }
+
+                if (termsRead && privRead) {
+                    termsCheckbox.disabled = false;
+                    termsCheckbox.checked = true;
+                    checkForm();
+                }
+            }
         });
 
 
@@ -904,22 +900,19 @@
                     );
                 }
 
-                localStorage.setItem(
-                    'userToken',
-                    data.token
-                );
-
+                // Account isn't created yet: the server emailed a
+                // confirmation link, and the account is made when it's opened.
+                // (No token is returned, so nothing goes into localStorage.)
                 localStorage.removeItem(
                     'registrationDraft'
                 );
 
                 form.reset();
 
-                showStatusBanner('Account created successfully!', false);
-
-                setTimeout(() => {
-                    window.location.href = 'login.html';
-                }, 2000);
+                showStatusBanner(
+                    data.message || 'Check your email to finish creating your account.',
+                    false
+                );
 
             } catch (error) {
 

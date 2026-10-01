@@ -46,7 +46,7 @@
 
     (async () => {
         try {
-            let response = await fetch('/Taskbar/Employee_Task.html');
+            let response = await fetch('/Taskbar/Receptionist_Task.html');
             if (!response.ok) response = await fetch('/Taskbar/Admin_Task.html');
             if (response.ok) {
                 const data = await response.text();
@@ -122,7 +122,7 @@
                 <thead>
                 <tr class="bg-[#667733] text-white text-xs sm:text-sm font-bold uppercase tracking-wider">
                     <th class="py-4 px-4 sm:px-6 text-center whitespace-nowrap rounded-tl-2xl">Patient ID</th>
-                    <th class="py-4 px-4 sm:px-6">Name</th>
+                    <th class="py-4 px-4 sm:px-6">Patient Name</th>
                     <th class="py-4 px-4 sm:px-6">Phone Number</th>
                     <th class="py-4 px-4 sm:px-6">Email</th>
                     <th class="py-4 px-4 sm:px-6 text-center whitespace-nowrap">Last Visit</th>
@@ -1172,5 +1172,6 @@
     loadPatientsFromDatabase();
 </script>
 
+  <script src="/InactivityTimer/InactivityTimer.js"></script>
 </body>
 </html>

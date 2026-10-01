@@ -10,11 +10,13 @@ function getIp(req) {
 
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 const MAX_ACTIVE_BOOKINGS_LIMIT = 3; // Max active (pending/approved) bookings per patient
+const MAX_ADVANCE_MONTHS = 6;        // Limit bookings up to 6 months in advance (change to 12 for 1 year)
 
 function registerBookingRoute(app, db) {
 
     // ── 1. GET /api/doctors (Includes Specialization) ──
     app.get('/api/doctors', authenticateToken, async (req, res) => {
+        await autoCancelExpiredAppointments(db);
         try {
             const [rows] = await db.query(
                 `SELECT ep.employee_id AS doctor_id, ep.position,
@@ -70,14 +72,7 @@ function registerBookingRoute(app, db) {
                 });
             }
 
-            // Existing bookings for this dentist on this date block out the time
-            // they actually occupy (time_slot -> end_time), not just their exact
-            // start — a 90-minute booking at 9:00 must also block 9:30 and
-            // 10:00, not just 9:00 itself. Only 'pending'/'approved' hold a
-            // slot: cancelled releases it immediately, and 'completed' is
-            // necessarily in the past so can't collide with a future slot.
-            // duration_minutes is pulled in only as a fallback for any legacy
-            // row whose end_time wasn't set correctly.
+            // Existing bookings for this dentist on this date block out the time they occupy
 
             // eli: updated query to use BLOCKING_SQL to block temporary "awaiting_payment"
             const [bookedRows] = await db.query(
@@ -95,8 +90,6 @@ function registerBookingRoute(app, db) {
                 return h * 60 + (m || 0);
             };
 
-            // Calculate exact booked intervals, falling back to the service's
-            // own duration if end_time is ever missing or corrupt.
             const bookedIntervals = bookedRows.map(r => {
                 const bStart = toMinutes(r.time_slot);
                 let bEnd = r.end_time ? toMinutes(r.end_time) : 0;
@@ -140,8 +133,7 @@ function registerBookingRoute(app, db) {
                     isAvailable = false;
                     reason = 'Doctor Lunch Break';
                 }
-                    // Check Overlap with active appointments — ranges [sM,eM) and
-                // [b.start,b.end) overlap when sM < b.end AND b.start < eM.
+                // Check Overlap with active appointments
                 else if (bookedIntervals.some(b => sM < b.end && b.start < eM)) {
                     isAvailable = false;
                     reason = 'Already Booked';
@@ -165,7 +157,7 @@ function registerBookingRoute(app, db) {
         }
     });
 
-    // ── 3. POST /api/appointments (Active Booking Limit + Overlap Protection + end_time) ──
+    // ── 3. POST /api/appointments (Active Booking Limit + Overlap Protection + 6-Month Advance Limit) ──
     app.post('/api/appointments', authenticateToken, async (req, res) => {
         if (req.user.role !== 'patient') {
             return res.status(403).json({ message: 'Only patients can book appointments' });
@@ -174,12 +166,6 @@ function registerBookingRoute(app, db) {
         const patientId = req.user.user_id;
         const { appointment_date, time_slot, service_id, service_ids, doctor_id, patient_note, payment_method } = req.body;
 
-        // service_ids (array) is what Booking.js actually sends when the
-        // patient picks several treatments in one visit — service_id alone
-        // used to be trusted for both price AND duration, silently dropping
-        // every service after the first from billing and from the time the
-        // appointment actually occupies. Accept either, but always resolve
-        // to the full list.
         const allServiceIds = Array.isArray(service_ids) && service_ids.length > 0
             ? service_ids
             : (service_id ? [service_id] : []);
@@ -193,7 +179,7 @@ function registerBookingRoute(app, db) {
             return res.status(400).json({ message: 'Invalid doctor selected' });
         }
 
-        // no past dates
+        // 1. No past dates validation
         const appointmentDateTime = new Date(`${appointment_date}T${time_slot}`);
         if (Number.isNaN(appointmentDateTime.getTime()) || appointmentDateTime <= new Date()) {
             return res.status(400).json({ message: 'Appointments must be scheduled for a future date and time' });
@@ -206,16 +192,23 @@ function registerBookingRoute(app, db) {
             : 'online';
         const isOnline = methodEnum === 'online';
 
+        // 2. Enforce Max Advance Booking Limit (e.g. 6 Months from today)
+        const maxAllowedDate = new Date();
+        maxAllowedDate.setMonth(maxAllowedDate.getMonth() + MAX_ADVANCE_MONTHS);
+        maxAllowedDate.setHours(23, 59, 59, 999);
+
+        if (appointmentDateTime > maxAllowedDate) {
+            return res.status(400).json({ 
+                message: `Appointments can only be scheduled up to ${MAX_ADVANCE_MONTHS} months in advance.` 
+            });
+        }
 
         const connection = await db.getConnection();
 
         try {
             await connection.beginTransaction();
 
-            // Active-bookings cap: a patient sitting on several unresolved
-            // pending/approved requests at once gets blocked from queuing up
-            // more until staff act on (or the patient cancels) an existing one.
-
+            // Active-bookings cap (Max 3)
             // eli: update active count check to use BLOCKING_SQL so holds count against patient limits
             const [activeRows] = await connection.query(
                 `SELECT COUNT(*) AS active_count
@@ -232,9 +225,7 @@ function registerBookingRoute(app, db) {
                 });
             }
 
-            // Price AND duration both come from the database, never the
-            // client — look up every selected service in one go.
-
+            // Look up every selected service
             // eli: select 'label" column with price n duration for paymongo checkout session
             const [serviceRows] = await connection.query(
                 'SELECT service_id, COALESCE(service_name, "Dental Service") AS label, price, duration_minutes, is_available FROM services WHERE service_id IN (?)',
@@ -267,9 +258,7 @@ function registerBookingRoute(app, db) {
                 return res.status(404).json({ message: 'Selected dentist is not available' });
             }
 
-            // Compute the real end time this booking occupies, from the
-            // authoritative summed duration — not whatever the client
-            // estimated for the UI preview.
+            // Compute exact booking end time
             const [startH, startM] = time_slot.split(':').map(Number);
             const totalStartMins = startH * 60 + startM;
             const totalEndMins = totalStartMins + totalDuration;
@@ -277,16 +266,7 @@ function registerBookingRoute(app, db) {
             const endM = totalEndMins % 60;
             const endTime = `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}:00`;
 
-            // Re-check for an overlapping booking inside the transaction
-            // (FOR UPDATE) rather than relying only on a pre-transaction
-            // check — two requests hitting this at the same instant would
-            // otherwise both pass the frontend's earlier /available-slots
-            // check. This blocks by overlapping RANGE, not just an exact
-            // start-time match, since a multi-service booking must also
-            // block slots that start partway through it. 'completed'
-            // appointments are excluded since they're necessarily in the
-            // past and can't overlap a future slot being booked here.
-            
+            // Check for overlapping bookings inside the transaction
             // eli: updated query to use BLOCKING_SQL to block temporary "awaiting_payment"
             const [clashRows] = await connection.query(
                 `SELECT a.appointment_id FROM appointments a
@@ -301,21 +281,7 @@ function registerBookingRoute(app, db) {
                 return res.status(409).json({ message: 'This time slot has just been reserved by another patient. Please choose a different slot.' });
             }
 
-            // employee_id is the dentist the patient actually selected and
-            // whose real schedule/availability the slot was validated
-            // against (see /api/doctors/:id/available-slots) — leaving this
-            // NULL meant the row never blocked that dentist's slot for
-            // anyone else. service_id keeps the first selected service as
-            // the appointment's primary record; the full duration/price
-            // across ALL selected services is still what's stored in
-            // end_time and payments.amount below.
-            //
-            // NOTE: queue_status / reschedule_status / reschedule_count
-            // aren't in the appointments schema I've seen so far — keeping
-            // them here since they look like part of this branch's
-            // reschedule feature, but please confirm these columns actually
-            // exist (and on main's copy of the table too) before running
-            // this, or the INSERT will fail with an unknown-column error.
+            
             
             // eli: insert appointment status as 'awaiting_payment' + hold_expires_at if online
             const statusVal = isOnline ? 'awaiting_payment' : 'pending';
@@ -332,9 +298,6 @@ function registerBookingRoute(app, db) {
             );
             const appointmentId = result.insertId;
 
-            // Normalize payment_method against the DB enum rather than
-            // trusting the client value verbatim — an unexpected string here
-            // would otherwise throw a DB error instead of failing gracefully.
             const methodEnum = ['cash', 'card', 'online'].includes(String(payment_method).toLowerCase())
                 ? String(payment_method).toLowerCase()
                 : 'online';
@@ -407,6 +370,29 @@ function registerBookingRoute(app, db) {
             connection.release();
         }
     });
+
+    // Automatically cancel past pending appointments that were never attended/approved
+async function autoCancelExpiredAppointments(db, io = null) {
+    try {
+        const [result] = await db.query(`
+            UPDATE appointments
+            SET appointment_status = 'cancelled',
+                patient_note = CONCAT(COALESCE(patient_note, ''), ' [System: Auto-cancelled due to expired schedule]')
+            WHERE appointment_status = 'pending'
+              AND (
+                  appointment_date < CURDATE()
+                  OR (appointment_date = CURDATE() AND end_time < CURTIME())
+              )
+        `);
+
+        if (result.affectedRows > 0 && io) {
+            io.emit('appointment-updated');
+        }
+    } catch (err) {
+        console.error('Auto-cancel expired appointments error:', err);
+    }
+}
+
 }
 
 module.exports = registerBookingRoute;

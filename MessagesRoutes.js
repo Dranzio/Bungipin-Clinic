@@ -105,7 +105,7 @@ module.exports = function registerMessagesRoutes(app, db) {
             }
 
             const [messages] = await db.query(
-                `SELECT message_id, sender_id, receiver_id, content, sent_at, is_read
+                `SELECT message_id, sender_id, receiver_id, content, file_url, sent_at, is_read
                  FROM messages
                  WHERE (sender_id = ? AND receiver_id = ?) OR (sender_id = ? AND receiver_id = ?)
                  ORDER BY sent_at ASC`,
@@ -125,14 +125,40 @@ module.exports = function registerMessagesRoutes(app, db) {
         }
     });
 
+    // Configure multer for file uploads
+    const multer = require('multer');
+    const path = require('path');
+    const fs = require('fs');
+
+    // Ensure uploads directory exists
+    const uploadDir = path.join(__dirname, 'uploads');
+    if (!fs.existsSync(uploadDir)) {
+        fs.mkdirSync(uploadDir, { recursive: true });
+    }
+
+    const storage = multer.diskStorage({
+        destination: function (req, file, cb) {
+            cb(null, uploadDir);
+        },
+        filename: function (req, file, cb) {
+            const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+            cb(null, uniqueSuffix + path.extname(file.originalname));
+        }
+    });
+    const upload = multer({ storage: storage });
+
     // POST /api/messages/send
-    app.post('/api/messages/send', authenticateToken, async (req, res) => {
+    app.post('/api/messages/send', authenticateToken, upload.array('attachments', 10), async (req, res) => {
         try {
             const { user_id, role } = req.user;
             const { receiver_id, content } = req.body;
 
-            if (!receiver_id || !content || !content.trim()) {
-                return res.status(400).json({ error: 'receiver_id and content are required' });
+            // Content or files must be present
+            const hasFiles = req.files && req.files.length > 0;
+            const hasContent = content && content.trim();
+
+            if (!receiver_id || (!hasContent && !hasFiles)) {
+                return res.status(400).json({ error: 'receiver_id and either content or files are required' });
             }
 
             const allowed = await hasValidRelationship(user_id, role, receiver_id);
@@ -140,9 +166,16 @@ module.exports = function registerMessagesRoutes(app, db) {
                 return res.status(403).json({ error: 'No appointment history with this contact' });
             }
 
+            // Save file paths as a JSON array if files are present
+            let fileUrls = null;
+            if (hasFiles) {
+                const urls = req.files.map(f => '/uploads/' + f.filename);
+                fileUrls = JSON.stringify(urls);
+            }
+
             const [result] = await db.query(
-                `INSERT INTO messages (sender_id, receiver_id, content) VALUES (?, ?, ?)`,
-                [user_id, receiver_id, content.trim()]
+                `INSERT INTO messages (sender_id, receiver_id, content, file_url) VALUES (?, ?, ?, ?)`,
+                [user_id, receiver_id, hasContent ? content.trim() : null, fileUrls]
             );
 
             res.status(201).json({ message_id: result.insertId, sent_at: new Date() });

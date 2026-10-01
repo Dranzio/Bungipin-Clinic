@@ -19,6 +19,7 @@ let filteredAppointments = [];
 let activeTab = "today";
 let currentSearch = "";
 let currentDateFilter = "";
+let calendarWeekOffset = 0; // 0 = current week, -1 = last week, +1 = next week, etc.
 
 function authHeaders(json = false) {
     const token = localStorage.getItem('userToken');
@@ -122,6 +123,20 @@ function initEventListeners() {
     // Toggle shift timecards collapse
     document.getElementById('toggleShiftViewBtn')?.addEventListener('click', () => {
         document.getElementById('weeklyShiftGrid')?.classList.toggle('hidden');
+    });
+
+    // Week navigation buttons
+    document.getElementById('calWeekPrevBtn')?.addEventListener('click', () => {
+        calendarWeekOffset--;
+        renderWeeklyShiftGrid(weeklySchedules);
+    });
+    document.getElementById('calWeekNextBtn')?.addEventListener('click', () => {
+        calendarWeekOffset++;
+        renderWeeklyShiftGrid(weeklySchedules);
+    });
+    document.getElementById('calWeekTodayBtn')?.addEventListener('click', () => {
+        calendarWeekOffset = 0;
+        renderWeeklyShiftGrid(weeklySchedules);
     });
 
     // Tab buttons (Today vs Future)
@@ -275,9 +290,100 @@ function renderWeeklyShiftGrid(schedules) {
     const container = document.getElementById('weeklyShiftGrid');
     if (!container) return;
 
-    const daysOrder = [1, 2, 3, 4, 5, 6, 0]; // Mon to Sun
+    const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 
-    container.innerHTML = daysOrder.map(dayIdx => {
+    // Calculate dates for the displayed week based on calendarWeekOffset
+    const today = new Date();
+    const realTodayDay = today.getDay();       // 0=Sun
+    const realTodayDate = today.getDate();
+    const realTodayMonth = today.getMonth();
+    const realTodayYear = today.getFullYear();
+
+    // Start of current week (Sunday)
+    const weekStart = new Date(today);
+    weekStart.setDate(today.getDate() - realTodayDay + (calendarWeekOffset * 7));
+    weekStart.setHours(0, 0, 0, 0);
+
+    const weekDates = [];
+    for (let i = 0; i < 7; i++) {
+        const d = new Date(weekStart);
+        d.setDate(weekStart.getDate() + i);
+        weekDates.push(d);
+    }
+
+    // Update month/year label
+    const labelEl = document.getElementById('calWeekLabel');
+    if (labelEl) {
+        // If week spans two months, show both
+        const firstMonth = weekDates[0].getMonth();
+        const lastMonth = weekDates[6].getMonth();
+        const firstYear = weekDates[0].getFullYear();
+        const lastYear = weekDates[6].getFullYear();
+
+        if (firstMonth === lastMonth) {
+            labelEl.textContent = `${MONTH_NAMES[firstMonth]} ${firstYear}`;
+        } else if (firstYear === lastYear) {
+            labelEl.textContent = `${MONTH_NAMES[firstMonth]} – ${MONTH_NAMES[lastMonth]} ${firstYear}`;
+        } else {
+            labelEl.textContent = `${MONTH_NAMES[firstMonth]} ${firstYear} – ${MONTH_NAMES[lastMonth]} ${lastYear}`;
+        }
+    }
+
+    const START_HOUR = 7;  // 7 AM
+    const END_HOUR = 19;   // 7 PM
+    const TOTAL_HOURS = END_HOUR - START_HOUR; // 12
+    const HOUR_HEIGHT = 60; // px per hour
+    const TOTAL_HEIGHT = TOTAL_HOURS * HOUR_HEIGHT; // 720px
+
+    // ── Header Row ──
+    let html = `
+        <div class="flex border-b border-[#2A1001]/10 bg-gray-50/50">
+            <div style="width:56px; min-width:56px;" class="shrink-0 border-r border-[#2A1001]/10"></div>
+    `;
+
+    const daysOrder = [0, 1, 2, 3, 4, 5, 6]; // Sun to Sat
+
+    daysOrder.forEach((dayIdx, i) => {
+        const d = weekDates[i];
+        const dateNum = d.getDate();
+        const isToday = (d.getDate() === realTodayDate && d.getMonth() === realTodayMonth && d.getFullYear() === realTodayYear);
+
+        html += `
+            <div class="flex-1 flex flex-col items-center justify-center py-2 sm:py-3 border-r border-[#2A1001]/10 last:border-r-0 ${isToday ? 'bg-[#D7E3A5]/30' : ''}">
+                <div class="flex flex-col items-center gap-0.5">
+                    <span class="text-xl sm:text-2xl leading-none ${isToday ? 'text-white font-bold bg-[#667733] w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center' : 'font-light text-[#2A1001]'}">${dateNum}</span>
+                    <span class="text-[10px] sm:text-xs font-bold uppercase tracking-wider leading-none ${isToday ? 'text-[#556022]' : 'text-gray-500'}">${DAYS_NAMES[dayIdx].substring(0,3)}</span>
+                </div>
+            </div>
+        `;
+    });
+
+    html += `</div>`;
+
+    // ── Calendar Body ──
+    html += `
+        <div class="flex bg-white overflow-y-auto max-h-[500px] relative" style="scrollbar-width:thin;">
+            <div style="width:56px; min-width:56px; height:${TOTAL_HEIGHT}px;" class="shrink-0 border-r border-[#2A1001]/10 bg-gray-50/30 relative">
+    `;
+
+    // Time labels — using inline style for height
+    for (let h = START_HOUR; h < END_HOUR; h++) {
+        const ampm = h >= 12 ? 'PM' : 'AM';
+        const displayH = h > 12 ? h - 12 : (h === 0 ? 12 : h);
+        const yPos = (h - START_HOUR) * HOUR_HEIGHT;
+        html += `
+            <div class="absolute w-full text-right pr-2" style="top:${yPos}px; height:${HOUR_HEIGHT}px;">
+                <span class="text-[9px] sm:text-[11px] font-semibold text-gray-400 relative" style="top:-7px;">${displayH} ${ampm}</span>
+            </div>
+        `;
+    }
+
+    html += `</div>`; // End Time Axis
+
+    // ── Day Columns ──
+    daysOrder.forEach((dayIdx, i) => {
+        const d = weekDates[i];
+        const isToday = (d.getDate() === realTodayDate && d.getMonth() === realTodayMonth && d.getFullYear() === realTodayYear);
         const sched = schedules.find(s => s.day_of_week === dayIdx) || {
             day_of_week: dayIdx,
             start_time: '08:00:00',
@@ -289,37 +395,99 @@ function renderWeeklyShiftGrid(schedules) {
 
         const isActive = sched.is_active === 1 || sched.is_active === true;
 
-        return `
-            <div class="rounded-2xl p-4 border transition-all flex flex-col justify-between shadow-sm ${
-            isActive ? 'bg-[#F9F8F3] border-[#2A1001]/15 hover:border-[#667733]' : 'bg-gray-100/70 border-gray-200 opacity-60'
-        }">
-                <div class="flex justify-between items-center pb-2 border-b border-[#2A1001]/10">
-                    <h4 class="font-extrabold text-sm text-[#2A1001]">${DAYS_NAMES[dayIdx]}</h4>
-                    <span class="text-[10px] font-black px-2 py-0.5 rounded-full ${
-            isActive ? 'bg-[#D7E3A5] text-[#2c3e2b] border border-[#667733]/30' : 'bg-gray-200 text-gray-500'
-        }">
-                        ${isActive ? 'ON DUTY' : 'DAY OFF'}
-                    </span>
-                </div>
-
-                <div class="my-2.5 flex flex-col gap-1 text-xs">
-                    <div class="flex items-center justify-between">
-                        <span class="font-semibold text-gray-500 text-[11px]">Duty Shift:</span>
-                        <span class="font-bold text-[#2A1001]">${isActive ? `${format12Hour(sched.start_time)} – ${format12Hour(sched.end_time)}` : 'Closed'}</span>
-                    </div>
-                    <div class="flex items-center justify-between">
-                        <span class="font-semibold text-gray-500 text-[11px]">Lunch Break:</span>
-                        <span class="font-semibold text-gray-700">${isActive ? `${format12Hour(sched.break_start)} – ${format12Hour(sched.break_end)}` : 'None'}</span>
-                    </div>
-                </div>
-
-                <div class="pt-1.5 border-t border-black/5 text-[10px] text-gray-500 font-medium flex items-center gap-1">
-                    <i class="fa-solid fa-circle-check ${isActive ? 'text-green-600' : 'text-gray-400'}"></i>
-                    <span>${isActive ? 'Available for booking' : 'Off-duty'}</span>
-                </div>
-            </div>
+        html += `
+            <div class="flex-1 relative border-r border-[#2A1001]/10 last:border-r-0 ${isToday ? 'bg-[#FDFCE9]/40' : ''}" style="height:${TOTAL_HEIGHT}px;">
         `;
-    }).join('');
+
+        // Horizontal grid lines
+        for (let h = START_HOUR; h < END_HOUR; h++) {
+            const yPos = (h - START_HOUR) * HOUR_HEIGHT;
+            html += `<div class="absolute w-full border-b border-gray-100/80 pointer-events-none" style="top:${yPos}px;"></div>`;
+        }
+
+        // Current time indicator (red line) — only on today's column
+        if (isToday) {
+            const nowH = today.getHours() + today.getMinutes() / 60;
+            if (nowH >= START_HOUR && nowH <= END_HOUR) {
+                const nowY = (nowH - START_HOUR) * HOUR_HEIGHT;
+                html += `
+                    <div class="absolute w-full z-20 pointer-events-none" style="top:${nowY}px;">
+                        <div class="flex items-center">
+                            <div class="w-2.5 h-2.5 rounded-full bg-red-500 -ml-1.5 shadow-sm"></div>
+                            <div class="flex-1 border-t-2 border-red-500"></div>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        if (isActive) {
+            const parseTime = (t) => {
+                const [hr, mn] = t.split(':').map(Number);
+                return hr + (mn / 60);
+            };
+
+            const startH = parseTime(sched.start_time);
+            const endH = parseTime(sched.end_time);
+            const breakStartH = parseTime(sched.break_start);
+            const breakEndH = parseTime(sched.break_end);
+
+            if (breakStartH > startH && breakEndH < endH) {
+                // Morning Shift
+                const top1 = (startH - START_HOUR) * HOUR_HEIGHT;
+                const h1 = (breakStartH - startH) * HOUR_HEIGHT;
+
+                // Lunch Break
+                const topB = (breakStartH - START_HOUR) * HOUR_HEIGHT;
+                const hB = (breakEndH - breakStartH) * HOUR_HEIGHT;
+
+                // Afternoon Shift
+                const top2 = (breakEndH - START_HOUR) * HOUR_HEIGHT;
+                const h2 = (endH - breakEndH) * HOUR_HEIGHT;
+
+                html += `
+                    <div class="absolute rounded-md bg-[#EAF0DD] border-l-[3px] border-[#667733] shadow-sm overflow-hidden hover:bg-[#D7E3A5] transition-colors cursor-default z-10 flex flex-col justify-center p-1.5 sm:p-2" style="top:${top1}px; height:${h1}px; left:4%; width:92%;">
+                        <div class="font-bold text-[#1a281b] text-[9px] sm:text-[11px] leading-tight truncate">Duty Shift</div>
+                        <div class="text-[#556022] font-semibold text-[8px] sm:text-[10px] truncate">${format12Hour(sched.start_time)} - ${format12Hour(sched.break_start)}</div>
+                    </div>
+
+                    <div class="absolute rounded-md bg-amber-50 border-l-[3px] border-amber-400 shadow-sm overflow-hidden hover:bg-amber-100 transition-colors cursor-default opacity-80 z-10 flex flex-col justify-center items-center" style="top:${topB}px; height:${hB}px; left:4%; width:92%;">
+                        <div class="font-bold text-amber-800 text-[9px] sm:text-[10px] leading-tight flex items-center gap-1"><i class="fa-solid fa-mug-hot"></i> <span class="hidden sm:inline">Lunch Break</span></div>
+                        <div class="text-amber-700 font-semibold text-[8px] sm:text-[9px] truncate">${format12Hour(sched.break_start)} - ${format12Hour(sched.break_end)}</div>
+                    </div>
+
+                    <div class="absolute rounded-md bg-[#EAF0DD] border-l-[3px] border-[#667733] shadow-sm overflow-hidden hover:bg-[#D7E3A5] transition-colors cursor-default z-10 flex flex-col justify-center p-1.5 sm:p-2" style="top:${top2}px; height:${h2}px; left:4%; width:92%;">
+                        <div class="font-bold text-[#1a281b] text-[9px] sm:text-[11px] leading-tight truncate">Duty Shift</div>
+                        <div class="text-[#556022] font-semibold text-[8px] sm:text-[10px] truncate">${format12Hour(sched.break_end)} - ${format12Hour(sched.end_time)}</div>
+                    </div>
+                `;
+            } else {
+                const top = (startH - START_HOUR) * HOUR_HEIGHT;
+                const height = (endH - startH) * HOUR_HEIGHT;
+                html += `
+                    <div class="absolute rounded-md bg-[#EAF0DD] border-l-[3px] border-[#667733] shadow-sm overflow-hidden hover:bg-[#D7E3A5] transition-colors cursor-default z-10 p-1.5 sm:p-2" style="top:${top}px; height:${height}px; left:4%; width:92%;">
+                        <div class="font-bold text-[#1a281b] text-[9px] sm:text-xs leading-tight truncate">Duty Shift</div>
+                        <div class="text-[#556022] font-semibold text-[8px] sm:text-[10px] truncate">${format12Hour(sched.start_time)} - ${format12Hour(sched.end_time)}</div>
+                    </div>
+                `;
+            }
+        } else {
+            html += `
+                <div class="absolute inset-0 flex items-center justify-center p-2 opacity-40 z-0">
+                    <div class="flex flex-col items-center gap-1 text-gray-400">
+                        <i class="fa-solid fa-bed text-xl sm:text-2xl"></i>
+                        <span class="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest">Day Off</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        html += `</div>`;
+    });
+
+    html += `</div>`; // End Calendar Body
+
+    container.innerHTML = html;
 }
 
 function updateTopStats(schedules) {

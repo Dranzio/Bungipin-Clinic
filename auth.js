@@ -11,6 +11,7 @@ const { logActivity } = require('./Admin/auditLogRoutes');
 
 const SALT_ROUNDS = 10;
 const RESET_TOKEN_TTL_MINUTES = 30;
+const VERIFY_TOKEN_TTL_HOURS = 24;
 const TOKEN_TTL_SECONDS = 7 * 24 * 60 * 60; // 7d — must match jwt.sign's expiresIn below
 // Failed logins allowed before the account locks. Matches login.html, which
 // locks its form on the 4th failed attempt (failedAttempts > 3).
@@ -40,9 +41,21 @@ function getIp(req) {
     return req.ip || req.headers['x-forwarded-for'];
 }
 
-// POST /api/auth/register — patient self-registration only
+// Names allow apostrophes (O'Brien), so escape before putting them in HTML.
+function escapeHtml(str) {
+    return String(str).replace(/[&<>"']/g, c => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    }[c]));
+}
+
+// POST /api/auth/register — patient self-registration only.
+// Does NOT create the account yet. The validated signup (with the password
+// already hashed) is parked in pending_registrations, and an emailed link
+// finishes the job via POST /verify-registration. Nothing is inserted into
+// `users` until the email address is proven to belong to the registrant.
 router.post('/register', async (req, res) => {
     let { first_name, last_name, email, phone, password, sex } = req.body;
+    const ip_address = getIp(req);
 
     if (!first_name || !last_name || !email || !password || !sex) {
         return res.status(400).json({ error: 'Missing required fields' });
@@ -70,47 +83,129 @@ router.post('/register', async (req, res) => {
     }
 
     try {
+        // Fail fast if a real account already exists (same behavior as before).
+        const [existing] = await db.query('SELECT user_id FROM users WHERE email = ?', [email]);
+        if (existing.length > 0) {
+            return res.status(409).json({ error: 'An account with this email already exists.' });
+        }
+
         const password_hash = await bcrypt.hash(password, SALT_ROUNDS);
+
+        // Raw token goes in the emailed link; only its hash is stored.
+        const rawToken = crypto.randomBytes(32).toString('hex');
+        const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
+        const expiresAt = new Date(Date.now() + VERIFY_TOKEN_TTL_HOURS * 60 * 60 * 1000);
+
+        // Housekeeping + "latest signup wins": re-submitting the form for the
+        // same email replaces the earlier pending row, so only the newest
+        // link works (this doubles as "resend verification email").
+        await db.query('DELETE FROM pending_registrations WHERE expires_at < NOW() OR email = ?', [email]);
+        await db.query(
+            `INSERT INTO pending_registrations
+                (first_name, last_name, email, phone, password_hash, sex, token_hash, expires_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+            [first_name, last_name, email, phone, password_hash, sex, tokenHash, expiresAt]
+        );
+
+        const verifyLink = `${process.env.APP_BASE_URL || 'http://localhost:3000'}/LogInRegister/VerifyEmail.html?token=${rawToken}`;
+        const safeName = escapeHtml(first_name);
+
+        try {
+            await sendEmail({
+                to: email,
+                subject: 'Confirm your Bungipin Dental Clinic account',
+                text: `Hi ${first_name},\n\nThanks for signing up! Confirm your email to finish creating your account. This link expires in ${VERIFY_TOKEN_TTL_HOURS} hours:\n\n${verifyLink}\n\nIf you didn't sign up, you can ignore this email and no account will be created.`,
+                html: `<p>Hi ${safeName},</p><p>Thanks for signing up! Confirm your email to finish creating your account. This link expires in ${VERIFY_TOKEN_TTL_HOURS} hours:</p><p><a href="${verifyLink}">${verifyLink}</a></p><p>If you didn't sign up, you can ignore this email and no account will be created.</p>`
+            });
+        } catch (mailErr) {
+            // Don't leave a pending row nobody can ever activate.
+            await db.query('DELETE FROM pending_registrations WHERE token_hash = ?', [tokenHash]);
+            console.error('Verification email failed to send:', mailErr);
+            return res.status(502).json({ error: 'We could not send the confirmation email. Please check the address and try again.' });
+        }
+
+        await logActivity(db, {
+            user_id: null,
+            user_email: email,
+            user_role: 'unregistered',
+            action: 'CREATE_USER',
+            target_table: 'pending_registrations',
+            notes: `Registration started for ${first_name} ${last_name}; awaiting email confirmation.`,
+            ip_address
+        });
+
+        res.status(202).json({
+            message: 'Almost done! We sent a confirmation link to your email. Open it to finish creating your account.'
+        });
+    } catch (err) {
+        console.error('Register error:', err);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
+// POST /api/auth/verify-registration
+// Called by VerifyEmail.html with the token from the emailed link. This is
+// where the real `users` row gets created. POST (not GET) on purpose: email
+// security scanners auto-"click" links with GET requests, which would burn
+// a single-use token before the person ever sees it.
+router.post('/verify-registration', async (req, res) => {
+    const { token } = req.body;
+    const ip_address = getIp(req);
+
+    if (!token || typeof token !== 'string') {
+        return res.status(400).json({ error: 'Missing verification token.' });
+    }
+
+    try {
+        const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+
+        const [pendingRows] = await db.query(
+            `SELECT pending_id, first_name, last_name, email, phone, password_hash, sex
+             FROM pending_registrations
+             WHERE token_hash = ? AND expires_at > NOW()`,
+            [tokenHash]
+        );
+
+        if (pendingRows.length === 0) {
+            return res.status(400).json({ error: 'This confirmation link is invalid or has expired. Please register again.' });
+        }
+
+        const p = pendingRows[0];
 
         // role is hardcoded to 'patient'
         await db.query(
             'CALL sp_register_user(?, ?, ?, ?, ?, ?, ?, @new_id)',
-            [first_name, last_name, email, phone, password_hash, sex, 'patient']
+            [p.first_name, p.last_name, p.email, p.phone, p.password_hash, p.sex, 'patient']
         );
         const [[{ '@new_id': newUserId }]] = await db.query('SELECT @new_id AS `@new_id`');
 
-        const [rows] = await db.query(
-            'SELECT user_id, public_id, role FROM users WHERE user_id = ?',
-            [newUserId]
-        );
+        // Single-use: remove the pending row now that the account exists.
+        await db.query('DELETE FROM pending_registrations WHERE pending_id = ?', [p.pending_id]);
+
+        const [rows] = await db.query('SELECT user_id, role FROM users WHERE user_id = ?', [newUserId]);
         const newUser = rows[0];
-
-        const token = jwt.sign(
-            { user_id: newUser.user_id, role: newUser.role, public_id: newUser.public_id },
-            process.env.JWT_SECRET,
-            { expiresIn: '7d' }
-        );
-
-        setAuthCookie(res, token);
 
         await logActivity(db, {
             user_id: newUser.user_id,
-            user_email: email,
+            user_email: p.email,
             user_role: newUser.role,
             action: 'CREATE_USER',
             target_table: 'users',
             target_id: newUser.user_id,
-            notes: `New patient self-registered (${first_name} ${last_name}).`,
-            ip_address: getIp(req)
+            notes: `New patient confirmed email and registered (${p.first_name} ${p.last_name}).`,
+            ip_address
         });
 
-        res.status(201).json({ token, user: newUser });
+        // No auth cookie here: the person logs in normally afterwards.
+        res.status(201).json({ message: 'Email confirmed! Your account is ready. You can now log in.' });
     } catch (err) {
         if (err.code === 'ER_DUP_ENTRY') {
-            return res.status(409).json({ error: 'An account with this email already exists.' });
+            // Link was already used (double-click) or the email was
+            // registered some other way in the meantime.
+            return res.status(409).json({ error: 'This account has already been confirmed. You can log in.' });
         }
-        console.error('Register error:', err);
-        res.status(500).json({ error: 'Internal Server Error' });
+        console.error('Verify registration error:', err);
+        res.status(500).json({ error: 'Something went wrong. Please try again later.' });
     }
 });
 

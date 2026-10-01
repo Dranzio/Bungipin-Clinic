@@ -1,4 +1,20 @@
 // Customer_Sidebar.js
+// Customer_Sidebar.js
+// Handles: sidebar collapse/expand, user name+email loading
+// Called by each Customer page after the sidebar HTML is injected
+
+// IO socket for real-time stuff; connects to window.location.host
+const socket = io();
+const token = localStorage.getItem('userToken');
+
+// listen for global real-time events
+socket.on('connect', () => {
+    console.log('socket connected: ', socket.id);
+    if (token) {
+        socket.emit('authenticate', { token });
+    }
+});
+
 (function () {
     const socket = (typeof io === 'function') ? io() : null;
     window.appSocket = socket;
@@ -175,10 +191,12 @@ function _applySidebarState(collapse) {
         if (aside) aside.style.width = '72px';
         labels.forEach(el => { el.style.display = 'none'; });
         if (nameBadge)     nameBadge.style.display = 'none';
+
         if (profileCircle) {
             profileCircle.style.width  = '44px';
             profileCircle.style.height = '44px';
         }
+
         navLinks.forEach(link => {
             link.style.paddingLeft  = '0';
             link.style.paddingRight = '0';
@@ -190,13 +208,15 @@ function _applySidebarState(collapse) {
         if (aside) aside.style.width = '';
         labels.forEach(el => { el.style.display = ''; });
         if (nameBadge)     nameBadge.style.display = '';
+
         if (profileCircle) {
             profileCircle.style.width  = '';
             profileCircle.style.height = '';
         }
+
         navLinks.forEach(link => {
             link.style.paddingLeft  = '';
-            link.style.paddingRight = '';
+            link.style.paddingRight  = '';
             link.style.justifyContent = '';
         });
     }
@@ -206,6 +226,7 @@ function _applySidebarState(collapse) {
 window.addEventListener('resize', () => {
     const sidebar = document.getElementById('sidebar');
     if (!sidebar) return;
+
     const isCollapsed = sidebar.dataset.collapsed === 'true';
     _applySidebarState(isCollapsed);
 });
@@ -214,11 +235,11 @@ window.addEventListener('resize', () => {
 async function _loadSidebarUser() {
     const nameEl  = document.getElementById('sidebar-user-name');
     const emailEl = document.getElementById('sidebar-user-email');
+
     if (!nameEl || !emailEl) return;
 
     const token = localStorage.getItem('userToken');
     if (!token) return;
-    
 
     try {
         // Pulls first_name, last_name, email from the users table
@@ -229,6 +250,7 @@ async function _loadSidebarUser() {
 
         if (response.ok) {
             const data = await response.json();
+
             nameEl.textContent  = `${data.first_name || ''} ${data.last_name || ''}`.trim() || 'User';
             emailEl.textContent = data.email || '';
 
@@ -250,7 +272,7 @@ async function _loadSidebarUser() {
                     bookLink.style.pointerEvents = 'none';
                     bookLink.style.opacity = '0.4';
                     bookLink.removeAttribute('href');
-                    
+
                     // inject tailwind RED WARNENG text below link
                     if (!warningText) {
                         warningText = document.createElement('div');
@@ -264,6 +286,7 @@ async function _loadSidebarUser() {
                     bookLink.style.pointerEvents = 'auto';
                     bookLink.style.opacity = '1';
                     bookLink.href = '../Customer/Booking.html';
+
                     if (warningText) warningText.remove();
                 }
             }

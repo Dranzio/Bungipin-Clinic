@@ -5,11 +5,9 @@ function getIp(req) {
     return req.ip || req.headers['x-forwarded-for'];
 }
 
-function registerQueueRoutes(app, db) {
+function registerQueueRoutes(app, db, io = null) {
 
-    // GET /api/appointments/queue — today's approved appointments only.
-    // Field names (first_name, last_name, phone, label) match what
-    // queue.html's renderTable() actually reads.
+    // GET /api/appointments/queue — Today's approved AND completed queue appointments
     app.get('/api/appointments/queue', authenticateToken, async (req, res) => {
         if (!['employee', 'admin'].includes(req.user.role)) {
             return res.status(403).json({ message: 'Not authorized' });
@@ -19,18 +17,23 @@ function registerQueueRoutes(app, db) {
             const [rows] = await db.query(
                 `SELECT
                      a.appointment_id,
+                     u.public_id,
                      u.first_name,
                      u.last_name,
                      u.phone,
                      s.label,
-                     COALESCE(a.queue_status, 'pending') AS queue_status
+                     COALESCE(a.queue_status, 'pending') AS queue_status,
+                     a.appointment_status
                  FROM appointments a
-                          JOIN patient_profiles pp ON a.patient_id = pp.patient_id
-                          JOIN users u ON pp.patient_id = u.user_id
+                          JOIN users u ON a.patient_id = u.user_id
                           JOIN services s ON a.service_id = s.service_id
-                 WHERE a.appointment_status = 'approved'
-                   AND a.appointment_date = CURDATE()
-                 ORDER BY a.time_slot`
+                          LEFT JOIN patient_profiles pp ON a.patient_id = pp.patient_id
+                 WHERE a.appointment_status IN ('approved', 'completed')
+                   AND (
+                       a.appointment_date = CURDATE()
+                       OR DATE(a.appointment_date) = CURDATE()
+                   )
+                 ORDER BY (a.queue_status = 'completed') ASC, a.time_slot ASC`
             );
             res.json(rows);
         } catch (err) {
@@ -39,9 +42,7 @@ function registerQueueRoutes(app, db) {
         }
     });
 
-    // PUT /api/appointments/:id — updates queue_status.
-    // Matches the exact method/path/body shape from queue.html's
-    // already-written (commented-out) updateAppointmentStatus().
+    // PUT /api/appointments/:id — Updates queue status & marks visit completed
     app.put('/api/appointments/:id', authenticateToken, async (req, res) => {
         if (!['employee', 'admin'].includes(req.user.role)) {
             return res.status(403).json({ message: 'Not authorized' });
@@ -55,13 +56,28 @@ function registerQueueRoutes(app, db) {
         }
 
         try {
-            const [result] = await db.query(
-                'UPDATE appointments SET queue_status = ? WHERE appointment_id = ?',
-                [queue_status, req.params.id]
-            );
-
-            if (result.affectedRows === 0) {
-                return res.status(404).json({ message: 'Appointment not found' });
+            if (queue_status === 'completed') {
+                const [result] = await db.query(
+                    `UPDATE appointments 
+                     SET queue_status = 'completed', 
+                         appointment_status = 'completed' 
+                     WHERE appointment_id = ?`,
+                    [req.params.id]
+                );
+                if (result.affectedRows === 0) {
+                    return res.status(404).json({ message: 'Appointment not found' });
+                }
+            } else {
+                const [result] = await db.query(
+                    `UPDATE appointments 
+                     SET queue_status = ?,
+                         appointment_status = 'approved'
+                     WHERE appointment_id = ?`,
+                    [queue_status, req.params.id]
+                );
+                if (result.affectedRows === 0) {
+                    return res.status(404).json({ message: 'Appointment not found' });
+                }
             }
 
             await logActivity(db, {
@@ -73,6 +89,11 @@ function registerQueueRoutes(app, db) {
                 notes: `Queue status set to "${queue_status}".`,
                 ip_address: getIp(req)
             });
+
+            if (io) {
+                io.emit('queue_updated');
+                io.emit('appointment-updated', { appointment_id: req.params.id, queue_status });
+            }
 
             res.json({ message: 'Queue status updated successfully' });
         } catch (err) {

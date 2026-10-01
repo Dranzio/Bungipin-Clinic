@@ -1,5 +1,6 @@
-// ── BOOKING CONTROLLER (Clean 30-Min Intervals & Strict Specialization) ───────
+// ── BOOKING CONTROLLER (Clean 30-Min Intervals, Advance Booking Limits & Mobile-Friendly Cards) ───────
 const API_BASE_URL = window.BACKEND_API_BASE_URL || '';
+const MAX_ADVANCE_MONTHS = 6; // Set to 6 for 6 months (or 12 for 1 year)
 
 function escapeHtml(value) {
     const div = document.createElement('div');
@@ -9,37 +10,6 @@ function escapeHtml(value) {
 
 function sanitizeInput(str, maxLen = 100) {
     return String(str ?? '').trim().replace(/[<>]/g, '').slice(0, maxLen);
-}
-
-// Format validators
-function isValidPHMobile(value) {
-    return /^09\d{9}$/.test(value.replace(/\s|-/g, ''));
-}
-function isValidEmail(value) {
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
-}
-function isValidCardNumber(value) {
-    const digits = value.replace(/\s/g, '');
-    return /^\d{13,19}$/.test(digits);
-}
-function isValidExpiry(value) {
-    const match = /^(\d{2})\/(\d{2})$/.exec(value.trim());
-    if (!match) return false;
-    const month = Number(match[1]);
-    if (month < 1 || month > 12) return false;
-    const year = 2000 + Number(match[2]);
-    const now = new Date();
-    const expiryDate = new Date(year, month, 0);
-    return expiryDate >= new Date(now.getFullYear(), now.getMonth(), 1);
-}
-function isValidCVV(value) {
-    return /^\d{3,4}$/.test(value.trim());
-}
-function isValidCardLast4(value) {
-    return /^\d{4}$/.test(value.trim());
-}
-function isValidNameField(value) {
-    return /^[a-zA-ZñÑ.'\- ]{2,60}$/.test(value.trim());
 }
 
 // ── State Management ────────────────────────────────────────────────────────
@@ -102,6 +72,7 @@ document.addEventListener('DOMContentLoaded', () => {
     loadDoctors();
     initBookingForm();
     initPaymentChannels();
+    initProcedureModal();
 });
 
 // ── 1. Load Services ────────────────────────────────────────────────────────
@@ -126,13 +97,13 @@ async function loadServices() {
         }
     } catch {
         availableServices = [
-            { service_id: 1, label: 'Dental Checkup & Consultation', price: 500, duration_minutes: 30, required_specialization: 'General Dentist', icon: '../assets/Checkup.png' },
-            { service_id: 2, label: 'Oral Prophylaxis (Cleaning)', price: 1500, duration_minutes: 45, required_specialization: 'General Dentist', icon: '../assets/cleaning.png' },
-            { service_id: 3, label: 'Tooth Restoration (Pasta)', price: 1200, duration_minutes: 30, required_specialization: 'General Dentist', icon: '../assets/pasta.png' },
-            { service_id: 4, label: 'Laser Teeth Whitening', price: 4500, duration_minutes: 60, required_specialization: 'General Dentist', icon: '../assets/whitening.png' },
-            { service_id: 5, label: 'Braces Installation / Adjustment', price: 3500, duration_minutes: 60, required_specialization: 'Orthodontist', icon: '../assets/logo.png' },
-            { service_id: 6, label: 'Root Canal Treatment', price: 6500, duration_minutes: 90, required_specialization: 'Endodontist', icon: '../assets/logo.png' },
-            { service_id: 7, label: 'Impacted Wisdom Tooth Surgery', price: 5000, duration_minutes: 60, required_specialization: 'Oral Surgeon', icon: '../assets/logo.png' }
+            { service_id: 1, label: 'Dental Checkup & Consultation', price: 500, duration_minutes: 30, required_specialization: 'General Dentist', description: 'Comprehensive oral assessment, clinical examination, and treatment planning by our dental team.', icon: '../assets/Checkup.png' },
+            { service_id: 2, label: 'Oral Prophylaxis (Cleaning)', price: 1500, duration_minutes: 45, required_specialization: 'General Dentist', description: 'Professional scaling and polishing to thoroughly remove plaque, tartar, and surface stains from teeth.', icon: '../assets/cleaning.png' },
+            { service_id: 3, label: 'Tooth Restoration (Pasta)', price: 1200, duration_minutes: 30, required_specialization: 'General Dentist', description: 'Composite tooth-colored resin filling to restore chipped or decayed tooth structure seamlessly.', icon: '../assets/pasta.png' },
+            { service_id: 4, label: 'Laser Teeth Whitening', price: 4500, duration_minutes: 60, required_specialization: 'General Dentist', description: 'Advanced in-office cosmetic whitening treatment using laser technology for immediate brightening.', icon: '../assets/whitening.png' },
+            { service_id: 5, label: 'Braces Installation / Adjustment', price: 3500, duration_minutes: 60, required_specialization: 'Orthodontist', description: 'Orthodontic bracket alignment and wire adjustments to straighten teeth and correct bite issues.', icon: '../assets/logo.png' },
+            { service_id: 6, label: 'Root Canal Treatment', price: 6500, duration_minutes: 90, required_specialization: 'Endodontist', description: 'Therapeutic endodontic procedure to clean, disinfect, and seal infected tooth pulp and root canals.', icon: '../assets/logo.png' },
+            { service_id: 7, label: 'Impacted Wisdom Tooth Surgery', price: 5000, duration_minutes: 60, required_specialization: 'Oral Surgeon', description: 'Specialized minor oral surgery to safely remove deeply impacted, painful, or misaligned wisdom teeth.', icon: '../assets/logo.png' }
         ];
         renderServiceCards();
     }
@@ -147,7 +118,7 @@ function fallbackIcon(label) {
     return '../assets/logowithtitle.png';
 }
 
-// ── 2. Render Services (DOCTOR-FIRST FILTERING) ─────────────────────────────
+// ── 2. Render Services (Clean Mobile-First Cards) ───────────────────────────
 function renderServiceCards() {
     const serviceGrid = document.getElementById('service-grid');
     if (!serviceGrid) return;
@@ -162,6 +133,7 @@ function renderServiceCards() {
         const duration = getEstimatedDuration(service);
         const reqSpec = service.required_specialization || 'General Dentist';
         const isCompatible = !doctorSpec || doctorCanPerformService(doctorSpec, reqSpec);
+        const descriptionText = service.description ? service.description : 'Standard clinical dental procedure.';
 
         card.dataset.serviceId = service.service_id;
 
@@ -170,63 +142,95 @@ function renderServiceCards() {
             : fallbackIcon(service.label);
 
         if (!isCompatible && selectedDoctor) {
-            // 🔴 RED BANNER — INCOMPATIBLE WITH CURRENT DOCTOR
-            card.className = `flex flex-col w-full max-w-[240px] h-[270px] justify-between items-center text-center rounded-2xl border-2 border-dashed border-red-400 bg-red-50/50 transition-all duration-200 cursor-not-allowed p-4 pt-7 relative shadow-sm opacity-70 select-none overflow-hidden`;
+            // 🔴 Incompatible Specialist Service Card
+            card.className = 'w-full max-w-[270px] min-h-[290px] rounded-3xl border-2 border-dashed border-red-300 bg-red-50/60 p-4 pt-6 flex flex-col justify-between items-center text-center shadow-sm opacity-80 cursor-not-allowed relative select-none';
 
             card.innerHTML = `
-                <div class="absolute -top-0.5 inset-x-0 bg-red-600 text-white text-[9px] font-black uppercase tracking-wider py-0.5 text-center shadow-sm">
+                <div class="absolute -top-0.5 inset-x-0 bg-red-600 text-white text-[9px] font-black uppercase tracking-wider py-0.5 text-center shadow-sm rounded-t-2xl">
                     ⚠️ Requires: ${escapeHtml(reqSpec)}
                 </div>
 
-                <div class="absolute top-3 left-2.5 bg-amber-100 border border-amber-500/30 text-amber-900 text-[10px] font-extrabold px-2 py-0.5 rounded-full flex items-center gap-1">
-                    <i class="fa-regular fa-clock text-[9px]"></i> ${duration}m
+                <div class="w-full flex justify-between items-center">
+                    <span class="bg-amber-100 border border-amber-500/30 text-amber-900 text-[10px] font-extrabold px-2 py-0.5 rounded-full flex items-center gap-1">
+                        <i class="fa-regular fa-clock text-[9px]"></i> ${duration}m
+                    </span>
+                    <div class="w-7 h-7 rounded-full border-2 border-gray-300 bg-gray-100 flex items-center justify-center">
+                        <i class="fa-solid fa-ban text-xs text-gray-400"></i>
+                    </div>
                 </div>
 
-                <h3 class="font-extrabold text-sm sm:text-base break-words w-full text-gray-600 line-clamp-2 px-2 mt-4">
+                <h3 class="font-extrabold text-sm break-words w-full text-gray-700 line-clamp-2 px-1 mt-1">
                     ${escapeHtml(service.label)}
                 </h3>
 
-                <img src="${imgSrc}" class="w-14 h-14 object-contain my-1 grayscale opacity-60" alt="${escapeHtml(service.label)}" onerror="this.src='../assets/logowithtitle.png'">
+                <img src="${imgSrc}" class="w-14 h-14 object-contain my-2 grayscale opacity-50" alt="${escapeHtml(service.label)}" onerror="this.src='../assets/logowithtitle.png'">
 
-                <div class="w-full pt-1.5 border-t border-red-200 flex flex-col items-center">
-                    <span class="text-[10px] font-bold text-red-600 leading-tight">Unavailable with ${escapeHtml(doctorSpec)}</span>
-                    <span class="font-black text-xs text-gray-500 mt-0.5">₱${Number(service.price).toLocaleString()}</span>
+                <div class="w-full flex flex-col gap-1 pt-2 border-t border-red-200">
+                    <div class="flex justify-between items-center px-1">
+                        <span class="text-[10px] font-bold text-red-600">Unavailable with ${escapeHtml(doctorSpec)}</span>
+                        <span class="font-black text-xs text-gray-500">₱${Number(service.price).toLocaleString()}</span>
+                    </div>
+                    <button type="button" class="view-proc-btn w-full py-1 bg-white hover:bg-gray-100 text-gray-700 font-bold rounded-xl border border-black/10 text-[11px] flex items-center justify-center gap-1 cursor-pointer transition">
+                        <i class="fa-solid fa-circle-info text-[#667733]"></i> Read Procedure
+                    </button>
                 </div>
             `;
 
-            // ⚠️ BLOCKS SELECTION
+            card.querySelector('.view-proc-btn').addEventListener('click', (e) => {
+                e.stopPropagation();
+                openProcedureModal(service, isSelected, false, doctorSpec);
+            });
+
             card.addEventListener('click', () => {
-                showValidationModal(`Cannot add "${service.label}".\n\nDr. ${selectedDoctor.name} is a ${doctorSpec}. This procedure requires a ${reqSpec}.\n\nPlease select a ${reqSpec} from the dentist dropdown above to book this service.`);
+                showValidationModal(
+                    `Dr. ${selectedDoctor.name} specializes in ${doctorSpec}.\n\n"${service.label}" requires a ${reqSpec}.\n\nPlease select a qualified specialist from the dentist dropdown.`,
+                    null,
+                    'Specialist Required',
+                    'specialist'
+                );
             });
 
         } else {
-            // ✅ COMPATIBLE / ACTIVE CARD
-            card.className = `flex flex-col w-full max-w-[240px] h-[270px] justify-between items-center text-center rounded-2xl border-2 transition-all duration-200 cursor-pointer p-4 pt-7 relative shadow-sm hover:scale-[1.02] overflow-hidden ${
+            // ✅ Active / Qualified Service Card
+            card.className = `w-full max-w-[270px] min-h-[290px] rounded-3xl border-2 p-4 pt-4 flex flex-col justify-between items-center text-center shadow-sm transition-all duration-200 cursor-pointer relative ${
                 isSelected 
                     ? 'bg-[#D7E3A5] border-[#667733] ring-2 ring-[#667733]' 
-                    : 'bg-white border-black hover:bg-[#F7F5EE]'
+                    : 'bg-white border-black hover:bg-[#FDFCE9] hover:scale-[1.01]'
             }`;
 
             card.innerHTML = `
-                <div class="absolute top-2.5 right-2.5 w-6 h-6 rounded-full border-2 border-black flex items-center justify-center ${isSelected ? 'bg-[#667733] text-white' : 'bg-white text-transparent'}">
-                    <i class="fa-solid fa-check text-xs"></i>
+                <div class="w-full flex justify-between items-center">
+                    <span class="bg-amber-100 border border-amber-500/30 text-amber-900 text-[10px] font-extrabold px-2 py-0.5 rounded-full flex items-center gap-1">
+                        <i class="fa-regular fa-clock text-[9px]"></i> ${duration}m
+                    </span>
+
+                    <div class="circle-select-btn w-7 h-7 rounded-full border-2 border-black flex items-center justify-center transition-all ${isSelected ? 'bg-[#667733] text-white shadow-sm' : 'bg-white text-transparent hover:border-[#667733]'}">
+                        <i class="fa-solid fa-check text-xs"></i>
+                    </div>
                 </div>
 
-                <div class="absolute top-2.5 left-2.5 bg-amber-100 border border-amber-500/30 text-amber-900 text-[10px] font-extrabold px-2 py-0.5 rounded-full flex items-center gap-1">
-                    <i class="fa-regular fa-clock text-[9px]"></i> ${duration}m
-                </div>
-
-                <h3 class="font-extrabold text-sm sm:text-base break-words w-full text-[#2A1001] line-clamp-2 px-2 mt-5">
+                <h3 class="font-extrabold text-sm sm:text-base break-words w-full text-[#2A1001] line-clamp-2 px-1 mt-1">
                     ${escapeHtml(service.label)}
                 </h3>
 
                 <img src="${imgSrc}" class="w-16 h-16 object-contain my-1" alt="${escapeHtml(service.label)}" onerror="this.src='../assets/logowithtitle.png'">
 
-                <div class="w-full pt-2 border-t border-[#2A1001]/10 flex justify-between items-center px-2">
-                    <span class="text-[10px] font-bold text-[#2A1001]/60 uppercase">Price:</span>
-                    <span class="font-black text-sm text-[#2A1001]">₱${Number(service.price).toLocaleString()}</span>
+                <div class="w-full flex flex-col gap-1.5 pt-2 border-t border-black/10">
+                    <div class="flex justify-between items-center px-1">
+                        <span class="text-[10px] font-bold text-[#2A1001]/60 uppercase">Price:</span>
+                        <span class="font-black text-sm text-[#667733]">₱${Number(service.price).toLocaleString()}</span>
+                    </div>
+
+                    <button type="button" class="view-proc-btn w-full py-1.5 bg-[#ECF5E2] hover:bg-[#F6FAF2] active:scale-95 text-[#2A1001] font-extrabold rounded-xl border border-black/10 text-[11px] flex items-center justify-center gap-1.5 cursor-pointer transition">
+                        <i class="fa-solid fa-circle-info text-[#667733]"></i> View Procedure Info
+                    </button>
                 </div>
             `;
+
+            card.querySelector('.view-proc-btn').addEventListener('click', (e) => {
+                e.stopPropagation();
+                openProcedureModal(service, isSelected, true);
+            });
 
             card.addEventListener('click', () => toggleServiceSelection(service));
         }
@@ -237,7 +241,79 @@ function renderServiceCards() {
     updateLiveCalculations();
 }
 
-// ── 3. Toggle Service Selection (SERVICE-FIRST FILTERING) ───────────────────
+// ── 3. Procedure Modal Controller ───────────────────────────────────────────
+let activeModalService = null;
+
+function initProcedureModal() {
+    const modal = document.getElementById('procedure-details-modal');
+    const closeX = document.getElementById('close-procedure-modal-btn');
+    const closeBtn = document.getElementById('proc-modal-close-btn');
+    const toggleBtn = document.getElementById('proc-modal-toggle-btn');
+
+    const closeModal = () => modal?.classList.add('hidden');
+
+    if (closeX) closeX.addEventListener('click', closeModal);
+    if (closeBtn) closeBtn.addEventListener('click', closeModal);
+    if (modal) modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
+
+    if (toggleBtn) {
+        toggleBtn.addEventListener('click', () => {
+            if (activeModalService) {
+                toggleServiceSelection(activeModalService);
+                closeModal();
+            }
+        });
+    }
+}
+
+function openProcedureModal(service, isCurrentlySelected, isCompatible = true, doctorSpec = '') {
+    const modal = document.getElementById('procedure-details-modal');
+    const titleEl = document.getElementById('proc-modal-title');
+    const specEl = document.getElementById('proc-modal-spec-badge');
+    const durationEl = document.getElementById('proc-modal-duration');
+    const priceEl = document.getElementById('proc-modal-price');
+    const descEl = document.getElementById('proc-modal-description');
+    const iconEl = document.getElementById('proc-modal-icon');
+    const toggleBtn = document.getElementById('proc-modal-toggle-btn');
+
+    if (!modal) return;
+
+    activeModalService = service;
+
+    const duration = getEstimatedDuration(service);
+    const reqSpec = service.required_specialization || 'General Dentist';
+    const imgSrc = (service.icon && (/^(\/|https?:\/\/|\.\.\/assets\/)/.test(service.icon)))
+        ? service.icon
+        : fallbackIcon(service.label);
+
+    if (titleEl) titleEl.textContent = service.label;
+    if (specEl) specEl.textContent = `Requires: ${reqSpec}`;
+    if (durationEl) durationEl.textContent = formatDuration(duration);
+    if (priceEl) priceEl.textContent = `₱${Number(service.price).toLocaleString()}`;
+    if (iconEl) iconEl.src = imgSrc;
+    if (descEl) descEl.textContent = service.description ? service.description : 'Standard clinic procedure with professional dental care.';
+
+    if (toggleBtn) {
+        if (!isCompatible) {
+            toggleBtn.disabled = true;
+            toggleBtn.className = 'flex-1 py-3 bg-gray-200 text-gray-500 font-bold rounded-full cursor-not-allowed text-xs sm:text-sm';
+            toggleBtn.innerHTML = `Unavailable with ${escapeHtml(doctorSpec || 'Dentist')}`;
+        } else {
+            toggleBtn.disabled = false;
+            if (isCurrentlySelected) {
+                toggleBtn.className = 'flex-1 py-3 bg-[#D9534F] hover:bg-red-700 text-white font-bold rounded-full shadow-md active:scale-95 transition cursor-pointer text-xs sm:text-sm flex items-center justify-center gap-1.5';
+                toggleBtn.innerHTML = '<i class="fa-solid fa-xmark"></i> Remove From Selection';
+            } else {
+                toggleBtn.className = 'flex-1 py-3 bg-[#667733] hover:bg-[#556022] text-white font-bold rounded-full shadow-md active:scale-95 transition cursor-pointer text-xs sm:text-sm flex items-center justify-center gap-1.5';
+                toggleBtn.innerHTML = '<i class="fa-solid fa-check"></i> Select This Treatment';
+            }
+        }
+    }
+
+    modal.classList.remove('hidden');
+}
+
+// ── 4. Toggle Service Selection ─────────────────────────────────────────────
 function toggleServiceSelection(service) {
     const index = selectedServices.findIndex(s => s.service_id == service.service_id);
     const duration = getEstimatedDuration(service);
@@ -246,11 +322,15 @@ function toggleServiceSelection(service) {
     if (index > -1) {
         selectedServices.splice(index, 1);
     } else {
-        // Block if currently selected doctor cannot perform this service
         if (selectedDoctorId) {
             const currentDoc = availableDoctors.find(d => d.doctor_id == selectedDoctorId);
             if (currentDoc && !doctorCanPerformService(currentDoc.specialization, reqSpec)) {
-                showValidationModal(`Cannot add "${service.label}". Dr. ${currentDoc.name} is a ${currentDoc.specialization} and cannot perform this treatment.`);
+                showValidationModal(
+                    `Cannot add "${service.label}". Dr. ${currentDoc.name} specializes in ${currentDoc.specialization} and cannot perform this treatment.`,
+                    null,
+                    'Specialist Required',
+                    'specialist'
+                );
                 return;
             }
         }
@@ -260,11 +340,11 @@ function toggleServiceSelection(service) {
             label: service.label,
             price: Number(service.price || 0),
             duration_minutes: duration,
+            description: service.description || '',
             required_specialization: reqSpec
         });
     }
 
-    // 💡 Filters Doctor Dropdown according to selected services
     populateDoctorDropdown();
     renderServiceCards();
 
@@ -291,7 +371,7 @@ function updateLiveCalculations() {
     }
 }
 
-// ── 4. Load & Populate Doctor Dropdown (SERVICE-FIRST FILTER) ───────────────
+// ── 5. Doctor Selection ─────────────────────────────────────────────────────
 async function loadDoctors() {
     try {
         const token = localStorage.getItem('userToken');
@@ -335,7 +415,7 @@ function populateDoctorDropdown() {
             opt.className = 'text-[#2A1001] font-bold';
             doctorSelect.appendChild(opt);
         } else {
-            opt.textContent = `${doc.name} (${docSpec}) — Incompatible with selected service`;
+            opt.textContent = `${doc.name} (${docSpec}) — Incompatible with selected service/s`;
             opt.disabled = true;
             opt.className = 'text-gray-400 bg-gray-100 italic';
             doctorSelect.appendChild(opt);
@@ -374,14 +454,18 @@ function initDoctorSelection() {
 
         const currentDoc = availableDoctors.find(d => d.doctor_id == selectedDoctorId);
 
-        // 🧹 Clean up incompatible services when switching doctors
         if (currentDoc) {
             const beforeCount = selectedServices.length;
             selectedServices = selectedServices.filter(s => 
                 doctorCanPerformService(currentDoc.specialization, s.required_specialization)
             );
             if (selectedServices.length < beforeCount) {
-                showValidationModal(`Some services were deselected because Dr. ${currentDoc.name} specializes in ${currentDoc.specialization}.`);
+                showValidationModal(
+                    `Some treatments were deselected because Dr. ${currentDoc.name} specializes in ${currentDoc.specialization}.`,
+                    null,
+                    'Specialization Update',
+                    'info'
+                );
             }
         }
 
@@ -393,7 +477,7 @@ function initDoctorSelection() {
     });
 }
 
-// ── 5. Dynamic Time Slots Fetcher (CLEAN 30-MIN INTERVALS PRESERVED) ─────────
+// ── 6. Dynamic Time Slots Fetcher ───────────────────────────────────────────
 async function fetchAvailableSlotsForDoctor(doctorId, dateString) {
     const container = document.getElementById('timeSlotsContainer');
     if (!container) return;
@@ -442,7 +526,6 @@ function renderNoSlotsMessage(container, msg) {
     document.getElementById('selected-end-time').value = '';
 }
 
-// ── Clean 30-Min Dynamic Intervals Render ───────────────────────────────────
 function renderDynamicSlots(container, slots, durationMinutes) {
     container.innerHTML = '';
 
@@ -517,7 +600,7 @@ function renderDynamicSlots(container, slots, durationMinutes) {
     pmSlots.forEach(s => pmList.appendChild(createSlotBtn(s)));
 }
 
-// ── 6. Calendar Logic ───────────────────────────────────────────────────────
+// ── 7. Calendar Logic (Enforces 6 Months / 1 Year Advance Limit) ─────────────
 function initCalendar() {
     const monthYear = document.getElementById('month-year');
     const daysContainer = document.getElementById('days');
@@ -532,13 +615,16 @@ function initCalendar() {
     ];
 
     let currentDate = new Date();
-    let today = new Date();
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
-    function isPastDate(dateString) {
-        const selectedDay = new Date(`${dateString}T00:00:00`);
-        const currentDay = new Date();
-        currentDay.setHours(0, 0, 0, 0);
-        return selectedDay < currentDay;
+    // Max advance booking date (e.g., today + 6 months)
+    const maxBookingDate = new Date(today);
+    maxBookingDate.setMonth(maxBookingDate.getMonth() + MAX_ADVANCE_MONTHS);
+
+    function isDateDisabled(dateString) {
+        const checkDate = new Date(`${dateString}T00:00:00`);
+        return checkDate < today || checkDate > maxBookingDate;
     }
 
     if (PNote && CurrentCount) {
@@ -557,6 +643,22 @@ function initCalendar() {
         if (!daysContainer) return;
         daysContainer.innerHTML = '';
 
+        // Disable "Previous" button if viewing current month/year
+        if (prevButton) {
+            const isCurrentMonth = (year === today.getFullYear() && month === today.getMonth());
+            prevButton.disabled = isCurrentMonth;
+            prevButton.classList.toggle('opacity-30', isCurrentMonth);
+            prevButton.classList.toggle('cursor-not-allowed', isCurrentMonth);
+        }
+
+        // Disable "Next" button if viewing maximum allowed month/year
+        if (nextButton) {
+            const isMaxMonth = (year > maxBookingDate.getFullYear()) || (year === maxBookingDate.getFullYear() && month >= maxBookingDate.getMonth());
+            nextButton.disabled = isMaxMonth;
+            nextButton.classList.toggle('opacity-30', isMaxMonth);
+            nextButton.classList.toggle('cursor-not-allowed', isMaxMonth);
+        }
+
         const prevMonthLastDay = new Date(year, month, 0).getDate();
         for (let i = firstDay; i > 0; i--) {
             const dayDiv = document.createElement('div');
@@ -567,20 +669,27 @@ function initCalendar() {
 
         for (let i = 1; i <= lastDay; i++) {
             const dayDiv = document.createElement('div');
-            dayDiv.className = 'w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center font-bold text-xs sm:text-sm text-[#2A1001] cursor-pointer transition-all hover:bg-[#D7E3A5] hover:scale-110';
-            dayDiv.textContent = i;
-
-            if (i === today.getDate() && month === today.getMonth() && year === today.getFullYear()) {
-                dayDiv.classList.add('border-2', 'border-[#667733]', 'bg-[#FDFCE9]');
-            }
-
             const formattedMonth = String(month + 1).padStart(2, '0');
             const formattedDay = String(i).padStart(2, '0');
             const sqlDateStr = `${year}-${formattedMonth}-${formattedDay}`;
 
-            if (isPastDate(sqlDateStr)) {
-                dayDiv.className = 'w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center font-medium text-xs sm:text-sm bg-gray-100 text-gray-400 cursor-not-allowed select-none';
+            if (isDateDisabled(sqlDateStr)) {
+                // Disabled Day (Past or Beyond 6 Months / 1 Year)
+                dayDiv.className = 'w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center font-medium text-xs sm:text-sm bg-gray-100 text-gray-300 cursor-not-allowed select-none';
+                dayDiv.textContent = i;
             } else {
+                // Available Day
+                dayDiv.className = 'w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center font-bold text-xs sm:text-sm text-[#2A1001] cursor-pointer transition-all hover:bg-[#D7E3A5] hover:scale-110';
+                dayDiv.textContent = i;
+
+                if (i === today.getDate() && month === today.getMonth() && year === today.getFullYear()) {
+                    dayDiv.classList.add('border-2', 'border-[#667733]', 'bg-[#FDFCE9]');
+                }
+
+                if (selectedDateValue === sqlDateStr) {
+                    dayDiv.classList.add('bg-[#667733]', 'text-white');
+                }
+
                 dayDiv.addEventListener('click', () => {
                     document.querySelectorAll('#days > div').forEach(d => d.classList.remove('bg-[#667733]', 'text-white'));
                     dayDiv.classList.add('bg-[#667733]', 'text-white');
@@ -597,13 +706,30 @@ function initCalendar() {
         }
     }
 
-    if (prevButton) prevButton.addEventListener('click', () => { currentDate.setMonth(currentDate.getMonth() - 1); renderCalendar(currentDate); });
-    if (nextButton) nextButton.addEventListener('click', () => { currentDate.setMonth(currentDate.getMonth() + 1); renderCalendar(currentDate); });
+    if (prevButton) {
+        prevButton.addEventListener('click', () => {
+            const isCurrentMonth = (currentDate.getFullYear() === today.getFullYear() && currentDate.getMonth() === today.getMonth());
+            if (!isCurrentMonth) {
+                currentDate.setMonth(currentDate.getMonth() - 1);
+                renderCalendar(currentDate);
+            }
+        });
+    }
+
+    if (nextButton) {
+        nextButton.addEventListener('click', () => {
+            const isMaxMonth = (currentDate.getFullYear() > maxBookingDate.getFullYear()) || (currentDate.getFullYear() === maxBookingDate.getFullYear() && currentDate.getMonth() >= maxBookingDate.getMonth());
+            if (!isMaxMonth) {
+                currentDate.setMonth(currentDate.getMonth() + 1);
+                renderCalendar(currentDate);
+            }
+        });
+    }
 
     renderCalendar(currentDate);
 }
 
-// ── 7. Philippine Payment Channels ──────────────────────────────────────────
+// ── 8. Philippine Payment Channels ──────────────────────────────────────────
 function initPaymentChannels() {
     const tabs = document.querySelectorAll('.channel-tab-btn');
     tabs.forEach(tab => {
@@ -646,7 +772,7 @@ function renderChannelContent(channel) {
                     </div>
                     <div>
                         <label class="text-[11px] sm:text-xs font-bold text-[#2A1001] block mb-0.5">Your GCash Mobile No. <span class="text-red-500">*</span></label>
-                        <input type="tel" id="gcash-mobile" placeholder="09XX XXX XXXX" maxlength="13" class="w-full bg-white border border-black/20 rounded-lg px-2.5 py-1.5 text-xs sm:text-sm font-semibold outline-none focus:ring-2 focus:ring-[#005CEE]">
+                        <input type="tel" id="gcash-mobile" placeholder="09XX XXX XXXX" maxlength="11" class="w-full bg-white border border-black/20 rounded-lg px-2.5 py-1.5 text-xs sm:text-sm font-semibold outline-none focus:ring-2 focus:ring-[#005CEE]">
                     </div>
                     <div>
                         <label class="text-[11px] sm:text-xs font-bold text-[#2A1001] block mb-0.5">GCash Reference No.:</label>
@@ -655,7 +781,6 @@ function renderChannelContent(channel) {
                 </div>
             </div>
         `;
-        restrictToDigits(document.getElementById('gcash-mobile'), 11);
     } else if (channel === 'maya') {
         box.innerHTML = `
             <div class="flex flex-col sm:flex-row items-center sm:items-start gap-3">
@@ -670,7 +795,7 @@ function renderChannelContent(channel) {
                     </div>
                     <div>
                         <label class="text-[11px] sm:text-xs font-bold text-[#2A1001] block mb-0.5">Your Maya Mobile No. <span class="text-red-500">*</span></label>
-                        <input type="tel" id="maya-mobile" placeholder="09XX XXX XXXX" maxlength="13" class="w-full bg-white border border-black/20 rounded-lg px-2.5 py-1.5 text-xs sm:text-sm font-semibold outline-none focus:ring-2 focus:ring-green-600">
+                        <input type="tel" id="maya-mobile" placeholder="09XX XXX XXXX" maxlength="11" class="w-full bg-white border border-black/20 rounded-lg px-2.5 py-1.5 text-xs sm:text-sm font-semibold outline-none focus:ring-2 focus:ring-green-600">
                     </div>
                     <div>
                         <label class="text-[11px] sm:text-xs font-bold text-[#2A1001] block mb-0.5">Maya Reference Code:</label>
@@ -679,7 +804,6 @@ function renderChannelContent(channel) {
                 </div>
             </div>
         `;
-        restrictToDigits(document.getElementById('maya-mobile'), 11);
     } else if (channel === 'gotyme') {
         box.innerHTML = `
             <div class="flex flex-col gap-2">
@@ -702,8 +826,6 @@ function renderChannelContent(channel) {
                 </div>
             </div>
         `;
-        restrictToNameChars(document.getElementById('gotyme-name'));
-        restrictToDigits(document.getElementById('gotyme-account'), 4);
     } else if (channel === 'card') {
         box.innerHTML = `
             <div class="flex flex-col gap-2">
@@ -735,10 +857,6 @@ function renderChannelContent(channel) {
                 </div>
             </div>
         `;
-        restrictToNameChars(document.getElementById('card-name'));
-        restrictToDigitsAndSpaces(document.getElementById('card-number'), 19);
-        restrictToExpiryFormat(document.getElementById('card-expiry'));
-        restrictToDigits(document.getElementById('card-cvv'), 4);
     } else if (channel === 'paypal') {
         box.innerHTML = `
             <div class="flex flex-col gap-2">
@@ -754,7 +872,7 @@ function renderChannelContent(channel) {
     }
 }
 
-// ── 8. Booking Form & Summary Modals ────────────────────────────────────────
+// ── 9. Booking Form & Summary Modals ────────────────────────────────────────
 function initBookingForm() {
     const bookingForm           = document.getElementById('booking-form');
     const receiptModal          = document.getElementById('receipt-modal');
@@ -772,19 +890,19 @@ function initBookingForm() {
         e.preventDefault();
 
         if (!selectedDoctorId) {
-            showValidationModal('Please select an attending dentist before continuing.', document.getElementById('doctorSelect'));
+            showValidationModal('Please select an attending dentist before continuing.', document.getElementById('doctorSelect'), 'Dentist Required', 'info');
             return;
         }
         if (selectedServices.length === 0) {
-            showValidationModal('Please select at least one dental treatment.');
+            showValidationModal('Please select at least one dental treatment.', null, 'Treatment Required', 'info');
             return;
         }
         if (!selectedDateValue) {
-            showValidationModal('Please pick an appointment date on the calendar.');
+            showValidationModal('Please pick an appointment date on the calendar.', null, 'Date Required', 'info');
             return;
         }
         if (!selectedStartTime) {
-            showValidationModal('Please select an available starting time slot.');
+            showValidationModal('Please select an available starting time slot.', null, 'Time Slot Required', 'info');
             return;
         }
 
@@ -795,12 +913,15 @@ function initBookingForm() {
         const totalMinutes = selectedServices.reduce((sum, s) => sum + (s.duration_minutes || 30), 0);
 
         const servicesListHtml = selectedServices.map(s => `
-            <div class="flex justify-between items-center py-1 text-xs sm:text-sm border-b border-black/10">
-                <div>
-                    <span class="font-bold text-[#2A1001]">${escapeHtml(s.label)}</span>
-                    <span class="text-[10px] text-gray-500 ml-1">(${s.duration_minutes || 30}m)</span>
+            <div class="flex flex-col py-1.5 text-xs sm:text-sm border-b border-black/10 gap-0.5">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <span class="font-bold text-[#2A1001]">${escapeHtml(s.label)}</span>
+                        <span class="text-[10px] text-gray-500 ml-1">(${s.duration_minutes || 30}m)</span>
+                    </div>
+                    <span class="font-black text-[#2A1001]">₱${s.price.toLocaleString()}</span>
                 </div>
-                <span class="font-black text-[#2A1001]">₱${s.price.toLocaleString()}</span>
+                ${s.description ? `<p class="text-[11px] text-[#2A1001]/70 italic">${escapeHtml(s.description)}</p>` : ''}
             </div>
         `).join('');
 
@@ -877,13 +998,13 @@ function initBookingForm() {
             if (currentPaymentChannel === 'gcash') {
                 const mobField = document.getElementById('gcash-mobile');
                 const mob = sanitizeInput(mobField?.value, 11);
-                if (!mob || mob.length < 11) { showValidationModal('Please enter a valid 11-digit GCash mobile number (09XXXXXXXXX).', mobField); return; }
+                if (!mob || mob.length < 11) { showValidationModal('Please enter a valid 11-digit GCash mobile number (09XXXXXXXXX).', mobField, 'Invalid Mobile', 'error'); return; }
                 paymentRef = sanitizeInput(document.getElementById('gcash-ref')?.value, 30) || 'GCASH-' + Date.now();
 
             } else if (currentPaymentChannel === 'maya') {
                 const mobField = document.getElementById('maya-mobile');
                 const mob = sanitizeInput(mobField?.value, 11);
-                if (!mob || mob.length < 11) { showValidationModal('Please enter a valid 11-digit Maya mobile number (09XXXXXXXXX).', mobField); return; }
+                if (!mob || mob.length < 11) { showValidationModal('Please enter a valid 11-digit Maya mobile number (09XXXXXXXXX).', mobField, 'Invalid Mobile', 'error'); return; }
                 paymentRef = sanitizeInput(document.getElementById('maya-ref')?.value, 30) || 'MAYA-' + Date.now();
 
             } else if (currentPaymentChannel === 'gotyme') {
@@ -891,8 +1012,8 @@ function initBookingForm() {
                 const accField = document.getElementById('gotyme-account');
                 const name = sanitizeInput(nameField?.value, 60);
                 const acc = sanitizeInput(accField?.value, 4);
-                if (!name) { showValidationModal('Please input your GoTyme account name.', nameField); return; }
-                if (!acc || acc.length < 4) { showValidationModal('Please enter the last 4 digits of your GoTyme card.', accField); return; }
+                if (!name) { showValidationModal('Please input your GoTyme account name.', nameField, 'Account Name Required', 'error'); return; }
+                if (!acc || acc.length < 4) { showValidationModal('Please enter the last 4 digits of your GoTyme card.', accField, 'Card Digits Required', 'error'); return; }
                 paymentRef = 'GOTYME-' + Date.now();
 
             } else if (currentPaymentChannel === 'card') {
@@ -905,13 +1026,13 @@ function initBookingForm() {
                 const exp = sanitizeInput(expField?.value, 5);
                 const cvv = sanitizeInput(cvvField?.value, 4);
 
-                if (!name || !num || !exp || !cvv) { showValidationModal('Please fill in complete Card details.', numField); return; }
+                if (!name || !num || !exp || !cvv) { showValidationModal('Please fill in complete Card details.', numField, 'Incomplete Card Details', 'error'); return; }
                 paymentRef = 'CARD-' + num.replace(/\s/g, '').slice(-4) + '-' + Date.now();
 
             } else if (currentPaymentChannel === 'paypal') {
                 const emailField = document.getElementById('paypal-email');
                 const email = sanitizeInput(emailField?.value, 100);
-                if (!email) { showValidationModal('Please enter your PayPal email address.', emailField); return; }
+                if (!email) { showValidationModal('Please enter your PayPal email address.', emailField, 'Email Required', 'error'); return; }
                 paymentRef = 'PAYPAL-' + email;
             }
 
@@ -926,58 +1047,41 @@ function initBookingForm() {
     }
 }
 
-// ── Validation Input Helpers ────────────────────────────────────────────────
-function restrictToDigits(input, maxLen) {
-    if (!input) return;
-    input.addEventListener('input', () => {
-        let digitsOnly = input.value.replace(/\D/g, '');
-        if (maxLen) digitsOnly = digitsOnly.slice(0, maxLen);
-        input.value = digitsOnly;
-    });
-}
-
-function restrictToDigitsAndSpaces(input, maxLen) {
-    if (!input) return;
-    input.addEventListener('input', () => {
-        let filtered = input.value.replace(/[^\d ]/g, '');
-        if (maxLen) filtered = filtered.slice(0, maxLen);
-        input.value = filtered;
-    });
-}
-
-function restrictToExpiryFormat(input) {
-    if (!input) return;
-    input.addEventListener('input', () => {
-        let v = input.value.replace(/[^\d/]/g, '');
-        if (v.length === 2 && !v.includes('/') && input.dataset.lastLen < v.length) {
-            v = v + '/';
-        }
-        input.dataset.lastLen = v.length;
-        input.value = v.slice(0, 5);
-    });
-}
-
-function restrictToNameChars(input) {
-    if (!input) return;
-    const clean = () => {
-        input.value = input.value.replace(/[^a-zA-ZñÑ.'\- ]/g, '');
-    };
-    input.addEventListener('input', clean);
-    input.addEventListener('paste', () => setTimeout(clean, 0));
-    input.addEventListener('blur', clean);
-}
-
-function showValidationModal(message, focusTarget = null) {
+// ── 10. Validation & Success Modals ─────────────────────────────────────────
+function showValidationModal(message, focusTarget = null, title = 'Incomplete Booking', type = 'warning') {
     const modal = document.getElementById('validation-modal');
-    const text = document.getElementById('validation-modal-text');
+    const titleEl = document.getElementById('validation-modal-title');
+    const textEl = document.getElementById('validation-modal-text');
+    const iconWrap = document.getElementById('validation-modal-icon-wrap');
+    const iconEl = document.getElementById('validation-modal-icon');
     const okBtn = document.getElementById('validation-modal-ok');
 
-    if (!modal || !text || !okBtn) {
+    if (!modal || !textEl || !okBtn) {
         alert(message);
         return;
     }
 
-    text.textContent = message;
+    let finalTitle = title;
+    const msgLower = String(message).toLowerCase();
+
+    if (msgLower.includes('active appointments') || msgLower.includes('booking limit')) {
+        finalTitle = 'Active Booking Limit Reached';
+        if (iconWrap) iconWrap.className = 'w-14 h-14 rounded-full bg-amber-100 flex items-center justify-center text-amber-700';
+        if (iconEl) iconEl.className = 'fa-solid fa-calendar-xmark text-2xl';
+    } else if (msgLower.includes('specialist') || msgLower.includes('requires')) {
+        finalTitle = 'Specialist Required';
+        if (iconWrap) iconWrap.className = 'w-14 h-14 rounded-full bg-red-100 flex items-center justify-center text-red-600';
+        if (iconEl) iconEl.className = 'fa-solid fa-user-doctor text-2xl';
+    } else if (type === 'error') {
+        if (iconWrap) iconWrap.className = 'w-14 h-14 rounded-full bg-red-100 flex items-center justify-center text-red-600';
+        if (iconEl) iconEl.className = 'fa-solid fa-circle-exclamation text-2xl';
+    } else {
+        if (iconWrap) iconWrap.className = 'w-14 h-14 rounded-full bg-amber-100 flex items-center justify-center text-amber-600';
+        if (iconEl) iconEl.className = 'fa-solid fa-triangle-exclamation text-2xl';
+    }
+
+    if (titleEl) titleEl.textContent = finalTitle;
+    textEl.textContent = message;
     modal.classList.remove('hidden');
 
     const closeModal = () => {
@@ -1015,7 +1119,7 @@ function showSuccessModal({ date, time, doctorName, servicesLabel, amount }) {
     };
 }
 
-// ── 9. Submit Appointment ───────────────────────────────────────────────────
+// ── 11. Submit Appointment ───────────────────────────────────────────────────
 async function submitBookingToDatabase(method, channel = null, reference = null) {
     const token = localStorage.getItem('userToken');
     const totalMinutes = selectedServices.reduce((sum, s) => sum + (s.duration_minutes || 30), 0);
@@ -1048,7 +1152,9 @@ async function submitBookingToDatabase(method, channel = null, reference = null)
         });
 
         const result = await response.json();
-        if (!response.ok) throw new Error(result.message || 'Failed to complete booking.');
+        if (!response.ok) {
+            throw new Error(result.message || 'Failed to complete booking.');
+        }
 
         const docObj = availableDoctors.find(d => d.doctor_id == selectedDoctorId);
         const totalAmount = selectedServices.reduce((sum, s) => sum + s.price, 0);
@@ -1063,7 +1169,7 @@ async function submitBookingToDatabase(method, channel = null, reference = null)
 
     } catch (error) {
         console.error('Booking Submission Error:', error);
-        showValidationModal('Booking Error: ' + error.message);
+        showValidationModal(error.message, null, 'Booking Notice', 'warning');
         const submitOnlineBtn = document.getElementById('submitOnlineBookingBtn');
         if (submitOnlineBtn) {
             submitOnlineBtn.disabled = false;

@@ -148,25 +148,50 @@ function renderChatMessages(messages, contactId) {
         const dateObj = new Date(msg.sent_at);
         const timeStr = dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-        // If the sender is the contact, it's a received message
         const isReceived = (msg.sender_id === contactId);
+
+        let attachmentsHtml = '';
+        if (msg.file_url) {
+            try {
+                const urls = JSON.parse(msg.file_url);
+                if (Array.isArray(urls) && urls.length > 0) {
+                    attachmentsHtml = '<div class="mt-2 flex flex-wrap gap-2">';
+                    urls.forEach(url => {
+                        const ext = url.split('.').pop().toLowerCase();
+                        if (['png', 'jpg', 'jpeg', 'gif', 'webp'].includes(ext)) {
+                            attachmentsHtml += `<a href="${url}" target="_blank"><img src="${url}" class="max-w-[200px] max-h-[200px] object-cover rounded border border-gray-300"></a>`;
+                        } else if (['mp4', 'webm', 'ogg'].includes(ext)) {
+                            attachmentsHtml += `<video src="${url}" controls class="max-w-[200px] max-h-[200px] rounded border border-gray-300"></video>`;
+                        } else {
+                            attachmentsHtml += `<a href="${url}" target="_blank" class="flex items-center gap-1 bg-gray-100 text-blue-600 px-3 py-2 rounded border border-gray-300 text-xs font-bold hover:bg-gray-200"><i class="fa-solid fa-file"></i> Download File</a>`;
+                        }
+                    });
+                    attachmentsHtml += '</div>';
+                }
+            } catch (e) {
+                console.error('Error parsing file_url:', e);
+            }
+        }
+
+        const contentHtml = msg.content ? `<div>${escapeHtml(msg.content)}</div>` : '';
 
         if (isReceived) {
             chatArea.innerHTML += `
                 <div class="flex flex-col items-start max-w-[80%]">
                     <span class="text-xs text-gray-600 font-semibold mb-1">${escapeHtml(currentChatUserName)}</span>
                     <div class="bg-white border-2 border-black px-4 py-3 rounded-lg text-sm shadow-sm w-full">
-                        ${escapeHtml(msg.content)}
+                        ${contentHtml}
+                        ${attachmentsHtml}
                     </div>
                     <span class="text-xs text-gray-600 font-semibold mt-1">${timeStr}</span>
                 </div>
             `;
         } else {
-            // Otherwise, it was sent by the current user
             chatArea.innerHTML += `
                 <div class="flex flex-col items-end self-end max-w-[80%]">
                     <div class="bg-[#D7E3A5] border-2 border-black px-4 py-3 rounded-lg text-sm shadow-sm w-full">
-                        ${escapeHtml(msg.content)}
+                        ${contentHtml}
+                        ${attachmentsHtml}
                     </div>
                     <span class="text-xs text-gray-600 font-semibold mt-1">${timeStr}</span>
                 </div>
@@ -178,28 +203,99 @@ function renderChatMessages(messages, contactId) {
     chatArea.scrollTop = chatArea.scrollHeight;
 }
 
+let selectedFiles = [];
+
+function handleFileSelect(event) {
+    const files = Array.from(event.target.files);
+    selectedFiles = selectedFiles.concat(files);
+    renderFilePreview();
+    // Reset input so the same file can be selected again if needed
+    event.target.value = '';
+}
+
+function removeFile(index) {
+    selectedFiles.splice(index, 1);
+    renderFilePreview();
+}
+
+function renderFilePreview() {
+    const previewArea = document.getElementById('filePreviewArea');
+    if (selectedFiles.length === 0) {
+        previewArea.classList.add('hidden');
+        previewArea.innerHTML = '';
+        return;
+    }
+    
+    previewArea.classList.remove('hidden');
+    previewArea.innerHTML = '';
+    
+    selectedFiles.forEach((file, index) => {
+        const fileDiv = document.createElement('div');
+        fileDiv.className = 'flex items-center gap-2 bg-white border border-gray-300 rounded px-2 py-1 text-xs';
+        
+        let icon = '<i class="fa-solid fa-file"></i>';
+        if (file.type.startsWith('image/')) icon = '<i class="fa-solid fa-image"></i>';
+        else if (file.type.startsWith('video/')) icon = '<i class="fa-solid fa-video"></i>';
+        else if (file.type === 'application/pdf') icon = '<i class="fa-solid fa-file-pdf"></i>';
+        
+        fileDiv.innerHTML = `
+            ${icon}
+            <span class="max-w-[100px] truncate" title="${file.name}">${file.name}</span>
+            <button onclick="removeFile(${index})" class="text-red-500 hover:text-red-700 ml-1"><i class="fa-solid fa-times"></i></button>
+        `;
+        previewArea.appendChild(fileDiv);
+    });
+}
+
 async function sendMessage() {
     const token = localStorage.getItem('userToken');
     const input = document.getElementById('chatInput');
     const content = input.value.trim();
 
-    if (!token || !content || !currentChatUserId) return;
+    if (!token || !currentChatUserId) return;
+    if (!content && selectedFiles.length === 0) return;
 
     try {
-        const response = await fetch('/api/messages/send', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({
-                receiver_id: currentChatUserId,
-                content: content
-            })
-        });
+        let response;
+        
+        // If there are files, use FormData (multipart/form-data)
+        if (selectedFiles.length > 0) {
+            const formData = new FormData();
+            formData.append('receiver_id', currentChatUserId);
+            formData.append('content', content);
+            
+            selectedFiles.forEach(file => {
+                formData.append('attachments', file); // Use 'attachments' or whatever backend expects
+            });
+            
+            response = await fetch('/api/messages/send', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                    // Do not set Content-Type for FormData, browser will set boundary automatically
+                },
+                body: formData
+            });
+        } else {
+            // No files, use JSON
+            response = await fetch('/api/messages/send', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    receiver_id: currentChatUserId,
+                    content: content
+                })
+            });
+        }
 
         if (response.ok) {
             input.value = '';
+            selectedFiles = [];
+            renderFilePreview();
+            
             // Reload the specific chat to show the new message
             await loadChatMessages(currentChatUserId);
             // Refresh the threads in the background to update the snippet and timestamp

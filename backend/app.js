@@ -8,6 +8,7 @@ const appointmentRoutes = require('./routes/appointmentRoutes');
 const serviceRoutes = require('./routes/serviceRoutes');
 const reportRoutes = require('./routes/reportRoutes');
 const patientRoutes = require('./routes/patientRoutes');
+const paymentRoutes = require('./routes/paymentRoutes');
 
 const app = express();
 
@@ -21,6 +22,7 @@ app.use('/api/appointments', appointmentRoutes);
 app.use('/api/services', serviceRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/patients', patientRoutes);
+app.use('/api/payments', paymentRoutes);
 
 // Lightweight health check for confirming that the API process is running.
 app.get('/', (req, res) => {

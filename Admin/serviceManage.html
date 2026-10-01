@@ -86,7 +86,7 @@
             </button>
         </div>
 
-        <div id="serviceGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 mb-10">
+        <div id="serviceGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
             <!-- cards injected dynamically by JS -->
         </div>
 
@@ -95,17 +95,17 @@
 
 <!-- ================= SERVICE MODAL ================= -->
 <div id="serviceModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-    <div class="bg-white rounded-3xl w-full max-w-md p-7 sm:p-8 relative shadow-2xl border border-black/10 max-h-[92vh] overflow-y-auto">
+    <div class="bg-white rounded-3xl w-full max-w-lg p-6 sm:p-8 relative shadow-2xl border border-black/10 max-h-[92vh] overflow-y-auto">
 
         <!-- Close Button -->
         <button id="closeServiceModal" type="button" class="absolute top-4 right-5 text-2xl font-bold text-[#2A1001]/60 hover:text-[#2A1001] cursor-pointer">&times;</button>
 
-        <h2 id="modalHeading" class="text-lg font-bold text-[#2A1001] uppercase tracking-wider text-center mb-6">Service Details</h2>
+        <h2 id="modalHeading" class="text-lg font-bold text-[#2A1001] uppercase tracking-wider text-center mb-5">Service Details</h2>
 
         <div class="flex flex-col items-center gap-4">
 
             <!-- Service Icon -->
-            <div class="relative w-28 h-28 group">
+            <div class="relative w-24 h-24 group">
                 <img id="serviceIconPreview" src="" class="w-full h-full object-contain hidden" alt="Service Icon" />
 
                 <div id="iconPlaceholder" class="w-full h-full flex items-center justify-center border-2 border-dashed border-gray-300 rounded-2xl bg-gray-50">
@@ -113,7 +113,7 @@
                 </div>
 
                 <!-- Upload Overlay Button -->
-                <button id="editIconBtn" type="button" class="hidden absolute -bottom-1.5 -right-1.5 w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-md border border-gray-200 hover:bg-gray-50 transition z-10 cursor-pointer" title="Change icon">
+                <button id="editIconBtn" type="button" class="hidden absolute -bottom-1 -right-1 w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-md border border-gray-200 hover:bg-gray-50 transition z-10 cursor-pointer" title="Change icon">
                     <i class="fa-solid fa-camera text-xs text-[#2A1001]/80"></i>
                 </button>
                 <input type="file" id="serviceIconInput" accept="image/png, image/jpeg, image/webp" class="hidden" />
@@ -141,21 +141,29 @@
                 </select>
             </div>
 
-            <!-- Estimated Duration -->
-            <div class="w-full">
-                <label class="block text-xs font-bold text-[#2A1001] uppercase mb-1">Estimated Duration (minutes)</label>
-                <input id="serviceDurationInput" type="number" min="5" max="480" step="5" readonly class="w-full px-4 py-2.5 rounded-full border border-[#2A1001]/20 outline-none bg-[#dedede] text-[#2c3e2b]/70 font-semibold text-sm transition cursor-not-allowed shadow-inner" placeholder="30" />
-            </div>
-
-            <!-- Price Input with Perfect Center Alignment -->
+            <!-- Procedure Explanation / Patient Details (TEXTBOX) -->
             <div class="w-full">
                 <div class="flex justify-between items-center mb-1">
-                    <label class="text-xs font-bold text-[#2A1001] uppercase">Service Price (PHP)</label>
-                    <span class="text-[11px] font-semibold text-gray-500">Max: ₱1,500,000</span>
+                    <label class="text-xs font-bold text-[#2A1001] uppercase">Procedure Details / Patient Explanation</label>
+                    <span class="text-[11px] font-semibold text-gray-500"><span id="descCount">0</span>/500</span>
                 </div>
-                <div id="servicePriceContainer" class="w-full px-4 py-2.5 rounded-full border border-[#2A1001]/20 bg-[#dedede] flex items-center gap-1.5 shadow-inner transition cursor-not-allowed">
-                    <span id="servicePriceSymbol" class="font-bold text-sm text-[#2c3e2b]/70 select-none leading-none">₱</span>
-                    <input id="servicePriceInput" type="text" inputmode="decimal" maxlength="10" readonly class="w-full bg-transparent border-0 outline-none p-0 text-[#2c3e2b]/70 font-semibold text-sm cursor-not-allowed placeholder:text-gray-400 leading-none" placeholder="1500" />
+                <textarea id="serviceDescriptionInput" maxlength="500" readonly rows="3" class="w-full px-4 py-2.5 rounded-2xl border border-[#2A1001]/20 outline-none bg-[#dedede] text-[#2c3e2b]/70 font-medium text-xs sm:text-sm transition cursor-not-allowed shadow-inner resize-none placeholder:text-gray-400" placeholder="Explain what the procedure is, what steps occur, and what patients should expect..."></textarea>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full">
+                <!-- Estimated Duration -->
+                <div>
+                    <label class="block text-xs font-bold text-[#2A1001] uppercase mb-1">Estimated Duration (mins)</label>
+                    <input id="serviceDurationInput" type="number" min="5" max="480" step="5" readonly class="w-full px-4 py-2.5 rounded-full border border-[#2A1001]/20 outline-none bg-[#dedede] text-[#2c3e2b]/70 font-semibold text-sm transition cursor-not-allowed shadow-inner" placeholder="30" />
+                </div>
+
+                <!-- Price Input with Perfect Center Alignment -->
+                <div>
+                    <label class="block text-xs font-bold text-[#2A1001] uppercase mb-1">Service Price (PHP)</label>
+                    <div id="servicePriceContainer" class="w-full px-4 py-2.5 rounded-full border border-[#2A1001]/20 bg-[#dedede] flex items-center gap-1.5 shadow-inner transition cursor-not-allowed">
+                        <span id="servicePriceSymbol" class="font-bold text-sm text-[#2c3e2b]/70 select-none leading-none">₱</span>
+                        <input id="servicePriceInput" type="text" inputmode="decimal" maxlength="10" readonly class="w-full bg-transparent border-0 outline-none p-0 text-[#2c3e2b]/70 font-semibold text-sm cursor-not-allowed placeholder:text-gray-400 leading-none" placeholder="1500" />
+                    </div>
                 </div>
             </div>
 
@@ -343,7 +351,7 @@
 
     // ── FORM LOCKING MECHANISM ──
     function setFormLocked(locked) {
-        ['serviceNameInput', 'serviceDurationInput'].forEach(id => {
+        ['serviceNameInput', 'serviceDurationInput', 'serviceDescriptionInput'].forEach(id => {
             const el = document.getElementById(id);
             if (!el) return;
             locked ? el.setAttribute('readonly', true) : el.removeAttribute('readonly');
@@ -395,17 +403,23 @@
         document.getElementById('editActionsContainer').classList.toggle('hidden', locked);
     }
 
+    // Dynamic Description Character Counter
+    const descInputEl = document.getElementById('serviceDescriptionInput');
+    if (descInputEl) {
+        descInputEl.addEventListener('input', function() {
+            document.getElementById('descCount').textContent = this.value.length;
+        });
+    }
+
     // ── STRICT NUMERIC INPUT VALIDATION FOR PRICE WITH 1,500,000 LIMIT ──
     const priceInputEl = document.getElementById('servicePriceInput');
     if (priceInputEl) {
-        // Focus input when clicking anywhere inside the pill container
         document.getElementById('servicePriceContainer')?.addEventListener('click', () => {
             if (!priceInputEl.hasAttribute('readonly')) {
                 priceInputEl.focus();
             }
         });
 
-        // Block letters (e, E), signs (+, -), and invalid symbols on keystroke
         priceInputEl.addEventListener('keydown', function (e) {
             const allowedKeys = [
                 'Backspace', 'Delete', 'Tab', 'Escape', 'Enter',
@@ -415,30 +429,19 @@
                 return;
             }
 
-            // Allow only one decimal point
             if (e.key === '.' || e.key === 'Decimal') {
-                if (this.value.includes('.')) {
-                    e.preventDefault();
-                }
+                if (this.value.includes('.')) e.preventDefault();
                 return;
             }
 
-            // Allow digits 0-9 only
-            if (/^[0-9]$/.test(e.key)) {
-                return;
-            }
-
-            // Block everything else
+            if (/^[0-9]$/.test(e.key)) return;
             e.preventDefault();
         });
 
-        // Limit amount to 1,500,000 PHP and warn when exceeded
         priceInputEl.addEventListener('input', function () {
             let val = this.value.replace(/[^0-9.]/g, '');
             const parts = val.split('.');
-            if (parts.length > 2) {
-                val = parts[0] + '.' + parts.slice(1).join('');
-            }
+            if (parts.length > 2) val = parts[0] + '.' + parts.slice(1).join('');
             if (val.includes('.')) {
                 const [intPart, decPart] = val.split('.');
                 val = intPart + '.' + decPart.slice(0, 2);
@@ -450,23 +453,7 @@
                 showAlert('Maximum Price Limit', 'The maximum allowed service price is ₱1,500,000.', 'info');
                 return;
             }
-
             this.value = val;
-        });
-
-        priceInputEl.addEventListener('paste', function (e) {
-            e.preventDefault();
-            const text = (e.clipboardData || window.clipboardData).getData('text');
-            const cleanText = text.replace(/[^0-9.]/g, '');
-            const num = parseFloat(cleanText);
-            if (!isNaN(num) && num > 1500000) {
-                this.value = '1500000';
-                showAlert('Maximum Price Limit', 'The maximum allowed service price is ₱1,500,000.', 'info');
-                return;
-            }
-            if (cleanText) {
-                document.execCommand('insertText', false, cleanText);
-            }
         });
     }
 
@@ -478,6 +465,7 @@
     function populateModalData(service) {
         const nameInput = document.getElementById('serviceNameInput');
         const specInput = document.getElementById('serviceSpecializationInput');
+        const descInput = document.getElementById('serviceDescriptionInput');
         const priceInput = document.getElementById('servicePriceInput');
         const durationInput = document.getElementById('serviceDurationInput');
         const iconPreview = document.getElementById('serviceIconPreview');
@@ -485,9 +473,11 @@
 
         if (service) {
             nameInput.value = service.label || '';
-            specInput.value = service.specialization || 'General Dentist';
+            specInput.value = service.specialization || service.required_specialization || 'General Dentist';
+            descInput.value = service.description || '';
             priceInput.value = service.price !== undefined ? Number(service.price) : '';
             durationInput.value = service.duration_minutes !== undefined ? parseInt(service.duration_minutes, 10) : 30;
+            document.getElementById('descCount').textContent = (service.description || '').length;
 
             if (service.icon) {
                 iconPreview.src = safeIconSrc(service.icon, defaultIcons['default']);
@@ -502,8 +492,10 @@
         } else {
             nameInput.value = '';
             specInput.value = 'General Dentist';
+            descInput.value = '';
             priceInput.value = '';
             durationInput.value = '30';
+            document.getElementById('descCount').textContent = '0';
             iconPreview.classList.add('hidden');
             iconPlaceholder.classList.remove('hidden');
             uploadedIconData = null;
@@ -535,6 +527,7 @@
         document.getElementById('serviceModal').classList.remove('hidden');
     }
 
+    // ── RENDER ADMIN SERVICE CARDS (Clean, Uncluttered, Accessible Menu) ──────
     async function renderServices() {
         const grid = document.getElementById('serviceGrid');
         grid.innerHTML = `<div class="col-span-full text-center py-12 text-[#2A1001]/60 font-semibold"><i class="fa-solid fa-spinner fa-spin mr-2"></i>Loading services catalog...</div>`;
@@ -553,44 +546,44 @@
             const cleanPrice = Number(s.price || 0).toLocaleString();
 
             return `
-            <div class="bg-white rounded-[30px] p-6 shadow-sm hover:shadow-md transition-all duration-300 relative flex flex-col items-center justify-between min-h-[340px] border border-black/5">
+            <div class="bg-white rounded-[32px] p-6 shadow-sm hover:shadow-md transition-all duration-300 relative flex flex-col items-center justify-between min-h-[300px] border border-black/5">
                 
                 <!-- Duration & Specialization Badges -->
                 <div class="absolute top-4 left-4 flex flex-col gap-1 items-start">
                     <div class="bg-amber-50 border border-amber-600/30 text-amber-900 text-[10px] font-black px-2.5 py-0.5 rounded-full flex items-center gap-1 shadow-sm">
                         <i class="fa-regular fa-clock text-[9px]"></i> ${durationDisplay}
                     </div>
-                    ${s.specialization ? `
+                    ${s.specialization || s.required_specialization ? `
                     <div class="bg-[#D7E3A5] border border-[#c1ccab] text-[#2c3e2b] text-[9px] font-bold px-2 py-0.5 rounded-full shadow-sm">
-                        ${escapeHtml(s.specialization)}
+                        ${escapeHtml(s.specialization || s.required_specialization)}
                     </div>` : ''}
                 </div>
 
-                <!-- Context Menu -->
-                <div class="absolute top-4 right-4">
-                    <button class="menuBtn w-8 h-8 bg-transparent rounded-full flex items-center justify-center text-[#2A1001] hover:bg-gray-100 transition font-bold text-xl leading-none pb-2 cursor-pointer" data-id="${cleanId}">
+                <!-- Three-Dots Context Menu (Always Accessible & Unblocked) -->
+                <div class="absolute top-4 right-4 z-20">
+                    <button class="menuBtn w-8 h-8 bg-transparent hover:bg-gray-100 rounded-full flex items-center justify-center text-[#2A1001] transition font-bold text-xl leading-none pb-2 cursor-pointer shadow-sm" data-id="${cleanId}">
                         ...
                     </button>
-                    <div class="menuDropdown hidden absolute right-0 top-10 bg-white border border-[#2A1001]/10 rounded-xl shadow-lg z-10 w-36 overflow-hidden" data-menu-for="${cleanId}">
-                        <button class="editOption w-full flex items-center gap-3 px-4 py-2.5 text-xs font-bold text-[#2A1001] hover:bg-[#F3EFE4] cursor-pointer" data-id="${cleanId}">
-                            <i class="fa-solid fa-pen-to-square text-xs text-[#667733]"></i> <span class="whitespace-nowrap">Edit Service</span>
+                    <div class="menuDropdown hidden absolute right-0 top-9 bg-white border border-[#2A1001]/10 rounded-2xl shadow-xl z-30 w-36 overflow-hidden" data-menu-for="${cleanId}">
+                        <button class="editOption w-full flex items-center gap-2.5 px-4 py-2.5 text-xs font-bold text-[#2A1001] hover:bg-[#F3EFE4] cursor-pointer" data-id="${cleanId}">
+                            <i class="fa-solid fa-pen-to-square text-xs text-[#667733]"></i> <span>Edit Service</span>
                         </button>
-                        <button class="deleteOption w-full flex items-center gap-3 px-4 py-2.5 text-xs font-bold text-red-600 hover:bg-red-50 cursor-pointer" data-id="${cleanId}">
-                            <i class="fa-solid fa-trash-can text-xs text-red-500"></i> <span class="whitespace-nowrap">Delete Service</span>
+                        <button class="deleteOption w-full flex items-center gap-2.5 px-4 py-2.5 text-xs font-bold text-red-600 hover:bg-red-50 cursor-pointer border-t border-gray-100" data-id="${cleanId}">
+                            <i class="fa-solid fa-trash-can text-xs text-red-500"></i> <span>Delete</span>
                         </button>
                     </div>
                 </div>
 
                 <!-- Title -->
-                <h3 class="font-extrabold text-[#382414] text-lg mt-8 mb-1 w-full text-center px-4 line-clamp-2">${escapeHtml(s.label)}</h3>
+                <h3 class="font-extrabold text-[#382414] text-base sm:text-lg mt-8 mb-2 w-full text-center px-2 line-clamp-2">${escapeHtml(s.label)}</h3>
 
                 <!-- Icon -->
-                <div class="flex-1 flex justify-center items-center my-2 w-24 h-24">
+                <div class="flex justify-center items-center my-3 w-16 h-16">
                     <img src="${escapeHtml(iconUrl)}" onerror="this.src='../assets/logowithtitle.png'" class="w-full h-full object-contain" alt="${escapeHtml(s.label)}" />
                 </div>
 
-                <!-- Price -->
-                <div class="w-full pt-3 border-t border-[#2A1001]/10 flex justify-between items-center px-2 text-[#382414]">
+                <!-- Price Bar -->
+                <div class="w-full pt-3 border-t border-[#2A1001]/10 flex justify-between items-center px-2 text-[#382414] mt-auto">
                     <span class="text-xs font-bold text-gray-500 uppercase">Rate:</span>
                     <span class="font-black text-base text-[#667733]">₱${cleanPrice}</span>
                 </div>
@@ -642,13 +635,11 @@
 
     document.getElementById('addServiceBtn').addEventListener('click', () => openServiceModal(null));
 
-    // Unlock button handler
     document.getElementById('startEditBtn').addEventListener('click', () => {
         setFormLocked(false);
         document.getElementById('serviceNameInput').focus();
     });
 
-    // Cancel edit button handler
     document.getElementById('cancelEditBtn').addEventListener('click', () => {
         if (isCreatingNew) {
             document.getElementById('serviceModal').classList.add('hidden');
@@ -697,10 +688,11 @@
         reader.readAsDataURL(file);
     });
 
-    // ── SAVE / UPDATE SERVICE HANDLER WITH LOADING ──
+    // ── SAVE / UPDATE SERVICE HANDLER ──
     document.getElementById('saveServiceBtn').addEventListener('click', async function () {
         const labelValue = document.getElementById('serviceNameInput').value.trim();
         const specValue = document.getElementById('serviceSpecializationInput').value.trim();
+        const descValue = document.getElementById('serviceDescriptionInput').value.trim();
         const priceValue = parseFloat(document.getElementById('servicePriceInput').value);
         const durationValue = parseInt(document.getElementById('serviceDurationInput').value, 10);
 
@@ -737,6 +729,11 @@
             return;
         }
 
+        if (descValue.length > 500) {
+            showAlert('Validation Error', 'Procedure explanation cannot exceed 500 characters.', 'error');
+            return;
+        }
+
         const btn = this;
         const originalText = btn.innerHTML;
         btn.disabled = true;
@@ -745,6 +742,7 @@
         const serviceData = {
             label: labelValue,
             specialization: specValue,
+            description: descValue,
             price: priceValue,
             duration_minutes: durationValue,
             icon: uploadedIconData
@@ -770,7 +768,6 @@
         document.getElementById('deleteModal').classList.add('hidden');
     });
 
-    // ── DELETE SERVICE HANDLER WITH LOADING ──
     document.getElementById('confirmDeleteBtn').addEventListener('click', async function() {
         if (!pendingDeleteId) return;
         const targetId = pendingDeleteId;
@@ -801,6 +798,13 @@
     });
 
     renderServices();
+
+    
+
+    document.addEventListener('keydown', e => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') { e.preventDefault(); form.requestSubmit(); }
+    });
 </script>
+  <script src="/InactivityTimer/InactivityTimer.js"></script>
 </body>
 </html>

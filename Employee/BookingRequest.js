@@ -5,6 +5,30 @@ function getIp(req) {
     return req.ip || req.headers['x-forwarded-for'];
 }
 
+const MAX_ADVANCE_MONTHS = 6; // Limit reschedules up to 6 months in advance
+
+// Auto-cancel past pending appointments that were never served/approved
+async function autoCancelExpiredAppointments(db, io = null) {
+    try {
+        const [result] = await db.query(`
+            UPDATE appointments
+            SET appointment_status = 'cancelled',
+                patient_note = CONCAT(COALESCE(patient_note, ''), ' [System: Auto-cancelled due to expired schedule]')
+            WHERE appointment_status = 'pending'
+              AND (
+                  appointment_date < CURDATE()
+                  OR (appointment_date = CURDATE() AND end_time < CURTIME())
+              )
+        `);
+
+        if (result.affectedRows > 0 && io) {
+            io.emit('appointment-updated');
+        }
+    } catch (err) {
+        console.error('Auto-cancel expired appointments error:', err);
+    }
+}
+
 function registerBookingRequestRoutes(app, db, io) {
 
     function getDurationForService(serviceLabel) {
@@ -37,6 +61,9 @@ function registerBookingRequestRoutes(app, db, io) {
         if (!['employee', 'admin'].includes(req.user.role)) {
             return res.status(403).json({ message: 'Not authorized' });
         }
+
+        // ✅ Automatically clear expired pending appointments before loading list
+        await autoCancelExpiredAppointments(db, io);
 
         const { status } = req.query;
 
@@ -189,9 +216,9 @@ function registerBookingRequestRoutes(app, db, io) {
                 ip_address: getIp(req)
             });
 
-            // Real-time broadcast
             if (io) {
                 io.emit('appointment-updated', { appointment_id: appointmentId, status: appointment_status });
+                io.emit('queue_updated');
             }
 
             res.json({ message: `Appointment ${appointment_status} successfully` });
@@ -249,7 +276,6 @@ function registerBookingRequestRoutes(app, db, io) {
                 const reqEnd = reqStart + duration;
                 const calculatedEnd = calculateEndTime(appt.requested_time, duration);
 
-                // Interval conflict check
                 const [existing] = await connection.query(
                     `SELECT appointment_id, time_slot, end_time FROM appointments
                      WHERE appointment_date = ?
@@ -271,7 +297,6 @@ function registerBookingRequestRoutes(app, db, io) {
                     });
                 }
 
-                // ✅ INCREMENTS RESCHEDULE COUNT UPON APPROVAL
                 await connection.query(
                     `UPDATE appointments 
                      SET appointment_date = requested_date,
@@ -327,7 +352,6 @@ function registerBookingRequestRoutes(app, db, io) {
                 ip_address: getIp(req)
             });
 
-            // Real-time broadcast
             if (io) {
                 io.emit('appointment-updated', { appointment_id: appointmentId });
             }
@@ -359,6 +383,18 @@ function registerBookingRequestRoutes(app, db, io) {
             return res.status(400).json({ message: 'appointment_date and time_slot are required' });
         }
 
+        // Enforce 6-Month Advance Limit
+        const reschedDateTime = new Date(`${appointment_date}T${time_slot}`);
+        const maxAllowedDate = new Date();
+        maxAllowedDate.setMonth(maxAllowedDate.getMonth() + MAX_ADVANCE_MONTHS);
+        maxAllowedDate.setHours(23, 59, 59, 999);
+
+        if (reschedDateTime > maxAllowedDate) {
+            return res.status(400).json({ 
+                message: `Appointments can only be scheduled up to ${MAX_ADVANCE_MONTHS} months in advance.` 
+            });
+        }
+
         const connection = await db.getConnection();
 
         try {
@@ -381,7 +417,6 @@ function registerBookingRequestRoutes(app, db, io) {
             const slotEnd = slotStart + duration;
             const calculatedEnd = calculateEndTime(time_slot, duration);
 
-            // Interval range conflict check
             const [existing] = await connection.query(
                 `SELECT appointment_id, time_slot, end_time FROM appointments
                  WHERE appointment_date = ? 
@@ -401,7 +436,6 @@ function registerBookingRequestRoutes(app, db, io) {
                 return res.status(409).json({ message: 'This time slot overlaps with another confirmed patient.' });
             }
 
-            // ✅ INCREMENTS RESCHEDULE COUNT ON DIRECT RESCHEDULE
             await connection.query(
                 `UPDATE appointments 
                  SET appointment_date = ?,

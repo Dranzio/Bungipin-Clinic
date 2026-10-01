@@ -2,6 +2,7 @@
 const TEST_MODE = false;
 const MAX_RESCHEDULE_LIMIT = 2; // Maximum allowed reschedules
 
+
 function escapeHtml(value) {
     const div = document.createElement('div');
     div.textContent = value == null ? '' : String(value);
@@ -1034,9 +1035,13 @@ function closeRescheduleModal() {
     pendingRescheduleAppt = null;
 }
 
+const MAX_ADVANCE_MONTHS = 6; // Set to 6 for 6 months (or 12 for 1 year)
+
 function renderReschedCalendar(date) {
     const monthYearEl = document.getElementById('reschedMonthYear');
     const daysContainer = document.getElementById('reschedDays');
+    const reschedPrev = document.getElementById('reschedPrev');
+    const reschedNext = document.getElementById('reschedNext');
     if (!monthYearEl || !daysContainer) return;
 
     const year = date.getFullYear();
@@ -1044,8 +1049,26 @@ function renderReschedCalendar(date) {
     const firstDay = new Date(year, month, 1).getDay();
     const lastDay = new Date(year, month + 1, 0).getDate();
 
+    // 1. Calculate the max allowed date (today + 6 months)
+    const maxReschedDate = new Date(reschedToday);
+    maxReschedDate.setMonth(maxReschedDate.getMonth() + MAX_ADVANCE_MONTHS);
+
     monthYearEl.textContent = `${months[month]} ${year}`;
     daysContainer.innerHTML = '';
+
+    // 2. Disable "Prev" arrow if on current month
+    if (reschedPrev) {
+        const isCurrentMonth = (year === reschedToday.getFullYear() && month === reschedToday.getMonth());
+        reschedPrev.style.opacity = isCurrentMonth ? '0.3' : '1';
+        reschedPrev.style.pointerEvents = isCurrentMonth ? 'none' : 'auto';
+    }
+
+    // 3. Disable "Next" arrow if reached the 6-month limit
+    if (reschedNext) {
+        const isMaxMonth = (year > maxReschedDate.getFullYear()) || (year === maxReschedDate.getFullYear() && month >= maxReschedDate.getMonth());
+        reschedNext.style.opacity = isMaxMonth ? '0.3' : '1';
+        reschedNext.style.pointerEvents = isMaxMonth ? 'none' : 'auto';
+    }
 
     function handleDayClick(dayDiv, displayDateStr, sqlDateStr) {
         dayDiv.addEventListener('click', function () {
@@ -1064,6 +1087,7 @@ function renderReschedCalendar(date) {
         });
     }
 
+    // Leading filler days
     const prevMonthLastDay = new Date(year, month, 0).getDate();
     for (let i = firstDay; i > 0; i--) {
         const dayDiv = document.createElement('div');
@@ -1072,16 +1096,21 @@ function renderReschedCalendar(date) {
         daysContainer.appendChild(dayDiv);
     }
 
+    // Days of current month
     for (let i = 1; i <= lastDay; i++) {
         const dayDiv = document.createElement('div');
         const cellDate = new Date(year, month, i);
+
+        // 4. Check if past OR beyond 6 months
         const isPast = cellDate < new Date(reschedToday.getFullYear(), reschedToday.getMonth(), reschedToday.getDate());
+        const isBeyondLimit = cellDate > maxReschedDate;
+        const isDisabled = isPast || isBeyondLimit;
 
         dayDiv.className = 'w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center font-bold text-xs text-[#2A1001] transition-all';
         dayDiv.textContent = i;
 
-        if (isPast) {
-            dayDiv.className = 'w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center font-medium text-gray-300 cursor-not-allowed select-none text-xs';
+        if (isDisabled) {
+            dayDiv.className = 'w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center font-medium text-gray-300 cursor-not-allowed select-none text-xs bg-gray-50';
         } else {
             dayDiv.classList.add('cursor-pointer', 'hover:bg-[#D7E3A5]', 'hover:scale-110');
         }
@@ -1099,7 +1128,17 @@ function renderReschedCalendar(date) {
             dayDiv.classList.add('bg-[#667733]', 'text-white');
         }
 
-        if (!isPast) handleDayClick(dayDiv, displayStr, sqlStr);
+        if (!isDisabled) handleDayClick(dayDiv, displayStr, sqlStr);
+        daysContainer.appendChild(dayDiv);
+    }
+
+    // Trailing filler days (keeps calendar rectangular)
+    const totalRendered = firstDay + lastDay;
+    const remainingCells = (7 - (totalRendered % 7)) % 7;
+    for (let i = 1; i <= remainingCells; i++) {
+        const dayDiv = document.createElement('div');
+        dayDiv.className = 'w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center font-medium text-gray-300 select-none text-xs';
+        dayDiv.textContent = i;
         daysContainer.appendChild(dayDiv);
     }
 }

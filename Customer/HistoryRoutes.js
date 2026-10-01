@@ -6,11 +6,13 @@ function getIp(req) {
 }
 
 const MAX_RESCHEDULE_LIMIT = 2; // Maximum allowed reschedules per appointment
+const MAX_ADVANCE_MONTHS = 6;   // Maximum advance reschedule limit (6 months / 1 year)
 
 function registerHistoryRoutes(app, db, io) {
 
     // ── 1. GET /api/appointments/mine — Patient's personal appointment history ──
     app.get('/api/appointments/mine', authenticateToken, async (req, res) => {
+        await autoCancelExpiredAppointments(db, io);
         if (req.user.role !== 'patient') {
             return res.status(403).json({ message: 'Only patients can view their own appointment history' });
         }
@@ -143,7 +145,6 @@ function registerHistoryRoutes(app, db, io) {
                 ip_address: getIp(req)
             });
 
-            // Real-time broadcast to BookingRequest & Queue
             if (io) {
                 io.emit('appointment-updated', { appointment_id: Number(appointmentId) });
             }
@@ -166,7 +167,7 @@ function registerHistoryRoutes(app, db, io) {
     const TIME_PATTERN = /^([01]\d|2[0-3]):([0-5]\d)(:([0-5]\d))?$/;
     const RESCHEDULABLE_STATUSES = ['pending', 'approved'];
 
-    // ── 3. GET /api/appointments/occupied/mine — Patient occupied slots ──
+    // ── 3. GET /api/appointments/occupied/mine ──
     app.get('/api/appointments/occupied/mine', authenticateToken, async (req, res) => {
         if (req.user.role !== 'patient') {
             return res.status(403).json({ message: 'Not authorized' });
@@ -185,7 +186,7 @@ function registerHistoryRoutes(app, db, io) {
         }
     });
 
-    // ── 4. PATCH /api/appointments/:id/request-reschedule — Patient Requests Reschedule ──
+    // ── 4. PATCH /api/appointments/:id/request-reschedule ──
     app.patch('/api/appointments/:id/request-reschedule', authenticateToken, async (req, res) => {
         if (req.user.role !== 'patient') {
             return res.status(403).json({ message: 'Not authorized' });
@@ -202,6 +203,22 @@ function registerHistoryRoutes(app, db, io) {
         }
         if (!reschedule_reason || !reschedule_reason.trim()) {
             return res.status(400).json({ message: 'A reschedule reason is required' });
+        }
+
+        // ⚠️ Enforce future date and max advance booking limit (6 months)
+        const reschedDateTime = new Date(`${requested_date}T${requested_time}`);
+        if (Number.isNaN(reschedDateTime.getTime()) || reschedDateTime <= new Date()) {
+            return res.status(400).json({ message: 'Rescheduled appointments must be set for a future date and time' });
+        }
+
+        const maxAllowedDate = new Date();
+        maxAllowedDate.setMonth(maxAllowedDate.getMonth() + MAX_ADVANCE_MONTHS);
+        maxAllowedDate.setHours(23, 59, 59, 999);
+
+        if (reschedDateTime > maxAllowedDate) {
+            return res.status(400).json({ 
+                message: `Rescheduling can only be requested up to ${MAX_ADVANCE_MONTHS} months in advance.` 
+            });
         }
 
         let connection;
@@ -235,7 +252,7 @@ function registerHistoryRoutes(app, db, io) {
                 return res.status(409).json({ message: 'Only pending or approved appointments can be rescheduled' });
             }
 
-            // ⚠️ Enforce maximum 2 reschedules limit
+            // Enforce maximum 2 reschedules limit
             if (appt.reschedule_count >= MAX_RESCHEDULE_LIMIT && appt.reschedule_status !== 'requested') {
                 await connection.rollback();
                 return res.status(400).json({
@@ -281,7 +298,6 @@ function registerHistoryRoutes(app, db, io) {
                 ip_address: getIp(req)
             });
 
-            // Real-time broadcast to BookingRequest & Queue!
             if (io) {
                 io.emit('appointment-updated', { appointment_id: Number(appointmentId) });
             }
@@ -300,7 +316,7 @@ function registerHistoryRoutes(app, db, io) {
         }
     });
 
-    // ── 5. PATCH /api/appointments/:id/cancel-reschedule — Patient Cancels Pending Reschedule Request ──
+    // ── 5. PATCH /api/appointments/:id/cancel-reschedule ──
     app.patch('/api/appointments/:id/cancel-reschedule', authenticateToken, async (req, res) => {
         if (req.user.role !== 'patient') {
             return res.status(403).json({ message: 'Not authorized' });
@@ -361,6 +377,28 @@ function registerHistoryRoutes(app, db, io) {
             if (connection) connection.release();
         }
     });
+
+    // Automatically cancel past pending appointments
+    async function autoCancelExpiredAppointments(db, io = null) {
+        try {
+            const [result] = await db.query(`
+                UPDATE appointments
+                SET appointment_status = 'cancelled',
+                    patient_note = CONCAT(COALESCE(patient_note, ''), ' [System: Auto-cancelled due to expired schedule]')
+                WHERE appointment_status = 'pending'
+                  AND (
+                      appointment_date < CURDATE()
+                      OR (appointment_date = CURDATE() AND end_time < CURTIME())
+                  )
+            `);
+
+            if (result.affectedRows > 0 && io) {
+                io.emit('appointment-updated');
+            }
+        } catch (err) {
+            console.error('Auto-cancel expired appointments error:', err);
+        }
+    }
 }
 
 module.exports = registerHistoryRoutes;

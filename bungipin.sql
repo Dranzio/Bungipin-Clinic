@@ -1,6 +1,7 @@
 CREATE DATABASE IF NOT EXISTS defaultdb;
 USE defaultdb;
 
+-- ================= DROP INSTANCES =================
 DROP PROCEDURE IF EXISTS sp_get_all_patient_records;
 DROP PROCEDURE IF EXISTS sp_get_patient_record;
 DROP PROCEDURE IF EXISTS sp_get_employee_record;
@@ -23,6 +24,7 @@ DROP TABLE IF EXISTS doctor_schedules;
 DROP TABLE IF EXISTS employee_profiles;
 DROP TABLE IF EXISTS patient_profiles;
 DROP TABLE IF EXISTS users;
+DROP TABLE IF EXISTS pending_registrations;
 
 -- ================= USERS & PROFILES =================
 CREATE TABLE users (
@@ -58,7 +60,7 @@ CREATE TABLE employee_profiles (
        employee_id    INT PRIMARY KEY,
        staff_code     VARCHAR(30) UNIQUE,
        position       VARCHAR(30),                              -- 'Dentist', 'Receptionist'
-       specialization VARCHAR(255) DEFAULT 'General Dentist',   -- Supports Dual Specialization (e.g. 'General Dentist, Orthodontist')
+       specialization VARCHAR(255) DEFAULT 'General Dentist',   -- Supports Dual Specialization
        birthday       DATE,
        FOREIGN KEY (employee_id) REFERENCES users(user_id) ON DELETE CASCADE
 );
@@ -66,9 +68,24 @@ CREATE TABLE employee_profiles (
 
 
 CREATE TABLE admin_profiles (
-                                admin_id          INT PRIMARY KEY,
-                                permission_level  VARCHAR(30),
-                                FOREIGN KEY (admin_id) REFERENCES users(user_id) ON DELETE CASCADE
+       admin_id          INT PRIMARY KEY,
+       permission_level  VARCHAR(30),
+       FOREIGN KEY (admin_id) REFERENCES users(user_id) ON DELETE CASCADE
+);
+
+CREATE TABLE pending_registrations (
+    pending_id    INT AUTO_INCREMENT PRIMARY KEY,
+    first_name    VARCHAR(50)  NOT NULL,
+    last_name     VARCHAR(50)  NOT NULL,
+    email         VARCHAR(150) NOT NULL,
+    phone         VARCHAR(15)  NOT NULL DEFAULT '',
+    password_hash VARCHAR(255) NOT NULL,
+    sex           CHAR(1)      NOT NULL,
+    token_hash    CHAR(64)     NOT NULL,
+    expires_at    DATETIME     NOT NULL,
+    created_at    TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uq_pending_email (email),
+    UNIQUE KEY uq_pending_token (token_hash)
 );
 
 -- Public ID & Registration Procedure
@@ -82,32 +99,32 @@ CREATE PROCEDURE sp_register_user(
     IN p_sex         VARCHAR(10),
     IN p_role        ENUM('patient','employee','admin'),
     OUT p_new_user_id INT
-        )
+)
 BEGIN
-INSERT INTO users (first_name, last_name, email, phone, password_hash, sex, role)
-VALUES (p_first_name, p_last_name, p_email, p_phone, p_password_hash, p_sex, p_role);
+    INSERT INTO users (first_name, last_name, email, phone, password_hash, sex, role)
+    VALUES (p_first_name, p_last_name, p_email, p_phone, p_password_hash, p_sex, p_role);
 
-SET p_new_user_id = LAST_INSERT_ID();
+    SET p_new_user_id = LAST_INSERT_ID();
 
-UPDATE users
-SET public_id = CONCAT(
+    UPDATE users
+    SET public_id = CONCAT(
         CASE p_role
             WHEN 'patient'  THEN 'PAT'
             WHEN 'employee' THEN 'EMP'
             WHEN 'admin'    THEN 'ADM'
             ELSE 'USR'
-            END,
+        END,
         '-', LPAD(p_new_user_id, 4, '0')
-                )
-WHERE user_id = p_new_user_id;
+    )
+    WHERE user_id = p_new_user_id;
 
-IF p_role = 'patient' THEN
+    IF p_role = 'patient' THEN
         INSERT INTO patient_profiles (patient_id) VALUES (p_new_user_id);
     ELSEIF p_role = 'employee' THEN
         INSERT INTO employee_profiles (employee_id) VALUES (p_new_user_id);
     ELSEIF p_role = 'admin' THEN
         INSERT INTO admin_profiles (admin_id) VALUES (p_new_user_id);
-END IF;
+    END IF;
 END$$
 DELIMITER ;
 
@@ -134,9 +151,6 @@ CREATE TABLE activity_logs (
         notes         TEXT NULL,
         ip_address    VARCHAR(45) NULL,
         created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    -- SET NULL, not CASCADE: deleting a user should never erase the audit
-    -- trail of what that user did. Every other FK in this schema cascades,
-    -- but that pattern is wrong specifically for a log table.
         FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE SET NULL,
         INDEX idx_created_at (created_at),
         INDEX idx_user_role (user_role),
@@ -180,13 +194,14 @@ CREATE TABLE allergies (
         FOREIGN KEY (patient_id) REFERENCES patient_profiles(patient_id) ON DELETE CASCADE
 );
 
--- ================= SERVICES & CATALOG =================
+-- ================= SERVICES & CATALOG (WITH PROCEDURE DETAILS) =================
 CREATE TABLE services (
         service_id              INT AUTO_INCREMENT PRIMARY KEY,
         label                   VARCHAR(100) NOT NULL,
         price                   DECIMAL(10,2) NOT NULL DEFAULT 0.00,
         duration_minutes        INT NOT NULL DEFAULT 30,
         required_specialization VARCHAR(100) NOT NULL DEFAULT 'General Dentist',
+        description             TEXT NULL,                                      -- 👈 Procedure Explanation / Details
         icon                    VARCHAR(255),
         is_available            BOOLEAN NOT NULL DEFAULT TRUE
 );
@@ -265,7 +280,7 @@ CREATE TABLE notifications (
         FOREIGN KEY (appointment_id) REFERENCES appointments(appointment_id) ON DELETE CASCADE,
         FOREIGN KEY (message_id)     REFERENCES messages(message_id) ON DELETE CASCADE,
         CONSTRAINT chk_single_source CHECK (
-        NOT (appointment_id IS NOT NULL AND message_id IS NOT NULL)
+            NOT (appointment_id IS NOT NULL AND message_id IS NOT NULL)
         )
 );
 
@@ -485,15 +500,15 @@ UPDATE employee_profiles SET staff_code = 'STF-2026-003', position = 'Dentist', 
 
 UPDATE admin_profiles SET permission_level = 'full_access' WHERE admin_id = 5;
 
--- Clinic Services with Durations & Required Specializations
-INSERT INTO services (label, price, duration_minutes, required_specialization, icon, is_available) VALUES
-       ('Dental Checkup & Consultation', 500.00, 30, 'General Dentist', '../assets/Checkup.png', TRUE),
-       ('Oral Prophylaxis (Cleaning)', 1500.00, 45, 'General Dentist', '../assets/cleaning.png', TRUE),
-       ('Tooth Restoration (Pasta)', 1200.00, 30, 'General Dentist', '../assets/pasta.png', TRUE),
-       ('Laser Teeth Whitening', 4500.00, 60, 'General Dentist', '../assets/whitening.png', TRUE),
-       ('Braces Installation / Adjustment', 3500.00, 60, 'Orthodontist', '../assets/logo.png', TRUE),
-       ('Root Canal Treatment', 6500.00, 90, 'Endodontist', '../assets/logo.png', TRUE),
-       ('Impacted Wisdom Tooth Surgery', 5000.00, 60, 'Oral Surgeon', '../assets/logo.png', TRUE);
+-- Clinic Services with Durations, Required Specializations & Procedure Explanations
+INSERT INTO services (label, price, duration_minutes, required_specialization, description, icon, is_available) VALUES
+       ('Dental Checkup & Consultation', 500.00, 30, 'General Dentist', 'Comprehensive oral assessment and dental exam to check teeth, gums, and oral hygiene.', '../assets/Checkup.png', TRUE),
+       ('Oral Prophylaxis (Cleaning)', 1500.00, 45, 'General Dentist', 'Professional scaling and polishing to remove plaque, tartar, and surface stains.', '../assets/cleaning.png', TRUE),
+       ('Tooth Restoration (Pasta)', 1200.00, 30, 'General Dentist', 'Composite tooth-colored resin filling to restore chipped or decayed tooth structure.', '../assets/pasta.png', TRUE),
+       ('Laser Teeth Whitening', 4500.00, 60, 'General Dentist', 'In-office cosmetic whitening treatment using laser light activation for a brighter smile.', '../assets/whitening.png', TRUE),
+       ('Braces Installation / Adjustment', 3500.00, 60, 'Orthodontist', 'Specialized orthodontic bracket alignment and wire adjustments to straighten teeth.', '../assets/logo.png', TRUE),
+       ('Root Canal Treatment', 6500.00, 90, 'Endodontist', 'Therapeutic endodontic treatment to clean, disinfect, and seal infected tooth root canals.', '../assets/logo.png', TRUE),
+       ('Impacted Wisdom Tooth Surgery', 5000.00, 60, 'Oral Surgeon', 'Minor oral surgery to safely extract deeply embedded, impacted, or painful wisdom teeth.', '../assets/logo.png', TRUE);
 
 -- Weekly Doctor Duty Schedules with 12:00 PM - 1:00 PM Lunch Break
 INSERT INTO doctor_schedules (employee_id, day_of_week, start_time, end_time, break_start, break_end, is_active) VALUES
@@ -522,8 +537,6 @@ INSERT INTO doctor_schedules (employee_id, day_of_week, start_time, end_time, br
      (@uid6, 6, '08:00:00', '12:00:00', NULL, NULL, TRUE);
 
 -- Initial Appointments with Accurate End Times & Reschedule Count
--- (moved above xrays/messages/notifications — they reference appointment_id
--- via foreign key, so the appointments rows must exist first)
 INSERT INTO appointments (patient_id, employee_id, service_id, appointment_date, time_slot, end_time, appointment_status, queue_status, reschedule_status, reschedule_count, patient_note) VALUES
     (1, 3, 2, '2026-09-10', '10:00:00', '10:45:00', 'approved', 'completed', 'none', 0, 'First-time patient'),
     (2, NULL, 3, '2026-09-12', '11:00:00', '11:30:00', 'pending', 'pending', 'none', 0, NULL);

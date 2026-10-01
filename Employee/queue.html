@@ -10,10 +10,13 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://kit.fontawesome.com/fc8c3f4103.js" crossorigin="anonymous"></script>
     <script src="/Taskbar/Employee_Sidebar.js"></script>
-    <!--    <script src="Messages.js"></script>-->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
+        .font-poppins { font-family: 'Poppins', sans-serif; }
+    </style>
 </head>
 
-<body class="min-h-screen md:h-screen md:overflow-hidden bg-[#F3EFE4] relative flex flex-col md:flex-row antialiased">
+<body class="min-h-screen md:h-screen md:overflow-hidden bg-[#F3EFE4] relative flex flex-col md:flex-row antialiased font-poppins text-[#2A1001]">
 
 <!-- SIDEBAR -->
 <div id="sidebar-placeholder"></div>
@@ -21,7 +24,7 @@
 <script>
     function syncContentOffset() {
         const placeholder = document.getElementById('sidebar-placeholder');
-        const sidebar = Array.from(placeholder.children)
+        const sidebar = Array.from(placeholder?.children || [])
             .find(el => !['SCRIPT', 'STYLE', 'LINK'].includes(el.tagName));
         if (!sidebar) return;
 
@@ -42,13 +45,13 @@
 
     (async () => {
         try {
-            const response = await fetch('/Taskbar/Employee_Task.html');
+            const response = await fetch('/Taskbar/Receptionist_Task.html');
             if (response.ok) {
                 const data = await response.text();
                 document.getElementById('sidebar-placeholder').innerHTML = data;
                 const currentPage = window.location.pathname.split("/").pop();
                 document.querySelectorAll('.nav-link').forEach(link => {
-                    if (link.getAttribute('data-page') === currentPage) {
+                    if (link.getAttribute('data-page') === currentPage || link.getAttribute('href')?.includes(currentPage)) {
                         link.classList.add('bg-[#FDFCE9]');
                     }
                 });
@@ -63,124 +66,172 @@
     })();
 </script>
 
-<div id="main-content" class="flex-1 min-w-0 md:min-h-0 md:overflow-y-auto">
+<div id="main-content" class="flex-1 min-w-0 md:min-h-0 md:overflow-y-auto flex flex-col">
 
-    <!--Header with logo-->
+    <!-- Header with logo -->
     <div class="flex justify-between items-start pt-5 pl-6 pr-4 md:pl-24 md:pr-8">
-
-        <h1 class="text-2xl sm:text-3xl md:text-5xl 2xl:text-[73px] pt-5 font-bold text-[#2A1001] font-['Poppins']">
+        <h1 class="text-2xl sm:text-3xl md:text-5xl 2xl:text-[73px] pt-2 sm:pt-5 font-bold text-[#2A1001] font-['Poppins']">
             Queue Appointments
         </h1>
         <img
-                src="../assets/logowithtitle.png"
-                class="w-20 sm:w-24 md:w-28 h-auto object-contain shrink-0"
-                alt="Logo"/>
+            src="../assets/logowithtitle.png"
+            onerror="this.style.display='none'"
+            class="w-20 sm:w-24 md:w-28 h-auto object-contain shrink-0"
+            alt="Logo"/>
     </div>
 
     <hr class="border-t border-[#2A1001] mt-2 mb-6" />
 
-    <!--Search Bar-->
-    <div class="flex w-full justify-center">
-        <input
-                type="text"
-                id="searchInput"
-                placeholder="Search by name..."
-                class="h-10 w-full max-w-md rounded-full border border-[#2A1001]/20 bg-white px-4 mb-6 outline-none"
-        />
-    </div>
+    <main class="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 md:px-12 pb-16 flex flex-col gap-6">
 
-    <!--Filter Cards-->
-    <div class="flex flex-wrap gap-4 mb-8 justify-center">
+        <!-- Search Bar -->
+        <div class="flex w-full justify-center px-2">
+            <div class="relative w-full max-w-md flex items-center">
+                <span class="absolute left-4 flex items-center pointer-events-none text-gray-400">
+                    <i class="fa-solid fa-magnifying-glass text-sm"></i>
+                </span>
+                <input
+                    type="text"
+                    id="searchInput"
+                    placeholder="Search patient ID, name, phone, or service..."
+                    class="h-11 w-full pl-11 pr-4 rounded-full border border-[#2A1001]/20 bg-white outline-none shadow-sm text-xs sm:text-sm text-[#2A1001] focus:ring-2 focus:ring-[#667733]/40 transition"
+                />
+            </div>
+        </div>
 
-        <button data-filter="pending" class="filter-btn bg-[#F1B770] text-center px-6 py-3 rounded-2xl font-bold text-[#2A1001] min-w-[110px] shadow-lg
-           transition-all duration-200 ease-in-out
-           hover:scale-105 hover:bg-[#FDFCE9] hover:shadow-xl
-           active:scale-95 active:bg-[#FF9F2A]">
-            Pending <span class="block text-2xl" id="countPending">0</span>
-        </button>
+        <!-- Filter Cards -->
+        <div id="statusFilters" class="grid grid-cols-2 sm:flex sm:flex-wrap gap-2.5 sm:gap-4 mb-2 sm:mb-4 justify-center max-w-4xl mx-auto w-full px-2">
+            <button data-filter="pending" class="filter-btn active-filter bg-[#F1B770] text-center px-4 sm:px-6 py-2.5 sm:py-3 rounded-2xl font-bold text-[#2A1001] min-w-[105px] shadow-md transition-all duration-200 ease-in-out hover:scale-105 hover:bg-[#FDFCE9] hover:shadow-xl active:scale-95 cursor-pointer outline-none scale-105">
+                <span class="text-xs sm:text-sm block">Pending</span>
+                <span class="block text-xl sm:text-2xl font-black mt-0.5" id="countPending">0</span>
+            </button>
 
-        <button data-filter="waiting" class="filter-btn bg-[#F4F18F] text-center px-6 py-3 rounded-2xl font-bold text-[#2A1001] min-w-[110px] shadow-lg
-           transition-all duration-200 ease-in-out
-           hover:scale-105 hover:bg-[#FDFCE9] hover:shadow-xl
-           active:scale-95 active:bg-[#FFF835]">
-            Waiting <span class="block text-2xl" id="countWaiting">0</span>
-        </button>
+            <button data-filter="waiting" class="filter-btn bg-[#F4F18F] text-center px-4 sm:px-6 py-2.5 sm:py-3 rounded-2xl font-bold text-[#2A1001] min-w-[105px] shadow-md transition-all duration-200 ease-in-out hover:scale-105 hover:bg-[#FDFCE9] hover:shadow-xl active:scale-95 cursor-pointer outline-none">
+                <span class="text-xs sm:text-sm block">Waiting</span>
+                <span class="block text-xl sm:text-2xl font-black mt-0.5" id="countWaiting">0</span>
+            </button>
 
-        <button data-filter="ongoing" class="filter-btn bg-[#8CE8FA] text-center px-6 py-3 rounded-2xl font-bold text-[#2A1001] min-w-[110px] shadow-lg
-           transition-all duration-200 ease-in-out
-           hover:scale-105 hover:bg-[#FDFCE9] hover:shadow-xl
-           active:scale-95 active:bg-[#36DEFF]">
-            Ongoing <span class="block text-2xl" id="countOngoing">0</span>
-        </button>
+            <button data-filter="ongoing" class="filter-btn bg-[#8CE8FA] text-center px-4 sm:px-6 py-2.5 sm:py-3 rounded-2xl font-bold text-[#2A1001] min-w-[105px] shadow-md transition-all duration-200 ease-in-out hover:scale-105 hover:bg-[#FDFCE9] hover:shadow-xl active:scale-95 cursor-pointer outline-none">
+                <span class="text-xs sm:text-sm block">Ongoing</span>
+                <span class="block text-xl sm:text-2xl font-black mt-0.5" id="countOngoing">0</span>
+            </button>
 
-        <button data-filter="completed" class="filter-btn bg-[#BEF835] text-center px-6 py-3 rounded-2xl font-bold text-[#2A1001] min-w-[110px] shadow-lg
-           transition-all duration-200 ease-in-out
-           hover:scale-105 hover:bg-[#FDFCE9] hover:shadow-xl
-           active:scale-95 active:bg-[#A6ED00]">
-            Completed <span class="block text-2xl" id="countCompleted">0</span>
-        </button>
+            <button data-filter="completed" class="filter-btn bg-[#BEF835] text-center px-4 sm:px-6 py-2.5 sm:py-3 rounded-2xl font-bold text-[#2A1001] min-w-[105px] shadow-md transition-all duration-200 ease-in-out hover:scale-105 hover:bg-[#FDFCE9] hover:shadow-xl active:scale-95 cursor-pointer outline-none">
+                <span class="text-xs sm:text-sm block">Completed</span>
+                <span class="block text-xl sm:text-2xl font-black mt-0.5" id="countCompleted">0</span>
+            </button>
 
-        <button data-filter="All" class="filter-btn bg-white border border-[#2A1001]/30 text-left px-6 py-3 rounded-2xl font-bold text-[#2A1001] min-w-[110px] shadow-lg
-           transition-all duration-200 ease-in-out
-           hover:scale-105 hover:bg-[#FDFCE9] hover:shadow-xl
-           active:scale-95 active:bg-[#F9F9F9]">
-            Show All
-        </button>
+            <button data-filter="All" class="col-span-2 sm:col-span-1 filter-btn bg-white border border-[#2A1001]/30 text-center px-4 sm:px-6 py-2.5 sm:py-3 rounded-2xl font-bold text-[#2A1001] min-w-[105px] shadow-md transition-all duration-200 ease-in-out hover:scale-105 hover:bg-[#FDFCE9] hover:shadow-xl active:scale-95 cursor-pointer outline-none">
+                <span class="text-xs sm:text-sm block">Show All</span>
+                <span class="block text-xl sm:text-2xl font-black mt-0.5" id="countAll">0</span>
+            </button>
+        </div>
 
-    </div>
+        <!-- Desktop Table View -->
+        <div class="hidden md:block overflow-hidden rounded-3xl shadow-xl border border-[#2A1001]/10 bg-[#ECF5E2]">
+            <div class="overflow-x-auto">
+                <table class="w-full border-collapse text-left min-w-[700px]">
+                    <thead>
+                        <tr class="bg-[#667733] text-white text-xs sm:text-sm uppercase tracking-wider font-extrabold">
+                            <th class="text-center py-4 px-4 w-[16%]">Patient ID</th>
+                            <th class="text-center py-4 px-4 w-[24%]">Patient Name</th>
+                            <th class="text-center py-4 px-4 w-[20%]">Phone Number</th>
+                            <th class="text-center py-4 px-4 w-[24%]">Service</th>
+                            <th class="text-center py-4 px-4 w-[16%]">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody" class="divide-y divide-[#2A1001]/10 text-xs sm:text-sm font-medium">
+                        <!-- rows injected by JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
 
-    <!--Queue Table-->
-    <div class="overflow-x-auto rounded-3xl w-full md:w-[80%] mx-auto shadow-xl">
+        <!-- Mobile & Tablet Card View -->
+        <div id="mobileCardsContainer" class="block md:hidden space-y-3.5 w-full">
+            <!-- cards injected by JS -->
+        </div>
 
-        <table class="w-full border-collapse">
+        <!-- Empty State Container -->
+        <div id="emptyState" class="hidden text-center py-16 bg-white/60 rounded-3xl border border-dashed border-[#2A1001]/20">
+            <i class="fa-solid fa-calendar-xmark text-4xl text-[#2A1001]/30 mb-3"></i>
+            <p class="text-base sm:text-lg font-bold text-[#2A1001]/80">No appointments in queue for today</p>
+            <p class="text-xs text-[#2A1001]/50 mt-1">There are currently no queue appointments matching the selected filter or search keyword.</p>
+        </div>
 
-            <thead>
-            <tr class="bg-[#667733] text-white">
-                <th class="text-center py-3 px-4 rounded-tl-2xl">Name</th>
-                <th class="text-center py-3 px-4">Phone Number</th>
-                <th class="text-center py-3 px-4">Service</th>
-                <th class="text-center py-3 px-4 rounded-tr-2xl">Status</th>
-            </tr>
-            </thead>
+        <!-- PAGINATION -->
+        <div class="flex justify-center gap-2 mt-4 mb-8" id="pagination"></div>
 
-            <tbody id="tableBody" class="bg-[#ECF5E2]">
-            <!-- rows injected by JS -->
-            </tbody>
-
-        </table>
-
-    </div>
-
-    <!-- PAGINATION -->
-    <div class="flex justify-center gap-2 my-8" id="pagination">
-
-    </div>
+    </main>
 
 </div>
 
-<script>
+<!-- ================= CUSTOM NOTICE / ERROR MODAL ================= -->
+<div id="noticeModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl p-6 sm:p-7 w-full max-w-sm shadow-2xl border border-[#1a281b]/15 flex flex-col gap-4">
+        <div class="flex items-start gap-3">
+            <div id="noticeIconWrap" class="w-10 h-10 rounded-full flex items-center justify-center text-lg shrink-0 bg-[#EAF0DD] text-[#556022]">
+                <i id="noticeIcon" class="fa-solid fa-circle-info"></i>
+            </div>
+            <div class="flex flex-col gap-1 pt-0.5">
+                <h3 id="noticeTitle" class="font-extrabold text-base sm:text-lg text-[#1a281b]">Notice</h3>
+                <p id="noticeMessage" class="text-xs sm:text-sm text-gray-600 leading-relaxed"></p>
+            </div>
+        </div>
+        <div class="flex justify-end">
+            <button id="noticeOkBtn" class="bg-[#667733] hover:bg-[#556022] text-white font-bold text-xs sm:text-sm px-6 py-2.5 rounded-full transition cursor-pointer active:scale-95">
+                OK
+            </button>
+        </div>
+    </div>
+</div>
 
-    // For getting the data from the backend and booking request
+<script src="/socket.io/socket.io.js"></script>
+<script>
     let appointments = [];
 
-    // Patient name, phone, and service label all come from data the
-    // patient (or admin, via service management) entered — none of it
-    // should be trusted as safe HTML when injected via innerHTML below.
     function escapeHtml(value) {
         const div = document.createElement('div');
         div.textContent = value == null ? '' : String(value);
         return div.innerHTML;
     }
 
+    function showNotice(message, { title = "Notice", type = "info" } = {}) {
+        const modal = document.getElementById('noticeModal');
+        if (!modal) return;
+        const iconWrap = document.getElementById('noticeIconWrap');
+        const icon = document.getElementById('noticeIcon');
+        const titleEl = document.getElementById('noticeTitle');
+        const msgEl = document.getElementById('noticeMessage');
+        const styles = {
+            success: { wrap: 'bg-green-100 text-green-700', icon: 'fa-circle-check' },
+            error:   { wrap: 'bg-red-100 text-red-600',     icon: 'fa-circle-exclamation' },
+            info:    { wrap: 'bg-[#EAF0DD] text-[#556022]', icon: 'fa-circle-info' }
+        };
+        const s = styles[type] || styles.info;
+        iconWrap.className = `w-10 h-10 rounded-full flex items-center justify-center text-lg shrink-0 ${s.wrap}`;
+        icon.className = `fa-solid ${s.icon}`;
+        titleEl.textContent = title;
+        msgEl.textContent = message;
+        modal.classList.remove('hidden');
+    }
+
+    function closeNoticeModal() {
+        const modal = document.getElementById('noticeModal');
+        if (modal) modal.classList.add('hidden');
+    }
+
+    document.getElementById('noticeOkBtn')?.addEventListener('click', closeNoticeModal);
+    document.getElementById('noticeModal')?.addEventListener('click', (e) => {
+        if (e.target === document.getElementById('noticeModal')) closeNoticeModal();
+    });
+
     async function getAppointments() {
         try {
             const token = localStorage.getItem('userToken');
-
             const response = await fetch('/api/appointments/queue', {
                 method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
+                headers: { 'Authorization': `Bearer ${token}` }
             });
 
             if (!response.ok) {
@@ -188,9 +239,9 @@
             }
 
             return await response.json();
-
         } catch (error) {
             console.error("Failed to load appointments:", error);
+            showNotice("Failed to load queue appointments from server.", { title: "Error", type: "error" });
             return [];
         }
     }
@@ -198,7 +249,6 @@
     async function updateAppointmentStatus(appointmentId, newStatus) {
         try {
             const token = localStorage.getItem('userToken');
-
             const response = await fetch(`/api/appointments/${appointmentId}`, {
                 method: 'PUT',
                 headers: {
@@ -209,13 +259,14 @@
             });
 
             if (!response.ok) {
-                throw new Error(`Server error: ${response.status}`);
+                const data = await response.json().catch(() => ({}));
+                throw new Error(data.message || `Server error: ${response.status}`);
             }
 
             return true;
-
         } catch (error) {
             console.error("Failed to update appointment status:", error);
+            showNotice(error.message || "Failed to update appointment status.", { title: "Update Error", type: "error" });
             return false;
         }
     }
@@ -242,7 +293,12 @@
     function getFiltered() {
         return appointments.filter(a => {
             const matchesFilter = currentFilter === "All" || a.queue_status === currentFilter;
-            const matchesSearch = `${a.first_name} ${a.last_name}`.toLowerCase().includes(currentSearch.toLowerCase());
+            const searchLower = currentSearch.toLowerCase().trim();
+            const matchesSearch = !searchLower ||
+                                  (a.public_id || '').toLowerCase().includes(searchLower) ||
+                                  `${a.first_name || ''} ${a.last_name || ''}`.toLowerCase().includes(searchLower) ||
+                                  `${a.phone || ''}`.includes(searchLower) ||
+                                  `${a.label || ''}`.toLowerCase().includes(searchLower);
             return matchesFilter && matchesSearch;
         });
     }
@@ -259,6 +315,11 @@
 
         document.getElementById('countCompleted').textContent =
             appointments.filter(a => a.queue_status === "completed").length;
+
+        const countAllEl = document.getElementById('countAll');
+        if (countAllEl) {
+            countAllEl.textContent = appointments.length;
+        }
     }
 
     function renderTable() {
@@ -267,52 +328,86 @@
         const pageItems = filtered.slice(start, start + rowsPerPage);
 
         const tbody = document.getElementById('tableBody');
+        const mobileContainer = document.getElementById('mobileCardsContainer');
+        const emptyState = document.getElementById('emptyState');
+
         tbody.innerHTML = '';
+        mobileContainer.innerHTML = '';
+
+        if (pageItems.length === 0) {
+            if (emptyState) emptyState.classList.remove('hidden');
+            renderPagination(0);
+            return;
+        }
+
+        if (emptyState) emptyState.classList.add('hidden');
 
         pageItems.forEach((item) => {
-
+            // Desktop Table Row
             const row = document.createElement('tr');
-
-            row.className = "border-b border-[#2A1001]/10";
-
+            row.className = "hover:bg-[#FDFCE9]/60 transition";
             row.innerHTML = `
-                <td class="py-3 px-4 text-center">${escapeHtml(item.first_name)} ${escapeHtml(item.last_name)}</td>
-                <td class="py-3 px-4 text-center">${escapeHtml(item.phone)}</td>
-                <td class="py-3 px-4 text-center">${escapeHtml(item.label)}</td>
-                <td class="py-3 px-4 text-center">
-                    <select class="statusSelect ${statusColors[item.queue_status]} font-semibold text-[#2A1001] rounded-full px-3 py-1 outline-none cursor-pointer" data-id="${item.appointment_id}">
+                <td class="py-3.5 px-4 text-center font-bold text-[#2A1001]">${escapeHtml(item.public_id || 'N/A')}</td>
+                <td class="py-3.5 px-4 text-center font-bold text-[#2A1001]">${escapeHtml(item.first_name)} ${escapeHtml(item.last_name)}</td>
+                <td class="py-3.5 px-4 text-center font-medium text[#2A1001]">${escapeHtml(item.phone || 'N/A')}</td>
+                <td class="py-3.5 px-4 text-center font-bold text-[#2A1001]">${escapeHtml(item.label)}</td>
+                <td class="py-3.5 px-4 text-center">
+                    <select class="statusSelect ${statusColors[item.queue_status] || 'bg-gray-200'} font-bold text-xs sm:text-sm text-[#2A1001] rounded-full px-3 py-1.5 outline-none cursor-pointer shadow-sm border border-black/10 transition active:scale-95" data-id="${item.appointment_id}">
                         ${Object.keys(statusLabels).map(key => `
-                            <option value="${key}" class="bg-white text-[#2A1001]" ${item.queue_status === key ? "selected" : ""}>
+                            <option value="${key}" class="bg-white text-[#2A1001] font-medium" ${item.queue_status === key ? "selected" : ""}>
                                 ${statusLabels[key]}
                             </option>
                         `).join('')}
                     </select>
                 </td>
             `;
-
             tbody.appendChild(row);
+
+            // Mobile Card View
+            const card = document.createElement('div');
+            card.className = "bg-white border border-[#2A1001]/10 rounded-2xl p-4 shadow-sm flex flex-col gap-2.5";
+            card.innerHTML = `
+                <div class="flex items-center justify-between gap-2">
+                    <span class="text-xs font-extrabold text-[#667733] bg-[#ECF5E2] px-2.5 py-0.5 rounded-full border border-[#667733]/30">
+                        ${escapeHtml(item.public_id || 'N/A')}
+                    </span>
+                    <select class="statusSelect ${statusColors[item.queue_status] || 'bg-gray-200'} font-bold text-xs text-[#2A1001] rounded-full px-3 py-1.5 outline-none cursor-pointer shadow-sm border border-black/10 transition active:scale-95" data-id="${item.appointment_id}">
+                        ${Object.keys(statusLabels).map(key => `
+                            <option value="${key}" class="bg-white text-[#2A1001] font-medium" ${item.queue_status === key ? "selected" : ""}>
+                                ${statusLabels[key]}
+                            </option>
+                        `).join('')}
+                    </select>
+                </div>
+                <div>
+                    <h3 class="text-base font-bold text-[#2A1001]">
+                        ${escapeHtml(item.first_name)} ${escapeHtml(item.last_name)}
+                    </h3>
+                    <p class="text-xs sm:text-sm text-[#667733] font-bold mt-0.5">
+                        <i class="fa-solid fa-tooth mr-1"></i>${escapeHtml(item.label)}
+                    </p>
+                    <p class="text-xs text-gray-500 font-medium mt-1">
+                        <i class="fa-solid fa-phone text-[10px] mr-1 text-gray-400"></i>${escapeHtml(item.phone || 'N/A')}
+                    </p>
+                </div>
+            `;
+            mobileContainer.appendChild(card);
         });
 
         renderPagination(filtered.length);
     }
 
-    document.getElementById('tableBody').addEventListener('change', async function (e) {
-
+    document.getElementById('main-content').addEventListener('change', async function (e) {
         if (e.target.classList.contains('statusSelect')) {
-
             const id = Number(e.target.dataset.id);
             const newStatus = e.target.value;
 
             const success = await updateAppointmentStatus(id, newStatus);
-
             if (success) {
-
                 const appt = appointments.find(a => a.appointment_id === id);
-
                 if (appt) {
                     appt.queue_status = newStatus;
                 }
-
                 renderCounts();
                 renderTable();
             }
@@ -320,11 +415,11 @@
     });
 
     function renderPagination(totalItems) {
-
         const totalPages = Math.max(1, Math.ceil(totalItems / rowsPerPage));
         const pagination = document.getElementById('pagination');
-
         pagination.innerHTML = '';
+
+        if (totalPages <= 1) return;
 
         const maxVisible = 7;
         const currentBatch = Math.floor((currentPage - 1) / maxVisible);
@@ -332,90 +427,79 @@
         const batchEnd = Math.min(batchStart + maxVisible - 1, totalPages);
 
         if (batchStart > 1) {
-
             const prevBtn = document.createElement('button');
-
             prevBtn.textContent = '‹';
-
-            prevBtn.className =
-                "w-9 h-9 rounded-full font-bold text-[#2A1001] bg-transparent border border-[#2A1001]/30 hover:bg-[#2A1001]/10 transition flex items-center justify-center";
-
+            prevBtn.className = "w-9 h-9 rounded-full font-bold text-[#2A1001] bg-transparent border border-[#2A1001]/30 hover:bg-[#2A1001]/10 transition flex items-center justify-center cursor-pointer";
             prevBtn.addEventListener('click', () => {
                 currentPage = batchStart - 1;
                 renderTable();
             });
-
             pagination.appendChild(prevBtn);
         }
 
         for (let i = batchStart; i <= batchEnd; i++) {
-
             const btn = document.createElement('button');
-
             btn.textContent = i;
-
-            btn.className =
-                `w-9 h-9 rounded-full font-semibold ${
-                    i === currentPage
-                        ? 'bg-[#6B7A4C] text-white'
-                        : 'bg-white text-[#2A1001] border border-[#2A1001]/20'
-                }`;
-
+            btn.className = `w-9 h-9 rounded-full font-semibold cursor-pointer transition ${
+                i === currentPage
+                    ? 'bg-[#667733] text-white shadow-sm'
+                    : 'bg-white text-[#2A1001] border border-[#2A1001]/20 hover:bg-gray-50'
+            }`;
             btn.addEventListener('click', () => {
                 currentPage = i;
                 renderTable();
             });
-
             pagination.appendChild(btn);
         }
 
         if (batchEnd < totalPages) {
-
             const nextBtn = document.createElement('button');
-
             nextBtn.textContent = '›';
-
-            nextBtn.className =
-                "w-9 h-9 rounded-full font-bold text-[#2A1001] bg-transparent border border-[#2A1001]/30 hover:bg-[#2A1001]/10 transition flex items-center justify-center";
-
+            nextBtn.className = "w-9 h-9 rounded-full font-bold text-[#2A1001] bg-transparent border border-[#2A1001]/30 hover:bg-[#2A1001]/10 transition flex items-center justify-center cursor-pointer";
             nextBtn.addEventListener('click', () => {
                 currentPage = batchEnd + 1;
                 renderTable();
             });
-
             pagination.appendChild(nextBtn);
         }
     }
 
     document.querySelectorAll('.filter-btn').forEach(btn => {
-
         btn.addEventListener('click', function () {
-
+            document.querySelectorAll('.filter-btn').forEach(b => {
+                b.classList.remove('scale-105', 'shadow-2xl', 'active-filter');
+            });
+            this.classList.add('scale-105', 'shadow-2xl', 'active-filter');
             currentFilter = this.dataset.filter;
             currentPage = 1;
-
             renderTable();
         });
     });
 
     document.getElementById('searchInput').addEventListener('input', function () {
-
         currentSearch = this.value;
         currentPage = 1;
-
         renderTable();
     });
 
-    (async function init() {
-
+    async function refreshQueue() {
         appointments = await getAppointments();
-
         renderCounts();
         renderTable();
+    }
 
+    (async function init() {
+        await refreshQueue();
+
+        // Real-time synchronization with Socket.IO
+        if (typeof io === 'function') {
+            const socket = io();
+            socket.on('queue_updated', () => { refreshQueue(); });
+            socket.on('appointment-updated', () => { refreshQueue(); });
+        }
     })();
-
 </script>
 
+<script src="/InactivityTimer/InactivityTimer.js"></script>
 </body>
 </html>

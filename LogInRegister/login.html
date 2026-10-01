@@ -234,5 +234,13 @@
             showError(loginError, 'Unable to connect to the login service. Please try again.');
         }
     });
+
+    passwordInput.addEventListener('paste', (event) => {
+        event.preventDefault();
+    });
+
+    passwordInput.addEventListener('copy', (event) => {
+        event.preventDefault();
+    });
 </script>
 </body>
