@@ -19,6 +19,7 @@ const { registerActivityLogRoutes } = require('./Admin/auditLogRoutes');
 // show IO in routes
 const http = require('http');
 const { Server } = require('socket.io');
+const jwt = require('jsonwebtoken');
 
 // login limiter
 const errorHandler = require('./Utils/errorHandler');
@@ -59,6 +60,15 @@ app.set('io', io);
 
 io.on('connection', (socket) => {
     console.log('Connected to real-time updates');
+
+    socket.on('authenticate', ({ token }) => {
+        if (!token) return;
+
+        jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
+            if (err || !decoded?.user_id) return;
+            socket.join(`user_${decoded.user_id}`);
+        });
+    });
 });
 
 // apply rate limiting to login route
@@ -87,6 +97,7 @@ function requirePageRole(requiredRole) {
         if (req.user.role !== requiredRole) {
             return res.redirect('/denied.html');
         }
+
         next();
     };
 }
@@ -98,9 +109,11 @@ app.use('/assets', express.static(path.join(__dirname, 'images')));
 app.get('/output.css', (req, res) => {
     res.sendFile(path.join(__dirname, 'output.css'));
 });
+
 app.get('/pageProtection.js', (req, res) => {
     res.sendFile(path.join(__dirname, 'pageProtection.js'));
 });
+
 app.use('/LogInRegister', express.static(path.join(__dirname, 'LogInRegister')));
 app.use('/WelcomePage', express.static(path.join(__dirname, 'WelcomePage')));
 app.use('/InactivityTimer', express.static(path.join(__dirname, 'InactivityTimer')));
@@ -112,15 +125,19 @@ app.use('/Taskbar', authenticateToken, express.static(path.join(__dirname, 'Task
 app.get('/denied.html', (req, res) => {
     res.sendFile(path.join(__dirname, 'denied.html'));
 });
+
 app.get("/", (req, res) => {
     res.sendFile(path.join(__dirname, "WelcomePage", "home.html"));
 });
+
 app.get('/home.html', (req, res) => {
     res.sendFile(path.join(__dirname, 'WelcomePage', 'home.html'));
 });
+
 app.get('/aboutus.html', (req, res) => {
     res.sendFile(path.join(__dirname, 'WelcomePage', 'aboutus.html'));
 });
+
 app.get('/contact.html', (req, res) => {
     res.sendFile(path.join(__dirname, 'WelcomePage', 'contact.html'));
 });
@@ -129,19 +146,19 @@ app.get('/contact.html', (req, res) => {
 // MOVED THIS TO USERMANAGE.JS
 /**
  * app.get('/api/users', authenticateToken, async (req, res) => {
- if (req.user.role !== 'admin') {
- return res.status(403).json({ error: 'Admins only' });
- }
- try {
- const [rows] = await db.query(
- 'SELECT user_id, public_id, first_name, last_name, email, phone, sex, role, account_status, created_at, is_locked, login_attempts FROM users'
- );
- res.json(rows);
- } catch (err) {
- console.error('Databse Error', err);
- res.status(500).json({error: "Internal Server Error"});
- }
- });
+ * if (req.user.role !== 'admin') {
+ * return res.status(403).json({ error: 'Admins only' });
+ * }
+ * try {
+ * const [rows] = await db.query(
+ * 'SELECT user_id, public_id, first_name, last_name, email, phone, sex, role, account_status, created_at, is_locked, login_attempts FROM users'
+ * );
+ * res.json(rows);
+ * } catch (err) {
+ * console.error('Databse Error', err);
+ * res.status(500).json({error: "Internal Server Error"});
+ * }
+ * });
  */
 
 
@@ -150,12 +167,14 @@ app.get('/api/patients', authenticateToken, async (req, res) => {
     if (!['employee', 'admin'].includes(req.user.role)) {
         return res.status(403).json({ error: 'Staff access required' });
     }
+
     try {
         const [rows] = await db.query('CALL sp_get_all_patient_records()', ['patient']);
         const patients = rows[0].map(row => {
             const record = row.patient_record;
             return typeof record === 'string' ? JSON.parse(record) : record;
         });
+
         res.json(patients);
     } catch (err) {
         console.error('Databse Error', err);
@@ -168,11 +187,14 @@ app.get('/api/patients/:id', authenticateToken, async (req, res) => {
     if (!['employee', 'admin'].includes(req.user.role)) {
         return res.status(403).json({ error: 'Staff access required' });
     }
+
     try {
         const [rows] = await db.query('CALL sp_get_patient_record(?)', [req.params.id]);
+
         if (!rows[0] || rows[0].length === 0) {
             return res.status(404).json({error: "Patient not found"});
         }
+
         const record = rows[0][0].patient_record;
         res.json(typeof record === 'string' ? JSON.parse(record) : record);
     } catch (err) {
