@@ -68,36 +68,35 @@
     <div id="main-content" class="flex-1 min-w-0 md:min-h-0 md:overflow-y-auto flex flex-col">
 
         <!-- Page Header -->
-        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center pt-5 pl-4 pr-4 sm:pl-6 sm:pr-6 md:pl-20 md:pr-8 gap-4">
+        <div class="flex justify-between items-start pt-5 pl-6 pr-4 md:pl-24 md:pr-8">
             <div>
-                <h1 class="text-2xl sm:text-3xl md:text-5xl font-bold text-[#2A1001] font-['Poppins']">
+                <h1 class="text-2xl sm:text-3xl md:text-5xl 2xl:text-[73px] pt-2 sm:pt-5 font-bold text-[#2A1001] font-['Poppins']">
                     Appointment History
                 </h1>
-                <p class="text-xs sm:text-sm text-[#2A1001]/70 mt-1">
-                    View your past and upcoming dental clinic appointments, track reschedule requests, and print official statements.
-                </p>
             </div>
             <img
                 src="../assets/logowithtitle.png"
-                class="w-16 sm:w-20 md:w-28 h-auto object-contain shrink-0"
+                class="w-20 sm:w-24 md:w-28 h-auto object-contain shrink-0"
                 onerror="this.style.display='none'"
                 alt="Logo"/>
         </div>
-
-        <hr class="border-t border-[#2A1001] mt-3 mb-6 mx-4 sm:mx-6 md:mx-12" />
+        <hr class="border-t border-[#2A1001] mt-2 mb-6" />
 
         <main class="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 md:px-12 pb-16 flex flex-col gap-6">
 
-            <!-- Filter & Search Cont/rols Bar -->
-            <div class="flex flex-col md:flex-row items-center justify-between gap-3 p-3 sm:p-4 rounded-3xl">
+            <!-- Filter & Search Controls Bar -->
+            <div class="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 mb-4">
 
-                <!-- Search bar -->
-                <div class="w-full md:max-w-md">
+                <!-- Search Bar -->
+                <div class="relative w-full md:max-w-md flex items-center">
+                    <span class="absolute left-4 flex items-center pointer-events-none text-gray-400">
+                        <i class="fa-solid fa-magnifying-glass text-sm"></i>
+                    </span>
                     <input
                         type="text"
                         id="searchInput"
                         placeholder="Search service, dentist, or appointment ID..."
-                        class="w-full h-[45px] bg-white border-1 border-black rounded-full px-5 outline-none shadow-sm text-xs sm:text-sm"
+                        class="w-full h-11 pl-11 pr-4 rounded-full border border-[#2A1001]/20 bg-white outline-none shadow-sm text-xs sm:text-sm text-[#2A1001] focus:ring-2 focus:ring-[#667733]/40 transition"
                     />
                 </div>
 
@@ -105,25 +104,29 @@
                 <div class="flex flex-wrap items-center gap-2.5 w-full md:w-auto justify-start md:justify-end">
 
                     <!-- Status Filter Dropdown -->
-                    <div class="relative">
-                        <select id="statusFilter" class="h-11 pl-4 pr-9 rounded-full bg-white border border-[#2A1001]/20 font-bold text-xs sm:text-sm text-[#2A1001] outline-none cursor-pointer appearance-none shadow-sm focus:ring-2 focus:ring-[#667733]/50 transition">
+                    <div class="relative inline-flex items-center">
+                        <select id="statusFilter" class="appearance-none h-11 pl-5 pr-10 rounded-full bg-white border border-[#2A1001]/20 font-bold text-xs sm:text-sm text-[#2A1001] outline-none cursor-pointer shadow-sm focus:ring-2 focus:ring-[#667733]/40 transition">
                             <option value="all">Status: All Bookings</option>
                             <option value="pending">Pending Approval</option>
                             <option value="approved">Approved / Confirmed</option>
                             <option value="reschedule_requested">Reschedule Requested</option>
-                            <option value="completed">Completed Treatments</option>
+                            <option value="completed">Completed</option>
                             <option value="cancelled">Cancelled</option>
                         </select>
-                        <div class="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-[#2A1001] text-[10px]">▼</div>
+                        <span class="pointer-events-none absolute right-4 flex items-center text-[#2A1001]">
+                            <i class="fa-solid fa-chevron-down text-xs font-bold"></i>
+                        </span>
                     </div>
 
                     <!-- Date Sort Dropdown -->
-                    <div class="relative">
-                        <select id="sortSelect" class="h-11 pl-4 pr-9 rounded-full bg-[#D5C04D] hover:bg-[#c6b242] font-black text-xs sm:text-sm text-[#2A1001] outline-none cursor-pointer appearance-none shadow-sm transition">
-                            <option value="recent">Sort: Most Recent</option>
-                            <option value="oldest">Sort: Oldest First</option>
+                    <div class="relative inline-flex items-center">
+                        <select id="sortSelect" class="appearance-none h-11 pl-5 pr-10 rounded-full bg-[#D5C04D] hover:bg-[#c6b242] font-bold text-xs sm:text-sm text-[#2A1001] outline-none cursor-pointer shadow-sm transition">
+                            <option value="recent" class="bg-white text-[#2A1001]">Sort: Newest First</option>
+                            <option value="oldest" class="bg-white text-[#2A1001]">Sort: Oldest First</option>
                         </select>
-                        <div class="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-[#2A1001] text-[10px]">▼</div>
+                        <span class="pointer-events-none absolute right-4 flex items-center text-[#2A1001]">
+                            <i class="fa-solid fa-chevron-down text-xs font-bold"></i>
+                        </span>
                     </div>
 
                 </div>
@@ -166,13 +169,9 @@
 <!-- ================= RECEIPT & DETAIL MODAL ================= -->
 <div id="detail-modal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
     <div class="bg-[#F3EFE4] rounded-3xl w-full max-w-2xl max-h-[92vh] overflow-y-auto p-4 sm:p-7 border border-[#2A1001]/20 shadow-2xl relative flex flex-col my-auto">
-
-        <!-- Modal Close Button -->
         <button onclick="closeDetailModal()" class="absolute top-4 right-4 w-8 h-8 flex items-center justify-center text-2xl font-bold text-[#2A1001] hover:bg-black/10 rounded-full cursor-pointer transition">
             &times;
         </button>
-
-        <!-- Modal Brand Header -->
         <div class="flex items-center gap-3 mb-4 pr-8">
             <img src="../assets/logowithtitle.png" onerror="this.style.display='none'" class="w-12 h-auto object-contain shrink-0" alt="Clinic Logo"/>
             <div>
@@ -180,13 +179,7 @@
                 <p class="text-xs text-[#2A1001]/60 font-medium">Statement of Dental Treatment &amp; Official Receipt</p>
             </div>
         </div>
-
-        <!-- Receipt Card Container -->
-        <div id="detail-modal-body" class="bg-[#ECF5E2] rounded-2xl p-4 sm:p-6 border border-[#2A1001]/15 shadow-inner flex flex-col gap-4 text-xs sm:text-sm text-[#2A1001]">
-            <!-- Injected by JavaScript -->
-        </div>
-
-        <!-- Action Footer -->
+        <div id="detail-modal-body" class="bg-white rounded-2xl p-4 sm:p-6 border border-[#2A1001]/15 shadow-sm flex flex-col gap-4 text-xs sm:text-sm text-[#2A1001]"></div>
         <div class="flex flex-wrap items-center justify-end gap-2.5 mt-4 pt-3 border-t border-[#2A1001]/10">
             <button id="printReceiptBtn" onclick="printCurrentReceipt()" class="bg-[#D5C04D] hover:bg-[#c4b03f] text-[#2A1001] font-bold text-xs sm:text-sm px-5 py-2.5 rounded-full transition flex items-center gap-2 shadow-sm cursor-pointer active:scale-95">
                 <i class="fa-solid fa-print"></i> Print Official Receipt
@@ -213,15 +206,15 @@
             </div>
         </div>
 
-        <!-- Cancellation Reason Radio Options -->
-        <div class="flex flex-col gap-2 bg-[#ECF5E2] rounded-2xl p-3.5 sm:p-4 border border-[#1a281b]/15 shadow-sm max-h-[50vh] overflow-y-auto pr-1">
+        <div class="flex flex-col gap-2 bg-white rounded-2xl p-3.5 sm:p-4 border border-[#1a281b]/15 shadow-sm max-h-[50vh] overflow-y-auto pr-1">
             <label class="text-xs font-bold text-[#1a281b] uppercase tracking-wide flex items-center gap-1.5">
                 <i class="fa-solid fa-circle-question text-red-600"></i> Reason for Cancellation <span class="text-red-500">*</span>
             </label>
 
+            <!-- ❌ REMOVED DEFAULT CHECKED ATTRIBUTE -->
             <div class="flex flex-col gap-1.5 mt-0.5" id="cancelReasonOptions">
                 <label class="flex items-center gap-2.5 p-2 rounded-xl border border-black/15 hover:bg-[#FDFCE9] cursor-pointer transition text-xs font-semibold text-[#2A1001]">
-                    <input type="radio" name="cancelReasonRadio" value="Schedule Conflict / Personal Matter" class="accent-red-600 w-4 h-4 cursor-pointer" checked>
+                    <input type="radio" name="cancelReasonRadio" value="Schedule Conflict / Personal Matter" class="accent-red-600 w-4 h-4 cursor-pointer">
                     <span>Schedule Conflict / Personal Matter</span>
                 </label>
                 <label class="flex items-center gap-2.5 p-2 rounded-xl border border-black/15 hover:bg-[#FDFCE9] cursor-pointer transition text-xs font-semibold text-[#2A1001]">
@@ -246,7 +239,6 @@
                 </label>
             </div>
 
-            <!-- Custom Cancellation Reason Input -->
             <div id="customCancelReasonContainer" class="hidden flex flex-col gap-1 mt-1">
                 <textarea
                     id="customCancelReasonText"
@@ -256,7 +248,7 @@
                     class="w-full rounded-xl border border-black/20 bg-gray-50 px-3 py-2 text-xs outline-none focus:ring-2 focus:ring-red-500 focus:bg-white resize-none"></textarea>
                 <span class="text-[10px] text-gray-500 text-right"><span id="customCancelReasonCount">0</span>/200</span>
             </div>
-            <p id="cancelReasonError" class="hidden text-[11px] font-bold text-red-600">Please provide a reason before cancelling.</p>
+            <p id="cancelReasonError" class="hidden text-[11px] font-bold text-red-600 mt-1">⚠️ Please select a reason before cancelling.</p>
         </div>
 
         <div class="flex gap-2.5 mt-1 shrink-0">
@@ -276,52 +268,44 @@
 <div id="reschedule-modal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
     <div class="bg-[#F3EFE4] rounded-3xl p-5 sm:p-7 relative max-w-4xl w-full shadow-2xl border-[3px] border-[#2A1001]/20 my-auto max-h-[94vh] flex flex-col">
 
-        <!-- Close Button -->
         <button id="closeRescheduleModalBtn" class="absolute top-4 right-5 text-3xl font-extrabold text-[#382414] hover:opacity-60 transition leading-none cursor-pointer">
             &times;
         </button>
 
         <div class="mb-3 text-center pr-6 pl-2 shrink-0">
             <h2 class="text-xl sm:text-2xl font-bold text-[#2A1001] font-['Poppins']">Request Appointment Reschedule</h2>
-            <p class="text-xs sm:text-sm text-[#2A1001]/70 mt-0.5" id="reschedulePatientSummary">
-                Select your desired new date, available time slot, and reason.
-            </p>
+            <div id="reschedulePatientSummary" class="text-xs sm:text-sm text-[#2A1001]/70 mt-0.5"></div>
         </div>
 
-        <!-- Scrollable Content -->
         <div class="flex-1 overflow-y-auto pr-1 flex flex-col gap-4">
-
-            <!-- Calendar and Time Slots Row -->
             <div class="flex flex-col-reverse lg:flex-row gap-6 items-center justify-center mt-1">
 
-                <!-- Available slots panel -->
-                <div class="flex justify-center gap-4 sm:gap-6 bg-[#ECF5E2] p-4 rounded-3xl border-2 border-[#2A1001]/20 shadow-sm w-full lg:w-auto">
-                    <!-- AM time -->
-                    <div class="flex flex-col w-32 sm:w-36">
-                        <h4 class="font-bold text-xs sm:text-sm text-[#2A1001] mb-2 text-center border-b pb-1 border-[#2A1001]/10">
-                            <i class="fa-solid fa-sun text-amber-500 mr-1"></i> AM - Time
-                        </h4>
-                        <div id="amSlotsContainer" class="space-y-2 w-full"></div>
+                <div id="reschedSlotsPanel" class="flex flex-col justify-center bg-white p-4 rounded-3xl border-2 border-[#2A1001]/20 shadow-sm w-full lg:w-80 min-h-[300px]">
+                    <div id="slotsColumnsContainer" class="flex justify-center gap-4 sm:gap-6 w-full">
+                        <div class="flex flex-col w-32 sm:w-36">
+                            <h4 class="font-bold text-xs sm:text-sm text-[#2A1001] mb-2 text-center border-b pb-1 border-[#2A1001]/10">
+                                <i class="fa-solid fa-sun text-amber-500 mr-1"></i> AM - Time
+                            </h4>
+                            <div id="amSlotsContainer" class="space-y-2 w-full"></div>
+                        </div>
+                        <div class="flex flex-col w-32 sm:w-36">
+                            <h4 class="font-bold text-xs sm:text-sm text-[#2A1001] mb-2 text-center border-b pb-1 border-[#2A1001]/10">
+                                <i class="fa-solid fa-moon text-indigo-600 mr-1"></i> PM - Time
+                            </h4>
+                            <div id="pmSlotsContainer" class="space-y-2 w-full"></div>
+                        </div>
                     </div>
-                    <!-- PM time -->
-                    <div class="flex flex-col w-32 sm:w-36">
-                        <h4 class="font-bold text-xs sm:text-sm text-[#2A1001] mb-2 text-center border-b pb-1 border-[#2A1001]/10">
-                            <i class="fa-solid fa-moon text-indigo-600 mr-1"></i> PM - Time
-                        </h4>
-                        <div id="pmSlotsContainer" class="space-y-2 w-full"></div>
-                    </div>
+                    <div id="slotsMessageContainer" class="hidden flex flex-col items-center justify-center text-center p-4"></div>
                 </div>
 
-                <!-- Dynamic calendar -->
-                <div class="flex flex-col w-[360px] sm:w-[390px] max-w-full h-[340px] rounded-3xl border-[3px] border-black bg-[#ECF5E2] overflow-hidden shadow-lg shrink-0">
-
+                <div class="flex flex-col w-[360px] sm:w-[390px] max-w-full h-[340px] rounded-3xl border-[3px] border-black bg-white overflow-hidden shadow-lg shrink-0">
                     <div class="flex justify-between items-center px-3 py-2 w-full bg-[#667733] text-[#D7E3A5]">
                         <div class="cursor-pointer text-xl font-bold px-2 hover:text-white transition" id="reschedPrev">&lt;</div>
                         <div id="reschedMonthYear" class="text-base sm:text-lg font-bold text-white"></div>
                         <div class="cursor-pointer text-xl font-bold px-2 hover:text-white transition" id="reschedNext">&gt;</div>
                     </div>
 
-                    <div class="grid grid-cols-7 gap-1 px-3 py-1.5 text-center text-[#2A1001]/70 font-bold text-xs border-b">
+                    <div class="grid grid-cols-7 gap-1 px-3 py-1.5 text-center text-[#2A1001]/70 font-bold text-xs border-b border-[#2A1001]/10">
                         <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
                     </div>
 
@@ -330,13 +314,12 @@
 
             </div>
 
-            <!-- Selected schedule feedback -->
-            <p class="text-xs sm:text-sm text-[#2A1001] text-center font-medium bg-[#ECF5E2] py-2 px-4 rounded-full border border-black/10 mx-auto" id="reschedSelectedDateDisplay">
+            <p class="text-xs sm:text-sm text-[#2A1001] text-center font-medium bg-white py-2 px-4 rounded-full border border-black/10 mx-auto shadow-sm" id="reschedSelectedDateDisplay">
                 No date selected yet.
             </p>
 
-            <!-- Reschedule Reason Selection -->
-            <div class="bg-[#ECF5E2] rounded-2xl p-4 sm:p-5 border border-[#2A1001]/15 shadow-sm flex flex-col gap-2.5">
+            <!-- ❌ REMOVED DEFAULT CHECKED ATTRIBUTE -->
+            <div class="bg-white rounded-2xl p-4 sm:p-5 border border-[#2A1001]/15 shadow-sm flex flex-col gap-2.5">
                 <label class="text-xs sm:text-sm font-extrabold text-[#2A1001] uppercase tracking-wide flex items-center gap-1.5">
                     <i class="fa-solid fa-clipboard-question text-[#667733]"></i> Reason for Rescheduling <span class="text-red-500">*</span>
                 </label>
@@ -344,7 +327,7 @@
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-1" id="rescheduleReasonOptions">
                     <label class="flex items-center gap-2.5 p-2.5 rounded-xl border border-black/15 hover:bg-[#FDFCE9] cursor-pointer transition text-xs sm:text-sm font-semibold text-[#2A1001]">
-                        <input type="radio" name="reschedReasonRadio" value="Schedule Conflict / Work Commitment" class="accent-[#667733] w-4 h-4 cursor-pointer" checked>
+                        <input type="radio" name="reschedReasonRadio" value="Schedule Conflict / Work Commitment" class="accent-[#667733] w-4 h-4 cursor-pointer">
                         <span>Schedule Conflict / Work Commitment</span>
                     </label>
                     <label class="flex items-center gap-2.5 p-2.5 rounded-xl border border-black/15 hover:bg-[#FDFCE9] cursor-pointer transition text-xs sm:text-sm font-semibold text-[#2A1001]">
@@ -365,7 +348,6 @@
                     </label>
                 </div>
 
-                <!-- Custom Reason Text Input -->
                 <div id="customReasonContainer" class="hidden flex flex-col gap-1 mt-1">
                     <textarea id="customReasonText" rows="2" maxlength="200" placeholder="Please specify your reason for rescheduling..." class="w-full rounded-xl border border-black/20 bg-gray-50 px-3 py-2 text-xs sm:text-sm outline-none focus:ring-2 focus:ring-[#667733] focus:bg-white resize-none"></textarea>
                     <span class="text-[11px] text-gray-500 text-right"><span id="customReasonCount">0</span>/200</span>
@@ -374,12 +356,11 @@
 
         </div>
 
-        <!-- Action Footer -->
         <div class="mt-3 pt-3 border-t border-[#2A1001]/10 flex flex-col sm:flex-row items-center justify-center gap-3 shrink-0">
             <button id="cancelRescheduleBtn" class="w-full sm:w-auto px-6 py-2.5 text-xs sm:text-sm font-semibold text-[#2A1001] bg-white border border-[#2A1001]/20 rounded-full hover:bg-gray-100 transition cursor-pointer">
                 Cancel
             </button>
-            <button id="confirmRescheduleBtn" disabled class="w-full sm:w-auto bg-[#667733] hover:bg-[#556022] transition text-white font-bold px-8 py-2.5 rounded-full shadow disabled:opacity-40 disabled:cursor-not-allowed text-xs sm:text-sm cursor-pointer">
+            <button id="confirmRescheduleBtn" disabled class="w-full sm:w-auto bg-[#667733] hover:bg-[#556022] transition text-white font-bold px-8 py-2.5 rounded-full shadow disabled:opacity-40 disabled:cursor-not-allowed text-xs sm:text-sm cursor-pointer active:scale-95">
                 Submit Reschedule Request
             </button>
         </div>
