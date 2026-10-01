@@ -116,14 +116,25 @@ router.post('/register', async (req, res) => {
 
 // GET /api/auth/login
 router.get('/login', async (req, res) => {
-    const { email } = req.query.email;
+    // eli: fixed destructuring bug that caused 400 error on load
+    const email = req.query.email;
 
     if (!email) {
         return res.status(400).json({ error: 'Email required' });
     }
 
-    return res.status(200).json({ status: "oki" });
-})
+    try {
+        // eli to eli: we now query the DB to return 429 if locked, which tells the frontend to keep fields disabled on refresh
+        const [rows] = await db.query('SELECT is_locked FROM users WHERE email = ?', [email]);
+        if (rows.length > 0 && rows[0].is_locked) {
+            return res.status(429).json({ error: 'Account is locked' });
+        }
+        return res.status(200).json({ status: "ok" });
+    } catch (err) {
+        console.error('Check locked status error:', err);
+        return res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
 
 
 // POST /api/auth/login
@@ -195,18 +206,13 @@ router.post('/login', async (req, res) => {
                 [newAttempts, isLocked, user.user_id]
             );
 
-            // eli: changed 
-            // const [[{ login_attempts }]] = await db.query(
-            //     'SELECT login_attempts FROM users WHERE user_id = ?',
-            //     [user.user_id]
-            // );
-
-            // eli: 
+            // eli to eli: removed the buggy destructured query that crashed the server. Reused `isLocked` and `newAttempts` from above instead.
             if (isLocked) {
-                // update userManage of the account lockout
+                // eli: moved io initialization up to fix ReferenceError
                 const io = req.app.get('io');
                 if (io) io.emit('user-locked', {userId: user.user_id});
-            // if (login_attempts >= MAX_LOGIN_ATTEMPTS) {
+                
+                // update userManage of the account lockout
                 await db.query('UPDATE users SET is_locked = TRUE WHERE user_id = ?', [user.user_id]);
                 await logActivity(db, {
                     user_id: user.user_id,
@@ -215,12 +221,13 @@ router.post('/login', async (req, res) => {
                     action: 'ACCOUNT_LOCKED',
                     target_table: 'users',
                     target_id: user.user_id,
-                    notes: `Account locked after ${login_attempts} failed login attempts.`,
+                    notes: `Account locked after ${newAttempts} failed login attempts.`,
                     ip_address
                 });
                 return res.status(429).json({ error: LOCKED_MESSAGE });
             }
 
+            
             await logActivity(db, {
                 user_id: user.user_id,
                 user_email: user.email,
@@ -228,7 +235,7 @@ router.post('/login', async (req, res) => {
                 action: 'FAILED_LOGIN',
                 target_table: 'users',
                 target_id: user.user_id,
-                notes: `Incorrect password (attempt ${login_attempts} of ${MAX_LOGIN_ATTEMPTS}).`,
+                notes: `Incorrect password (attempt ${newAttempts} of ${MAX_LOGIN_ATTEMPTS}).`,
                 ip_address
             });
             return res.status(401).json({ error: 'Invalid email or password' });

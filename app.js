@@ -61,6 +61,12 @@ io.on('connection', (socket) => {
     console.log('Connected to real-time updates');
 });
 
+
+server.listen(3000, () => {
+    console.log('Server running on port 3000');
+});
+
+
 // apply rate limiting to login route
 app.use('/api/auth/login', loginLimit);
 

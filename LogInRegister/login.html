@@ -6,6 +6,7 @@
     <link href="/output.css" rel="stylesheet">
     <title>Login</title>
     <script src="https://kit.fontawesome.com/fc8c3f4103.js" crossorigin="anonymous"></script>
+    <script src="/socket.io/socket.io.js"></script>
 </head>
 <body class="min-h-screen bg-[#A2AC89]">
 
@@ -155,6 +156,26 @@
         clearErrors();
     }
 
+    // eli to eli: should keep input fields and login button disabled upon refresh
+    async function recheckOnLoad() {
+        const email = (localStorage.getItem('lastLoginEmail') || '').trim();
+        if (!email) return;
+
+        try {
+            const response = await fetch(`/api/auth/login?email=${encodeURIComponent(email)}`, {
+                method: 'GET'
+            });
+
+            if (response.status === 429) {
+                emailInput.value = email;
+                lockLogin();
+            }
+        } catch (error) {
+            // silent ignore :b
+        }
+    }
+    recheckOnLoad();
+
     window.addEventListener('storage', event => {
         if (event.key !== 'loginSessionReset' || !event.newValue) return;
 
@@ -186,14 +207,13 @@
             const data = await response.json().catch(() => ({}));
 
             if (!response.ok) {
-                if (response.status === 423) {
+                localStorage.setItem('lastLoginEmail', emailInput.value.trim().toLowerCase());
+                if (response.status === 429) {
                     // Account locked on the server after too many failed attempts
                     lockLogin();
-                } else if (response.status === 429) {
-                    // Rate limiter: temporary, so don't disable the form
-                    showError(loginError, 'Too many attempts. Please wait a minute and try again.');
+                    showError(loginError, 'Too many attempts. Please contact an administrator.');
                 } else {
-                    showError(loginError, data.error || 'Login failed');
+                    showError(loginError, data.error || "Login failed");
                 }
                 return;
             }
@@ -206,7 +226,7 @@
             } else if (data.user.role === 'admin') {
                 window.location.href = '../Admin/Index.html'; //important please dont lowercase
             } else {
-                window.location.href = '../Customer/customerProfile.html';
+                window.location.href = '../Customer/History.html';
             }
 
         } catch (error) {

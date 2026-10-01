@@ -539,3 +539,19 @@ INSERT INTO messages (sender_id, receiver_id, content, is_read) VALUES
 
 INSERT INTO notifications (user_id, type, title, message, appointment_id) VALUES
     (1, 'appointment_status', 'Appointment Approved', 'Your appointment on 2026-09-10 has been approved.', 1);
+
+
+-- 1. Add hold_expires_at and update ENUM for appointments table
+ALTER TABLE appointments 
+ADD COLUMN hold_expires_at DATETIME NULL AFTER appointment_status,
+MODIFY COLUMN appointment_status ENUM('pending','approved','completed','cancelled','awaiting_payment') NOT NULL DEFAULT 'pending';
+
+-- 2. Add PayMongo tracking columns to payments table
+ALTER TABLE payments 
+ADD COLUMN paymongo_session_id VARCHAR(255) NULL AFTER status,
+ADD COLUMN checkout_url TEXT NULL AFTER paymongo_session_id;
+    
+
+select * from users;
+select * from payments;
+select * from appointments;
