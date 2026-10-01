@@ -91,7 +91,8 @@ function toService(row) {
         price: Number(row.price),
         duration_minutes: Number(row.duration_minutes || 30),
         required_specialization: row.required_specialization || 'General Dentist',
-        specialization: row.required_specialization || 'General Dentist'
+        specialization: row.required_specialization || 'General Dentist',
+        description: row.description || ''
     };
 }
 
@@ -99,6 +100,7 @@ function validate(body) {
     const label = typeof body.label === 'string' ? body.label.trim() : '';
     const price = Number(body.price);
     const duration = parseInt(body.duration_minutes, 10) || 30;
+    const description = typeof body.description === 'string' ? body.description.trim() : '';
     const spec = typeof body.specialization === 'string' 
         ? body.specialization.trim() 
         : (typeof body.required_specialization === 'string' ? body.required_specialization.trim() : 'General Dentist');
@@ -138,15 +140,19 @@ function validate(body) {
         return { error: 'Invalid dentist specialization selected.' };
     }
 
-    return { label, price, duration_minutes: duration, required_specialization: spec };
+    if (description.length > 1000) {
+        return { error: 'Service description cannot exceed 1000 characters.' };
+    }
+
+    return { label, price, duration_minutes: duration, required_specialization: spec, description };
 }
 
 function registerServiceRoutes(app, db) {
-    // 1. GET /api/services — Includes duration_minutes and required_specialization
+    // 1. GET /api/services — Includes description, duration_minutes, and required_specialization
     app.get('/api/services', authenticateToken, async (req, res) => {
         try {
             const [rows] = await db.query(
-                `SELECT service_id, label, price, duration_minutes, required_specialization, icon, is_available 
+                `SELECT service_id, label, price, duration_minutes, required_specialization, description, icon, is_available 
                  FROM services 
                  WHERE is_available = TRUE 
                  ORDER BY service_id`
@@ -158,7 +164,7 @@ function registerServiceRoutes(app, db) {
         }
     });
 
-    // 2. POST /api/services — Inserts all service attributes
+    // 2. POST /api/services — Inserts service with description
     app.post('/api/services', authenticateToken, requireAdmin, async (req, res) => {
         const v = validate(req.body);
         if (v.error) return res.status(400).json({ message: v.error });
@@ -166,9 +172,9 @@ function registerServiceRoutes(app, db) {
         try {
             const icon = await resolveIcon(req.body.icon);
             const [result] = await db.query(
-                `INSERT INTO services (label, price, duration_minutes, required_specialization, icon) 
-                 VALUES (?, ?, ?, ?, ?)`,
-                [v.label, v.price, v.duration_minutes, v.required_specialization, icon]
+                `INSERT INTO services (label, price, duration_minutes, required_specialization, description, icon) 
+                 VALUES (?, ?, ?, ?, ?, ?)`,
+                [v.label, v.price, v.duration_minutes, v.required_specialization, v.description, icon]
             );
             const [[row]] = await db.query('SELECT * FROM services WHERE service_id = ?', [result.insertId]);
 
@@ -190,7 +196,7 @@ function registerServiceRoutes(app, db) {
         }
     });
 
-    // 3. PUT /api/services/:id — Updates all service attributes
+    // 3. PUT /api/services/:id — Updates service with description
     app.put('/api/services/:id', authenticateToken, requireAdmin, async (req, res) => {
         const id = Number(req.params.id);
         if (!Number.isInteger(id)) return res.status(400).json({ message: 'Invalid service id' });
@@ -202,9 +208,9 @@ function registerServiceRoutes(app, db) {
             const icon = await resolveIcon(req.body.icon);
             const [result] = await db.query(
                 `UPDATE services 
-                 SET label = ?, price = ?, duration_minutes = ?, required_specialization = ?, icon = ? 
+                 SET label = ?, price = ?, duration_minutes = ?, required_specialization = ?, description = ?, icon = ? 
                  WHERE service_id = ?`,
-                [v.label, v.price, v.duration_minutes, v.required_specialization, icon, id]
+                [v.label, v.price, v.duration_minutes, v.required_specialization, v.description, icon, id]
             );
             if (result.affectedRows === 0) return res.status(404).json({ message: 'Service not found' });
 
