@@ -1130,7 +1130,6 @@
         ${row('Full Name', `${p.first_name || ''} ${p.last_name || ''}`)}
         ${row('Sex', p.sex)}
         ${row('Birthday & Age', `${p.birthday ? p.birthday.split('T')[0] : ''} ${calculateAge(p.birthday)}`)}
-        ${row('Civil Status', p.civil_status)}
         ${row('Primary Email', p.email)}
         ${row('Secondary Email', p.secondary_email)}
         ${row('Phone Number', p.phone)}

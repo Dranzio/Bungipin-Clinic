@@ -1,5 +1,10 @@
 const bcrypt = require('bcrypt');
 const authenticateToken = require('../authMiddleware');
+const { logActivity } = require('../Admin/auditLogRoutes');
+
+function getIp(req) {
+    return req.ip || req.headers['x-forwarded-for'];
+}
 
 const SALT_ROUNDS = 10;
 
@@ -31,7 +36,7 @@ function registerEmployeeProfileRoute(app, db) {
         }
 
         const employeeId = req.user.user_id;
-        const { birthday, civil_status, phone, new_password } = req.body;
+        const { birthday, phone, new_password } = req.body;
 
         const connection = await db.getConnection();
 
@@ -53,12 +58,22 @@ function registerEmployeeProfileRoute(app, db) {
 
             await connection.query(
                 `UPDATE employee_profiles
-                 SET birthday = ?, civil_status = ?
+                 SET birthday = ?
                  WHERE employee_id = ?`,
-                [birthday || null, civil_status, employeeId]
+                [birthday || null, employeeId]
             );
 
             await connection.commit();
+
+            await logActivity(db, {
+                user_id: employeeId,
+                user_role: 'employee',
+                action: 'UPDATE_PROFILE',
+                target_table: 'employee_profiles',
+                target_id: employeeId,
+                ip_address: getIp(req)
+            });
+
             res.json({ message: 'Profile updated successfully' });
 
         } catch (err) {

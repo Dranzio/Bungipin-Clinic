@@ -4,6 +4,11 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const { put, del } = require('@vercel/blob');
+const { logActivity } = require('../Admin/auditLogRoutes');
+
+function getIp(req) {
+    return req.ip || req.headers['x-forwarded-for'];
+}
 
 const SALT_ROUNDS = 10;
 const uploadDir = path.join(__dirname, '..', 'uploads', 'medical-pdfs');
@@ -74,6 +79,16 @@ function registerPatientProfileRoute(app, db) {
                 'INSERT INTO patient_documents (patient_id, file_url) VALUES (?, ?)',
                 [req.user.user_id, fileUrl]
             );
+            await logActivity(db, {
+                user_id: req.user.user_id,
+                user_role: 'patient',
+                action: 'UPLOAD_PDF',
+                target_table: 'patient_documents',
+                target_id: result.insertId,
+                notes: `Uploaded medical document "${req.file.originalname}".`,
+                ip_address: getIp(req)
+            });
+
             res.status(201).json({
                 message: 'PDF uploaded successfully',
                 file_url: fileUrl,
@@ -97,6 +112,17 @@ function registerPatientProfileRoute(app, db) {
                 'DELETE FROM patient_documents WHERE document_id = ? AND patient_id = ?',
                 [documentId, req.user.user_id]
             );
+
+            await logActivity(db, {
+                user_id: req.user.user_id,
+                user_role: 'patient',
+                action: 'DELETE_PDF',
+                target_table: 'patient_documents',
+                target_id: documentId,
+                notes: `Deleted medical document #${documentId}.`,
+                ip_address: getIp(req)
+            });
+
             res.json({ message: 'Document deleted successfully' });
         } catch (err) {
             console.error('Document delete error:', err);
@@ -251,6 +277,15 @@ function registerPatientProfileRoute(app, db) {
             }
 
             await connection.commit();
+
+            await logActivity(db, {
+                user_id: patient_id,
+                user_role: 'patient',
+                action: 'UPDATE_PROFILE',
+                target_table: 'patient_profiles',
+                target_id: patient_id,
+                ip_address: getIp(req)
+            });
 
             const io = req.app.get('io');
             if (io) {

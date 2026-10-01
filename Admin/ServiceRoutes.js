@@ -3,11 +3,27 @@ const path = require('path');
 const crypto = require('crypto');
 const { put } = require('@vercel/blob');
 const authenticateToken = require('../authMiddleware');
+const { logActivity } = require('./auditLogRoutes');
+
+function getIp(req) {
+    return req.ip || req.headers['x-forwarded-for'];
+}
 
 const ICON_DIR = path.join(__dirname, '..', 'uploads', 'services');
 const MAX_ICON_BYTES = 2 * 1024 * 1024;
-
 const isVercel = process.env.VERCEL === '1' || !!process.env.BLOB_READ_WRITE_TOKEN;
+
+const ALLOWED_SPECIALIZATIONS = [
+    'General Dentist',
+    'Pediatric Dentist',
+    'Orthodontist',
+    'Endodontist',
+    'Oral Surgeon',
+    'Periodontist',
+    'Prosthodontist',
+    'Oral Pathologist',
+    'Oral Radiologist'
+];
 
 function requireAdmin(req, res, next) {
     if (req.user.role !== 'admin') {
@@ -18,9 +34,8 @@ function requireAdmin(req, res, next) {
 
 async function resolveIcon(icon) {
     if (!icon) return null;
-
     if (!icon.startsWith('data:')) {
-        if (!/^(\/uploads\/services\/[\w.-]+|\.\.\/assets\/[\w.-]+|https?:\/\/[^\s"'<>]+)$/.test(icon)) {
+        if (!/^(\/uploads\/services\/[\w.-]+|\.\.\/assets\/[\w.-]+|\/assets\/[\w.-]+|https?:\/\/[^\s"'<>]+)$/.test(icon)) {
             const err = new Error('Invalid icon value');
             err.status = 400;
             throw err;
@@ -53,7 +68,6 @@ async function resolveIcon(icon) {
             });
             return blob.url;
         } catch (uploadErr) {
-            console.error('Blob upload error:', uploadErr);
             const err = new Error('Failed to upload icon image to cloud storage');
             err.status = 500;
             throw err;
@@ -64,7 +78,6 @@ async function resolveIcon(icon) {
             fs.writeFileSync(path.join(ICON_DIR, filename), buffer);
             return `/uploads/services/${filename}`;
         } catch (localErr) {
-            console.error('Local file write error:', localErr);
             const err = new Error('Failed to save icon locally');
             err.status = 500;
             throw err;
@@ -73,53 +86,70 @@ async function resolveIcon(icon) {
 }
 
 function toService(row) {
-    return { ...row, price: Number(row.price) };
+    return { 
+        ...row, 
+        price: Number(row.price),
+        duration_minutes: Number(row.duration_minutes || 30),
+        required_specialization: row.required_specialization || 'General Dentist',
+        specialization: row.required_specialization || 'General Dentist'
+    };
 }
 
-// Validates title and price while allowing val/id parentheses (e.g. "Root Canal (Molar)")//
 function validate(body) {
     const label = typeof body.label === 'string' ? body.label.trim() : '';
     const price = Number(body.price);
+    const duration = parseInt(body.duration_minutes, 10) || 30;
+    const spec = typeof body.specialization === 'string' 
+        ? body.specialization.trim() 
+        : (typeof body.required_specialization === 'string' ? body.required_specialization.trim() : 'General Dentist');
 
     if (!label || label.length < 2 || label.length > 80) {
         return { error: 'Service name is required (2 to 80 characters).' };
     }
 
-    // 1. Strictly forbid dangerous symbols (% $ ^ * < > etc.)
     if (/[%$^*<>{}[\]\\;~|_+=]/.test(label)) {
-        return { error: 'Service name contains forbidden symbols (e.g. %, $, *, <, >).' };
+        return { error: 'Service name contains forbidden symbols.' };
     }
 
-    // 2. Forbid repeated punctuation: (((((, ))))), -----, .....
     if (/([()\-',/.]){2,}/.test(label)) {
         return { error: 'Service name cannot contain repeated punctuation characters.' };
     }
 
-    // 3. Parentheses balance check: allows ( ) when properly matched
     const openCount = (label.match(/\(/g) || []).length;
     const closeCount = (label.match(/\)/g) || []).length;
     if (openCount !== closeCount) {
-        return { error: 'Parentheses must be properly closed (e.g. "Root Canal (Molar)").' };
+        return { error: 'Parentheses must be properly closed.' };
     }
 
-    // 4. Valid title structure
     const cleanTitleRegex = /^[A-Za-z0-9][A-Za-z0-9\s\-',/().]*[A-Za-z0-9.)]$/;
     if (!cleanTitleRegex.test(label)) {
-        return { error: 'Service name must start and end with valid letters, numbers, or closing parenthesis.' };
+        return { error: 'Service name must start and end with valid characters.' };
     }
 
     if (!Number.isFinite(price) || price < 0 || price > 1500000) {
-        return { error: 'Price must be a valid number between 0 and 1,000,000 PHP.' };
+        return { error: 'Price must be a valid number between 0 and 1,500,000 PHP.' };
     }
 
-    return { label, price };
+    if (duration < 5 || duration > 480) {
+        return { error: 'Duration must be between 5 and 480 minutes.' };
+    }
+
+    if (!ALLOWED_SPECIALIZATIONS.includes(spec)) {
+        return { error: 'Invalid dentist specialization selected.' };
+    }
+
+    return { label, price, duration_minutes: duration, required_specialization: spec };
 }
 
 function registerServiceRoutes(app, db) {
+    // 1. GET /api/services — Includes duration_minutes and required_specialization
     app.get('/api/services', authenticateToken, async (req, res) => {
         try {
             const [rows] = await db.query(
-                'SELECT service_id, label, price, icon, is_available FROM services ORDER BY service_id'
+                `SELECT service_id, label, price, duration_minutes, required_specialization, icon, is_available 
+                 FROM services 
+                 WHERE is_available = TRUE 
+                 ORDER BY service_id`
             );
             res.json(rows.map(toService));
         } catch (err) {
@@ -128,6 +158,7 @@ function registerServiceRoutes(app, db) {
         }
     });
 
+    // 2. POST /api/services — Inserts all service attributes
     app.post('/api/services', authenticateToken, requireAdmin, async (req, res) => {
         const v = validate(req.body);
         if (v.error) return res.status(400).json({ message: v.error });
@@ -135,10 +166,22 @@ function registerServiceRoutes(app, db) {
         try {
             const icon = await resolveIcon(req.body.icon);
             const [result] = await db.query(
-                'INSERT INTO services (label, price, icon) VALUES (?, ?, ?)',
-                [v.label, v.price, icon]
+                `INSERT INTO services (label, price, duration_minutes, required_specialization, icon) 
+                 VALUES (?, ?, ?, ?, ?)`,
+                [v.label, v.price, v.duration_minutes, v.required_specialization, icon]
             );
             const [[row]] = await db.query('SELECT * FROM services WHERE service_id = ?', [result.insertId]);
+
+            await logActivity(db, {
+                user_id: req.user.user_id,
+                user_role: req.user.role,
+                action: 'CREATE_SERVICE',
+                target_table: 'services',
+                target_id: result.insertId,
+                notes: `Created service "${v.label}" at ₱${v.price}.`,
+                ip_address: getIp(req)
+            });
+
             res.status(201).json(toService(row));
         } catch (err) {
             if (err.status) return res.status(err.status).json({ message: err.message });
@@ -147,6 +190,7 @@ function registerServiceRoutes(app, db) {
         }
     });
 
+    // 3. PUT /api/services/:id — Updates all service attributes
     app.put('/api/services/:id', authenticateToken, requireAdmin, async (req, res) => {
         const id = Number(req.params.id);
         if (!Number.isInteger(id)) return res.status(400).json({ message: 'Invalid service id' });
@@ -157,12 +201,25 @@ function registerServiceRoutes(app, db) {
         try {
             const icon = await resolveIcon(req.body.icon);
             const [result] = await db.query(
-                'UPDATE services SET label = ?, price = ?, icon = ? WHERE service_id = ?',
-                [v.label, v.price, icon, id]
+                `UPDATE services 
+                 SET label = ?, price = ?, duration_minutes = ?, required_specialization = ?, icon = ? 
+                 WHERE service_id = ?`,
+                [v.label, v.price, v.duration_minutes, v.required_specialization, icon, id]
             );
             if (result.affectedRows === 0) return res.status(404).json({ message: 'Service not found' });
 
             const [[row]] = await db.query('SELECT * FROM services WHERE service_id = ?', [id]);
+
+            await logActivity(db, {
+                user_id: req.user.user_id,
+                user_role: req.user.role,
+                action: 'UPDATE_SERVICE',
+                target_table: 'services',
+                target_id: id,
+                notes: `Updated service "${v.label}" to ₱${v.price}.`,
+                ip_address: getIp(req)
+            });
+
             res.json(toService(row));
         } catch (err) {
             if (err.status) return res.status(err.status).json({ message: err.message });
@@ -171,13 +228,26 @@ function registerServiceRoutes(app, db) {
         }
     });
 
+    // 4. DELETE /api/services/:id
     app.delete('/api/services/:id', authenticateToken, requireAdmin, async (req, res) => {
         const id = Number(req.params.id);
         if (!Number.isInteger(id)) return res.status(400).json({ message: 'Invalid service id' });
 
         try {
+            const [[existing] = []] = await db.query('SELECT label FROM services WHERE service_id = ?', [id]);
             const [result] = await db.query('DELETE FROM services WHERE service_id = ?', [id]);
             if (result.affectedRows === 0) return res.status(404).json({ message: 'Service not found' });
+
+            await logActivity(db, {
+                user_id: req.user.user_id,
+                user_role: req.user.role,
+                action: 'DELETE_SERVICE',
+                target_table: 'services',
+                target_id: id,
+                notes: existing ? `Deleted service "${existing.label}".` : `Deleted service #${id}.`,
+                ip_address: getIp(req)
+            });
+
             res.json({ message: 'Service deleted' });
         } catch (err) {
             if (err.code === 'ER_ROW_IS_REFERENCED_2') {

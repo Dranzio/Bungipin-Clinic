@@ -1,4 +1,9 @@
 const authenticateToken = require('../authMiddleware');
+const { logActivity } = require('../Admin/auditLogRoutes');
+
+function getIp(req) {
+    return req.ip || req.headers['x-forwarded-for'];
+}
 
 function registerDoctorScheduleRoutes(app, db, io) {
 
@@ -152,6 +157,17 @@ function registerDoctorScheduleRoutes(app, db, io) {
             }
 
             await connection.commit();
+
+            await logActivity(db, {
+                user_id: req.user.user_id,
+                user_role: req.user.role,
+                action: 'UPDATE_SCHEDULE',
+                target_table: 'doctor_schedules',
+                target_id: employeeId,
+                notes: `Updated weekly shift schedule for doctor #${employeeId}.`,
+                ip_address: getIp(req)
+            });
+
             res.json({ message: 'Doctor shift schedule updated successfully' });
         } catch (err) {
             await connection.rollback();
@@ -262,6 +278,16 @@ function registerDoctorScheduleRoutes(app, db, io) {
             `, [appt.patient_id, appointmentId]);
 
             await connection.commit();
+
+            await logActivity(db, {
+                user_id: req.user.user_id,
+                user_role: req.user.role,
+                action: 'COMPLETE_TREATMENT',
+                target_table: 'appointments',
+                target_id: appointmentId,
+                notes: 'Treatment marked complete (Dentist Schedule page).',
+                ip_address: getIp(req)
+            });
 
             // Broadcast real-time update across all tabs (Queue, BookingRequest, DoctorSchedule)
             if (io) {

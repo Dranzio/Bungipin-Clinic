@@ -19,7 +19,6 @@ async function register(req, res) {
       password,
       sex,
       birthday,
-      civil_status,
       address,
     } = req.body;
 
@@ -49,8 +48,8 @@ async function register(req, res) {
     const [[{ new_user_id }]] = await conn.query('SELECT @new_user_id AS new_user_id');
 
     await conn.query(
-      'INSERT INTO patient_profiles (patient_id, birthday, civil_status, address) VALUES (?, ?, ?, ?)',
-      [new_user_id, birthday || null, civil_status || null, address || null]
+      'INSERT INTO patient_profiles (patient_id, birthday, , address) VALUES (?, ?, ?, ?)',
+      [new_user_id, birthday || null, address || null]
     );
 
     await conn.commit();

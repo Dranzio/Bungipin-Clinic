@@ -7,14 +7,16 @@
     <script src="../pageProtection.js"></script>
     <title>Booking Request &amp; Reschedule Reviews</title>
     <link href="/output.css" rel="stylesheet">
-    <!-- Tailwind CDN Fallback for missing builds -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://kit.fontawesome.com/fc8c3f4103.js" crossorigin="anonymous"></script>
     <script src="/socket.io/socket.io.js"></script>
     <script src="../Taskbar/Employee_Sidebar.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
+        .font-poppins { font-family: 'Poppins', sans-serif; }
+    </style>
 </head>
-
-<body class="min-h-screen bg-[#F3EFE4] relative flex flex-col md:flex-row text-[#2A1001] font-sans antialiased">
+<body class="min-h-screen bg-[#F3EFE4] relative flex flex-col md:flex-row text-[#2A1001] font-poppins antialiased">
     <!-- SIDEBAR -->
     <div id="sidebar-placeholder"></div>
     <script>
@@ -23,9 +25,7 @@
             const sidebar = Array.from(placeholder?.children || [])
                 .find(el => !['SCRIPT', 'STYLE', 'LINK'].includes(el.tagName));
             if (!sidebar) return;
-
             const set = (el, prop, value) => { if (el.style[prop] !== value) el.style[prop] = value; };
-
             const apply = () => {
                 const desktop = window.innerWidth >= 768;
                 set(placeholder, 'flexShrink', '0');
@@ -34,11 +34,9 @@
                 set(sidebar, 'height', desktop ? '100vh' : '');
                 set(sidebar, 'overflowY', desktop ? 'auto' : '');
             };
-
             window.addEventListener('resize', apply);
             apply();
         }
-
         (async () => {
             try {
                 let response = await fetch('/Taskbar/Employee_Task.html');
@@ -62,98 +60,86 @@
             }
         })();
     </script>
-
     <!-- Main Content Area -->
     <div id="main-content" class="flex-1 min-w-0 md:min-h-0 md:overflow-y-auto flex flex-col">
         
         <!-- Header -->
-        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center pt-5 pl-4 pr-4 sm:pl-6 sm:pr-6 md:pl-20 md:pr-8 gap-4">
+        <div class="flex justify-between items-start pt-5 pl-6 pr-4 md:pl-24 md:pr-8">
             <div>
-                <h1 class="text-2xl sm:text-3xl md:text-5xl font-bold text-[#2A1001] font-['Poppins']">
+                <h1 class="text-2xl sm:text-3xl md:text-5xl 2xl:text-[73px] pt-2 sm:pt-5 font-bold text-[#2A1001] font-['Poppins']">
                     Booking Requests
                 </h1>
-                <p class="text-xs sm:text-sm text-[#2A1001]/70 mt-1">
+                <p class="text-xs sm:text-sm font-semibold text-[#667733] mt-0.5">
                     Review patient appointments, approve bookings, and manage customer reschedule requests.
                 </p>
             </div>
             <img
                 src="../assets/logowithtitle.png"
                 onerror="this.style.display='none'"
-                class="w-16 sm:w-20 md:w-28 h-auto object-contain shrink-0"
+                class="w-20 sm:w-24 md:w-28 h-auto object-contain shrink-0"
                 alt="Logo"/>
         </div>
-
-         <hr class="border-t border-[#2A1001] mt-2 mb-6" />
-
+        <hr class="border-t border-[#2A1001] mt-2 mb-6" />
         <main class="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 md:px-12 pb-16 flex flex-col gap-6">
-
-            <!-- Search Bar (Centered, responsive) -->
+            <!-- Search Bar -->
             <div class="flex w-full justify-center px-2">
-                <input
-                    type="text"
-                    id="searchInput"
-                    placeholder="Search patient, service, or ID..."
-                    class="h-10 sm:h-11 w-full max-w-md rounded-full border border-[#2A1001]/20 bg-white px-4 sm:px-5 outline-none focus:outline-none shadow-sm text-xs sm:text-sm font-semibold transition"
-                />
+                <div class="relative w-full max-w-md flex items-center">
+                    <span class="absolute left-4 flex items-center pointer-events-none text-gray-400">
+                        <i class="fa-solid fa-magnifying-glass text-sm"></i>
+                    </span>
+                    <input
+                        type="text"
+                        id="searchInput"
+                        placeholder="Search patient, service, dentist, or ID..."
+                        class="h-11 w-full pl-11 pr-4 rounded-full border border-[#2A1001]/20 bg-white outline-none shadow-sm text-xs sm:text-sm font-semibold text-[#2A1001] focus:ring-2 focus:ring-[#667733]/40 transition"
+                    />
+                </div>
             </div>
-
-            <!-- Filter Cards (Responsive Grid / Flex) -->
+            <!-- Filter Cards -->
             <div id="statusFilters" class="grid grid-cols-2 sm:flex sm:flex-wrap gap-2.5 sm:gap-4 mb-6 sm:mb-8 justify-center max-w-3xl mx-auto w-full px-2">
-
-                <!-- Pending Bookings Card Button -->
+                <!-- Pending -->
                 <button data-status="pending" class="filter-btn active-filter bg-[#F1B770] text-center px-4 sm:px-6 py-2.5 sm:py-3 rounded-2xl font-bold text-[#2A1001] shadow-md transition-all duration-200 ease-in-out hover:scale-105 hover:bg-[#FDFCE9] hover:shadow-xl active:scale-95 cursor-pointer outline-none scale-105">
                     <span class="text-xs sm:text-sm block">Pending</span>
                     <span class="block text-xl sm:text-2xl font-black mt-0.5" id="badgePending">0</span>
                 </button>
-
-                <!-- Reschedule Requests Card Button -->
+                <!-- Reschedule -->
                 <button data-status="reschedule_requested" class="filter-btn bg-[#F4F18F] text-center px-4 sm:px-6 py-2.5 sm:py-3 rounded-2xl font-bold text-[#2A1001] shadow-md transition-all duration-200 ease-in-out hover:scale-105 hover:bg-[#FDFCE9] hover:shadow-xl active:scale-95 cursor-pointer outline-none">
                     <span class="text-xs sm:text-sm block">Reschedule</span>
                     <span class="block text-xl sm:text-2xl font-black mt-0.5" id="badgeResched">0</span>
                 </button>
-
-                <!-- Approved Bookings Card Button -->
+                <!-- Approved -->
                 <button data-status="approved" class="filter-btn bg-[#BEF835] text-center px-4 sm:px-6 py-2.5 sm:py-3 rounded-2xl font-bold text-[#2A1001] shadow-md transition-all duration-200 ease-in-out hover:scale-105 hover:bg-[#FDFCE9] hover:shadow-xl active:scale-95 cursor-pointer outline-none">
                     <span class="text-xs sm:text-sm block">Approved</span>
                     <span class="block text-xl sm:text-2xl font-black mt-0.5" id="badgeApproved">0</span>
                 </button>
-
-                <!-- Show All Card Button -->
+                <!-- Show All -->
                 <button data-status="all" class="filter-btn bg-white border border-[#2A1001]/30 text-center px-4 sm:px-6 py-2.5 sm:py-3 rounded-2xl font-bold text-[#2A1001] shadow-md transition-all duration-200 ease-in-out hover:scale-105 hover:bg-[#FDFCE9] hover:shadow-xl active:scale-95 cursor-pointer outline-none">
                     <span class="text-xs sm:text-sm block">Show All</span>
                     <span class="block text-xl sm:text-2xl font-black mt-0.5" id="badgeAll">0</span>
                 </button>
-
             </div>
-
             <!-- Booking Cards Container -->
-            <div id="booking-container" class="space-y-4 w-full">
-                <!-- Cards injected dynamically via JS -->
-            </div>
-
+            <div id="booking-container" class="space-y-4 w-full"></div>
             <!-- Empty State Container -->
             <div id="noBookingsState" class="hidden text-center py-16 bg-white/50 rounded-3xl border border-dashed border-[#2A1001]/20">
                 <i class="fa-solid fa-calendar-xmark text-4xl text-[#2A1001]/30 mb-3"></i>
                 <p class="text-base sm:text-lg font-bold text-[#2A1001]/80">No booking requests found</p>
                 <p class="text-xs text-[#2A1001]/50 mt-1">There are currently no appointments matching the selected filter or search keyword.</p>
             </div>
-
         </main>
     </div>
 
     <!-- ================= DECLINE / CANCEL MODAL ================= -->
     <div id="declineModal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div class="bg-[#F2F0EF] rounded-3xl p-6 sm:p-8 max-w-lg w-full border border-[#2A1001]/20 shadow-2xl relative my-auto">
+        <div class="bg-white rounded-3xl p-6 sm:p-8 max-w-lg w-full border border-[#2A1001]/20 shadow-2xl relative my-auto">
             <h3 class="text-xl font-bold text-[#2A1001] mb-2 font-['Poppins']" id="declineModalTitle">Decline Booking</h3>
             <p id="declineModalText" class="text-xs sm:text-sm text-[#2A1001]/80 mb-4 leading-relaxed">
                 Are you sure you want to decline this booking request? This action cannot be undone.
             </p>
-
             <div id="paidWarning" class="hidden bg-amber-100 border-l-4 border-amber-500 text-amber-900 p-3 rounded-r-xl text-xs mb-4">
                 <i class="fa-solid fa-circle-exclamation mr-1 text-amber-700"></i>
                 <strong>Notice:</strong> This patient has already paid online. If declined, a refund will need to be processed. Consider contacting the patient or offering a reschedule.
             </div>
-
             <div class="flex items-center justify-end gap-2.5 mt-6 flex-wrap">
                 <button id="cancelDeclineBtn" type="button" class="px-5 py-2.5 text-xs sm:text-sm font-semibold text-[#2A1001] bg-white border border-[#2A1001]/20 rounded-full hover:bg-gray-100 transition cursor-pointer">
                     Cancel
@@ -170,12 +156,11 @@
 
     <!-- ================= DECLINE RESCHEDULE REQUEST MODAL ================= -->
     <div id="declineRescheduleModal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div class="bg-[#F2F0EF] rounded-3xl p-6 sm:p-8 max-w-lg w-full border border-[#2A1001]/20 shadow-2xl relative my-auto">
+        <div class="bg-white rounded-3xl p-6 sm:p-8 max-w-lg w-full border border-[#2A1001]/20 shadow-2xl relative my-auto">
             <h3 class="text-xl font-bold text-[#2A1001] mb-2 font-['Poppins']">Decline Reschedule Request</h3>
             <p class="text-xs sm:text-sm text-[#2A1001]/80 mb-3" id="declineReschedModalSummary">
                 The appointment will keep its original confirmed schedule.
             </p>
-
             <div class="bg-white rounded-2xl p-4 border border-black/15 shadow-inner mb-4">
                 <label class="block text-xs font-bold text-[#2A1001] uppercase tracking-wide mb-1.5">
                     Reason for Declining Reschedule (Optional)
@@ -188,7 +173,6 @@
                 ></textarea>
                 <p class="text-[10px] text-gray-500 mt-1">This explanation will be sent to the patient's dashboard.</p>
             </div>
-
             <div class="flex items-center justify-end gap-2.5">
                 <button id="cancelDeclineReschedBtn" type="button" class="px-5 py-2.5 text-xs sm:text-sm font-semibold text-[#2A1001] bg-white border border-[#2A1001]/20 rounded-full hover:bg-gray-100 transition cursor-pointer">
                     Cancel
@@ -203,12 +187,8 @@
     <!-- ================= STAFF RESCHEDULE CALENDAR MODAL ================= -->
     <div id="rescheduleModal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
         <div class="bg-[#F3EFE4] rounded-3xl p-5 sm:p-8 relative max-w-4xl w-full shadow-2xl border-[3px] border-[#2A1001]/20 my-auto max-h-[94vh] flex flex-col">
-
             <!-- Close Button -->
-            <button id="closeRescheduleModal" class="absolute top-4 right-5 text-3xl font-extrabold text-[#382414] hover:opacity-60 transition leading-none cursor-pointer">
-                &times;
-            </button>
-
+            <button id="closeRescheduleModal" class="absolute top-4 right-5 text-3xl font-extrabold text-[#382414] hover:opacity-60 transition leading-none cursor-pointer">&times;</button>
             <div class="mb-4 text-center pr-6 pl-2">
                 <h2 class="text-xl sm:text-2xl font-bold text-[#2A1001] font-['Poppins']" id="rescheduleModalTitle">
                     Reschedule Appointment
@@ -217,53 +197,44 @@
                     Select a new date and available clinic slot for the patient.
                 </p>
             </div>
-
             <!-- Calendar & Slots Container -->
             <div class="flex-1 overflow-y-auto pr-1 flex flex-col gap-4">
                 <div class="flex flex-col-reverse lg:flex-row gap-4 sm:gap-6 items-center justify-center mt-1">
-
                     <!-- Available slots panel -->
-                    <div class="flex justify-center gap-3 sm:gap-6 bg-white/80 p-3.5 sm:p-4 rounded-2xl sm:rounded-3xl border-2 border-[#2A1001]/20 shadow-sm w-full lg:w-auto">
-                        <!-- AM time -->
-                        <div class="flex flex-col w-1/2 sm:w-36">
-                            <h4 class="font-bold text-xs sm:text-sm text-[#2A1001] mb-2 text-center border-b pb-1 border-[#2A1001]/10">
-                                <i class="fa-solid fa-sun text-amber-500 mr-1"></i> AM - Time
-                            </h4>
-                            <div id="amSlotsContainer" class="space-y-1.5 sm:space-y-2 w-full"></div>
+                    <div id="staffSlotsPanel" class="flex flex-col justify-center bg-white p-3.5 sm:p-4 rounded-2xl sm:rounded-3xl border-2 border-[#2A1001]/20 shadow-sm w-full lg:w-80 min-h-[300px]">
+                        <div id="staffSlotsCols" class="flex justify-center gap-3 sm:gap-6 w-full">
+                            <div class="flex flex-col w-1/2 sm:w-36">
+                                <h4 class="font-bold text-xs sm:text-sm text-[#2A1001] mb-2 text-center border-b pb-1 border-[#2A1001]/10">
+                                    <i class="fa-solid fa-sun text-amber-500 mr-1"></i> AM - Time
+                                </h4>
+                                <div id="amSlotsContainer" class="space-y-1.5 sm:space-y-2 w-full"></div>
+                            </div>
+                            <div class="flex flex-col w-1/2 sm:w-36">
+                                <h4 class="font-bold text-xs sm:text-sm text-[#2A1001] mb-2 text-center border-b pb-1 border-[#2A1001]/10">
+                                    <i class="fa-solid fa-moon text-indigo-600 mr-1"></i> PM - Time
+                                </h4>
+                                <div id="pmSlotsContainer" class="space-y-1.5 sm:space-y-2 w-full"></div>
+                            </div>
                         </div>
-                        <!-- PM time -->
-                        <div class="flex flex-col w-1/2 sm:w-36">
-                            <h4 class="font-bold text-xs sm:text-sm text-[#2A1001] mb-2 text-center border-b pb-1 border-[#2A1001]/10">
-                                <i class="fa-solid fa-moon text-indigo-600 mr-1"></i> PM - Time
-                            </h4>
-                            <div id="pmSlotsContainer" class="space-y-1.5 sm:space-y-2 w-full"></div>
-                        </div>
+                        <div id="staffSlotsMsg" class="hidden flex flex-col items-center justify-center text-center p-4"></div>
                     </div>
-
                     <!-- Dynamic calendar -->
                     <div class="flex flex-col w-full max-w-[350px] sm:max-w-[390px] h-[340px] rounded-2xl sm:rounded-3xl border-[3px] border-black bg-white overflow-hidden shadow-lg shrink-0">
-
                         <div class="flex justify-between items-center px-3 py-2 w-full bg-[#667733] text-[#D7E3A5]">
                             <div class="cursor-pointer text-xl font-bold px-2 hover:text-white transition" id="prev">&lt;</div>
                             <div id="month-year" class="text-base sm:text-lg font-bold text-white"></div>
                             <div class="cursor-pointer text-xl font-bold px-2 hover:text-white transition" id="next">&gt;</div>
                         </div>
-
                         <div class="grid grid-cols-7 gap-1 px-2 sm:px-3 py-1.5 text-center text-[#2A1001]/70 font-bold text-xs border-b">
                             <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
                         </div>
-
                         <div class="grid grid-cols-7 gap-1 sm:gap-1.5 px-2 sm:px-3 py-2 place-items-center" id="days"></div>
                     </div>
-
                 </div>
-
-                <!-- Selected schedule indicator -->
-                <p class="text-xs sm:text-sm text-[#2A1001] text-center font-medium bg-white/60 py-2 px-3 sm:px-4 rounded-full border border-black/10 mx-auto max-w-full break-words" id="selectedDateDisplay">
+                <p class="text-xs sm:text-sm text-[#2A1001] text-center font-medium bg-white py-2 px-3 sm:px-4 rounded-full border border-black/10 mx-auto max-w-full break-words shadow-sm" id="selectedDateDisplay">
                     No date selected yet.
                 </p>
             </div>
-
             <!-- Confirmation Buttons -->
             <div class="mt-4 pt-3 border-t border-[#2A1001]/10 flex flex-col sm:flex-row items-center justify-center gap-3 shrink-0">
                 <button id="cancelRescheduleModalBtn" type="button" class="w-full sm:w-auto px-6 py-2.5 text-xs sm:text-sm font-semibold text-[#2A1001] bg-white border border-[#2A1001]/20 rounded-full hover:bg-gray-100 transition cursor-pointer">
@@ -273,13 +244,12 @@
                     Confirm Reschedule
                 </button>
             </div>
-
         </div>
     </div>
 
     <!-- ================= NOTICE MODAL ================= -->
     <div id="noticeModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
-        <div class="bg-[#F2F0EF] rounded-3xl p-6 sm:p-7 w-full max-w-sm shadow-2xl border border-[#1a281b]/15 flex flex-col gap-4">
+        <div class="bg-white rounded-3xl p-6 sm:p-7 w-full max-w-sm shadow-2xl border border-[#1a281b]/15 flex flex-col gap-4">
             <div class="flex items-start gap-3">
                 <div id="noticeIconWrap" class="w-10 h-10 rounded-full flex items-center justify-center text-lg shrink-0 bg-[#EAF0DD] text-[#556022]">
                     <i id="noticeIcon" class="fa-solid fa-circle-info"></i>
@@ -297,37 +267,72 @@
         </div>
     </div>
 
-    <!-- ================= COMBINED CLIENT JAVASCRIPT ================= -->
+    <!-- ================= CUSTOM CONFIRMATION ACTION MODAL ================= -->
+    <div id="confirmActionModal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-[70] flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl p-6 sm:p-8 max-w-sm w-full border border-[#2A1001]/20 shadow-2xl relative text-center flex flex-col items-center gap-3">
+            <div id="confirmActionIconWrap" class="w-14 h-14 rounded-full bg-[#D7E3A5] text-[#667733] flex items-center justify-center text-2xl shrink-0">
+                <i class="fa-solid fa-circle-check"></i>
+            </div>
+            <h3 id="confirmActionTitle" class="text-lg sm:text-xl font-bold text-[#2A1001]">Confirm Action</h3>
+            <p id="confirmActionText" class="text-xs sm:text-sm text-[#2A1001]/80 leading-relaxed"></p>
+            <div class="flex items-center justify-center gap-3 w-full mt-2">
+                <button id="cancelActionBtn" type="button" class="flex-1 py-2.5 text-xs sm:text-sm font-semibold text-[#2A1001] bg-white border border-[#2A1001]/20 rounded-full hover:bg-gray-100 transition cursor-pointer">
+                    Cancel
+                </button>
+                <button id="okActionBtn" type="button" class="flex-1 py-2.5 text-xs sm:text-sm font-bold text-white bg-[#667733] hover:bg-[#556022] rounded-full shadow-md transition cursor-pointer active:scale-95">
+                    Yes, Confirm
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= CLIENT JAVASCRIPT ================= -->
     <script>
         const API_BASE_URL = window.BACKEND_API_BASE_URL || '';
-
         function escapeHtml(value) {
             const div = document.createElement('div');
             div.textContent = value == null ? '' : String(value);
             return div.innerHTML;
         }
-
-        const clinicSlots = [
-            { id: "08:00:00", label: "8:00 AM - 9:00 AM" },
-            { id: "09:00:00", label: "9:00 AM - 10:00 AM" },
-            { id: "10:00:00", label: "10:00 AM - 11:00 AM" },
-            { id: "11:00:00", label: "11:00 AM - 12:00 PM" },
-            { id: "13:00:00", label: "1:00 PM - 2:00 PM" },
-            { id: "14:00:00", label: "2:00 PM - 3:00 PM" },
-            { id: "15:00:00", label: "3:00 PM - 4:00 PM" },
-            { id: "16:00:00", label: "4:00 PM - 5:00 PM" }
-        ];
-
+        function formatTime12h(timeStr) {
+            if (!timeStr) return "";
+            const [hours, minutes] = String(timeStr).split(":");
+            let h = parseInt(hours, 10);
+            const ampm = h >= 12 ? "PM" : "AM";
+            h = h % 12 || 12;
+            return `${h}:${minutes || '00'} ${ampm}`;
+        }
+        function getFormattedTimeRange(timeSlot, endTime, serviceLabel) {
+            if (!timeSlot) return "TBD";
+            
+            // 1. If exact end_time is saved in DB, use it:
+            if (endTime && endTime !== '00:00:00' && endTime !== timeSlot) {
+                return `${formatTime12h(timeSlot)} – ${formatTime12h(endTime)}`;
+            }
+            // 2. Accurate fallback calculation:
+            const [hStr, mStr] = String(timeSlot).split(":");
+            const startMins = parseInt(hStr, 10) * 60 + parseInt(mStr || "0", 10);
+            const l = String(serviceLabel || '').toLowerCase();
+            let duration = 30;
+            if (l.includes('root') || l.includes('canal')) duration = 90;
+            else if (l.includes('whiten')) duration = 60;
+            else if (l.includes('clean') || l.includes('prophylaxis')) duration = 45;
+            else if (l.includes('pasta') || l.includes('filling')) duration = 30;
+            else if (l.includes('brace') || l.includes('ortho')) duration = 60;
+            else if (l.includes('extract') || l.includes('surgery')) duration = 45;
+            const endMins = startMins + duration;
+            const endH = Math.floor(endMins / 60);
+            const endM = endMins % 60;
+            const fallbackEnd = `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}:00`;
+            return `${formatTime12h(timeSlot)} – ${formatTime12h(fallbackEnd)}`;
+        }
         const months = [
             'January', 'February', 'March', 'April', 'May', 'June', 'July',
             'August', 'September', 'October', 'November', 'December'
         ];
-
         let allBookings = [];
-        let occupiedSlots = [];
         let currentSearch = "";
-        let currentStatusFilter = "pending"; // "pending", "reschedule_requested", "approved", "all"
-
+        let currentStatusFilter = "pending";
         let pendingDeclineApptId = null;
         let pendingDeclineReschedApptId = null;
         let pendingRescheduleApptId = null;
@@ -336,8 +341,9 @@
         let calCurrentDate = new Date();
         const calToday = new Date();
         let calSelectedDate = null;
-        let calSelectedDateFormatted = null; // YYYY-MM-DD
+        let calSelectedDateFormatted = null;
         let calSelectedTime = null;
+        let calSelectedEndTime = null;
 
         function authHeaders(json = false) {
             const token = localStorage.getItem('userToken');
@@ -346,111 +352,66 @@
             if (json) headers['Content-Type'] = 'application/json';
             return headers;
         }
-
-        function formatTime12h(timeStr) {
-            if (!timeStr) return "";
-            const [hours, minutes] = timeStr.split(":");
-            let h = parseInt(hours, 10);
-            const ampm = h >= 12 ? "PM" : "AM";
-            h = h % 12 || 12;
-            return `${h}:${minutes || '00'} ${ampm}`;
-        }
-
         function isNewBooking(submittedAt) {
             if (!submittedAt) return false;
             const hoursSince = (new Date() - new Date(submittedAt)) / (1000 * 60 * 60);
             return hoursSince <= 24;
         }
-
-        // ── Notice Modal ──────────────────────────────────────────────────────────
         function showNotice(message, { title = "Notice", type = "info" } = {}) {
             const modal = document.getElementById('noticeModal');
-            if (!modal) { alert(title + ': ' + message); return; }
-
+            if (!modal) return;
             const iconWrap = document.getElementById('noticeIconWrap');
             const icon = document.getElementById('noticeIcon');
             const titleEl = document.getElementById('noticeTitle');
             const msgEl = document.getElementById('noticeMessage');
-
             const styles = {
                 success: { wrap: 'bg-green-100 text-green-700', icon: 'fa-circle-check' },
                 error:   { wrap: 'bg-red-100 text-red-600',     icon: 'fa-circle-exclamation' },
                 info:    { wrap: 'bg-[#EAF0DD] text-[#556022]', icon: 'fa-circle-info' }
             };
             const s = styles[type] || styles.info;
-
             iconWrap.className = `w-10 h-10 rounded-full flex items-center justify-center text-lg shrink-0 ${s.wrap}`;
             icon.className = `fa-solid ${s.icon}`;
             titleEl.textContent = title;
             msgEl.textContent = message;
-
             modal.classList.remove('hidden');
         }
-
         function closeNoticeModal() {
             const modal = document.getElementById('noticeModal');
             if (modal) modal.classList.add('hidden');
         }
-
-        // ── Initialization ────────────────────────────────────────────────────────
         document.addEventListener('DOMContentLoaded', () => {
             initEventListeners();
             initSocketEvents();
             loadAllBookings();
-            loadOccupiedSlots();
         });
-
         function initSocketEvents() {
             if (typeof io !== 'function') return;
             const socket = io();
-
-            socket.on('payment-confirmed', () => {
-                loadAllBookings();
-            });
-
-            socket.on('appointment-updated', () => {
-                loadAllBookings();
-                loadOccupiedSlots();
-            });
-
-            socket.on('queue_updated', () => {
-                loadAllBookings();
-            });
+            socket.on('payment-confirmed', () => { loadAllBookings(); });
+            socket.on('appointment-updated', () => { loadAllBookings(); });
+            socket.on('queue_updated', () => { loadAllBookings(); });
         }
-
         function initEventListeners() {
             document.getElementById('noticeOkBtn')?.addEventListener('click', closeNoticeModal);
             document.getElementById('noticeModal')?.addEventListener('click', (e) => {
                 if (e.target === document.getElementById('noticeModal')) closeNoticeModal();
             });
-
-            document.getElementById('refreshBtn')?.addEventListener('click', () => {
-                loadAllBookings();
-                loadOccupiedSlots();
-            });
-
             document.getElementById('searchInput')?.addEventListener('input', (e) => {
                 currentSearch = e.target.value.trim().toLowerCase();
                 renderBookings();
             });
-
-            // Filter button listeners matching Queue.html (no outline/ring lines)
             document.querySelectorAll('.filter-btn').forEach(btn => {
                 btn.addEventListener('click', function () {
                     document.querySelectorAll('.filter-btn').forEach(b => {
                         b.classList.remove('scale-105', 'shadow-2xl', 'active-filter');
                     });
-
                     this.classList.add('scale-105', 'shadow-2xl', 'active-filter');
-
                     currentStatusFilter = this.dataset.status;
                     renderBookings();
                 });
             });
-
             document.getElementById('booking-container')?.addEventListener('click', handleCardActionClicks);
-
-            // Initial Decline Modal
             document.getElementById('cancelDeclineBtn')?.addEventListener('click', closeDeclineModal);
             document.getElementById('declineModal')?.addEventListener('click', (e) => {
                 if (e.target === document.getElementById('declineModal')) closeDeclineModal();
@@ -461,15 +422,11 @@
                 closeDeclineModal();
                 if (id) openRescheduleModal(id);
             });
-
-            // Decline Reschedule Modal
             document.getElementById('cancelDeclineReschedBtn')?.addEventListener('click', closeDeclineReschedModal);
             document.getElementById('declineRescheduleModal')?.addEventListener('click', (e) => {
                 if (e.target === document.getElementById('declineRescheduleModal')) closeDeclineReschedModal();
             });
             document.getElementById('confirmDeclineReschedBtn')?.addEventListener('click', handleConfirmDeclineReschedule);
-
-            // Reschedule Calendar Modal
             document.getElementById('closeRescheduleModal')?.addEventListener('click', closeRescheduleModal);
             document.getElementById('cancelRescheduleModalBtn')?.addEventListener('click', closeRescheduleModal);
             document.getElementById('rescheduleModal')?.addEventListener('click', (e) => {
@@ -485,7 +442,6 @@
             });
             document.getElementById('confirmRescheduleBtn')?.addEventListener('click', handleConfirmDirectReschedule);
         }
-
         async function loadAllBookings() {
             try {
                 const res = await fetch(`${API_BASE_URL}/api/appointments?status=all`, { headers: authHeaders() });
@@ -500,39 +456,23 @@
                 console.error('Network error loading bookings:', err);
             }
         }
-
-        async function loadOccupiedSlots() {
-            try {
-                const res = await fetch(`${API_BASE_URL}/api/appointments/occupied`, { headers: authHeaders() });
-                if (res.ok) {
-                    occupiedSlots = await res.json();
-                }
-            } catch (err) {
-                console.error('Failed to load occupied slots:', err);
-            }
-        }
-
         function updateBadges() {
             const pendingCount = allBookings.filter(b => (b.appointment_status || '').toLowerCase() === 'pending').length;
             const reschedCount = allBookings.filter(b => (b.reschedule_status || '').toLowerCase() === 'requested').length;
             const approvedCount = allBookings.filter(b => (b.appointment_status || '').toLowerCase() === 'approved').length;
-
             const bPending = document.getElementById('badgePending');
             const bResched = document.getElementById('badgeResched');
             const bApproved = document.getElementById('badgeApproved');
             const bAll = document.getElementById('badgeAll');
-
             if (bPending) bPending.textContent = pendingCount;
             if (bResched) bResched.textContent = reschedCount;
             if (bApproved) bApproved.textContent = approvedCount;
             if (bAll) bAll.textContent = allBookings.length;
         }
-
         function getFilteredBookings() {
             return allBookings.filter(b => {
                 const status = (b.appointment_status || '').toLowerCase();
                 const resched = (b.reschedule_status || '').toLowerCase();
-
                 let matchesStatus = false;
                 if (currentStatusFilter === 'pending') {
                     matchesStatus = status === 'pending';
@@ -541,63 +481,64 @@
                 } else if (currentStatusFilter === 'approved') {
                     matchesStatus = status === 'approved';
                 } else {
-                    matchesStatus = true; // All
+                    matchesStatus = true;
                 }
-
                 const patientName = `${b.first_name || ''} ${b.last_name || ''}`.toLowerCase();
                 const service = (b.service_label || '').toLowerCase();
                 const pubId = String(b.public_id || b.appointment_id || '').toLowerCase();
                 const phone = String(b.patient_phone || '').toLowerCase();
-
+                const dentist = `${b.dentist_first_name || ''} ${b.dentist_last_name || ''}`.toLowerCase();
                 const matchesSearch = !currentSearch ||
                     patientName.includes(currentSearch) ||
                     service.includes(currentSearch) ||
                     pubId.includes(currentSearch) ||
-                    phone.includes(currentSearch);
-
+                    phone.includes(currentSearch) ||
+                    dentist.includes(currentSearch);
                 return matchesStatus && matchesSearch;
             });
         }
-
         function renderBookings() {
             const container = document.getElementById('booking-container');
             const emptyState = document.getElementById('noBookingsState');
             if (!container) return;
-
             const list = getFilteredBookings();
-
             if (list.length === 0) {
                 container.innerHTML = '';
                 if (emptyState) emptyState.classList.remove('hidden');
                 return;
             }
-
             if (emptyState) emptyState.classList.add('hidden');
-
             container.innerHTML = list.map(b => {
                 const id = b.appointment_id;
                 const status = (b.appointment_status || '').toLowerCase();
                 const reschedStatus = (b.reschedule_status || '').toLowerCase();
                 const hasReschedRequest = reschedStatus === 'requested' && b.requested_date;
-
                 const isNew = isNewBooking(b.created_at);
                 const isOnlinePaid = (b.payment_status || '').toLowerCase() === 'paid';
                 const patientFullName = `${escapeHtml(b.first_name || '')} ${escapeHtml(b.last_name || '')}`.trim() || 'Patient';
                 const publicId = escapeHtml(b.public_id || `ID: ${id}`);
                 const service = escapeHtml(b.service_label || 'Dental Treatment');
                 const scheduledDate = escapeHtml(b.appointment_date || 'TBD');
-                const scheduledTime = escapeHtml(formatTime12h(b.time_slot));
-
+                
+                // Calculates exact Start to End time
+                const scheduledTimeRange = getFormattedTimeRange(b.time_slot, b.end_time || b.end_time_slot, b.service_label);
+                
+                // Attending Dentist Display
                 let dentistBadge = '';
-                if (status === 'approved' && (b.dentist_first_name || b.dentist_last_name)) {
-                    dentistBadge = `<span class="inline-flex items-center gap-1 text-xs font-bold text-[#667733] bg-[#ECF5E2] px-2.5 py-0.5 rounded-full border border-[#667733]/30"><i class="fa-solid fa-user-doctor"></i> Dr. ${escapeHtml(b.dentist_first_name || '')} ${escapeHtml(b.dentist_last_name || '')}</span>`;
+                const docName = (b.dentist_first_name || b.dentist_last_name) 
+                    ? `Dr. ${b.dentist_first_name || ''} ${b.dentist_last_name || ''}`.trim()
+                    : null;
+
+                if (docName) {
+                    dentistBadge = `<span class="inline-flex items-center gap-1 text-xs font-bold text-[#667733] bg-[#ECF5E2] px-2.5 py-0.5 rounded-full border border-[#667733]/30"><i class="fa-solid fa-user-doctor"></i> ${escapeHtml(docName)}</span>`;
+                } else {
+                    dentistBadge = `<span class="inline-flex items-center gap-1 text-xs font-bold text-amber-800 bg-amber-50 px-2.5 py-0.5 rounded-full border border-amber-200"><i class="fa-regular fa-clock text-amber-600"></i> Any Available Dentist</span>`;
                 }
 
-                // Reschedule Request Callout Banner
                 let reschedBanner = '';
                 if (hasReschedRequest) {
                     const reqDateFormatted = new Date(b.requested_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-                    const reqTimeFormatted = formatTime12h(b.requested_time);
+                    const reqTimeRange = getFormattedTimeRange(b.requested_time, null, b.service_label);
                     reschedBanner = `
                         <div class="mt-3 p-3 sm:p-3.5 bg-amber-50 rounded-2xl border-2 border-amber-300 flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs text-amber-950 shadow-sm">
                             <div class="flex items-start gap-2.5 min-w-0">
@@ -609,14 +550,13 @@
                                         Customer Requested Reschedule
                                     </span>
                                     <p class="font-bold mt-0.5 text-xs sm:text-sm break-words">
-                                        Current: <span class="line-through text-gray-500">${scheduledDate} (${scheduledTime})</span> 
+                                        Current: <span class="line-through text-gray-500">${scheduledDate} (${scheduledTimeRange})</span> 
                                         <span class="mx-1 text-amber-700 font-extrabold">&rarr;</span> 
-                                        <span class="text-green-800 bg-green-100 px-2 py-0.5 rounded-md font-extrabold inline-block mt-1 sm:mt-0">${reqDateFormatted} at ${reqTimeFormatted}</span>
+                                        <span class="text-green-800 bg-green-100 px-2 py-0.5 rounded-md font-extrabold inline-block mt-1 sm:mt-0">${reqDateFormatted} at ${reqTimeRange}</span>
                                     </p>
                                     ${b.reschedule_reason ? `<p class="italic text-amber-800 mt-1 font-semibold break-words">Reason: "${escapeHtml(b.reschedule_reason)}"</p>` : ''}
                                 </div>
                             </div>
-                            <!-- Side Decision Buttons -->
                             <div class="flex items-center gap-2 shrink-0 self-stretch sm:self-auto justify-end flex-wrap">
                                 <button class="approveReschedBtn flex-1 sm:flex-none bg-[#667733] hover:bg-[#556022] text-white text-xs font-bold px-3.5 py-2 rounded-full transition shadow-sm cursor-pointer active:scale-95 flex items-center justify-center gap-1.5" data-id="${id}" title="Agree to customer requested date and update appointment">
                                     <i class="fa-solid fa-check text-xs"></i> Approve Reschedule
@@ -629,7 +569,6 @@
                     `;
                 }
 
-                // Action Buttons (Responsive flex layout)
                 let actionButtons = '';
                 if (hasReschedRequest) {
                     actionButtons = `
@@ -673,69 +612,83 @@
                                     ${status === 'approved' ? '<span class="text-[9px] sm:text-[10px] bg-[#D7E3A5] text-[#1a281b] font-black px-2.5 py-0.5 rounded-full border border-[#667733]/30">APPROVED</span>' : '<span class="text-[9px] sm:text-[10px] bg-[#F1B770] text-[#2A1001] font-black px-2.5 py-0.5 rounded-full">PENDING</span>'}
                                     ${dentistBadge}
                                 </div>
-
                                 <h3 class="text-base sm:text-lg font-black text-[#2A1001] font-['Poppins'] flex items-center gap-2">
                                     ${patientFullName}
                                 </h3>
-
                                 <p class="text-xs sm:text-sm text-[#2A1001]/80 mt-1">
-                                    <span class="font-extrabold text-[#667733]">${service}</span> &bull; Scheduled for <strong>${scheduledDate}</strong> at <strong>${scheduledTime}</strong>
+                                    <span class="font-extrabold text-[#667733]">${service}</span> &bull; Scheduled for <strong>${scheduledDate}</strong> at <strong class="text-[#2A1001]">${scheduledTimeRange}</strong>
                                 </p>
-
                                 ${b.patient_phone ? `<p class="text-xs text-gray-500 font-semibold mt-0.5"><i class="fa-solid fa-phone text-[10px] text-gray-400 mr-1"></i>${escapeHtml(b.patient_phone)}</p>` : ''}
                             </div>
-
                             <div class="flex items-center gap-2 flex-wrap sm:flex-nowrap shrink-0 justify-start sm:justify-end w-full lg:w-auto mt-2 lg:mt-0">
                                 ${actionButtons}
                             </div>
                         </div>
-
                         ${reschedBanner}
                     </div>
                 `;
             }).join('');
         }
 
-        // ── Card Button Click Handlers ─────────────────────────────────────────────
+        function showCustomConfirm(title, message, onConfirm) {
+            const modal = document.getElementById('confirmActionModal');
+            const titleEl = document.getElementById('confirmActionTitle');
+            const textEl = document.getElementById('confirmActionText');
+            const okBtn = document.getElementById('okActionBtn');
+            const cancelBtn = document.getElementById('cancelActionBtn');
+            if (!modal) return;
+            titleEl.textContent = title;
+            textEl.textContent = message;
+            modal.classList.remove('hidden');
+            const cleanup = () => {
+                modal.classList.add('hidden');
+                okBtn.onclick = null;
+                cancelBtn.onclick = null;
+            };
+            cancelBtn.onclick = cleanup;
+            okBtn.onclick = () => {
+                cleanup();
+                onConfirm();
+            };
+        }
+
         async function handleCardActionClicks(e) {
             const btn = e.target.closest('button');
             if (!btn) return;
             const id = Number(btn.dataset.id);
             if (!id) return;
 
-            // 1. Approve Reschedule Request
             if (btn.classList.contains('approveReschedBtn')) {
                 const booking = allBookings.find(b => b.appointment_id === id);
                 const reqDate = booking ? booking.requested_date : 'the requested date';
                 const reqTime = booking ? formatTime12h(booking.requested_time) : 'time';
-
-                if (confirm(`Approve patient's reschedule request to ${reqDate} at ${reqTime}?`)) {
-                    await submitRescheduleReview(id, 'approve');
-                }
+                showCustomConfirm(
+                    'Approve Reschedule?',
+                    `Approve patient's reschedule request to ${reqDate} at ${reqTime}?`,
+                    async () => {
+                        await submitRescheduleReview(id, 'approve');
+                    }
+                );
                 return;
             }
-
-            // 2. Decline Reschedule Request
             if (btn.classList.contains('declineReschedBtn')) {
                 openDeclineReschedModal(id);
                 return;
             }
-
-            // 3. Direct Reschedule
             if (btn.classList.contains('rescheduleDirectBtn')) {
                 openRescheduleModal(id);
                 return;
             }
-
-            // 4. Accept Initial Booking
             if (btn.classList.contains('acceptBtn')) {
-                if (confirm('Approve and confirm this booking request?')) {
-                    await submitAppointmentStatus(id, 'approved');
-                }
+                showCustomConfirm(
+                    'Approve Booking?',
+                    'Approve and confirm this appointment booking request?',
+                    async () => {
+                        await submitAppointmentStatus(id, 'approved');
+                    }
+                );
                 return;
             }
-
-            // 5. Decline Initial Booking
             if (btn.classList.contains('declineBtn')) {
                 openDeclineModal(id);
                 return;
@@ -749,16 +702,13 @@
                     headers: authHeaders(true),
                     body: JSON.stringify({ action, decline_reason: declineReason })
                 });
-
                 const result = await res.json().catch(() => ({}));
-
                 if (res.ok) {
                     showNotice(result.message || 'Reschedule review completed.', {
                         title: action === 'approve' ? 'Reschedule Approved' : 'Reschedule Declined',
                         type: action === 'approve' ? 'success' : 'info'
                     });
                     await loadAllBookings();
-                    await loadOccupiedSlots();
                 } else {
                     showNotice(result.message || 'Failed to review reschedule.', { title: 'Error', type: 'error' });
                 }
@@ -775,13 +725,10 @@
                     headers: authHeaders(true),
                     body: JSON.stringify({ appointment_status })
                 });
-
                 const result = await res.json().catch(() => ({}));
-
                 if (res.ok) {
                     showNotice(result.message || `Appointment ${appointment_status} successfully.`, { title: 'Success', type: 'success' });
                     await loadAllBookings();
-                    await loadOccupiedSlots();
                 } else {
                     showNotice(result.message || 'Failed to update appointment status.', { title: 'Error', type: 'error' });
                 }
@@ -791,19 +738,15 @@
             }
         }
 
-        // Decline Initial Booking Modal
         function openDeclineModal(id) {
             pendingDeclineApptId = id;
             const booking = allBookings.find(b => b.appointment_id === id);
             if (!booking) return;
-
             const patientName = `${booking.first_name || ''} ${booking.last_name || ''}`.trim() || 'Patient';
             document.getElementById('declineModalText').textContent =
                 `Are you sure you want to decline the booking request from ${patientName}? This action cannot be undone.`;
-
             const paidWarning = document.getElementById('paidWarning');
             const reschedBtn = document.getElementById('rescheduleInsteadBtn');
-
             if ((booking.payment_status || '').toLowerCase() === 'paid') {
                 paidWarning?.classList.remove('hidden');
                 reschedBtn?.classList.remove('hidden');
@@ -811,7 +754,6 @@
                 paidWarning?.classList.add('hidden');
                 reschedBtn?.classList.add('hidden');
             }
-
             document.getElementById('declineModal')?.classList.remove('hidden');
         }
 
@@ -828,16 +770,13 @@
             }
         }
 
-        // Decline Reschedule Modal
         function openDeclineReschedModal(id) {
             pendingDeclineReschedApptId = id;
             const booking = allBookings.find(b => b.appointment_id === id);
             if (!booking) return;
-
             const patientName = `${booking.first_name || ''} ${booking.last_name || ''}`.trim() || 'Patient';
             document.getElementById('declineReschedModalSummary').innerHTML =
                 `Decline reschedule request for <strong>${escapeHtml(patientName)}</strong>. The appointment will remain active on <strong>${escapeHtml(booking.appointment_date)} at ${escapeHtml(formatTime12h(booking.time_slot))}</strong>.`;
-
             document.getElementById('declineReschedReasonInput').value = '';
             document.getElementById('declineRescheduleModal')?.classList.remove('hidden');
         }
@@ -855,26 +794,27 @@
             await submitRescheduleReview(id, 'decline', reason);
         }
 
-        // Direct Reschedule Calendar Modal
         function openRescheduleModal(appointmentId) {
             pendingRescheduleApptId = appointmentId;
             const booking = allBookings.find(b => b.appointment_id === appointmentId);
             if (!booking) return;
-
             const patientName = `${booking.first_name || ''} ${booking.last_name || ''}`.trim() || 'Patient';
+            const docName = (booking.dentist_first_name || booking.dentist_last_name)
+                ? `Dr. ${booking.dentist_first_name || ''} ${booking.dentist_last_name || ''}`.trim()
+                : 'Attending Dentist';
+
             document.getElementById('rescheduleModalTitle').textContent = `Reschedule - ${patientName}`;
             document.getElementById('reschedulePatientSummary').innerHTML =
-                `Patient: <strong>${escapeHtml(patientName)}</strong> (${escapeHtml(booking.service_label)}) &bull; Current: ${escapeHtml(booking.appointment_date)} at ${escapeHtml(formatTime12h(booking.time_slot))}`;
-
+                `Patient: <strong>${escapeHtml(patientName)}</strong> &bull; Treatment: <strong>${escapeHtml(booking.service_label)}</strong> &bull; Attending Dentist: <strong class="text-[#667733]">${escapeHtml(docName)}</strong><br>Current: ${escapeHtml(booking.appointment_date)} at ${getFormattedTimeRange(booking.time_slot, booking.end_time || booking.end_time_slot, booking.service_label)}`;
+            
             calSelectedDate = null;
             calSelectedDateFormatted = null;
             calSelectedTime = null;
+            calSelectedEndTime = null;
             calCurrentDate = new Date();
-
             renderCalendar(calCurrentDate);
             renderAvailableSlots(null);
             updateCalendarSummary();
-
             document.getElementById('rescheduleModal')?.classList.remove('hidden');
         }
 
@@ -887,31 +827,26 @@
             const monthYear = document.getElementById('month-year');
             const daysContainer = document.getElementById('days');
             if (!monthYear || !daysContainer) return;
-
             const year = date.getFullYear();
             const month = date.getMonth();
             const firstDay = new Date(year, month, 1).getDay();
             const lastDay = new Date(year, month + 1, 0).getDate();
-
             monthYear.textContent = `${months[month]} ${year}`;
             daysContainer.innerHTML = '';
-
             function handleDayClick(dayDiv, displayDateStr, sqlDateStr) {
                 dayDiv.addEventListener('click', function () {
                     document.querySelectorAll('#days > div').forEach(d => {
                         d.classList.remove('bg-[#667733]', 'text-white', 'border-2', 'border-[#2A1001]');
                     });
                     dayDiv.classList.add('bg-[#667733]', 'text-white');
-
                     calSelectedDate = displayDateStr;
                     calSelectedDateFormatted = sqlDateStr;
                     calSelectedTime = null;
-
+                    calSelectedEndTime = null;
                     updateCalendarSummary();
                     renderAvailableSlots(sqlDateStr);
                 });
             }
-
             const prevMonthLastDay = new Date(year, month, 0).getDate();
             for (let i = firstDay; i > 0; i--) {
                 const dayDiv = document.createElement('div');
@@ -919,104 +854,149 @@
                 dayDiv.textContent = prevMonthLastDay - i + 1;
                 daysContainer.appendChild(dayDiv);
             }
-
             for (let i = 1; i <= lastDay; i++) {
                 const dayDiv = document.createElement('div');
                 const cellDate = new Date(year, month, i);
                 const isPast = cellDate < new Date(calToday.getFullYear(), calToday.getMonth(), calToday.getDate());
-
                 dayDiv.className = 'w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center font-bold text-xs text-[#2A1001] transition-all';
                 dayDiv.textContent = i;
-
                 if (isPast) {
                     dayDiv.className = 'w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center font-medium text-gray-300 cursor-not-allowed select-none text-xs';
                 } else {
                     dayDiv.classList.add('cursor-pointer', 'hover:bg-[#D7E3A5]', 'hover:scale-110');
                 }
-
                 if (i === calToday.getDate() && month === calToday.getMonth() && year === calToday.getFullYear()) {
                     dayDiv.classList.add('border-2', 'border-[#667733]', 'bg-[#FDFCE9]');
                 }
-
                 const displayStr = `${months[month]} ${i}, ${year}`;
                 const formattedMonth = String(month + 1).padStart(2, '0');
                 const formattedDay = String(i).padStart(2, '0');
                 const sqlStr = `${year}-${formattedMonth}-${formattedDay}`;
-
                 if (calSelectedDateFormatted === sqlStr) {
                     dayDiv.classList.add('bg-[#667733]', 'text-white');
                 }
-
                 if (!isPast) handleDayClick(dayDiv, displayStr, sqlStr);
                 daysContainer.appendChild(dayDiv);
             }
         }
 
-        function renderAvailableSlots(dateStr) {
+        // Helper: calculate service duration
+        function getBookingServiceDuration(serviceLabel) {
+            const l = String(serviceLabel || '').toLowerCase();
+            if (l.includes('root') || l.includes('canal')) return 90;
+            if (l.includes('whiten')) return 60;
+            if (l.includes('clean') || l.includes('prophylaxis')) return 45;
+            if (l.includes('pasta') || l.includes('filling')) return 30;
+            if (l.includes('brace') || l.includes('ortho')) return 60;
+            if (l.includes('extract') || l.includes('surgery')) return 45;
+            return 30;
+        }
+
+        // ✅ Calls the exact same dynamic available slots API with doctor specialization & 30-min intervals
+        async function renderAvailableSlots(dateStr) {
             const amContainer = document.getElementById('amSlotsContainer');
             const pmContainer = document.getElementById('pmSlotsContainer');
+            const colsContainer = document.getElementById('staffSlotsCols');
+            const msgContainer = document.getElementById('staffSlotsMsg');
+
             if (!amContainer || !pmContainer) return;
 
-            amContainer.innerHTML = '';
-            pmContainer.innerHTML = '';
-
-            if (!dateStr) {
+            if (!dateStr || !pendingRescheduleApptId) {
+                if (colsContainer) colsContainer.classList.remove('hidden');
+                if (msgContainer) msgContainer.classList.add('hidden');
                 amContainer.innerHTML = '<p class="text-[11px] text-center text-gray-400 py-3">Select date</p>';
                 pmContainer.innerHTML = '<p class="text-[11px] text-center text-gray-400 py-3">Select date</p>';
                 return;
             }
 
-            const excludeId = pendingRescheduleApptId;
-            const bookedSlotsOnDate = occupiedSlots
-                .filter(slot => {
-                    const sDate = (slot.appointment_date || '').split('T')[0];
-                    return sDate === dateStr && slot.appointment_id != excludeId;
-                })
-                .map(b => b.time_slot);
+            const booking = allBookings.find(b => b.appointment_id === pendingRescheduleApptId);
+            const doctorId = booking ? (booking.dentist_id || booking.employee_id || 3) : 3;
+            const duration = booking ? getBookingServiceDuration(booking.service_label) : 30;
+            const token = localStorage.getItem('userToken');
 
-            clinicSlots.forEach(slot => {
-                const isBooked = bookedSlotsOnDate.includes(slot.id);
-                const isSelected = calSelectedTime === slot.id;
+            if (colsContainer) colsContainer.classList.add('hidden');
+            if (msgContainer) {
+                msgContainer.classList.remove('hidden');
+                msgContainer.innerHTML = '<p class="text-xs text-gray-500 py-6"><i class="fa-solid fa-spinner fa-spin mr-1.5 text-[#667733]"></i> Checking slots...</p>';
+            }
 
-                const hour = parseInt(slot.id.split(':')[0], 10);
-                const isAM = hour < 12;
+            try {
+                const res = await fetch(`/api/doctors/${doctorId}/available-slots?date=${dateStr}&duration=${duration}`, {
+                    headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+                });
+                const data = await res.json();
 
-                const slotBtn = document.createElement('button');
-                slotBtn.type = 'button';
-
-                let baseClass = "w-full py-1.5 px-2 text-[11px] rounded-full border transition text-center font-bold ";
-                if (isBooked) {
-                    slotBtn.disabled = true;
-                    slotBtn.className = baseClass + 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed line-through';
-                    slotBtn.textContent = slot.label.split(' - ')[0];
-                } else {
-                    slotBtn.className = baseClass + (isSelected
-                        ? 'bg-[#667733] text-white border-[#667733] shadow-sm'
-                        : 'bg-white text-[#2A1001] border-black/20 hover:bg-[#D7E3A5]/40 cursor-pointer');
-                    slotBtn.textContent = slot.label;
-                    slotBtn.addEventListener('click', function () {
-                        calSelectedTime = slot.id;
-                        renderAvailableSlots(dateStr);
-                        updateCalendarSummary();
-                    });
+                if (!data.is_working_day || !data.slots || data.slots.length === 0) {
+                    if (colsContainer) colsContainer.classList.add('hidden');
+                    if (msgContainer) {
+                        msgContainer.classList.remove('hidden');
+                        msgContainer.innerHTML = `
+                            <div class="flex flex-col items-center justify-center text-center py-6 px-3">
+                                <i class="fa-regular fa-calendar-xmark text-amber-600 text-3xl mb-2"></i>
+                                <p class="text-xs font-bold text-amber-900">${escapeHtml(data.message || 'Dentist is not on duty on this day (Closed).')}</p>
+                                <p class="text-[11px] text-gray-500 mt-1">Please select another date on the calendar.</p>
+                            </div>
+                        `;
+                    }
+                    return;
                 }
 
-                if (isAM) {
-                    amContainer.appendChild(slotBtn);
-                } else {
-                    pmContainer.appendChild(slotBtn);
+                if (msgContainer) msgContainer.classList.add('hidden');
+                if (colsContainer) colsContainer.classList.remove('hidden');
+
+                amContainer.innerHTML = '';
+                pmContainer.innerHTML = '';
+
+                const amSlots = data.slots.filter(s => parseInt(s.time_slot.split(':')[0], 10) < 12);
+                const pmSlots = data.slots.filter(s => parseInt(s.time_slot.split(':')[0], 10) >= 12);
+
+                function createStaffSlotBtn(slot) {
+                    const isSelected = calSelectedTime === slot.time_slot;
+                    const btn = document.createElement('button');
+                    btn.type = 'button';
+                    let baseClass = "w-full py-1.5 px-2 text-[11px] rounded-full border transition text-center font-bold ";
+                    if (slot.is_available) {
+                        btn.className = baseClass + (isSelected
+                            ? 'bg-[#667733] text-white border-[#667733] shadow-sm'
+                            : 'bg-white text-[#2A1001] border-black/20 hover:bg-[#D7E3A5]/40 cursor-pointer');
+                        btn.textContent = `${formatTime12h(slot.time_slot)} – ${formatTime12h(slot.end_time_slot)}`;
+                        btn.addEventListener('click', function () {
+                            calSelectedTime = slot.time_slot;
+                            calSelectedEndTime = slot.end_time_slot;
+                            renderAvailableSlots(dateStr);
+                            updateCalendarSummary();
+                        });
+                    } else {
+                        btn.disabled = true;
+                        btn.className = baseClass + 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed line-through opacity-60';
+                        btn.textContent = `${formatTime12h(slot.time_slot)} (${slot.reason || 'Closed'})`;
+                    }
+                    return btn;
                 }
-            });
+
+                if (amSlots.length === 0) amContainer.innerHTML = '<p class="text-[10px] text-gray-400 italic py-2 text-center">No AM slots</p>';
+                if (pmSlots.length === 0) pmContainer.innerHTML = '<p class="text-[10px] text-gray-400 italic py-2 text-center">No PM slots</p>';
+
+                amSlots.forEach(s => amContainer.appendChild(createStaffSlotBtn(s)));
+                pmSlots.forEach(s => pmContainer.appendChild(createStaffSlotBtn(s)));
+            } catch (err) {
+                if (colsContainer) colsContainer.classList.add('hidden');
+                if (msgContainer) {
+                    msgContainer.classList.remove('hidden');
+                    msgContainer.innerHTML = '<p class="text-xs text-red-500 text-center py-4">Failed to load slots.</p>';
+                }
+            }
         }
 
         function updateCalendarSummary() {
             const display = document.getElementById('selectedDateDisplay');
             const confirmBtn = document.getElementById('confirmRescheduleBtn');
             if (!display || !confirmBtn) return;
-
             if (calSelectedDate && calSelectedTime) {
-                const slotObj = clinicSlots.find(s => s.id === calSelectedTime);
-                display.innerHTML = `New Schedule: <strong class="text-[#667733]">${escapeHtml(calSelectedDate)}</strong> at <strong class="text-[#667733]">${escapeHtml(slotObj ? slotObj.label : calSelectedTime)}</strong>`;
+                const timeText = calSelectedEndTime
+                    ? `${formatTime12h(calSelectedTime)} – ${formatTime12h(calSelectedEndTime)}`
+                    : formatTime12h(calSelectedTime);
+                display.innerHTML = `New Schedule: <strong class="text-[#667733]">${escapeHtml(calSelectedDate)}</strong> at <strong class="text-[#667733]">${timeText}</strong>`;
                 confirmBtn.disabled = false;
             } else if (calSelectedDate) {
                 display.innerHTML = `Selected Date: <strong>${escapeHtml(calSelectedDate)}</strong> (Please choose an available AM or PM slot)`;
@@ -1032,15 +1012,12 @@
                 showNotice('Please select both a date and a time slot.', { title: 'Incomplete Selection', type: 'error' });
                 return;
             }
-
             const appointmentId = pendingRescheduleApptId;
             const confirmBtn = document.getElementById('confirmRescheduleBtn');
-
             if (confirmBtn) {
                 confirmBtn.disabled = true;
                 confirmBtn.textContent = 'Rescheduling...';
             }
-
             try {
                 const res = await fetch(`${API_BASE_URL}/api/appointments/${appointmentId}/reschedule`, {
                     method: 'PATCH',
@@ -1048,17 +1025,15 @@
                     body: JSON.stringify({
                         appointment_date: calSelectedDateFormatted,
                         time_slot: calSelectedTime,
+                        end_time: calSelectedEndTime,
                         reason: 'Rescheduled by Clinic Staff'
                     })
                 });
-
                 const result = await res.json().catch(() => ({}));
-
                 if (res.ok) {
                     closeRescheduleModal();
                     showNotice(result.message || 'Appointment rescheduled successfully.', { title: 'Rescheduled', type: 'success' });
                     await loadAllBookings();
-                    await loadOccupiedSlots();
                 } else {
                     showNotice(result.message || 'Could not reschedule appointment.', { title: 'Error', type: 'error' });
                 }

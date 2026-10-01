@@ -10,7 +10,7 @@ async function getPatientRecordData(patientId) {
   const [[patient]] = await pool.query(
     `SELECT u.user_id, u.public_id, u.first_name, u.last_name, u.email, u.phone, u.sex,
             u.account_status, u.created_at,
-            pp.birthday, pp.civil_status, pp.secondary_email, pp.address, pp.pregnancy_status
+            pp.birthday, pp.secondary_email, pp.address, pp.pregnancy_status
      FROM users u
      JOIN patient_profiles pp ON pp.patient_id = u.user_id
      WHERE u.user_id = ?`,
@@ -108,7 +108,6 @@ async function getPatientRecordPdf(req, res) {
       .text(`Phone: ${patient.phone || '-'}`)
       .text(`Sex: ${patient.sex || '-'}`)
       .text(`Birthday: ${patient.birthday ? patient.birthday.toISOString().slice(0, 10) : '-'}`)
-      .text(`Civil status: ${patient.civil_status || '-'}`)
       .text(`Address: ${patient.address || '-'}`)
       .text(`Account status: ${patient.account_status}`)
       .moveDown();

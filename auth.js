@@ -6,7 +6,8 @@ const router = express.Router();
 const db = require('./db');
 const { sendEmail } = require('./Mailer');
 const authenticateToken = require('./authMiddleware');
-const { clearAuthCookie } = authenticateToken;
+const { clearAuthCookie, extractToken } = authenticateToken;
+const { logActivity } = require('./Admin/auditLogRoutes');
 
 const SALT_ROUNDS = 10;
 const RESET_TOKEN_TTL_MINUTES = 30;
@@ -33,6 +34,10 @@ function setAuthCookie(res, token) {
         'Set-Cookie',
         `authToken=${token}; HttpOnly; Path=/; Max-Age=${TOKEN_TTL_SECONDS}; SameSite=Lax${isProd ? '; Secure' : ''}`
     );
+}
+
+function getIp(req) {
+    return req.ip || req.headers['x-forwarded-for'];
 }
 
 // POST /api/auth/register — patient self-registration only
@@ -87,6 +92,18 @@ router.post('/register', async (req, res) => {
         );
 
         setAuthCookie(res, token);
+
+        await logActivity(db, {
+            user_id: newUser.user_id,
+            user_email: email,
+            user_role: newUser.role,
+            action: 'CREATE_USER',
+            target_table: 'users',
+            target_id: newUser.user_id,
+            notes: `New patient self-registered (${first_name} ${last_name}).`,
+            ip_address: getIp(req)
+        });
+
         res.status(201).json({ token, user: newUser });
     } catch (err) {
         if (err.code === 'ER_DUP_ENTRY') {
@@ -112,6 +129,7 @@ router.get('/login', async (req, res) => {
 // POST /api/auth/login
 router.post('/login', async (req, res) => {
     const { email, password } = req.body;
+    const ip_address = getIp(req);
 
     if (!email || !password) {
         return res.status(400).json({ error: 'Email and password are required' });
@@ -122,15 +140,44 @@ router.post('/login', async (req, res) => {
         const user = rows[0];
 
         if (!user) {
+            await logActivity(db, {
+                user_id: null,
+                user_email: email,
+                user_role: 'unregistered',
+                action: 'FAILED_LOGIN',
+                target_table: 'users',
+                notes: 'Login attempt for an email with no matching account.',
+                ip_address
+            });
             return res.status(401).json({ error: 'Invalid email or password' });
         }
 
         if (user.account_status === 'suspended') {
+            await logActivity(db, {
+                user_id: user.user_id,
+                user_email: user.email,
+                user_role: user.role,
+                action: 'FAILED_LOGIN',
+                target_table: 'users',
+                target_id: user.user_id,
+                notes: 'Login attempt blocked — account is suspended.',
+                ip_address
+            });
             return res.status(403).json({ error: 'This account has been suspended. Please contact the clinic.' });
         }
 
         // eli to eli: locked user can't keep guessing password even correct password isn't accepted
         if (user.is_locked) {
+            await logActivity(db, {
+                user_id: user.user_id,
+                user_email: user.email,
+                user_role: user.role,
+                action: 'FAILED_LOGIN',
+                target_table: 'users',
+                target_id: user.user_id,
+                notes: 'Login attempt blocked — account is locked.',
+                ip_address
+            });
             return res.status(429).json({ error: LOCKED_MESSAGE });
         }
 
@@ -159,9 +206,31 @@ router.post('/login', async (req, res) => {
                 // update userManage of the account lockout
                 const io = req.app.get('io');
                 if (io) io.emit('user-locked', {userId: user.user_id});
+            // if (login_attempts >= MAX_LOGIN_ATTEMPTS) {
+                await db.query('UPDATE users SET is_locked = TRUE WHERE user_id = ?', [user.user_id]);
+                await logActivity(db, {
+                    user_id: user.user_id,
+                    user_email: user.email,
+                    user_role: user.role,
+                    action: 'ACCOUNT_LOCKED',
+                    target_table: 'users',
+                    target_id: user.user_id,
+                    notes: `Account locked after ${login_attempts} failed login attempts.`,
+                    ip_address
+                });
                 return res.status(429).json({ error: LOCKED_MESSAGE });
             }
 
+            await logActivity(db, {
+                user_id: user.user_id,
+                user_email: user.email,
+                user_role: user.role,
+                action: 'FAILED_LOGIN',
+                target_table: 'users',
+                target_id: user.user_id,
+                notes: `Incorrect password (attempt ${login_attempts} of ${MAX_LOGIN_ATTEMPTS}).`,
+                ip_address
+            });
             return res.status(401).json({ error: 'Invalid email or password' });
         }
 
@@ -178,6 +247,17 @@ router.post('/login', async (req, res) => {
         );
 
         setAuthCookie(res, token);
+
+        await logActivity(db, {
+            user_id: user.user_id,
+            user_email: user.email,
+            user_role: user.role,
+            action: 'LOGIN',
+            target_table: 'users',
+            target_id: user.user_id,
+            ip_address
+        });
+
         res.json({
             token,
             user: {
@@ -200,6 +280,7 @@ router.post('/login', async (req, res) => {
 // emails have an account (user enumeration).
 router.post('/forgot-password', async (req, res) => {
     let { email } = req.body;
+    const ip_address = getIp(req);
 
     if (!email || !EMAIL_PATTERN.test(email = email.trim())) {
         return res.status(400).json({ error: 'Please enter a valid email address.' });
@@ -210,14 +291,23 @@ router.post('/forgot-password', async (req, res) => {
     };
 
     try {
-        const [rows] = await db.query('SELECT user_id FROM users WHERE email = ?', [email]);
+        const [rows] = await db.query('SELECT user_id, role FROM users WHERE email = ?', [email]);
 
         if (rows.length === 0) {
+            await logActivity(db, {
+                user_id: null,
+                user_email: email,
+                user_role: 'unregistered',
+                action: 'PASSWORD_RESET_REQUESTED',
+                target_table: 'users',
+                notes: 'Reset requested for an email with no matching account.',
+                ip_address
+            });
             // Same response as the success path — see comment above.
             return res.json(genericResponse);
         }
 
-        const userId = rows[0].user_id;
+        const { user_id: userId, role } = rows[0];
 
         // The raw token goes in the emailed link; only its hash is stored,
         // the same principle as never storing a plain password.
@@ -242,6 +332,16 @@ router.post('/forgot-password', async (req, res) => {
             html: `<p>We received a request to reset your password. This link expires in ${RESET_TOKEN_TTL_MINUTES} minutes:</p><p><a href="${resetLink}">${resetLink}</a></p><p>If you didn't request this, you can ignore this email.</p>`
         });
 
+        await logActivity(db, {
+            user_id: userId,
+            user_email: email,
+            user_role: role,
+            action: 'PASSWORD_RESET_REQUESTED',
+            target_table: 'users',
+            target_id: userId,
+            ip_address
+        });
+
         res.json(genericResponse);
     } catch (err) {
         console.error('Forgot password error:', err);
@@ -253,6 +353,7 @@ router.post('/forgot-password', async (req, res) => {
 // POST /api/auth/reset-password
 router.post('/reset-password', async (req, res) => {
     const { token, password } = req.body;
+    const ip_address = getIp(req);
 
     if (!token || !password) {
         return res.status(400).json({ error: 'Missing token or new password.' });
@@ -283,6 +384,18 @@ router.post('/reset-password', async (req, res) => {
         // correctly fails the "used = FALSE" check above.
         await db.query('UPDATE password_resets SET used = TRUE WHERE reset_id = ?', [reset_id]);
 
+        const [[{ role } = {}]] = await db.query('SELECT role FROM users WHERE user_id = ?', [user_id]);
+
+        await logActivity(db, {
+            user_id,
+            user_role: role,
+            action: 'PASSWORD_CHANGED',
+            target_table: 'users',
+            target_id: user_id,
+            notes: 'Password changed via emailed reset link.',
+            ip_address
+        });
+
         res.json({ message: 'Password reset successful. You can now log in with your new password.' });
     } catch (err) {
         console.error('Reset password error:', err);
@@ -307,8 +420,28 @@ router.get('/me', authenticateToken, (req, res) => {
 // POST /api/auth/logout
 // Called by pageProtection.js's window.logout(). Must clear the httpOnly
 // cookie server-side — clearing localStorage alone leaves the cookie
-// behind, which can still authenticate requests on its own.
-router.post('/logout', (req, res) => {
+// behind, which can still authenticate requests on its own. Deliberately
+// NOT behind authenticateToken: logout must still succeed (and clear the
+// cookie) even with an expired/invalid token, so the token is decoded
+// best-effort here just to attribute the log entry, not to gate access.
+router.post('/logout', async (req, res) => {
+    const token = extractToken(req);
+
+    if (token) {
+        jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
+            if (!err && decoded) {
+                logActivity(db, {
+                    user_id: decoded.user_id,
+                    user_role: decoded.role,
+                    action: 'LOGOUT',
+                    target_table: 'users',
+                    target_id: decoded.user_id,
+                    ip_address: getIp(req)
+                }).catch(() => {});
+            }
+        });
+    }
+
     clearAuthCookie(res);
     res.json({ message: 'Logged out' });
 });

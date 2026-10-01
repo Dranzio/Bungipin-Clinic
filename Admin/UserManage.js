@@ -1,8 +1,13 @@
 const bcrypt = require('bcrypt');
 const crypto = require('crypto');
 const authenticateToken = require('../authMiddleware');
+const { logActivity } = require('./auditLogRoutes');
 
 const SALT_ROUNDS = 10;
+
+function getIp(req) {
+    return req.ip || req.headers['x-forwarded-for'];
+}
 
 const ALLOWED_ROLES = ['employee', 'admin', 'patient'];
 const ALLOWED_POSITIONS = ['Dentist', 'Receptionist'];
@@ -27,7 +32,7 @@ function requireAdmin(req, res, next) {
 }
 
 /**
- * Strict Input Validation and Sanitization for User Management
+ * Strict Input Validation and Sanitizati/on for User Manag/ement
  */
 function validateUserInput(body, isCreate = false) {
     const clean = {};
@@ -43,7 +48,6 @@ function validateUserInput(body, isCreate = false) {
         return { error: 'Last name must be between 2 and 50 characters' };
     }
 
-    // Name Regex: Only letters, spaces, hyphens, and apostrophes (no strange symbols or repeated punctuation)
     const nameRegex = /^[A-Za-zÀ-ÖØ-öø-ÿ]+([ '-][A-Za-zÀ-ÖØ-öø-ÿ]+)*$/;
     if (!nameRegex.test(firstName) || /([ '-]){2,}/.test(firstName)) {
         return { error: 'First name contains invalid characters or strange symbols' };
@@ -74,7 +78,7 @@ function validateUserInput(body, isCreate = false) {
     if (isCreate) {
         const sex = typeof body.sex === 'string' ? body.sex.trim().toUpperCase() : '';
         if (!['M', 'F'].includes(sex)) {
-            return { error: "Sex must be 'M' (Male) or 'F' (Female)" };
+            return { error: "Please select a sex ('M' for Male or 'F' for Female)" };
         }
         clean.sex = sex;
 
@@ -85,7 +89,7 @@ function validateUserInput(body, isCreate = false) {
         clean.role = role;
     }
 
-    // 5. Position & Specialization (for employee)
+    // 5. Position & Multiple Specializations (for employee)
     if (body.position !== undefined) {
         const position = typeof body.position === 'string' ? body.position.trim() : '';
         if (position && !ALLOWED_POSITIONS.includes(position)) {
@@ -94,11 +98,23 @@ function validateUserInput(body, isCreate = false) {
         clean.position = position;
 
         if (position === 'Dentist') {
-            const spec = typeof body.specialization === 'string' ? body.specialization.trim() : 'General Dentist';
-            if (!ALLOWED_SPECIALIZATIONS.includes(spec)) {
-                return { error: 'Invalid dentist specialization selected' };
+            let specList = [];
+            if (Array.isArray(body.specialization)) {
+                specList = body.specialization.map(s => String(s).trim()).filter(Boolean);
+            } else if (typeof body.specialization === 'string') {
+                specList = body.specialization.split(',').map(s => s.trim()).filter(Boolean);
             }
-            clean.specialization = spec;
+
+            if (specList.length === 0) {
+                specList = ['General Dentist'];
+            }
+
+            for (const s of specList) {
+                if (!ALLOWED_SPECIALIZATIONS.includes(s)) {
+                    return { error: `Invalid dentist specialization selected: ${s}` };
+                }
+            }
+            clean.specialization = specList.join(', ');
         } else {
             clean.specialization = null;
         }
@@ -163,6 +179,16 @@ function registerUserManagementRoutes(app, db) {
                 [userId]
             );
 
+            await logActivity(db, {
+                user_id: req.user.user_id,
+                user_role: req.user.role,
+                action: 'ACCOUNT_UNLOCKED',
+                target_table: 'users',
+                target_id: userId,
+                notes: 'Login lock cleared by admin.',
+                ip_address: getIp(req)
+            });
+
             res.json({ message: 'Login session reset successfully', user_id: userId });
         } catch (err) {
             console.error('Login lock reset error:', err);
@@ -209,6 +235,16 @@ function registerUserManagementRoutes(app, db) {
             }
 
             await connection.commit();
+
+            await logActivity(db, {
+                user_id: req.user.user_id,
+                user_role: req.user.role,
+                action: 'CREATE_USER',
+                target_table: 'users',
+                target_id: newUserId,
+                notes: `Created ${role} account for ${first_name} ${last_name} (${email}).`,
+                ip_address: getIp(req)
+            });
 
             const user = await fetchUser(db, newUserId);
             res.status(201).json({ ...user, temp_password: tempPassword });
@@ -269,6 +305,17 @@ function registerUserManagementRoutes(app, db) {
             }
 
             await connection.commit();
+
+            await logActivity(db, {
+                user_id: req.user.user_id,
+                user_role: req.user.role,
+                action: 'UPDATE_USER',
+                target_table: 'users',
+                target_id: userId,
+                notes: `Updated account details for ${first_name} ${last_name} (${email}).`,
+                ip_address: getIp(req)
+            });
+
             res.json(await fetchUser(db, userId));
 
         } catch (err) {
@@ -304,6 +351,17 @@ function registerUserManagementRoutes(app, db) {
                 [account_status, userId]
             );
             if (result.affectedRows === 0) return res.status(404).json({ message: 'User not found' });
+
+            await logActivity(db, {
+                user_id: req.user.user_id,
+                user_role: req.user.role,
+                action: account_status === 'suspended' ? 'DEACTIVATE_USER' : 'ACTIVATE_USER',
+                target_table: 'users',
+                target_id: userId,
+                notes: account_status === 'suspended' ? 'Account suspended by admin.' : 'Account re-activated by admin.',
+                ip_address: getIp(req)
+            });
+
             res.json({ user_id: userId, account_status });
         } catch (err) {
             console.error('Status update error:', err);
@@ -328,6 +386,16 @@ function registerUserManagementRoutes(app, db) {
             );
 
             if (result.affectedRows === 0) return res.status(404).json({ message: 'User not found' });
+
+            await logActivity(db, {
+                user_id: req.user.user_id,
+                user_role: req.user.role,
+                action: 'PASSWORD_CHANGED',
+                target_table: 'users',
+                target_id: userId,
+                notes: 'Password reset by admin (temporary password issued).',
+                ip_address: getIp(req)
+            });
 
             res.json({
                 message: 'Password reset successful',
@@ -356,6 +424,17 @@ function registerUserManagementRoutes(app, db) {
         try {
             const [result] = await db.query('DELETE FROM users WHERE user_id = ?', [userId]);
             if (result.affectedRows === 0) return res.status(404).json({ message: 'User not found' });
+
+            await logActivity(db, {
+                user_id: req.user.user_id,
+                user_role: req.user.role,
+                action: 'DELETE_USER',
+                target_table: 'users',
+                target_id: userId,
+                notes: 'Account permanently deleted by admin.',
+                ip_address: getIp(req)
+            });
+
             res.json({ message: 'User deleted' });
         } catch (err) {
             if (err.code === 'ER_ROW_IS_REFERENCED_2') {
@@ -369,7 +448,8 @@ function registerUserManagementRoutes(app, db) {
     });
 
     // DOCTOR SCHEDULE MANAGEMENT (admin)
-    const TIME_RE = /^([01]\d|2[0-3]):([0-5]\d):([0-5]\d)$/;
+    const TIME_RE = /^([01]\d|2[0-3]):([0-5]\d)(:([0-5]\d))?$/;
+    const DAYS_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
     async function assertDentist(conn, employeeId) {
         const [[emp]] = await conn.query(
@@ -420,7 +500,7 @@ function registerUserManagementRoutes(app, db) {
         for (const row of schedules) {
             const day = Number(row.day_of_week);
             if (!Number.isInteger(day) || day < 0 || day > 6 || seenDays.has(day)) {
-                return res.status(400).json({ message: `Invalid or duplicate day_of_week: ${row.day_of_week}` });
+                return res.status(400).json({ message: `Invalid or duplicate day: ${row.day_of_week}` });
             }
             seenDays.add(day);
 
@@ -431,27 +511,33 @@ function registerUserManagementRoutes(app, db) {
                 continue;
             }
 
-            const { start_time, end_time, break_start, break_end } = row;
-            if (![start_time, end_time].every(t => TIME_RE.test(t))) {
-                return res.status(400).json({ message: `Invalid start/end time on day ${day}` });
+            const startTime = row.start_time ? String(row.start_time).trim() : '';
+            const endTime = row.end_time ? String(row.end_time).trim() : '';
+            const breakStart = row.break_start ? String(row.break_start).trim() : '';
+            const breakEnd = row.break_end ? String(row.break_end).trim() : '';
+
+            if (!startTime || !endTime || !TIME_RE.test(startTime) || !TIME_RE.test(endTime)) {
+                return res.status(400).json({ message: `Invalid shift hours on ${DAYS_NAMES[day]}` });
             }
-            if (start_time >= end_time) {
-                return res.status(400).json({ message: `Start time must be before end time on day ${day}` });
+            if (startTime >= endTime) {
+                return res.status(400).json({ message: `Start time must be before end time on ${DAYS_NAMES[day]}` });
             }
 
-            let breakStart = null, breakEnd = null;
-            if (break_start && break_end) {
-                if (![break_start, break_end].every(t => TIME_RE.test(t))) {
-                    return res.status(400).json({ message: `Invalid break time on day ${day}` });
+            let cleanBreakStart = null;
+            let cleanBreakEnd = null;
+
+            if (breakStart && breakEnd) {
+                if (!TIME_RE.test(breakStart) || !TIME_RE.test(breakEnd)) {
+                    return res.status(400).json({ message: `Invalid lunch break time on ${DAYS_NAMES[day]}` });
                 }
-                if (break_start >= break_end || break_start < start_time || break_end > end_time) {
-                    return res.status(400).json({ message: `Break must fall within the shift on day ${day}` });
+                if (breakStart >= breakEnd || breakStart < startTime || breakEnd > endTime) {
+                    return res.status(400).json({ message: `Lunch break must fall within the shift hours on ${DAYS_NAMES[day]}` });
                 }
-                breakStart = break_start;
-                breakEnd = break_end;
+                cleanBreakStart = breakStart;
+                cleanBreakEnd = breakEnd;
             }
 
-            clean.push({ day, start: start_time, end: end_time, breakStart, breakEnd, active: 1 });
+            clean.push({ day, start: startTime, end: endTime, breakStart: cleanBreakStart, breakEnd: cleanBreakEnd, active: 1 });
         }
 
         const connection = await db.getConnection();
@@ -468,14 +554,14 @@ function registerUserManagementRoutes(app, db) {
             for (const row of clean) {
                 await connection.query(
                     `INSERT INTO doctor_schedules
-                        (employee_id, day_of_week, start_time, end_time, break_start, break_end, is_active)
+                     (employee_id, day_of_week, start_time, end_time, break_start, break_end, is_active)
                      VALUES (?, ?, ?, ?, ?, ?, ?)
-                     ON DUPLICATE KEY UPDATE
-                        start_time = VALUES(start_time),
-                        end_time = VALUES(end_time),
-                        break_start = VALUES(break_start),
-                        break_end = VALUES(break_end),
-                        is_active = VALUES(is_active)`,
+                         ON DUPLICATE KEY UPDATE
+                                              start_time = VALUES(start_time),
+                                              end_time = VALUES(end_time),
+                                              break_start = VALUES(break_start),
+                                              break_end = VALUES(break_end),
+                                              is_active = VALUES(is_active)`,
                     [employeeId, row.day, row.start, row.end, row.breakStart, row.breakEnd, row.active]
                 );
             }
@@ -498,7 +584,6 @@ function registerUserManagementRoutes(app, db) {
         }
     });
 
-
     // POST /api/users/:id/send-credentials — Sends temporary password to user's email
     app.post('/api/users/:id/send-credentials', authenticateToken, requireAdmin, async (req, res) => {
         const userId = Number(req.params.id);
@@ -509,7 +594,6 @@ function registerUserManagementRoutes(app, db) {
         }
 
         try {
-            // Log the dispatch attempt
             console.log(`[Email Service] Dispatched temporary credentials to ${email} for User #${userId}`);
 
             // When you add Nodemailer or SendGrid, place the send logic here:
@@ -519,6 +603,16 @@ function registerUserManagementRoutes(app, db) {
             //     subject: 'Your Clinic Account Temporary Credentials',
             //     html: `<p>Hello ${name || 'User'},</p><p>Your temporary password is: <strong>${temp_password}</strong></p>`
             // });
+
+            await logActivity(db, {
+                user_id: req.user.user_id,
+                user_role: req.user.role,
+                action: 'SEND_CREDENTIALS_EMAIL',
+                target_table: 'users',
+                target_id: userId,
+                notes: `Temporary credentials dispatched to ${email}.`,
+                ip_address: getIp(req)
+            });
 
             res.json({ message: 'Credentials sent to email successfully', recipient: email });
         } catch (err) {

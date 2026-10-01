@@ -14,6 +14,7 @@ const registerPatientRecordsRoutes = require("./Employee/PatientRecords");
 const registerMessagesRoutes = require("./MessagesRoutes");
 const authenticateToken = require("./authMiddleware");
 const registerDoctorScheduleRoutes = require('./Employee/doctorScheduleRoutes');
+const { registerActivityLogRoutes } = require('./Admin/auditLogRoutes');
 
 // show IO in routes
 const http = require('http');
@@ -60,10 +61,6 @@ io.on('connection', (socket) => {
     console.log('Connected to real-time updates');
 });
 
-server.listen(3000, () => {
-    console.log('Server running on port 3000');
-});
-
 // apply rate limiting to login route
 app.use('/api/auth/login', loginLimit);
 
@@ -82,6 +79,7 @@ registerUserManagementRoutes(app, db);
 registerAdminProfileRoute(app, db);
 registerDashboardRoutes(app, db);
 registerDoctorScheduleRoutes(app, db);
+registerActivityLogRoutes(app, db);
 
 // DENIES DIRECT PAGE VIA URL
 function requirePageRole(requiredRole) {
@@ -198,4 +196,3 @@ app.use(errorHandler);
 // }
 
 module.exports = app;
-

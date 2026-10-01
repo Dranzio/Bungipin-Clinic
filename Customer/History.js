@@ -1,5 +1,6 @@
 // ── PATIENT APPOINTMENT HISTORY & RECEIPTS CONTROLLER ──────────────────────
 const TEST_MODE = false;
+const MAX_RESCHEDULE_LIMIT = 2; // Maximum allowed reschedules
 
 function escapeHtml(value) {
     const div = document.createElement('div');
@@ -20,29 +21,18 @@ let currentSelectedAppt = null;
 let appointmentToCancelId = null;
 
 // ── Reschedule state ─────────────────────────────────────────────────────
-const clinicSlots = [
-    { id: "08:00:00", label: "8:00 AM - 9:00 AM" },
-    { id: "09:00:00", label: "9:00 AM - 10:00 AM" },
-    { id: "10:00:00", label: "10:00 AM - 11:00 AM" },
-    { id: "11:00:00", label: "11:00 AM - 12:00 PM" },
-    { id: "13:00:00", label: "1:00 PM - 2:00 PM" },
-    { id: "14:00:00", label: "2:00 PM - 3:00 PM" },
-    { id: "15:00:00", label: "3:00 PM - 4:00 PM" },
-    { id: "16:00:00", label: "4:00 PM - 5:00 PM" }
-];
-
 const months = [
     'January', 'February', 'March', 'April', 'May', 'June', 'July',
     'August', 'September', 'October', 'November', 'December'
 ];
 
-let occupiedSlots = [];
 let pendingRescheduleAppt = null;
 let reschedCurrentDate = new Date();
 const reschedToday = new Date();
 let reschedSelectedDate = null;
 let reschedSelectedDateFormatted = null;
 let reschedSelectedTime = null;
+let reschedSelectedEndTime = null;
 
 const RESCHEDULABLE_STATUSES = ['pending', 'approved'];
 const CANCELLABLE_STATUSES = ['pending', 'approved'];
@@ -54,10 +44,58 @@ document.addEventListener('DOMContentLoaded', () => {
     initReasonRadioListeners();
 });
 
-// ── Notice modal (replaces window.alert) ────────────────────────────────
+function formatTime12h(timeStr) {
+    if (!timeStr) return "";
+    const [hStr, mStr] = String(timeStr).split(":");
+    let h = parseInt(hStr, 10);
+    const ampm = h >= 12 ? "PM" : "AM";
+    h = h % 12 || 12;
+    return `${h}:${mStr || '00'} ${ampm}`;
+}
+
+function getServiceDuration(serviceLabel) {
+    const l = String(serviceLabel || '').toLowerCase();
+    if (l.includes('root') || l.includes('canal')) return 90;
+    if (l.includes('whiten')) return 60;
+    if (l.includes('clean') || l.includes('prophylaxis')) return 45;
+    if (l.includes('pasta') || l.includes('filling')) return 30;
+    return 30;
+}
+
+function calculateApptDuration(appt) {
+    if (!appt) return 30;
+    if (appt.time_slot && appt.end_time_slot && appt.end_time_slot !== '00:00:00') {
+        const [sh, sm] = String(appt.time_slot).split(':').map(Number);
+        const [eh, em] = String(appt.end_time_slot).split(':').map(Number);
+        const diff = (eh * 60 + em) - (sh * 60 + sm);
+        if (diff > 0) return diff;
+    }
+    return getServiceDuration(appt.label);
+}
+
+function getFormattedTimeRange(timeSlot, endTimeSlot, serviceLabel) {
+    if (!timeSlot) return "N/A";
+    
+    if (endTimeSlot && endTimeSlot !== '00:00:00' && endTimeSlot !== timeSlot) {
+        return `${formatTime12h(timeSlot)} – ${formatTime12h(endTimeSlot)}`;
+    }
+
+    const [hStr, mStr] = String(timeSlot).split(":");
+    const startMins = parseInt(hStr, 10) * 60 + parseInt(mStr || "0", 10);
+    const duration = getServiceDuration(serviceLabel);
+
+    const endMins = startMins + duration;
+    const endH = Math.floor(endMins / 60);
+    const endM = endMins % 60;
+    const fallbackEnd = `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}:00`;
+
+    return `${formatTime12h(timeSlot)} – ${formatTime12h(fallbackEnd)}`;
+}
+
+// ── Notice modal ────────────────────────────────────────────────────────────
 function showNotice(message, { title = "Notice", type = "info" } = {}) {
     const modal = document.getElementById('notice-modal');
-    if (!modal) { alert(title + ': ' + message); return; }
+    if (!modal) return;
 
     const iconWrap = document.getElementById('notice-icon-wrap');
     const icon = document.getElementById('notice-icon');
@@ -85,7 +123,6 @@ function closeNoticeModal() {
 }
 
 function initReasonRadioListeners() {
-    // Reschedule reasons
     const reschedRadios = document.querySelectorAll('input[name="reschedReasonRadio"]');
     const customReschedContainer = document.getElementById('customReasonContainer');
     const customReschedText = document.getElementById('customReasonText');
@@ -99,16 +136,17 @@ function initReasonRadioListeners() {
             } else {
                 customReschedContainer?.classList.add('hidden');
             }
+            updateReschedSummaryDisplay();
         });
     });
 
-    if (customReschedText && customReschedCount) {
+    if (customReschedText) {
         customReschedText.addEventListener('input', () => {
-            customReschedCount.textContent = customReschedText.value.length;
+            if (customReschedCount) customReschedCount.textContent = customReschedText.value.length;
+            updateReschedSummaryDisplay();
         });
     }
 
-    // Cancellation reasons
     const cancelRadios = document.querySelectorAll('input[name="cancelReasonRadio"]');
     const customCancelContainer = document.getElementById('customCancelReasonContainer');
     const customCancelText = document.getElementById('customCancelReasonText');
@@ -137,12 +175,10 @@ function initReasonRadioListeners() {
 
 function initPaymentSocket() {
     if (typeof io !== 'function') return;
-
     const socket = io();
 
     socket.on('payment-confirmed', (data) => {
         const affectedId = data && data.appointment_id;
-
         fetchAppointments().then(() => {
             if (currentSelectedAppt && affectedId && Number(currentSelectedAppt.appointment_id) === Number(affectedId)) {
                 const updated = allAppointments.find(a => Number(a.appointment_id) === Number(affectedId));
@@ -208,7 +244,6 @@ function initEventListeners() {
     const noticeOkBtn = document.getElementById('notice-ok-btn');
     if (noticeOkBtn) noticeOkBtn.addEventListener('click', closeNoticeModal);
 
-    // Reschedule modal wiring
     const reschedModal = document.getElementById('reschedule-modal');
     if (reschedModal) {
         reschedModal.addEventListener('click', (e) => {
@@ -237,10 +272,8 @@ function initEventListeners() {
     if (confirmReschedBtn) confirmReschedBtn.addEventListener('click', confirmReschedule);
 }
 
-// ── Fetch appointments from API ─────────────────────────────────────────────
 async function fetchAppointments() {
     const tbody = document.getElementById('tableBody');
-
     const token = localStorage.getItem('userToken');
 
     if (!token && !TEST_MODE) {
@@ -268,7 +301,6 @@ async function fetchAppointments() {
     }
 }
 
-// ── Populate Month & Year Sort Options ─────────────────────────────────────
 function populateDateSortOptions() {
     const sortSelect = document.getElementById('sortSelect');
     if (!sortSelect) return;
@@ -284,7 +316,7 @@ function populateDateSortOptions() {
     });
 
     sortSelect.innerHTML = `
-        <option value="recent" class="bg-white text-[#2A1001]">Sort: Most Recent</option>
+        <option value="recent" class="bg-white text-[#2A1001]">Sort: Newest First</option>
         <option value="oldest" class="bg-white text-[#2A1001]">Sort: Oldest First</option>
     `;
 
@@ -303,7 +335,6 @@ function populateDateSortOptions() {
         });
 }
 
-// ── Apply Filters & Sorters ────────────────────────────────────────────────
 function applyFiltersAndRender() {
     filteredAppointments = allAppointments.filter(a => {
         const term = currentSearch.toLowerCase();
@@ -328,22 +359,33 @@ function applyFiltersAndRender() {
     });
 
     if (currentSort === "recent") {
-        filteredAppointments.sort((a, b) => new Date(b.created_at) - new Date(a.appointment_date));
+        filteredAppointments.sort((a, b) => {
+            const timeB = b.created_at ? new Date(b.created_at).getTime() : new Date(`${b.appointment_date}T${b.time_slot || '00:00:00'}`).getTime();
+            const timeA = a.created_at ? new Date(a.created_at).getTime() : new Date(`${a.appointment_date}T${a.time_slot || '00:00:00'}`).getTime();
+            return timeB - timeA;
+        });
     } else if (currentSort === "oldest") {
-        filteredAppointments.sort((a, b) => new Date(a.created_at) - new Date(b.appointment_date));
+        filteredAppointments.sort((a, b) => {
+            const timeA = a.created_at ? new Date(a.created_at).getTime() : new Date(`${a.appointment_date}T${a.time_slot || '00:00:00'}`).getTime();
+            const timeB = b.created_at ? new Date(b.created_at).getTime() : new Date(`${b.appointment_date}T${b.time_slot || '00:00:00'}`).getTime();
+            return timeA - timeB;
+        });
     } else if (currentSort.includes('-')) {
         const [year, monthIndex] = currentSort.split('-').map(Number);
         filteredAppointments = filteredAppointments.filter(a => {
             const d = new Date(a.appointment_date);
             return d.getFullYear() === year && d.getMonth() === monthIndex;
         });
-        filteredAppointments.sort((a, b) => new Date(b.appointment_date) - new Date(a.appointment_date));
+        filteredAppointments.sort((a, b) => {
+            const timeB = b.created_at ? new Date(b.created_at).getTime() : new Date(`${b.appointment_date}T${b.time_slot || '00:00:00'}`).getTime();
+            const timeA = a.created_at ? new Date(a.created_at).getTime() : new Date(`${a.appointment_date}T${a.time_slot || '00:00:00'}`).getTime();
+            return timeB - timeA;
+        });
     }
 
     renderTable();
 }
 
-// ── Render Table (All 5 Columns Aligned & Crisp) ──────────────────────────
 function renderTable() {
     const tbody = document.getElementById('tableBody');
     const emptyState = document.getElementById('emptyState');
@@ -371,15 +413,18 @@ function renderTable() {
         const amountFormatted = appt.amount ? `₱${Number(appt.amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}` : '₱0.00';
         const status = (appt.appointment_status || '').toLowerCase();
         const reschedStatus = (appt.reschedule_status || '').toLowerCase();
+        const reschedCount = Number(appt.reschedule_count || 0);
+
         const isCancellable = CANCELLABLE_STATUSES.includes(status);
         const isReschedulable = RESCHEDULABLE_STATUSES.includes(status);
+        const hasReachedLimit = reschedCount >= MAX_RESCHEDULE_LIMIT && reschedStatus !== 'requested';
 
-        // Attending Dentist Column Content
         let dentistColumnHtml = '';
-        if (status === 'approved' || status === 'completed') {
-            const dentistFullName = (appt.dentist_first_name || appt.dentist_last_name)
-                ? `Dr. ${appt.dentist_first_name || ''} ${appt.dentist_last_name || ''}`.trim()
-                : 'Assigned Clinic Dentist';
+        const dentistFullName = (appt.dentist_first_name || appt.dentist_last_name)
+            ? `Dr. ${appt.dentist_first_name || ''} ${appt.dentist_last_name || ''}`.trim()
+            : null;
+
+        if (dentistFullName) {
             dentistColumnHtml = `
                 <div class="font-extrabold text-[#2A1001] flex items-center gap-1.5">
                     <i class="fa-solid fa-user-doctor text-[#667733]"></i>
@@ -389,17 +434,47 @@ function renderTable() {
         } else if (status === 'pending') {
             dentistColumnHtml = `
                 <span class="inline-flex items-center gap-1 text-[11px] font-bold text-amber-800 bg-amber-50 px-2.5 py-1 rounded-full border border-amber-200">
-                    <i class="fa-regular fa-clock text-amber-600"></i> Pending Assignment
+                    <i class="fa-regular fa-clock text-amber-600"></i> Any Available Dentist
                 </span>
             `;
         } else if (status === 'cancelled') {
-            dentistColumnHtml = `
-                <span class="inline-flex items-center gap-1 text-[11px] font-semibold text-gray-400">
-                    <i class="fa-solid fa-ban text-gray-400"></i> None (Cancelled)
-                </span>
-            `;
+            dentistColumnHtml = `<span class="text-xs text-gray-400 font-semibold">None (Cancelled)</span>`;
         } else {
             dentistColumnHtml = `<span class="text-xs text-gray-400">&mdash;</span>`;
+        }
+
+        let reschedActionHtml = '';
+        if (isReschedulable) {
+            if (hasReachedLimit) {
+                reschedActionHtml = `
+                    <button disabled
+                            class="bg-gray-200 text-gray-400 text-xs font-bold py-1.5 px-3 rounded-full cursor-not-allowed opacity-75 shadow-none flex items-center gap-1 shrink-0 whitespace-nowrap" 
+                            title="Reschedule limit reached (Max ${MAX_RESCHEDULE_LIMIT} times)">
+                        <i class="fa-solid fa-lock text-[10px]"></i> Limit (${reschedCount}/${MAX_RESCHEDULE_LIMIT})
+                    </button>
+                `;
+            } else if (reschedStatus === 'requested') {
+                reschedActionHtml = `
+                    <button onclick="openRescheduleModalById(${appt.appointment_id})"
+                            class="bg-[#D5C04D] hover:bg-[#c6b242] text-[#2A1001] text-xs font-bold py-1.5 px-3 rounded-full transition active:scale-95 cursor-pointer shadow-sm flex items-center gap-1 shrink-0 whitespace-nowrap" 
+                            title="Update pending reschedule request">
+                        <i class="fa-solid fa-arrows-rotate text-[10px]"></i> Update Req
+                    </button>
+                    <button onclick="cancelRescheduleRequest(${appt.appointment_id})"
+                            class="bg-gray-100 hover:bg-gray-200 text-red-600 text-xs font-bold py-1.5 px-2.5 rounded-full border border-red-200 transition active:scale-95 cursor-pointer shrink-0 whitespace-nowrap"
+                            title="Cancel pending reschedule request">
+                        <i class="fa-solid fa-xmark text-[10px]"></i> Cancel Req
+                    </button>
+                `;
+            } else {
+                reschedActionHtml = `
+                    <button onclick="openRescheduleModalById(${appt.appointment_id})"
+                            class="bg-[#D5C04D] hover:bg-[#c6b242] text-[#2A1001] text-xs font-bold py-1.5 px-3 rounded-full transition active:scale-95 cursor-pointer shadow-sm flex items-center gap-1 shrink-0 whitespace-nowrap" 
+                            title="Request a new date/time (${reschedCount}/${MAX_RESCHEDULE_LIMIT} used)">
+                        <i class="fa-solid fa-calendar-days text-[10px]"></i> Reschedule
+                    </button>
+                `;
+            }
         }
 
         row.innerHTML = `
@@ -419,12 +494,13 @@ function renderTable() {
                 <div class="text-[#2A1001] font-bold text-xs sm:text-sm flex items-center gap-1.5">
                     <i class="fa-regular fa-calendar text-gray-400 text-xs"></i> ${scheduledDate}
                 </div>
-                <div class="text-xs text-gray-500 font-semibold mt-0.5 flex items-center gap-1.5">
-                    <i class="fa-regular fa-clock text-gray-400 text-[11px]"></i> ${escapeHtml(appt.time_slot || '')}
+                <div class="text-xs text-gray-600 font-extrabold mt-0.5 flex items-center gap-1.5">
+                    <i class="fa-regular fa-clock text-[#667733] text-[11px]"></i> 
+                    <span>${getFormattedTimeRange(appt.time_slot, appt.end_time_slot, appt.label)}</span>
                 </div>
                 ${reschedStatus === 'requested' ? `
                     <div class="text-[10px] text-amber-900 font-extrabold mt-1.5 inline-flex items-center gap-1 bg-amber-100 px-2 py-0.5 rounded-md border border-amber-300">
-                        <i class="fa-solid fa-arrows-rotate fa-spin text-amber-700"></i> Resched: ${escapeHtml(appt.requested_date || '')}
+                        <i class="fa-solid fa-arrows-rotate fa-spin text-amber-700"></i> Resched: ${escapeHtml(appt.requested_date || '')} (${formatTime12h(appt.requested_time)})
                     </div>
                 ` : ''}
             </td>
@@ -444,21 +520,13 @@ function renderTable() {
             <!-- 5. Actions Column -->
             <td class="py-4 px-4 sm:px-6 text-center align-middle">
                 <div class="flex items-center justify-center gap-1.5 flex-wrap sm:flex-nowrap">
-                    <!-- Reschedule Button -->
-                    ${isReschedulable ? `
-                        <button onclick="openRescheduleModalById(${appt.appointment_id})"
-                                class="bg-[#D5C04D] hover:bg-[#c6b242] text-[#2A1001] text-xs font-bold py-1.5 px-3 rounded-full transition active:scale-95 cursor-pointer shadow-sm flex items-center gap-1 shrink-0 whitespace-nowrap" title="Request a new date/time">
-                            <i class="fa-solid fa-calendar-days text-[10px]"></i> ${reschedStatus === 'requested' ? 'Update Req' : 'Reschedule'}
-                        </button>
-                    ` : ''}
+                    ${reschedActionHtml}
 
-                    <!-- Receipt Button -->
                     <button onclick="openDetailModalById(${appt.appointment_id})"
                             class="bg-[#667733] hover:bg-[#556022] text-white text-xs font-bold py-1.5 px-3 rounded-full transition flex items-center gap-1 shadow-sm active:scale-95 cursor-pointer shrink-0 whitespace-nowrap" title="View details and receipt">
                         <i class="fa-solid fa-receipt text-[10px]"></i> Receipt
                     </button>
 
-                    <!-- Cancel Button -->
                     ${isCancellable ? `
                         <button onclick="openCancelModal(${appt.appointment_id})"
                                 class="bg-[#D9534F] hover:bg-[#c9302c] text-white text-xs font-bold py-1.5 px-3 rounded-full transition active:scale-95 cursor-pointer shadow-sm flex items-center gap-1 shrink-0 whitespace-nowrap" title="Cancel this appointment">
@@ -477,21 +545,13 @@ function renderTable() {
 function renderStatusBadge(status) {
     const s = (status || '').toLowerCase();
     if (s === 'completed') {
-        return `<span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-extrabold bg-[#c2d09c] text-[#1a281b] border border-[#1a281b]/30">
-                    <span class="w-1.5 h-1.5 rounded-full bg-[#394a28] mr-1.5"></span>Completed
-                </span>`;
+        return `<span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-extrabold bg-[#c2d09c] text-[#1a281b] border border-[#1a281b]/30"><span class="w-1.5 h-1.5 rounded-full bg-[#394a28] mr-1.5"></span>Completed</span>`;
     } else if (s === 'approved') {
-        return `<span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-extrabold bg-[#9ea988] text-[#1a281b] border border-[#1a281b]/30">
-                    <span class="w-1.5 h-1.5 rounded-full bg-[#273a21] mr-1.5"></span>Approved
-                </span>`;
+        return `<span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-extrabold bg-[#9ea988] text-[#1a281b] border border-[#1a281b]/30"><span class="w-1.5 h-1.5 rounded-full bg-[#273a21] mr-1.5"></span>Approved</span>`;
     } else if (s === 'pending') {
-        return `<span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-extrabold bg-[#F1B770] text-[#2A1001] border border-[#2A1001]/20">
-                    <span class="w-1.5 h-1.5 rounded-full bg-[#6a5416] mr-1.5"></span>Pending
-                </span>`;
+        return `<span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-extrabold bg-[#F1B770] text-[#2A1001] border border-[#2A1001]/20"><span class="w-1.5 h-1.5 rounded-full bg-[#6a5416] mr-1.5"></span>Pending</span>`;
     } else if (s === 'cancelled') {
-        return `<span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-extrabold bg-red-100 text-red-700 border border-red-300">
-                    <span class="w-1.5 h-1.5 rounded-full bg-red-600 mr-1.5"></span>Cancelled
-                </span>`;
+        return `<span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-extrabold bg-red-100 text-red-700 border border-red-300"><span class="w-1.5 h-1.5 rounded-full bg-red-600 mr-1.5"></span>Cancelled</span>`;
     }
     return `<span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-gray-100 text-gray-700">${escapeHtml(status)}</span>`;
 }
@@ -499,23 +559,13 @@ function renderStatusBadge(status) {
 function renderPaymentStatusBadge(paymentStatus) {
     const s = (paymentStatus || '').toLowerCase();
     if (s === 'paid') {
-        return `<span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-[#c2d09c] text-[#1a281b] border border-[#1a281b]/30">
-                    <span class="w-1.5 h-1.5 rounded-full bg-[#394a28] mr-1.5"></span>Paid
-                </span>`;
+        return `<span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-[#c2d09c] text-[#1a281b] border border-[#1a281b]/30"><span class="w-1.5 h-1.5 rounded-full bg-[#394a28] mr-1.5"></span>Paid</span>`;
     } else if (s === 'pending') {
-        return `<span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-300">
-                    <span class="w-1.5 h-1.5 rounded-full bg-amber-600 mr-1.5"></span>Awaiting Confirmation
-                </span>`;
+        return `<span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-300"><span class="w-1.5 h-1.5 rounded-full bg-amber-600 mr-1.5"></span>Awaiting Confirmation</span>`;
     } else if (s === 'refunded' || s === 'refund_pending') {
-        return `<span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-800 border border-blue-300">
-                    <span class="w-1.5 h-1.5 rounded-full bg-blue-600 mr-1.5"></span>${s === 'refunded' ? 'Refunded' : 'Refund Pending'}
-                </span>`;
-    } else if (s === 'unpaid' || s === '') {
-        return `<span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-gray-100 text-gray-700 border border-gray-300">
-                    <span class="w-1.5 h-1.5 rounded-full bg-gray-500 mr-1.5"></span>Unpaid
-                </span>`;
+        return `<span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-800 border border-blue-300"><span class="w-1.5 h-1.5 rounded-full bg-blue-600 mr-1.5"></span>${s === 'refunded' ? 'Refunded' : 'Refund Pending'}</span>`;
     }
-    return `<span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-gray-100 text-gray-700">${escapeHtml(paymentStatus)}</span>`;
+    return `<span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-gray-100 text-gray-700 border border-gray-300"><span class="w-1.5 h-1.5 rounded-full bg-gray-500 mr-1.5"></span>Unpaid</span>`;
 }
 
 function renderPagination(totalItems) {
@@ -556,7 +606,6 @@ function renderPagination(totalItems) {
     }
 }
 
-// ── Open Detail & Receipt Modal ────────────────────────────────────────────
 function openDetailModalById(id) {
     const appt = allAppointments.find(a => a.appointment_id == id);
     if (appt) openDetailModal(appt);
@@ -572,9 +621,6 @@ function openDetailModal(appt) {
     const rawAmount = Number(appt.amount || 0);
     const amountFormatted = `₱${rawAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
     const method = appt.method ? appt.method.toUpperCase() : 'OVER-THE-COUNTER';
-    const paymentStatus = (appt.payment_status || 'Unpaid').toUpperCase();
-    const status = (appt.appointment_status || '').toLowerCase();
-
     const service = escapeHtml(appt.label || 'General Dental Treatment');
     const patientName = escapeHtml((appt.patient_first_name || appt.patient_last_name)
         ? `${appt.patient_first_name || ''} ${appt.patient_last_name || ''}`.trim()
@@ -584,12 +630,12 @@ function openDetailModal(appt) {
     const patientId = escapeHtml(appt.public_id || `PAT-${appt.appointment_id}`);
     const receiptNo = escapeHtml(`OR-${(appt.appointment_date || '').replace(/-/g, '')}-${appt.appointment_id}`);
 
-    // Dynamic Attending Dentist Display
     let dentistDisplayHtml = '';
-    if (status === 'approved' || status === 'completed') {
-        const dentistFullName = (appt.dentist_first_name || appt.dentist_last_name)
-            ? `Dr. ${appt.dentist_first_name || ''} ${appt.dentist_last_name || ''}`.trim()
-            : 'Assigned Clinic Dentist';
+    const dentistFullName = (appt.dentist_first_name || appt.dentist_last_name)
+        ? `Dr. ${appt.dentist_first_name || ''} ${appt.dentist_last_name || ''}`.trim()
+        : null;
+
+    if (dentistFullName) {
         dentistDisplayHtml = `
             <div>
                 <span class="text-[11px] text-[#2A1001]/60 font-bold block uppercase tracking-wide">Attending Dentist</span>
@@ -598,20 +644,13 @@ function openDetailModal(appt) {
                 </span>
             </div>
         `;
-    } else if (status === 'pending') {
+    } else {
         dentistDisplayHtml = `
             <div>
                 <span class="text-[11px] text-[#2A1001]/60 font-bold block uppercase tracking-wide">Attending Dentist</span>
                 <span class="italic text-xs text-gray-500 font-semibold bg-gray-100 px-2.5 py-0.5 rounded-full inline-block">
-                    To be assigned upon confirmation
+                    Any Available Dentist
                 </span>
-            </div>
-        `;
-    } else if (status === 'cancelled') {
-        dentistDisplayHtml = `
-            <div>
-                <span class="text-[11px] text-[#2A1001]/60 font-bold block uppercase tracking-wide">Attending Dentist</span>
-                <span class="text-xs text-gray-400 font-semibold">None (Appointment Cancelled)</span>
             </div>
         `;
     }
@@ -625,7 +664,6 @@ function openDetailModal(appt) {
                     <span class="font-extrabold block text-amber-900 uppercase tracking-wide text-xs">Pending Reschedule Request</span>
                     <p class="mt-0.5 text-xs">Requested Schedule: <strong>${escapeHtml(appt.requested_date || '')} at ${escapeHtml(appt.requested_time || '')}</strong></p>
                     <p class="italic text-amber-800 mt-1">Reason: "${escapeHtml(appt.reschedule_reason || 'Schedule Conflict')}"</p>
-                    <p class="text-[11px] text-amber-700/90 mt-1 font-medium">Our clinic team is reviewing your request. Your current schedule remains confirmed until approved.</p>
                 </div>
             </div>
         `;
@@ -650,13 +688,10 @@ function openDetailModal(appt) {
                 <span class="text-[11px] text-[#2A1001]/60 font-bold block uppercase tracking-wide">Patient Name</span>
                 <span class="font-extrabold text-sm text-[#2A1001]">${patientName} (${patientId})</span>
             </div>
-
-            <!-- Dentist Field -->
             ${dentistDisplayHtml}
-
             <div>
-                <span class="text-[11px] text-[#2A1001]/60 font-bold block uppercase tracking-wide">Scheduled Schedule</span>
-                <span class="font-extrabold text-sm text-[#2A1001]">${scheduledDate} &bull; ${escapeHtml(appt.time_slot || 'N/A')}</span>
+                <span class="text-[11px] text-[#2A1001]/60 font-bold block uppercase tracking-wide">Scheduled Time</span>
+                <span class="font-extrabold text-sm text-[#2A1001]">${scheduledDate} &bull; ${getFormattedTimeRange(appt.time_slot, appt.end_time_slot, appt.label)}</span>
             </div>
             <div>
                 <span class="text-[11px] text-[#2A1001]/60 font-bold block uppercase tracking-wide">Payment Mode</span>
@@ -710,17 +745,15 @@ function closeDetailModal() {
     if (modal) modal.classList.add('hidden');
 }
 
-// ── Print Official Receipt ────────────────────────────────────────────────
 function printCurrentReceipt() {
     if (!currentSelectedAppt) return;
     const a = currentSelectedAppt;
     const formattedAmount = `₱${Number(a.amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
     const receiptNo = `OR-${(a.appointment_date || '').replace(/-/g, '')}-${a.appointment_id}`;
     const patientName = `${a.patient_first_name || ''} ${a.patient_last_name || ''}`.trim() || 'Valued Patient';
-    const status = (a.appointment_status || '').toLowerCase();
-    const dentistName = (status === 'approved' || status === 'completed') && (a.dentist_first_name || a.dentist_last_name)
+    const dentistName = (a.dentist_first_name || a.dentist_last_name)
         ? `Dr. ${a.dentist_first_name || ''} ${a.dentist_last_name || ''}`.trim()
-        : (status === 'pending' ? 'To be assigned upon confirmation' : 'None');
+        : 'Any Available Dentist';
 
     const printHtml = `
     <!DOCTYPE html>
@@ -758,7 +791,7 @@ function printCurrentReceipt() {
             </tr>
             <tr>
                 <td><strong>Attending Dentist:</strong> ${escapeHtml(dentistName)}</td>
-                <td style="text-align: right;"><strong>Time Slot:</strong> ${escapeHtml(a.time_slot || 'N/A')}</td>
+                <td style="text-align: right;"><strong>Time Slot:</strong> ${getFormattedTimeRange(a.time_slot, a.end_time_slot, a.label)}</td>
             </tr>
             <tr>
                 <td><strong>Payment Mode:</strong> ${escapeHtml((a.method || 'Over-the-counter').toUpperCase())}</td>
@@ -813,7 +846,6 @@ function printCurrentReceipt() {
     document.body.appendChild(frame);
 }
 
-// ── Cancel Modal Logic with Radio Reasons ──────────────────────────────────
 function openCancelModal(appointmentId) {
     appointmentToCancelId = appointmentId;
     const cancelModal = document.getElementById('cancel-modal');
@@ -824,8 +856,9 @@ function openCancelModal(appointmentId) {
 
     if (!cancelModal) return;
 
-    const defaultRadio = document.querySelector('input[name="cancelReasonRadio"][value="Schedule Conflict / Personal Matter"]');
-    if (defaultRadio) defaultRadio.checked = true;
+    // ❌ UNCHECK ALL RADIOS
+    document.querySelectorAll('input[name="cancelReasonRadio"]').forEach(r => r.checked = false);
+
     if (customContainer) customContainer.classList.add('hidden');
     if (customText) customText.value = '';
     if (reasonError) reasonError.classList.add('hidden');
@@ -851,12 +884,24 @@ async function cancelAppointment(appointmentId) {
     const reasonError = document.getElementById('cancelReasonError');
 
     const selectedRadio = document.querySelector('input[name="cancelReasonRadio"]:checked');
-    let finalReason = selectedRadio ? selectedRadio.value : 'Schedule Conflict / Personal Matter';
+
+    if (!selectedRadio) {
+        if (reasonError) {
+            reasonError.textContent = '⚠️ Please select a reason for cancellation.';
+            reasonError.classList.remove('hidden');
+        }
+        return;
+    }
+
+    let finalReason = selectedRadio.value;
 
     if (finalReason === 'other') {
         const customText = document.getElementById('customCancelReasonText')?.value.trim();
         if (!customText) {
-            if (reasonError) reasonError.classList.remove('hidden');
+            if (reasonError) {
+                reasonError.textContent = '⚠️ Please specify your reason in the text box.';
+                reasonError.classList.remove('hidden');
+            }
             document.getElementById('customCancelReasonText')?.focus();
             return;
         }
@@ -906,13 +951,46 @@ async function cancelAppointment(appointmentId) {
     }
 }
 
-// ── Customer Reschedule Modal Logic ─────────────────────────────────────────
+async function cancelRescheduleRequest(appointmentId) {
+    const token = localStorage.getItem('userToken');
+    if (!token && !TEST_MODE) {
+        showNotice('Please log in again.', { title: 'Session Expired', type: 'error' });
+        return;
+    }
+
+    try {
+        const response = await fetch(`/api/appointments/${appointmentId}/cancel-reschedule`, {
+            method: 'PATCH',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const result = await response.json();
+
+        if (response.ok) {
+            await fetchAppointments();
+            showNotice('Your reschedule request has been cancelled.', { title: 'Request Cancelled', type: 'success' });
+        } else {
+            showNotice(result.message || 'Could not cancel request.', { title: 'Error', type: 'error' });
+        }
+    } catch (err) {
+        console.error('Error cancelling reschedule:', err);
+        showNotice('Failed to cancel request.', { title: 'Error', type: 'error' });
+    }
+}
+
 function openRescheduleModalById(appointmentId) {
     const appt = allAppointments.find(a => a.appointment_id == appointmentId);
     if (appt) openRescheduleModal(appt);
 }
 
 async function openRescheduleModal(appt) {
+    const reschedCount = Number(appt.reschedule_count || 0);
+    const isUpdating = appt.reschedule_status === 'requested';
+
+    if (reschedCount >= MAX_RESCHEDULE_LIMIT && !isUpdating) {
+        showNotice(`You have reached the maximum allowed reschedules (${MAX_RESCHEDULE_LIMIT} times) for this appointment.`, { title: 'Limit Reached', type: 'error' });
+        return;
+    }
+
     pendingRescheduleAppt = appt;
 
     const scheduledDate = appt.appointment_date
@@ -921,16 +999,23 @@ async function openRescheduleModal(appt) {
 
     const summaryEl = document.getElementById('reschedulePatientSummary');
     if (summaryEl) {
-        summaryEl.innerHTML = `${escapeHtml(appt.label || 'Your appointment')} &bull; Currently: <strong>${escapeHtml(scheduledDate)}</strong> at <strong>${escapeHtml(appt.time_slot || 'N/A')}</strong>`;
+        summaryEl.innerHTML = `
+            ${escapeHtml(appt.label || 'Your appointment')} &bull; Currently: <strong>${escapeHtml(scheduledDate)}</strong> at <strong>${getFormattedTimeRange(appt.time_slot, appt.end_time_slot, appt.label)}</strong>
+            <span class="inline-block mt-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[#EAF0DD] text-[#556022] border border-[#667733]/30">
+                Reschedule Limit: ${reschedCount} / ${MAX_RESCHEDULE_LIMIT} used
+            </span>
+        `;
     }
 
     reschedSelectedDate = null;
     reschedSelectedDateFormatted = null;
     reschedSelectedTime = null;
+    reschedSelectedEndTime = null;
     reschedCurrentDate = new Date();
 
-    const defaultRadio = document.querySelector('input[name="reschedReasonRadio"][value="Schedule Conflict / Work Commitment"]');
-    if (defaultRadio) defaultRadio.checked = true;
+    // ❌ UNCHECK ALL RADIOS
+    document.querySelectorAll('input[name="reschedReasonRadio"]').forEach(r => r.checked = false);
+
     const customContainer = document.getElementById('customReasonContainer');
     const customText = document.getElementById('customReasonText');
     if (customContainer) customContainer.classList.add('hidden');
@@ -941,34 +1026,12 @@ async function openRescheduleModal(appt) {
     updateReschedSummaryDisplay();
 
     document.getElementById('reschedule-modal').classList.remove('hidden');
-
-    await fetchOccupiedSlots();
-    if (reschedSelectedDateFormatted) {
-        renderReschedAvailableSlots(reschedSelectedDateFormatted);
-    }
 }
 
 function closeRescheduleModal() {
     const modal = document.getElementById('reschedule-modal');
     if (modal) modal.classList.add('hidden');
     pendingRescheduleAppt = null;
-}
-
-async function fetchOccupiedSlots() {
-    const token = localStorage.getItem('userToken');
-    if (!token && !TEST_MODE) return;
-
-    try {
-        const response = await fetch('/api/appointments/occupied/mine', {
-            method: 'GET',
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (!response.ok) throw new Error(`Server error: ${response.status}`);
-        occupiedSlots = await response.json();
-    } catch (err) {
-        console.error("Failed to load occupied slots:", err);
-        occupiedSlots = [];
-    }
 }
 
 function renderReschedCalendar(date) {
@@ -994,6 +1057,7 @@ function renderReschedCalendar(date) {
             reschedSelectedDate = displayDateStr;
             reschedSelectedDateFormatted = sqlDateStr;
             reschedSelectedTime = null;
+            reschedSelectedEndTime = null;
 
             updateReschedSummaryDisplay();
             renderReschedAvailableSlots(sqlDateStr);
@@ -1040,62 +1104,102 @@ function renderReschedCalendar(date) {
     }
 }
 
-function renderReschedAvailableSlots(dateStr) {
+async function renderReschedAvailableSlots(dateStr) {
     const amContainer = document.getElementById('amSlotsContainer');
     const pmContainer = document.getElementById('pmSlotsContainer');
+    const colsContainer = document.getElementById('slotsColumnsContainer');
+    const msgContainer = document.getElementById('slotsMessageContainer');
+
     if (!amContainer || !pmContainer) return;
 
-    amContainer.innerHTML = '';
-    pmContainer.innerHTML = '';
-
-    if (!dateStr) {
-        amContainer.innerHTML = '<p class="text-[11px] text-center text-gray-400 py-3">Select date</p>';
-        pmContainer.innerHTML = '<p class="text-[11px] text-center text-gray-400 py-3">Select date</p>';
+    if (!dateStr || !pendingRescheduleAppt) {
+        if (colsContainer) colsContainer.classList.remove('hidden');
+        if (msgContainer) msgContainer.classList.add('hidden');
+        amContainer.innerHTML = '<p class="text-[11px] text-center text-gray-400 py-3">Select a date</p>';
+        pmContainer.innerHTML = '<p class="text-[11px] text-center text-gray-400 py-3">Select a date</p>';
         return;
     }
 
-    const excludeApptId = pendingRescheduleAppt ? pendingRescheduleAppt.appointment_id : null;
+    if (colsContainer) colsContainer.classList.add('hidden');
+    if (msgContainer) {
+        msgContainer.classList.remove('hidden');
+        msgContainer.innerHTML = '<p class="text-xs text-gray-500 py-6"><i class="fa-solid fa-spinner fa-spin mr-1.5 text-[#667733]"></i> Checking dentist schedule...</p>';
+    }
 
-    const bookedSlotsOnDate = occupiedSlots
-        .filter(slot => {
-            const sDate = (slot.appointment_date || '').split('T')[0];
-            return sDate === dateStr && slot.appointment_id != excludeApptId;
-        })
-        .map(b => b.time_slot);
+    const doctorId = pendingRescheduleAppt.dentist_id || pendingRescheduleAppt.employee_id || 1;
+    const duration = calculateApptDuration(pendingRescheduleAppt);
+    const token = localStorage.getItem('userToken');
 
-    clinicSlots.forEach(slot => {
-        const isBooked = bookedSlotsOnDate.includes(slot.id);
-        const isSelected = reschedSelectedTime === slot.id;
+    try {
+        const res = await fetch(`/api/doctors/${doctorId}/available-slots?date=${dateStr}&duration=${duration}`, {
+            headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+        });
 
-        const hour = parseInt(slot.id.split(':')[0], 10);
-        const isAM = hour < 12;
-
-        const slotBtn = document.createElement('button');
-        slotBtn.type = 'button';
-
-        let baseClass = "w-full py-1.5 px-2 text-[11px] rounded-full border transition text-center font-bold ";
-        if (isBooked) {
-            slotBtn.disabled = true;
-            slotBtn.className = baseClass + 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed line-through';
-            slotBtn.textContent = slot.label.split(' - ')[0];
-        } else {
-            slotBtn.className = baseClass + (isSelected
-                ? 'bg-[#667733] text-white border-[#667733] shadow-sm'
-                : 'bg-white text-[#2A1001] border-black/20 hover:bg-[#D7E3A5]/40 cursor-pointer');
-            slotBtn.textContent = slot.label;
-            slotBtn.addEventListener('click', function () {
-                reschedSelectedTime = slot.id;
-                renderReschedAvailableSlots(dateStr);
-                updateReschedSummaryDisplay();
-            });
+        const data = await res.json();
+        
+        if (!data.is_working_day || !data.slots || data.slots.length === 0) {
+            if (colsContainer) colsContainer.classList.add('hidden');
+            if (msgContainer) {
+                msgContainer.classList.remove('hidden');
+                msgContainer.innerHTML = `
+                    <div class="flex flex-col items-center justify-center text-center py-6 px-3">
+                        <i class="fa-regular fa-calendar-xmark text-amber-600 text-3xl mb-2"></i>
+                        <p class="text-xs font-bold text-amber-900">${escapeHtml(data.message || 'Dentist is not on duty on this day (Closed).')}</p>
+                        <p class="text-[11px] text-gray-500 mt-1">Please select another date on the calendar.</p>
+                    </div>
+                `;
+            }
+            return;
         }
 
-        if (isAM) {
-            amContainer.appendChild(slotBtn);
-        } else {
-            pmContainer.appendChild(slotBtn);
+        if (msgContainer) msgContainer.classList.add('hidden');
+        if (colsContainer) colsContainer.classList.remove('hidden');
+
+        amContainer.innerHTML = '';
+        pmContainer.innerHTML = '';
+
+        const amSlots = data.slots.filter(s => parseInt(s.time_slot.split(':')[0], 10) < 12);
+        const pmSlots = data.slots.filter(s => parseInt(s.time_slot.split(':')[0], 10) >= 12);
+
+        function createReschedBtn(slot) {
+            const isSelected = reschedSelectedTime === slot.time_slot;
+            const btn = document.createElement('button');
+            btn.type = 'button';
+
+            let baseClass = "w-full py-1.5 px-2 text-[11px] rounded-full border transition text-center font-bold ";
+
+            if (slot.is_available) {
+                btn.className = baseClass + (isSelected
+                    ? 'bg-[#667733] text-white border-[#667733] shadow-sm'
+                    : 'bg-white text-[#2A1001] border-black/20 hover:bg-[#D7E3A5]/40 cursor-pointer');
+                btn.textContent = `${formatTime12h(slot.time_slot)} – ${formatTime12h(slot.end_time_slot)}`;
+                btn.addEventListener('click', function () {
+                    reschedSelectedTime = slot.time_slot;
+                    reschedSelectedEndTime = slot.end_time_slot;
+                    renderReschedAvailableSlots(dateStr);
+                    updateReschedSummaryDisplay();
+                });
+            } else {
+                btn.disabled = true;
+                btn.className = baseClass + 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed line-through opacity-60';
+                btn.textContent = `${formatTime12h(slot.time_slot)} (${slot.reason || 'Closed'})`;
+            }
+            return btn;
         }
-    });
+
+        if (amSlots.length === 0) amContainer.innerHTML = '<p class="text-[10px] text-gray-400 italic py-2 text-center">No AM slots</p>';
+        if (pmSlots.length === 0) pmContainer.innerHTML = '<p class="text-[10px] text-gray-400 italic py-2 text-center">No PM slots</p>';
+
+        amSlots.forEach(s => amContainer.appendChild(createReschedBtn(s)));
+        pmSlots.forEach(s => pmContainer.appendChild(createReschedBtn(s)));
+
+    } catch (err) {
+        if (colsContainer) colsContainer.classList.add('hidden');
+        if (msgContainer) {
+            msgContainer.classList.remove('hidden');
+            msgContainer.innerHTML = '<p class="text-xs text-red-500 text-center py-4">Failed to load available slots.</p>';
+        }
+    }
 }
 
 function updateReschedSummaryDisplay() {
@@ -1103,10 +1207,24 @@ function updateReschedSummaryDisplay() {
     const confirmBtn = document.getElementById('confirmRescheduleBtn');
     if (!display || !confirmBtn) return;
 
+    const selectedRadio = document.querySelector('input[name="reschedReasonRadio"]:checked');
+    let hasValidReason = false;
+
+    if (selectedRadio) {
+        if (selectedRadio.value === 'other') {
+            hasValidReason = Boolean(document.getElementById('customReasonText')?.value.trim());
+        } else {
+            hasValidReason = true;
+        }
+    }
+
     if (reschedSelectedDate && reschedSelectedTime) {
-        const slotObj = clinicSlots.find(s => s.id === reschedSelectedTime);
-        display.innerHTML = `Requested Schedule: <strong class="text-[#667733]">${escapeHtml(reschedSelectedDate)}</strong> at <strong class="text-[#667733]">${escapeHtml(slotObj ? slotObj.label : reschedSelectedTime)}</strong>`;
-        confirmBtn.disabled = false;
+        const timeRangeText = reschedSelectedEndTime
+            ? `${formatTime12h(reschedSelectedTime)} – ${formatTime12h(reschedSelectedEndTime)}`
+            : formatTime12h(reschedSelectedTime);
+        
+        display.innerHTML = `Requested Schedule: <strong class="text-[#667733]">${escapeHtml(reschedSelectedDate)}</strong> at <strong class="text-[#667733]">${timeRangeText}</strong>`;
+        confirmBtn.disabled = !hasValidReason;
     } else if (reschedSelectedDate) {
         display.innerHTML = `Selected Date: <strong>${escapeHtml(reschedSelectedDate)}</strong> (Please choose an available AM or PM slot)`;
         confirmBtn.disabled = true;
@@ -1123,7 +1241,12 @@ async function confirmReschedule() {
     }
 
     const selectedRadio = document.querySelector('input[name="reschedReasonRadio"]:checked');
-    let finalReason = selectedRadio ? selectedRadio.value : 'Schedule Conflict / Work Commitment';
+    if (!selectedRadio) {
+        showNotice('Please choose a reason for rescheduling.', { title: 'Reason Required', type: 'error' });
+        return;
+    }
+
+    let finalReason = selectedRadio.value;
 
     if (finalReason === 'other') {
         const customText = document.getElementById('customReasonText')?.value.trim();
@@ -1160,6 +1283,7 @@ async function confirmReschedule() {
             body: JSON.stringify({
                 requested_date: reschedSelectedDateFormatted,
                 requested_time: reschedSelectedTime,
+                end_time_slot: reschedSelectedEndTime,
                 reschedule_reason: finalReason
             })
         });

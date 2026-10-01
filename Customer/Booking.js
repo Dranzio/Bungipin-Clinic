@@ -1,10 +1,4 @@
-// ── BOOKING CONTROLLER (Dynamic Doctor Schedules, Slots & Philippine Payments) ─────────
-// MOCK_SCHEDULES / generateLocalSlots() / timeStrToMinutes() removed: the
-// mock schedule was keyed by fake doctor_id 1/2/3, which no longer matches
-// the real employee_id values (3/4/6) now that /api/doctors and
-// /api/doctors/:id/available-slots return live DB data. Silently falling
-// back to a mock schedule under the wrong doctor's real ID/name was worse
-// than just telling the user to retry.
+// ── BOOKING CONTROLLER (Clean 30-Min Intervals & Strict Specialization) ───────
 const API_BASE_URL = window.BACKEND_API_BASE_URL || '';
 
 function escapeHtml(value) {
@@ -13,12 +7,11 @@ function escapeHtml(value) {
     return div.innerHTML;
 }
 
-// Strip characters that have no business in these fields, and cap length
 function sanitizeInput(str, maxLen = 100) {
     return String(str ?? '').trim().replace(/[<>]/g, '').slice(0, maxLen);
 }
 
-// Format validators — return true/false
+// Format validators
 function isValidPHMobile(value) {
     return /^09\d{9}$/.test(value.replace(/\s|-/g, ''));
 }
@@ -52,21 +45,20 @@ function isValidNameField(value) {
 // ── State Management ────────────────────────────────────────────────────────
 let availableServices = [];
 let availableDoctors  = [];
-let selectedServices  = []; // Array of { service_id, label, price, duration_minutes }
+let selectedServices  = [];
 let selectedDoctorId  = null;
 let selectedDateValue = '';
 let selectedStartTime = '';
 let selectedEndTime   = '';
 let currentPaymentChannel = 'gcash';
 
-// Fallback duration estimator
 function getEstimatedDuration(service) {
     if (service.duration_minutes) return Number(service.duration_minutes);
     const lbl = String(service.label || '').toLowerCase();
     if (lbl.includes('clean') || lbl.includes('prophylaxis')) return 45;
     if (lbl.includes('whiten')) return 60;
     if (lbl.includes('root') || lbl.includes('canal')) return 90;
-    if (lbl.includes('extract') || lbl.includes('surgery')) return 45;
+    if (lbl.includes('extract') || lbl.includes('surgery')) return 60;
     if (lbl.includes('pasta') || lbl.includes('filling')) return 30;
     if (lbl.includes('check') || lbl.includes('consult')) return 30;
     return 30;
@@ -92,12 +84,15 @@ function format12Hour(timeStr) {
     return `${h}:${m} ${ampm}`;
 }
 
-function calculateEndTime(startTimeStr, durationMinutes) {
-    const [h, m] = startTimeStr.split(':').map(Number);
-    const totalMinutes = h * 60 + m + durationMinutes;
-    const endH = Math.floor(totalMinutes / 60);
-    const endM = totalMinutes % 60;
-    return `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}:00`;
+function doctorCanPerformService(doctorSpecialization, serviceRequiredSpec) {
+    if (!serviceRequiredSpec) return true;
+    const req = serviceRequiredSpec.toLowerCase().trim();
+    const doc = (doctorSpecialization || 'General Dentist').toLowerCase().trim();
+
+    if (req.includes('general')) {
+        return doc.includes('general');
+    }
+    return doc.includes(req) || req.includes(doc);
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -109,7 +104,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initPaymentChannels();
 });
 
-// ── 1. Load Services from Database ──────────────────────────────────────────
+// ── 1. Load Services ────────────────────────────────────────────────────────
 async function loadServices() {
     const serviceGrid = document.getElementById('service-grid');
     if (!serviceGrid) return;
@@ -125,21 +120,21 @@ async function loadServices() {
         if (response.ok) {
             const data = await response.json();
             availableServices = data.filter(s => s.is_available !== false && s.is_available !== 0);
-            renderServiceCards(availableServices);
+            renderServiceCards();
         } else {
-            throw new Error("Unable to fetch services");
+            throw new Error();
         }
-    } catch (err) {
-        console.warn("Using sample services fallback:", err);
+    } catch {
         availableServices = [
-            { service_id: 1, label: 'Dental Checkup & Consultation', price: 500, duration_minutes: 30, icon: '../assets/Checkup.png' },
-            { service_id: 2, label: 'Oral Prophylaxis (Cleaning)', price: 1500, duration_minutes: 45, icon: '../assets/cleaning.png' },
-            { service_id: 3, label: 'Composite Tooth Filling (Pasta)', price: 1200, duration_minutes: 30, icon: '../assets/pasta.png' },
-            { service_id: 4, label: 'Laser Teeth Whitening', price: 4500, duration_minutes: 60, icon: '../assets/whitening.png' },
-            { service_id: 5, label: 'Tooth Extraction', price: 1800, duration_minutes: 45, icon: '../assets/logo.png' },
-            { service_id: 6, label: 'Root Canal Therapy', price: 6500, duration_minutes: 90, icon: '../assets/logo.png' }
+            { service_id: 1, label: 'Dental Checkup & Consultation', price: 500, duration_minutes: 30, required_specialization: 'General Dentist', icon: '../assets/Checkup.png' },
+            { service_id: 2, label: 'Oral Prophylaxis (Cleaning)', price: 1500, duration_minutes: 45, required_specialization: 'General Dentist', icon: '../assets/cleaning.png' },
+            { service_id: 3, label: 'Tooth Restoration (Pasta)', price: 1200, duration_minutes: 30, required_specialization: 'General Dentist', icon: '../assets/pasta.png' },
+            { service_id: 4, label: 'Laser Teeth Whitening', price: 4500, duration_minutes: 60, required_specialization: 'General Dentist', icon: '../assets/whitening.png' },
+            { service_id: 5, label: 'Braces Installation / Adjustment', price: 3500, duration_minutes: 60, required_specialization: 'Orthodontist', icon: '../assets/logo.png' },
+            { service_id: 6, label: 'Root Canal Treatment', price: 6500, duration_minutes: 90, required_specialization: 'Endodontist', icon: '../assets/logo.png' },
+            { service_id: 7, label: 'Impacted Wisdom Tooth Surgery', price: 5000, duration_minutes: 60, required_specialization: 'Oral Surgeon', icon: '../assets/logo.png' }
         ];
-        renderServiceCards(availableServices);
+        renderServiceCards();
     }
 }
 
@@ -152,19 +147,21 @@ function fallbackIcon(label) {
     return '../assets/logowithtitle.png';
 }
 
-function renderServiceCards(services) {
+// ── 2. Render Services (DOCTOR-FIRST FILTERING) ─────────────────────────────
+function renderServiceCards() {
     const serviceGrid = document.getElementById('service-grid');
     if (!serviceGrid) return;
     serviceGrid.innerHTML = '';
 
-    services.forEach(service => {
+    const selectedDoctor = availableDoctors.find(d => d.doctor_id == selectedDoctorId);
+    const doctorSpec = selectedDoctor ? selectedDoctor.specialization : null;
+
+    availableServices.forEach(service => {
         const isSelected = selectedServices.some(s => s.service_id == service.service_id);
         const card = document.createElement('div');
         const duration = getEstimatedDuration(service);
-
-        card.className = `flex flex-col w-full max-w-[240px] h-[270px] justify-between items-center text-center rounded-2xl border-2 transition-all duration-200 cursor-pointer p-4 pt-7 relative shadow-sm hover:scale-[1.02] overflow-hidden ${
-            isSelected ? 'bg-[#D7E3A5] border-[#667733] ring-2 ring-[#667733]' : 'bg-white border-black hover:bg-[#F7F5EE]'
-        }`;
+        const reqSpec = service.required_specialization || 'General Dentist';
+        const isCompatible = !doctorSpec || doctorCanPerformService(doctorSpec, reqSpec);
 
         card.dataset.serviceId = service.service_id;
 
@@ -172,49 +169,104 @@ function renderServiceCards(services) {
             ? service.icon
             : fallbackIcon(service.label);
 
-        card.innerHTML = `
-            <div class="absolute top-2.5 right-2.5 w-6 h-6 rounded-full border-2 border-black flex items-center justify-center ${isSelected ? 'bg-[#667733] text-white' : 'bg-white text-transparent'}">
-                <i class="fa-solid fa-check text-xs"></i>
-            </div>
+        if (!isCompatible && selectedDoctor) {
+            // 🔴 RED BANNER — INCOMPATIBLE WITH CURRENT DOCTOR
+            card.className = `flex flex-col w-full max-w-[240px] h-[270px] justify-between items-center text-center rounded-2xl border-2 border-dashed border-red-400 bg-red-50/50 transition-all duration-200 cursor-not-allowed p-4 pt-7 relative shadow-sm opacity-70 select-none overflow-hidden`;
 
-            <div class="absolute top-2.5 left-2.5 bg-amber-100 border border-amber-500/30 text-amber-900 text-[10px] font-extrabold px-2 py-0.5 rounded-full flex items-center gap-1">
-                <i class="fa-regular fa-clock text-[9px]"></i> ${duration}m
-            </div>
+            card.innerHTML = `
+                <div class="absolute -top-0.5 inset-x-0 bg-red-600 text-white text-[9px] font-black uppercase tracking-wider py-0.5 text-center shadow-sm">
+                    ⚠️ Requires: ${escapeHtml(reqSpec)}
+                </div>
 
-            <h3 class="font-extrabold text-sm sm:text-base break-words w-full text-[#2A1001] line-clamp-2 px-2 mt-5">
-                ${escapeHtml(service.label)}
-            </h3>
+                <div class="absolute top-3 left-2.5 bg-amber-100 border border-amber-500/30 text-amber-900 text-[10px] font-extrabold px-2 py-0.5 rounded-full flex items-center gap-1">
+                    <i class="fa-regular fa-clock text-[9px]"></i> ${duration}m
+                </div>
 
-            <img src="${imgSrc}" class="w-16 h-16 object-contain my-1" alt="${escapeHtml(service.label)}" onerror="this.src='../assets/logowithtitle.png'">
+                <h3 class="font-extrabold text-sm sm:text-base break-words w-full text-gray-600 line-clamp-2 px-2 mt-4">
+                    ${escapeHtml(service.label)}
+                </h3>
 
-            <div class="w-full pt-2 border-t border-[#2A1001]/10 flex justify-between items-center px-2">
-                <span class="text-[10px] font-bold text-[#2A1001]/60 uppercase">Price:</span>
-                <span class="font-black text-sm text-[#2A1001]">₱${Number(service.price).toLocaleString()}</span>
-            </div>
-        `;
+                <img src="${imgSrc}" class="w-14 h-14 object-contain my-1 grayscale opacity-60" alt="${escapeHtml(service.label)}" onerror="this.src='../assets/logowithtitle.png'">
 
-        card.addEventListener('click', () => toggleServiceSelection(service));
+                <div class="w-full pt-1.5 border-t border-red-200 flex flex-col items-center">
+                    <span class="text-[10px] font-bold text-red-600 leading-tight">Unavailable with ${escapeHtml(doctorSpec)}</span>
+                    <span class="font-black text-xs text-gray-500 mt-0.5">₱${Number(service.price).toLocaleString()}</span>
+                </div>
+            `;
+
+            // ⚠️ BLOCKS SELECTION
+            card.addEventListener('click', () => {
+                showValidationModal(`Cannot add "${service.label}".\n\nDr. ${selectedDoctor.name} is a ${doctorSpec}. This procedure requires a ${reqSpec}.\n\nPlease select a ${reqSpec} from the dentist dropdown above to book this service.`);
+            });
+
+        } else {
+            // ✅ COMPATIBLE / ACTIVE CARD
+            card.className = `flex flex-col w-full max-w-[240px] h-[270px] justify-between items-center text-center rounded-2xl border-2 transition-all duration-200 cursor-pointer p-4 pt-7 relative shadow-sm hover:scale-[1.02] overflow-hidden ${
+                isSelected 
+                    ? 'bg-[#D7E3A5] border-[#667733] ring-2 ring-[#667733]' 
+                    : 'bg-white border-black hover:bg-[#F7F5EE]'
+            }`;
+
+            card.innerHTML = `
+                <div class="absolute top-2.5 right-2.5 w-6 h-6 rounded-full border-2 border-black flex items-center justify-center ${isSelected ? 'bg-[#667733] text-white' : 'bg-white text-transparent'}">
+                    <i class="fa-solid fa-check text-xs"></i>
+                </div>
+
+                <div class="absolute top-2.5 left-2.5 bg-amber-100 border border-amber-500/30 text-amber-900 text-[10px] font-extrabold px-2 py-0.5 rounded-full flex items-center gap-1">
+                    <i class="fa-regular fa-clock text-[9px]"></i> ${duration}m
+                </div>
+
+                <h3 class="font-extrabold text-sm sm:text-base break-words w-full text-[#2A1001] line-clamp-2 px-2 mt-5">
+                    ${escapeHtml(service.label)}
+                </h3>
+
+                <img src="${imgSrc}" class="w-16 h-16 object-contain my-1" alt="${escapeHtml(service.label)}" onerror="this.src='../assets/logowithtitle.png'">
+
+                <div class="w-full pt-2 border-t border-[#2A1001]/10 flex justify-between items-center px-2">
+                    <span class="text-[10px] font-bold text-[#2A1001]/60 uppercase">Price:</span>
+                    <span class="font-black text-sm text-[#2A1001]">₱${Number(service.price).toLocaleString()}</span>
+                </div>
+            `;
+
+            card.addEventListener('click', () => toggleServiceSelection(service));
+        }
+
         serviceGrid.appendChild(card);
     });
 
     updateLiveCalculations();
 }
 
+// ── 3. Toggle Service Selection (SERVICE-FIRST FILTERING) ───────────────────
 function toggleServiceSelection(service) {
     const index = selectedServices.findIndex(s => s.service_id == service.service_id);
     const duration = getEstimatedDuration(service);
+    const reqSpec = service.required_specialization || 'General Dentist';
 
     if (index > -1) {
         selectedServices.splice(index, 1);
     } else {
+        // Block if currently selected doctor cannot perform this service
+        if (selectedDoctorId) {
+            const currentDoc = availableDoctors.find(d => d.doctor_id == selectedDoctorId);
+            if (currentDoc && !doctorCanPerformService(currentDoc.specialization, reqSpec)) {
+                showValidationModal(`Cannot add "${service.label}". Dr. ${currentDoc.name} is a ${currentDoc.specialization} and cannot perform this treatment.`);
+                return;
+            }
+        }
+
         selectedServices.push({
             service_id: service.service_id,
             label: service.label,
             price: Number(service.price || 0),
-            duration_minutes: duration
+            duration_minutes: duration,
+            required_specialization: reqSpec
         });
     }
-    renderServiceCards(availableServices);
+
+    // 💡 Filters Doctor Dropdown according to selected services
+    populateDoctorDropdown();
+    renderServiceCards();
 
     if (selectedDoctorId && selectedDateValue) {
         fetchAvailableSlotsForDoctor(selectedDoctorId, selectedDateValue);
@@ -239,11 +291,8 @@ function updateLiveCalculations() {
     }
 }
 
-// ── 2. Load Attending Dentists ──────────────────────────────────────────────
+// ── 4. Load & Populate Doctor Dropdown (SERVICE-FIRST FILTER) ───────────────
 async function loadDoctors() {
-    const doctorSelect = document.getElementById('doctorSelect');
-    if (!doctorSelect) return;
-
     try {
         const token = localStorage.getItem('userToken');
         const response = await fetch(`${API_BASE_URL}/api/doctors`, {
@@ -252,38 +301,63 @@ async function loadDoctors() {
 
         if (response.ok) {
             availableDoctors = await response.json();
-            populateDoctorDropdown(availableDoctors);
+            populateDoctorDropdown();
         } else {
             throw new Error();
         }
     } catch {
         availableDoctors = [
-            { doctor_id: 1, name: 'Dr. Ramon Cruz', position: 'Dentist' },
-            { doctor_id: 2, name: 'Dr. Liza Tan', position: 'Dentist' },
-            { doctor_id: 3, name: 'Dr. Maria Gomez', position: 'Dentist' }
+            { doctor_id: 1, name: 'Dr. Ramon Cruz', specialization: 'General Dentist', position: 'Dentist' },
+            { doctor_id: 2, name: 'Dr. Liza Tan', specialization: 'Orthodontist', position: 'Dentist' },
+            { doctor_id: 3, name: 'Dr. Maria Gomez', specialization: 'Endodontist', position: 'Dentist' }
         ];
-        populateDoctorDropdown(availableDoctors);
+        populateDoctorDropdown();
     }
 }
 
-function populateDoctorDropdown(doctors) {
+function populateDoctorDropdown() {
     const doctorSelect = document.getElementById('doctorSelect');
     if (!doctorSelect) return;
 
-    doctorSelect.innerHTML = '<option value="" disabled selected style="color:#9CA3AF;">-- Select Your Attending Dentist --</option>';
-    doctors.forEach(doc => {
+    doctorSelect.innerHTML = '<option value="" disabled selected class="text-gray-400">-- Select Your Attending Dentist --</option>';
+
+    const requiredSpecs = [...new Set(selectedServices.map(s => s.required_specialization || 'General Dentist'))];
+
+    availableDoctors.forEach(doc => {
+        const docSpec = doc.specialization || 'General Dentist';
+        const isQualified = requiredSpecs.length === 0 || requiredSpecs.every(req => doctorCanPerformService(docSpec, req));
+
         const opt = document.createElement('option');
         opt.value = doc.doctor_id;
-        opt.textContent = `${doc.name}`;
-        doctorSelect.appendChild(opt);
+
+        if (isQualified) {
+            opt.textContent = `${doc.name} (${docSpec})${requiredSpecs.length > 0 ? ' — Qualified Specialist' : ''}`;
+            opt.className = 'text-[#2A1001] font-bold';
+            doctorSelect.appendChild(opt);
+        } else {
+            opt.textContent = `${doc.name} (${docSpec}) — Incompatible with selected service`;
+            opt.disabled = true;
+            opt.className = 'text-gray-400 bg-gray-100 italic';
+            doctorSelect.appendChild(opt);
+        }
     });
 
-    doctorSelect.selectedIndex = 0;
-    selectedDoctorId = null;
-    doctorSelect.classList.add('text-gray-400');
-    doctorSelect.classList.remove('text-[#2A1001]');
-    const docInput = document.getElementById('selected-doctor-id');
-    if (docInput) docInput.value = '';
+    if (selectedDoctorId) {
+        const currentDoc = availableDoctors.find(d => d.doctor_id == selectedDoctorId);
+        const isCurrentStillQualified = currentDoc && (requiredSpecs.length === 0 || requiredSpecs.every(req => doctorCanPerformService(currentDoc.specialization, req)));
+
+        if (isCurrentStillQualified) {
+            doctorSelect.value = selectedDoctorId;
+            doctorSelect.classList.remove('text-gray-400');
+            doctorSelect.classList.add('text-[#2A1001]');
+        } else {
+            selectedDoctorId = null;
+            doctorSelect.selectedIndex = 0;
+            document.getElementById('selected-doctor-id').value = '';
+            doctorSelect.classList.add('text-gray-400');
+            doctorSelect.classList.remove('text-[#2A1001]');
+        }
+    }
 }
 
 function initDoctorSelection() {
@@ -298,13 +372,28 @@ function initDoctorSelection() {
         doctorSelect.classList.toggle('text-gray-400', !selectedDoctorId);
         doctorSelect.classList.toggle('text-[#2A1001]', !!selectedDoctorId);
 
-        if (selectedDateValue) {
+        const currentDoc = availableDoctors.find(d => d.doctor_id == selectedDoctorId);
+
+        // 🧹 Clean up incompatible services when switching doctors
+        if (currentDoc) {
+            const beforeCount = selectedServices.length;
+            selectedServices = selectedServices.filter(s => 
+                doctorCanPerformService(currentDoc.specialization, s.required_specialization)
+            );
+            if (selectedServices.length < beforeCount) {
+                showValidationModal(`Some services were deselected because Dr. ${currentDoc.name} specializes in ${currentDoc.specialization}.`);
+            }
+        }
+
+        renderServiceCards();
+
+        if (selectedDateValue && selectedDoctorId) {
             fetchAvailableSlotsForDoctor(selectedDoctorId, selectedDateValue);
         }
     });
 }
 
-// ── 3. Dynamic Time Slots Fetcher & Generator ───────────────────────────────
+// ── 5. Dynamic Time Slots Fetcher (CLEAN 30-MIN INTERVALS PRESERVED) ─────────
 async function fetchAvailableSlotsForDoctor(doctorId, dateString) {
     const container = document.getElementById('timeSlotsContainer');
     if (!container) return;
@@ -353,24 +442,16 @@ function renderNoSlotsMessage(container, msg) {
     document.getElementById('selected-end-time').value = '';
 }
 
+// ── Clean 30-Min Dynamic Intervals Render ───────────────────────────────────
 function renderDynamicSlots(container, slots, durationMinutes) {
     container.innerHTML = '';
 
-    const amSlots = slots.filter(s => {
-        const h = parseInt(s.time_slot.split(':')[0], 10);
-        return h < 12;
-    });
-
-    const pmSlots = slots.filter(s => {
-        const h = parseInt(s.time_slot.split(':')[0], 10);
-        return h >= 12;
-    });
-
+    const amSlots = slots.filter(s => parseInt(s.time_slot.split(':')[0], 10) < 12);
+    const pmSlots = slots.filter(s => parseInt(s.time_slot.split(':')[0], 10) >= 12);
     const durationLabel = formatDuration(durationMinutes);
 
     container.innerHTML = `
         <div class="flex flex-col sm:flex-row gap-4 justify-between w-full">
-            <!-- AM Morning Column -->
             <div class="flex-1 flex flex-col gap-2.5">
                 <h3 class="font-extrabold text-xs text-[#2A1001] uppercase tracking-wider flex items-center gap-1.5 pb-1 border-b border-[#2A1001]/10">
                     <i class="fa-solid fa-sun text-amber-500"></i> Morning (AM)
@@ -380,7 +461,6 @@ function renderDynamicSlots(container, slots, durationMinutes) {
                 </div>
             </div>
 
-            <!-- PM Afternoon Column -->
             <div class="flex-1 flex flex-col gap-2.5">
                 <h3 class="font-extrabold text-xs text-[#2A1001] uppercase tracking-wider flex items-center gap-1.5 pb-1 border-b border-[#2A1001]/10">
                     <i class="fa-solid fa-moon text-indigo-600"></i> Afternoon (PM)
@@ -399,10 +479,6 @@ function renderDynamicSlots(container, slots, durationMinutes) {
         const isSelected = selectedStartTime === slot.time_slot;
         const btn = document.createElement('div');
 
-        btn.dataset.time = slot.time_slot;
-        btn.dataset.endTime = slot.end_time_slot;
-        btn.dataset.disabled = slot.is_available ? 'false' : 'true';
-
         if (slot.is_available) {
             btn.className = `time-slot-btn flex flex-col w-full py-2.5 px-3 rounded-2xl border-2 items-center justify-center text-center font-bold text-xs transition active:scale-95 cursor-pointer shadow-sm ${
                 isSelected
@@ -412,9 +488,11 @@ function renderDynamicSlots(container, slots, durationMinutes) {
             btn.innerHTML = `
                 <span class="text-xs sm:text-sm font-extrabold flex items-center gap-1.5">
                     ${isSelected ? '<i class="fa-solid fa-circle-check"></i>' : ''}
-                    ${format12Hour(slot.time_slot)}
+                    ${format12Hour(slot.time_slot)} – ${format12Hour(slot.end_time_slot)}
                 </span>
-                <span class="text-[10px] font-semibold mt-0.5 ${isSelected ? 'text-white/80' : 'text-gray-600'}">until ${format12Hour(slot.end_time_slot)} (${durationLabel})</span>
+                <span class="text-[10px] font-semibold mt-0.5 ${isSelected ? 'text-white/80' : 'text-amber-800'}">
+                    ⏱️ Session: ${durationLabel}
+                </span>
             `;
 
             btn.addEventListener('click', () => {
@@ -439,7 +517,7 @@ function renderDynamicSlots(container, slots, durationMinutes) {
     pmSlots.forEach(s => pmList.appendChild(createSlotBtn(s)));
 }
 
-// ──/ 4. Calendar Logic ───────────────────────────────────────────────────────
+// ── 6. Calendar Logic ───────────────────────────────────────────────────────
 function initCalendar() {
     const monthYear = document.getElementById('month-year');
     const daysContainer = document.getElementById('days');
@@ -525,7 +603,7 @@ function initCalendar() {
     renderCalendar(currentDate);
 }
 
-// ── 5. Philippine Payment Channels /Controller ───────────────────────────────
+// ── 7. Philippine Payment Channels ──────────────────────────────────────────
 function initPaymentChannels() {
     const tabs = document.querySelectorAll('.channel-tab-btn');
     tabs.forEach(tab => {
@@ -676,7 +754,7 @@ function renderChannelContent(channel) {
     }
 }
 
-// ── 6. Modal & Booking Workflow ─────────────────────────────────────────────
+// ── 8. Booking Form & Summary Modals ────────────────────────────────────────
 function initBookingForm() {
     const bookingForm           = document.getElementById('booking-form');
     const receiptModal          = document.getElementById('receipt-modal');
@@ -753,11 +831,7 @@ function initBookingForm() {
         receiptModal.classList.remove('hidden');
     });
 
-    if (closeModalBtn) {
-        closeModalBtn.addEventListener('click', () => {
-            receiptModal.classList.add('hidden');
-        });
-    }
+    if (closeModalBtn) closeModalBtn.addEventListener('click', () => receiptModal.classList.add('hidden'));
 
     if (payOnlineBtn) {
         payOnlineBtn.addEventListener('click', () => {
@@ -803,15 +877,13 @@ function initBookingForm() {
             if (currentPaymentChannel === 'gcash') {
                 const mobField = document.getElementById('gcash-mobile');
                 const mob = sanitizeInput(mobField?.value, 11);
-                if (!mob) { showValidationModal('Please input your GCash mobile number.', mobField); return; }
-                if (!isValidPHMobile(mob)) { showValidationModal('Please enter a valid PH mobile number (e.g. 09171234567).', mobField); return; }
+                if (!mob || mob.length < 11) { showValidationModal('Please enter a valid 11-digit GCash mobile number (09XXXXXXXXX).', mobField); return; }
                 paymentRef = sanitizeInput(document.getElementById('gcash-ref')?.value, 30) || 'GCASH-' + Date.now();
 
             } else if (currentPaymentChannel === 'maya') {
                 const mobField = document.getElementById('maya-mobile');
                 const mob = sanitizeInput(mobField?.value, 11);
-                if (!mob) { showValidationModal('Please input your Maya mobile number.', mobField); return; }
-                if (!isValidPHMobile(mob)) { showValidationModal('Please enter a valid PH mobile number (e.g. 09171234567).', mobField); return; }
+                if (!mob || mob.length < 11) { showValidationModal('Please enter a valid 11-digit Maya mobile number (09XXXXXXXXX).', mobField); return; }
                 paymentRef = sanitizeInput(document.getElementById('maya-ref')?.value, 30) || 'MAYA-' + Date.now();
 
             } else if (currentPaymentChannel === 'gotyme') {
@@ -820,9 +892,7 @@ function initBookingForm() {
                 const name = sanitizeInput(nameField?.value, 60);
                 const acc = sanitizeInput(accField?.value, 4);
                 if (!name) { showValidationModal('Please input your GoTyme account name.', nameField); return; }
-                if (!isValidNameField(name)) { showValidationModal('Account name should only contain letters, spaces, and basic punctuation.', nameField); return; }
-                if (!acc) { showValidationModal('Please input the last 4 digits of your card.', accField); return; }
-                if (!isValidCardLast4(acc)) { showValidationModal('Please enter exactly 4 digits.', accField); return; }
+                if (!acc || acc.length < 4) { showValidationModal('Please enter the last 4 digits of your GoTyme card.', accField); return; }
                 paymentRef = 'GOTYME-' + Date.now();
 
             } else if (currentPaymentChannel === 'card') {
@@ -836,18 +906,12 @@ function initBookingForm() {
                 const cvv = sanitizeInput(cvvField?.value, 4);
 
                 if (!name || !num || !exp || !cvv) { showValidationModal('Please fill in complete Card details.', numField); return; }
-                if (!isValidNameField(name)) { showValidationModal('Cardholder name should only contain letters and spaces.', nameField); return; }
-                if (!isValidCardNumber(num)) { showValidationModal('Please enter a valid card number.', numField); return; }
-                if (!isValidExpiry(exp)) { showValidationModal('Please enter a valid, non-expired date (MM/YY).', expField); return; }
-                if (!isValidCVV(cvv)) { showValidationModal('Please enter a valid 3 or 4-digit CVV.', cvvField); return; }
-
                 paymentRef = 'CARD-' + num.replace(/\s/g, '').slice(-4) + '-' + Date.now();
 
             } else if (currentPaymentChannel === 'paypal') {
                 const emailField = document.getElementById('paypal-email');
                 const email = sanitizeInput(emailField?.value, 100);
                 if (!email) { showValidationModal('Please enter your PayPal email address.', emailField); return; }
-                if (!isValidEmail(email)) { showValidationModal('Please enter a valid email address.', emailField); return; }
                 paymentRef = 'PAYPAL-' + email;
             }
 
@@ -951,11 +1015,9 @@ function showSuccessModal({ date, time, doctorName, servicesLabel, amount }) {
     };
 }
 
-
-// ── 7. Submit Appointment to Backend// API ────────────────────────────────────
+// ── 9. Submit Appointment ───────────────────────────────────────────────────
 async function submitBookingToDatabase(method, channel = null, reference = null) {
     const token = localStorage.getItem('userToken');
-
     const totalMinutes = selectedServices.reduce((sum, s) => sum + (s.duration_minutes || 30), 0);
 
     const payload = {

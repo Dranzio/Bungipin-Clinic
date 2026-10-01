@@ -1,4 +1,9 @@
 const authenticateToken = require('../authMiddleware');
+const { logActivity } = require('../Admin/auditLogRoutes');
+
+function getIp(req) {
+    return req.ip || req.headers['x-forwarded-for'];
+}
 
 function registerQueueRoutes(app, db) {
 
@@ -58,6 +63,16 @@ function registerQueueRoutes(app, db) {
             if (result.affectedRows === 0) {
                 return res.status(404).json({ message: 'Appointment not found' });
             }
+
+            await logActivity(db, {
+                user_id: req.user.user_id,
+                user_role: req.user.role,
+                action: queue_status === 'completed' ? 'COMPLETE_TREATMENT' : `QUEUE_${queue_status.toUpperCase()}`,
+                target_table: 'appointments',
+                target_id: req.params.id,
+                notes: `Queue status set to "${queue_status}".`,
+                ip_address: getIp(req)
+            });
 
             res.json({ message: 'Queue status updated successfully' });
         } catch (err) {

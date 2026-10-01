@@ -3,6 +3,11 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const { put, del } = require('@vercel/blob');
+const { logActivity } = require('../Admin/auditLogRoutes');
+
+function getIp(req) {
+    return req.ip || req.headers['x-forwarded-for'];
+}
 
 const xrayUploadDir = path.join(__dirname, '..', 'uploads', 'xrays');
 const isVercel = process.env.VERCEL === '1' || !!process.env.BLOB_READ_WRITE_TOKEN;
@@ -42,10 +47,10 @@ function registerPatientRecordsRoutes(app, db) {
                 }
             } catch (spErr) {
                 console.warn('SP sp_get_all_patient_records fallback to query:', spErr.message);
-                
+
                 // Comprehensive fallback query
                 const [pRows] = await db.query(`
-                    SELECT 
+                    SELECT
                         u.user_id AS patient_id,
                         u.public_id,
                         u.first_name,
@@ -54,7 +59,6 @@ function registerPatientRecordsRoutes(app, db) {
                         u.phone,
                         u.sex,
                         pp.birthday,
-                        pp.civil_status,
                         pp.secondary_email,
                         pp.address,
                         pp.address_street,
@@ -63,7 +67,7 @@ function registerPatientRecordsRoutes(app, db) {
                         pp.address_province,
                         pp.pregnancy_status
                     FROM users u
-                    JOIN patient_profiles pp ON pp.patient_id = u.user_id
+                             JOIN patient_profiles pp ON pp.patient_id = u.user_id
                     WHERE u.role = 'patient'
                     ORDER BY u.user_id ASC
                 `);
@@ -76,16 +80,16 @@ function registerPatientRecordsRoutes(app, db) {
                     const [prescriptions] = await db.query('SELECT medication_name, dosage FROM prescriptions WHERE patient_id = ?', [p.patient_id]).catch(() => [[]]);
                     const [xrays] = await db.query('SELECT xray_id, appointment_id, file_url FROM xrays WHERE patient_id = ?', [p.patient_id]).catch(() => [[]]);
                     const [docs] = await db.query('SELECT document_id, file_url, uploaded_at FROM patient_documents WHERE patient_id = ?', [p.patient_id]).catch(() => [[]]);
-                    
+
                     const [[lastVisitRow]] = await db.query(`
-                        SELECT MAX(appointment_date) AS last_visit FROM appointments 
+                        SELECT MAX(appointment_date) AS last_visit FROM appointments
                         WHERE patient_id = ? AND appointment_status = 'completed'
                     `, [p.patient_id]).catch(() => [[{ last_visit: null }]]);
 
                     const [[ongoing]] = await db.query(`
                         SELECT a.appointment_id, a.appointment_date, s.label AS service_label, a.dentist_note, a.patient_note
                         FROM appointments a
-                        JOIN services s ON a.service_id = s.service_id
+                                 JOIN services s ON a.service_id = s.service_id
                         WHERE a.patient_id = ? AND a.appointment_status = 'approved' AND a.queue_status = 'ongoing'
                         ORDER BY a.time_slot DESC LIMIT 1
                     `, [p.patient_id]).catch(() => [[null]]);
@@ -93,7 +97,7 @@ function registerPatientRecordsRoutes(app, db) {
                     const [pastAppts] = await db.query(`
                         SELECT a.appointment_id, a.appointment_date, s.label AS service_label, a.dentist_note, a.patient_note
                         FROM appointments a
-                        JOIN services s ON a.service_id = s.service_id
+                                 JOIN services s ON a.service_id = s.service_id
                         WHERE a.patient_id = ? AND a.appointment_status = 'completed'
                         ORDER BY a.appointment_date DESC
                     `, [p.patient_id]).catch(() => [[]]);
@@ -237,6 +241,16 @@ function registerPatientRecordsRoutes(app, db) {
                     });
                 }
 
+                await logActivity(db, {
+                    user_id: req.user.user_id,
+                    user_role: req.user.role,
+                    action: 'UPLOAD_XRAY',
+                    target_table: 'xrays',
+                    target_id: appointmentId,
+                    notes: `Uploaded ${created.length} X-ray(s) for appointment #${appointmentId}.`,
+                    ip_address: getIp(req)
+                });
+
                 res.status(201).json({ message: 'X-rays uploaded successfully', xrays: created });
             } catch (err) {
                 console.error('X-ray upload error:', err);
@@ -269,6 +283,16 @@ function registerPatientRecordsRoutes(app, db) {
                 fs.unlink(filePath, () => {});
             }
 
+            await logActivity(db, {
+                user_id: req.user.user_id,
+                user_role: req.user.role,
+                action: 'DELETE_XRAY',
+                target_table: 'xrays',
+                target_id: xrayId,
+                notes: `Deleted X-ray #${xrayId}.`,
+                ip_address: getIp(req)
+            });
+
             res.json({ message: 'X-ray deleted successfully' });
         } catch (err) {
             console.error('X-ray delete error:', err);
@@ -294,6 +318,16 @@ function registerPatientRecordsRoutes(app, db) {
                  WHERE appointment_id = ?`,
                 [dentist_note || null, appointmentId]
             );
+
+            await logActivity(db, {
+                user_id: req.user.user_id,
+                user_role: req.user.role,
+                action: 'COMPLETE_TREATMENT',
+                target_table: 'appointments',
+                target_id: appointmentId,
+                notes: 'Treatment marked complete.',
+                ip_address: getIp(req)
+            });
 
             res.json({ message: 'Appointment completed successfully' });
         } catch (err) {
