@@ -1,5 +1,6 @@
-// ── BOOKING CONTROLLER (Clean 30-Min Intervals, Specialization & Mobile-Friendly Cards) ───────
+// ── BOOKING CONTROLLER (Clean 30-Min Intervals, Advance Booking Limits & Mobile-Friendly Cards) ───────
 const API_BASE_URL = window.BACKEND_API_BASE_URL || '';
+const MAX_ADVANCE_MONTHS = 6; // Set to 6 for 6 months (or 12 for 1 year)
 
 function escapeHtml(value) {
     const div = document.createElement('div');
@@ -198,13 +199,11 @@ function renderServiceCards() {
             }`;
 
             card.innerHTML = `
-                <!-- Top Header Row (Duration + Checkbox Circle) -->
                 <div class="w-full flex justify-between items-center">
                     <span class="bg-amber-100 border border-amber-500/30 text-amber-900 text-[10px] font-extrabold px-2 py-0.5 rounded-full flex items-center gap-1">
                         <i class="fa-regular fa-clock text-[9px]"></i> ${duration}m
                     </span>
 
-                    <!-- Top-Right Selection Circle -->
                     <div class="circle-select-btn w-7 h-7 rounded-full border-2 border-black flex items-center justify-center transition-all ${isSelected ? 'bg-[#667733] text-white shadow-sm' : 'bg-white text-transparent hover:border-[#667733]'}">
                         <i class="fa-solid fa-check text-xs"></i>
                     </div>
@@ -222,20 +221,17 @@ function renderServiceCards() {
                         <span class="font-black text-sm text-[#667733]">₱${Number(service.price).toLocaleString()}</span>
                     </div>
 
-                    <!-- Read Details Button (Click to Open Details Modal) -->
                     <button type="button" class="view-proc-btn w-full py-1.5 bg-[#ECF5E2] hover:bg-[#F6FAF2] active:scale-95 text-[#2A1001] font-extrabold rounded-xl border border-black/10 text-[11px] flex items-center justify-center gap-1.5 cursor-pointer transition">
                         <i class="fa-solid fa-circle-info text-[#667733]"></i> View Procedure Info
                     </button>
                 </div>
             `;
 
-            // Clicking "View Details" opens the popup without selecting
             card.querySelector('.view-proc-btn').addEventListener('click', (e) => {
                 e.stopPropagation();
                 openProcedureModal(service, isSelected, true);
             });
 
-            // Clicking the top-right circle or card toggles selection
             card.addEventListener('click', () => toggleServiceSelection(service));
         }
 
@@ -604,7 +600,7 @@ function renderDynamicSlots(container, slots, durationMinutes) {
     pmSlots.forEach(s => pmList.appendChild(createSlotBtn(s)));
 }
 
-// ── 7. Calendar Logic ───────────────────────────────────────────────────────
+// ── 7. Calendar Logic (Enforces 6 Months / 1 Year Advance Limit) ─────────────
 function initCalendar() {
     const monthYear = document.getElementById('month-year');
     const daysContainer = document.getElementById('days');
@@ -619,13 +615,16 @@ function initCalendar() {
     ];
 
     let currentDate = new Date();
-    let today = new Date();
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
-    function isPastDate(dateString) {
-        const selectedDay = new Date(`${dateString}T00:00:00`);
-        const currentDay = new Date();
-        currentDay.setHours(0, 0, 0, 0);
-        return selectedDay < currentDay;
+    // Max advance booking date (e.g., today + 6 months)
+    const maxBookingDate = new Date(today);
+    maxBookingDate.setMonth(maxBookingDate.getMonth() + MAX_ADVANCE_MONTHS);
+
+    function isDateDisabled(dateString) {
+        const checkDate = new Date(`${dateString}T00:00:00`);
+        return checkDate < today || checkDate > maxBookingDate;
     }
 
     if (PNote && CurrentCount) {
@@ -644,6 +643,22 @@ function initCalendar() {
         if (!daysContainer) return;
         daysContainer.innerHTML = '';
 
+        // Disable "Previous" button if viewing current month/year
+        if (prevButton) {
+            const isCurrentMonth = (year === today.getFullYear() && month === today.getMonth());
+            prevButton.disabled = isCurrentMonth;
+            prevButton.classList.toggle('opacity-30', isCurrentMonth);
+            prevButton.classList.toggle('cursor-not-allowed', isCurrentMonth);
+        }
+
+        // Disable "Next" button if viewing maximum allowed month/year
+        if (nextButton) {
+            const isMaxMonth = (year > maxBookingDate.getFullYear()) || (year === maxBookingDate.getFullYear() && month >= maxBookingDate.getMonth());
+            nextButton.disabled = isMaxMonth;
+            nextButton.classList.toggle('opacity-30', isMaxMonth);
+            nextButton.classList.toggle('cursor-not-allowed', isMaxMonth);
+        }
+
         const prevMonthLastDay = new Date(year, month, 0).getDate();
         for (let i = firstDay; i > 0; i--) {
             const dayDiv = document.createElement('div');
@@ -654,20 +669,27 @@ function initCalendar() {
 
         for (let i = 1; i <= lastDay; i++) {
             const dayDiv = document.createElement('div');
-            dayDiv.className = 'w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center font-bold text-xs sm:text-sm text-[#2A1001] cursor-pointer transition-all hover:bg-[#D7E3A5] hover:scale-110';
-            dayDiv.textContent = i;
-
-            if (i === today.getDate() && month === today.getMonth() && year === today.getFullYear()) {
-                dayDiv.classList.add('border-2', 'border-[#667733]', 'bg-[#FDFCE9]');
-            }
-
             const formattedMonth = String(month + 1).padStart(2, '0');
             const formattedDay = String(i).padStart(2, '0');
             const sqlDateStr = `${year}-${formattedMonth}-${formattedDay}`;
 
-            if (isPastDate(sqlDateStr)) {
-                dayDiv.className = 'w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center font-medium text-xs sm:text-sm bg-gray-100 text-gray-400 cursor-not-allowed select-none';
+            if (isDateDisabled(sqlDateStr)) {
+                // Disabled Day (Past or Beyond 6 Months / 1 Year)
+                dayDiv.className = 'w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center font-medium text-xs sm:text-sm bg-gray-100 text-gray-300 cursor-not-allowed select-none';
+                dayDiv.textContent = i;
             } else {
+                // Available Day
+                dayDiv.className = 'w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center font-bold text-xs sm:text-sm text-[#2A1001] cursor-pointer transition-all hover:bg-[#D7E3A5] hover:scale-110';
+                dayDiv.textContent = i;
+
+                if (i === today.getDate() && month === today.getMonth() && year === today.getFullYear()) {
+                    dayDiv.classList.add('border-2', 'border-[#667733]', 'bg-[#FDFCE9]');
+                }
+
+                if (selectedDateValue === sqlDateStr) {
+                    dayDiv.classList.add('bg-[#667733]', 'text-white');
+                }
+
                 dayDiv.addEventListener('click', () => {
                     document.querySelectorAll('#days > div').forEach(d => d.classList.remove('bg-[#667733]', 'text-white'));
                     dayDiv.classList.add('bg-[#667733]', 'text-white');
@@ -684,8 +706,25 @@ function initCalendar() {
         }
     }
 
-    if (prevButton) prevButton.addEventListener('click', () => { currentDate.setMonth(currentDate.getMonth() - 1); renderCalendar(currentDate); });
-    if (nextButton) nextButton.addEventListener('click', () => { currentDate.setMonth(currentDate.getMonth() + 1); renderCalendar(currentDate); });
+    if (prevButton) {
+        prevButton.addEventListener('click', () => {
+            const isCurrentMonth = (currentDate.getFullYear() === today.getFullYear() && currentDate.getMonth() === today.getMonth());
+            if (!isCurrentMonth) {
+                currentDate.setMonth(currentDate.getMonth() - 1);
+                renderCalendar(currentDate);
+            }
+        });
+    }
+
+    if (nextButton) {
+        nextButton.addEventListener('click', () => {
+            const isMaxMonth = (currentDate.getFullYear() > maxBookingDate.getFullYear()) || (currentDate.getFullYear() === maxBookingDate.getFullYear() && currentDate.getMonth() >= maxBookingDate.getMonth());
+            if (!isMaxMonth) {
+                currentDate.setMonth(currentDate.getMonth() + 1);
+                renderCalendar(currentDate);
+            }
+        });
+    }
 
     renderCalendar(currentDate);
 }
