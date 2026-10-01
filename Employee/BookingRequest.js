@@ -2,6 +2,31 @@ const authenticateToken = require('../authMiddleware');
 
 function registerBookingRequestRoutes(app, db, io) {
 
+    function getDurationForService(serviceLabel) {
+        const l = String(serviceLabel || '').toLowerCase();
+        if (l.includes('root') || l.includes('canal')) return 90;
+        if (l.includes('whiten')) return 60;
+        if (l.includes('clean') || l.includes('prophylaxis')) return 45;
+        if (l.includes('pasta') || l.includes('filling')) return 30;
+        return 30;
+    }
+
+    function calculateEndTime(timeSlot, durationMins) {
+        if (!timeSlot) return null;
+        const [hStr, mStr] = String(timeSlot).split(':');
+        const startMins = parseInt(hStr, 10) * 60 + parseInt(mStr || '0', 10);
+        const endMins = startMins + durationMins;
+        const endH = Math.floor(endMins / 60);
+        const endM = endMins % 60;
+        return `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}:00`;
+    }
+
+    function timeToMins(timeStr) {
+        if (!timeStr) return 0;
+        const [h, m] = String(timeStr).split(':').map(Number);
+        return h * 60 + (m || 0);
+    }
+
     // ── 1. GET /api/appointments — Booking requests & approved appointments list ──
     app.get('/api/appointments', authenticateToken, async (req, res) => {
         if (!['employee', 'admin'].includes(req.user.role)) {
@@ -18,7 +43,9 @@ function registerBookingRequestRoutes(app, db, io) {
                     a.queue_status,
                     a.appointment_date, 
                     a.time_slot,
+                    a.end_time AS end_time_slot,
                     a.reschedule_status,
+                    COALESCE(a.reschedule_count, 0) AS reschedule_count,
                     a.requested_date,
                     a.requested_time,
                     a.reschedule_reason,
@@ -49,7 +76,6 @@ function registerBookingRequestRoutes(app, db, io) {
             `;
             const params = [];
 
-            // FIX: Check if status is NOT 'all'
             if (status && status !== 'all') {
                 if (status === 'reschedule_requested') {
                     query += ' WHERE a.reschedule_status = \'requested\'';
@@ -77,7 +103,7 @@ function registerBookingRequestRoutes(app, db, io) {
 
         try {
             const [rows] = await db.query(
-                `SELECT appointment_id, appointment_date, time_slot
+                `SELECT appointment_id, appointment_date, time_slot, end_time AS end_time_slot
                  FROM appointments
                  WHERE appointment_status IN ('pending', 'approved')
                    AND appointment_date >= CURDATE()`
@@ -117,13 +143,14 @@ function registerBookingRequestRoutes(app, db, io) {
             }
 
             if (appointment_status === 'approved') {
+                const assignedEmployeeId = req.user.role === 'employee' ? req.user.user_id : null;
                 await connection.query(
                     `UPDATE appointments 
                      SET appointment_status = 'approved', 
                          employee_id = COALESCE(employee_id, ?),
                          queue_status = 'pending'
                      WHERE appointment_id = ?`,
-                    [req.user.user_id, appointmentId]
+                    [assignedEmployeeId, appointmentId]
                 );
             } else {
                 await connection.query(
@@ -147,7 +174,6 @@ function registerBookingRequestRoutes(app, db, io) {
 
             await connection.commit();
 
-            // Real-time broadcast
             if (io) {
                 io.emit('appointment-updated', { appointment_id: appointmentId, status: appointment_status });
             }
@@ -182,10 +208,11 @@ function registerBookingRequestRoutes(app, db, io) {
             await connection.beginTransaction();
 
             const [apptRows] = await connection.query(
-                `SELECT appointment_id, patient_id, appointment_date, time_slot,
-                        reschedule_status, requested_date, requested_time
-                 FROM appointments
-                 WHERE appointment_id = ? FOR UPDATE`,
+                `SELECT a.appointment_id, a.patient_id, a.appointment_date, a.time_slot,
+                        a.reschedule_status, a.requested_date, a.requested_time, s.label AS service_label
+                 FROM appointments a
+                 JOIN services s ON a.service_id = s.service_id
+                 WHERE a.appointment_id = ? FOR UPDATE`,
                 [appointmentId]
             );
 
@@ -201,34 +228,46 @@ function registerBookingRequestRoutes(app, db, io) {
             }
 
             if (action === 'approve') {
-                // Check if requested slot is already taken by another confirmed booking
-                const [conflict] = await connection.query(
-                    `SELECT appointment_id FROM appointments
+                const duration = getDurationForService(appt.service_label);
+                const reqStart = timeToMins(appt.requested_time);
+                const reqEnd = reqStart + duration;
+                const calculatedEnd = calculateEndTime(appt.requested_time, duration);
+
+                // Interval conflict check
+                const [existing] = await connection.query(
+                    `SELECT appointment_id, time_slot, end_time FROM appointments
                      WHERE appointment_date = ? 
-                       AND time_slot = ? 
                        AND appointment_status = 'approved'
                        AND appointment_id != ?`,
-                    [appt.requested_date, appt.requested_time, appointmentId]
+                    [appt.requested_date, appointmentId]
                 );
 
-                if (conflict.length > 0) {
+                const hasOverlap = existing.some(b => {
+                    const bStart = timeToMins(b.time_slot);
+                    const bEnd = b.end_time ? timeToMins(b.end_time) : bStart + 30;
+                    return reqStart < bEnd && reqEnd > bStart;
+                });
+
+                if (hasOverlap) {
                     await connection.rollback();
                     return res.status(409).json({ 
-                        message: 'Requested slot is already booked by another confirmed patient. Please use "Pick Other Slot".' 
+                        message: 'Requested slot overlaps with another confirmed patient. Please use "Pick Other Slot".' 
                     });
                 }
 
-                // Move schedule to requested date and clear request flag
+                // ✅ INCREMENTS RESCHEDULE COUNT UPON APPROVAL
                 await connection.query(
                     `UPDATE appointments 
                      SET appointment_date = requested_date,
                          time_slot = requested_time,
+                         end_time = ?,
                          reschedule_status = 'approved',
+                         reschedule_count = reschedule_count + 1,
                          requested_date = NULL,
                          requested_time = NULL,
                          reschedule_reason = NULL
                      WHERE appointment_id = ?`,
-                    [appointmentId]
+                    [calculatedEnd, appointmentId]
                 );
 
                 const notifMsg = `Your request to reschedule to ${appt.requested_date} at ${appt.requested_time} has been APPROVED!`;
@@ -239,7 +278,6 @@ function registerBookingRequestRoutes(app, db, io) {
                 );
 
             } else {
-                // Action is decline: keep original confirmed date, clear request flag
                 await connection.query(
                     `UPDATE appointments 
                      SET reschedule_status = 'declined',
@@ -261,7 +299,6 @@ function registerBookingRequestRoutes(app, db, io) {
 
             await connection.commit();
 
-            // Real-time broadcast
             if (io) {
                 io.emit('appointment-updated', { appointment_id: appointmentId });
             }
@@ -299,7 +336,10 @@ function registerBookingRequestRoutes(app, db, io) {
             await connection.beginTransaction();
 
             const [apptRows] = await connection.query(
-                'SELECT patient_id, appointment_status FROM appointments WHERE appointment_id = ? FOR UPDATE',
+                `SELECT a.patient_id, a.appointment_status, s.label AS service_label 
+                 FROM appointments a
+                 JOIN services s ON a.service_id = s.service_id
+                 WHERE a.appointment_id = ? FOR UPDATE`,
                 [appointmentId]
             );
             if (!apptRows.length) {
@@ -307,31 +347,44 @@ function registerBookingRequestRoutes(app, db, io) {
                 return res.status(404).json({ message: 'Appointment not found' });
             }
 
-            // Check conflicts
-            const [conflict] = await connection.query(
-                `SELECT appointment_id FROM appointments
+            const duration = getDurationForService(apptRows[0].service_label);
+            const slotStart = timeToMins(time_slot);
+            const slotEnd = slotStart + duration;
+            const calculatedEnd = calculateEndTime(time_slot, duration);
+
+            // Interval range conflict check
+            const [existing] = await connection.query(
+                `SELECT appointment_id, time_slot, end_time FROM appointments
                  WHERE appointment_date = ? 
-                   AND time_slot = ? 
                    AND appointment_status = 'approved'
                    AND appointment_id != ?`,
-                [appointment_date, time_slot, appointmentId]
+                [appointment_date, appointmentId]
             );
 
-            if (conflict.length > 0) {
+            const hasOverlap = existing.some(b => {
+                const bStart = timeToMins(b.time_slot);
+                const bEnd = b.end_time ? timeToMins(b.end_time) : bStart + 30;
+                return slotStart < bEnd && slotEnd > bStart;
+            });
+
+            if (hasOverlap) {
                 await connection.rollback();
-                return res.status(409).json({ message: 'This date and time slot is already occupied.' });
+                return res.status(409).json({ message: 'This time slot overlaps with another confirmed patient.' });
             }
 
+            // ✅ INCREMENTS RESCHEDULE COUNT ON DIRECT RESCHEDULE
             await connection.query(
                 `UPDATE appointments 
                  SET appointment_date = ?,
                      time_slot = ?,
+                     end_time = ?,
                      reschedule_status = 'approved',
+                     reschedule_count = reschedule_count + 1,
                      requested_date = NULL,
                      requested_time = NULL,
                      reschedule_reason = NULL
                  WHERE appointment_id = ?`,
-                [appointment_date, time_slot, appointmentId]
+                [appointment_date, time_slot, calculatedEnd, appointmentId]
             );
 
             const notifMsg = `Your appointment has been rescheduled by our clinic staff to ${appointment_date} at ${time_slot}.${reason ? ` Reason: ${reason}` : ''}`;
@@ -357,8 +410,6 @@ function registerBookingRequestRoutes(app, db, io) {
             connection.release();
         }
     });
-
-    
 }
 
 module.exports = registerBookingRequestRoutes;
