@@ -230,6 +230,7 @@
                     <i class="fa-solid fa-money-bill-wave"></i> Pay in Clinic (Cash)
                 </button>
             </div>
+            <!-- [PAYMONGO PATCH] ADDED: note explaining the redirect + 15-minute slot hold (matches HOLD_MINUTES in Services/paymongo.js) -->
             <p class="text-[11px] text-[#2A1001]/60 text-center leading-snug">
                 <i class="fa-solid fa-lock mr-1"></i>Pay Online opens PayMongo&rsquo;s secure page (GCash, Maya, card, QR Ph).
                 Your slot is held for 15 minutes while you pay.
@@ -237,6 +238,10 @@
         </div>
     </div>
 </div>
+
+<!-- [PAYMONGO PATCH] REMOVED the entire "2. ONLINE PAYMENT MODAL" (#online-payment-modal):
+     channel tabs for GCash/Maya/GoTyme/PayPal/Card, fake QR codes, card/e-wallet inputs,
+     #submitOnlineBookingBtn and #onlinePayAmountText. Payment now happens on PayMongo's page. -->
 
 <!-- ================= 3. VALIDATION MODAL ================= -->
 <div id="validation-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center hidden z-[70] p-4">

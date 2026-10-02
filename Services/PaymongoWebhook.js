@@ -7,6 +7,7 @@
 // because signature checking needs the raw, unparsed body.
 
 const express = require('express');
+// [PAYMONGO PATCH] FIXED require path: this file lives in Services/, so it needs '../Admin/...'
 const { logActivity } = require('../Admin/auditLogRoutes');
 const { verifyWebhookSignature, BLOCKING_SQL } = require('./paymongo');
 

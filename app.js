@@ -5,6 +5,10 @@ const cors = require("cors");
 const authRoutes = require("./auth");
 const path = require("path");
 const registerPatientProfileRoute = require("./Customer/CustomerProfile");
+const registerBookingRoute = require("./Customer/BookingRoutes");
+// [PAYMONGO PATCH] ADDED the next two requires (PaymentRoutes was never registered before)
+const registerPaymentRoutes = require("./Services/PaymentRoutes");
+const registerPaymongoWebhook = require("./Services/PaymongoWebhook");
 const registerHistoryRoutes = require("./Customer/HistoryRoutes");
 const registerEmployeeProfileRoute = require("./Employee/EmployeeProfile");
 const registerBookingRequestRoutes = require("./Employee/BookingRequest");
@@ -14,13 +18,6 @@ const registerMessagesRoutes = require("./MessagesRoutes");
 const authenticateToken = require("./authMiddleware");
 const registerDoctorScheduleRoutes = require('./Employee/doctorScheduleRoutes');
 const { registerActivityLogRoutes } = require('./Admin/auditLogRoutes');
-
-
-// payment stuff
-const registerPaymongoWebhook = require("./Services/PaymongoWebhook");
-const registerPaymentRoutes = require("./Services/PaymentRoutes");
-const registerBookingRoute = require("./Customer/BookingRoutes");
-
 
 // show IO in routes
 const http = require('http');
@@ -84,6 +81,7 @@ app.use('/api/auth/login', loginLimit);
 app.use('/api/auth', authRoutes);
 registerPatientProfileRoute(app, db);
 registerBookingRoute(app, db);
+// [PAYMONGO PATCH] ADDED: registers GET /api/payments/:id, PATCH .../mark-paid, POST .../refund
 registerPaymentRoutes(app, db);
 registerHistoryRoutes(app, db);
 registerEmployeeProfileRoute(app, db);
