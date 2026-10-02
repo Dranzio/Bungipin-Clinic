@@ -1,6 +1,8 @@
 const authenticateToken = require('../authMiddleware');
 const { logActivity } = require('../Admin/auditLogRoutes');
 const { sendAppointmentEmail } = require('../AppointmentEmails');
+const { createCheckoutSession, BLOCKING_SQL, HOLD_MINUTES } = require('../Services/paymongo');
+const MAX_ADVANCE_MONTHS = 6; // must match the limit used in Customer/Booking.js
 
 function getIp(req) {
     return req.ip || req.headers['x-forwarded-for'];
@@ -76,7 +78,7 @@ function registerBookingRoute(app, db) {
                  FROM appointments a
                           LEFT JOIN services s ON a.service_id = s.service_id
                  WHERE a.employee_id = ? AND a.appointment_date = ?
-                   AND a.appointment_status IN ('pending', 'approved')`,
+                   AND ${BLOCKING_SQL}`,
                 [doctorId, date]
             );
 
@@ -217,9 +219,9 @@ function registerBookingRoute(app, db) {
             // eli: update active count check to use BLOCKING_SQL so holds count against patient limits
             const [activeRows] = await connection.query(
                 `SELECT COUNT(*) AS active_count
-                 FROM appointments
-                 WHERE patient_id = ?
-                   AND appointment_status IN ('pending', 'approved')`,
+                 FROM appointments a
+                 WHERE a.patient_id = ?
+                   AND ${BLOCKING_SQL}`,
                 [patientId]
             );
 
@@ -275,10 +277,10 @@ function registerBookingRoute(app, db) {
             // Check for overlapping bookings inside the transaction
             // eli: updated query to use BLOCKING_SQL to block temporary "awaiting_payment"
             const [clashRows] = await connection.query(
-                `SELECT appointment_id FROM appointments
-                 WHERE employee_id = ? AND appointment_date = ?
-                   AND appointment_status IN ('pending', 'approved')
-                   AND time_slot < ? AND ? < end_time
+                `SELECT a.appointment_id FROM appointments a
+                 WHERE a.employee_id = ? AND a.appointment_date = ?
+                   AND ${BLOCKING_SQL}
+                   AND a.time_slot < ? AND ? < a.end_time
                      FOR UPDATE`,
                 [employeeId, appointment_date, endTime, time_slot]
             );
@@ -290,14 +292,13 @@ function registerBookingRoute(app, db) {
 
 
             // eli: insert appointment status as 'awaiting_payment' + hold_expires_at if online
-            const statusVal = isOnline ? 'awaiting_payment' : 'pending';
             const [result] = await connection.query(
                 `INSERT INTO appointments
                  (patient_id, employee_id, service_id, appointment_date, time_slot, end_time, appointment_status, hold_expires_at, queue_status, reschedule_status, reschedule_count, patient_note)
                  VALUES (?, ?, ?, ?, ?, ?, ?, ${isOnline ? 'DATE_ADD(NOW(), INTERVAL ? MINUTE)' : 'NULL'}, 'pending', 'none', 0, ?)`,
                 [
                     patientId, employeeId, allServiceIds[0], appointment_date, time_slot, endTime,
-                    isOnline ? 'awaiting_payment' : 'pending',
+                    'pending', // online bookings stay 'pending' + hold_expires_at until the webhook confirms payment
                     ...(isOnline ? [HOLD_MINUTES] : []),
                     patient_note || null
                 ]
@@ -323,6 +324,41 @@ function registerBookingRoute(app, db) {
                 notes: `Booked ${allServiceIds.length > 1 ? allServiceIds.length + ' services' : 'an appointment'} for ${appointment_date} at ${time_slot}.`,
                 ip_address: getIp(req)
             });
+
+            // Online: open a PayMongo Checkout Session for the held slot and return its URL.
+            // (The 'booked' email for online is sent by the webhook once payment is confirmed.)
+            if (isOnline) {
+                const base = (process.env.APP_BASE_URL || 'http://localhost:3000').replace(/\/$/, '');
+                try {
+                    const session = await createCheckoutSession({
+                        appointmentId,
+                        items: [{
+                            name: `Bungipin Dental Clinic - Appointment #${appointmentId} (${serviceRows.map(s => s.label).join(', ')})`,
+                            price: totalPrice
+                        }],
+                        successUrl: `${base}/Customer/Paymentsuccess.html?appointment_id=${appointmentId}`,
+                        cancelUrl: `${base}/Customer/Booking.html`
+                    });
+                    await db.query(
+                        `UPDATE payments SET paymongo_session_id = ?, checkout_url = ? WHERE appointment_id = ?`,
+                        [session.id, session.checkoutUrl, appointmentId]
+                    );
+                    return res.status(201).json({
+                        success: true,
+                        appointment_id: appointmentId,
+                        checkout_url: session.checkoutUrl,
+                        hold_minutes: HOLD_MINUTES
+                    });
+                } catch (payErr) {
+                    console.error('Checkout session error:', payErr.details ? JSON.stringify(payErr.details) : payErr);
+                    // Release the held slot immediately so the patient can try again.
+                    await db.query(
+                        `UPDATE appointments SET appointment_status = 'cancelled', hold_expires_at = NULL WHERE appointment_id = ?`,
+                        [appointmentId]
+                    );
+                    return res.status(502).json({ message: 'Could not start online payment. Please try again or choose Pay in Clinic.' });
+                }
+            }
 
             await sendAppointmentEmail(db, appointmentId, 'booked', {
                 // appointments only stores the first service; list them all in the email

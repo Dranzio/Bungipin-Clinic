@@ -569,3 +569,16 @@ INSERT INTO messages (sender_id, receiver_id, content, is_read) VALUES
 
 INSERT INTO notifications (user_id, type, title, message, appointment_id) VALUES
     (1, 'appointment_status', 'Appointment Approved', 'Your appointment on 2026-09-10 has been approved.', 1);
+    
+    
+    
+-- appointments: temporary "held while paying" status + hold timer
+ALTER TABLE appointments
+  MODIFY COLUMN appointment_status
+    ENUM('pending','approved','completed','cancelled','awaiting_payment') NOT NULL DEFAULT 'pending';
+ 
+-- payments: refund statuses + PayMongo ids
+ALTER TABLE payments
+  MODIFY COLUMN status ENUM('pending','paid','refund_pending','refunded') NOT NULL DEFAULT 'pending';
+ALTER TABLE payments ADD COLUMN paymongo_refund_id  VARCHAR(100) NULL;
+ALTER TABLE payments ADD COLUMN refunded_at         DATETIME     NULL;

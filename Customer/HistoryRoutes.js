@@ -1,6 +1,7 @@
 const authenticateToken = require('../authMiddleware');
 const { logActivity } = require('../Admin/auditLogRoutes');
 const { sendAppointmentEmail } = require('../AppointmentEmails');
+const { refundAfterCancel } = require('../Services/Refund');
 
 function getIp(req) {
     return req.ip || req.headers['x-forwarded-for'];
@@ -152,9 +153,18 @@ function registerHistoryRoutes(app, db, io) {
 
             await sendAppointmentEmail(db, appointmentId, 'cancelled', { cancelledBy: 'customer', reason });
 
+            // Refund AFTER the cancellation is committed, so a PayMongo failure never undoes it.
+            const refund = await refundAfterCancel(db, appointmentId, {
+                userId: req.user.user_id, note: reason, ip: getIp(req)
+            });
+            if (refund.status !== 'none' && io) {
+                io.emit('appointment-updated', { appointment_id: Number(appointmentId) });
+            }
+
             res.json({
-                message: 'Appointment cancelled successfully',
-                appointment_id: Number(appointmentId)
+                message: 'Appointment cancelled successfully.' + (refund.message ? ' ' + refund.message : ''),
+                appointment_id: Number(appointmentId),
+                refund_status: refund.status
             });
 
         } catch (err) {

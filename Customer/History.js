@@ -864,6 +864,23 @@ function openCancelModal(appointmentId) {
     if (customText) customText.value = '';
     if (reasonError) reasonError.classList.add('hidden');
 
+    // Refund notice: only when something was already paid
+    const refundNotice = document.getElementById('cancelRefundNotice');
+    const refundText = document.getElementById('cancelRefundNoticeText');
+    const appt = allAppointments.find(a => Number(a.appointment_id) === Number(appointmentId));
+    if (refundNotice && refundText) {
+        const paid = appt && ['paid', 'refund_pending'].includes(String(appt.payment_status || '').toLowerCase());
+        if (paid) {
+            const amt = Number(appt.amount || 0).toLocaleString('en-PH', { style: 'currency', currency: 'PHP' });
+            refundText.textContent = String(appt.method).toLowerCase() === 'online'
+                ? `You paid ${amt} online. Cancelling will automatically refund it to your original payment method.`
+                : `You paid ${amt} at the clinic. Please visit the clinic to receive your refund after cancelling.`;
+            refundNotice.classList.remove('hidden');
+        } else {
+            refundNotice.classList.add('hidden');
+        }
+    }
+
     cancelModal.classList.remove('hidden');
 
     if (confirmButton) {
