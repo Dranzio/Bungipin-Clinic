@@ -857,7 +857,6 @@ function openCancelModal(appointmentId) {
 
     if (!cancelModal) return;
 
-    // ❌ UNCHECK ALL RADIOS
     document.querySelectorAll('input[name="cancelReasonRadio"]').forEach(r => r.checked = false);
 
     if (customContainer) customContainer.classList.add('hidden');
@@ -869,7 +868,7 @@ function openCancelModal(appointmentId) {
     const refundText = document.getElementById('cancelRefundNoticeText');
     const appt = allAppointments.find(a => Number(a.appointment_id) === Number(appointmentId));
     if (refundNotice && refundText) {
-        const paid = appt && ['paid', 'refund_pending'].includes(String(appt.payment_status || '').toLowerCase());
+        const paid = appt && ['paid', 'refund_pending', 'pending'].includes(String(appt.payment_status || '').toLowerCase());
         if (paid) {
             const amt = Number(appt.amount || 0).toLocaleString('en-PH', { style: 'currency', currency: 'PHP' });
             refundText.textContent = String(appt.method).toLowerCase() === 'online'

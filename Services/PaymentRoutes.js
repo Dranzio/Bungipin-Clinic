@@ -177,7 +177,9 @@ function registerPaymentRoutes(app, db) {
                 const payments = session?.attributes?.payments || [];
                 // handlePaid falls back to payments[0], so only call it when PayMongo
                 // actually reports a paid payment.
-                if (payments.some(p => p.attributes?.status === 'paid')) {
+
+                // check this
+                if (payments.some(p => (p.attributes?.status?? p.status) === 'paid')) {
                     await handlePaid(db, session);
                 }
             } catch (err) {
@@ -253,6 +255,71 @@ function registerPaymentRoutes(app, db) {
         }
     });
 
+
+    // ── 3b. GET /api/payments — list for the receptionist dashboard ───────────
+    // Hides online bookings that are still unpaid (patient is on PayMongo's page),
+    // but keeps cancelled ones so paid/refunded/refund_pending rows stay visible.
+    app.get('/api/payments', authenticateToken, async (req, res) => {
+        if (!['employee', 'admin'].includes(req.user.role)) {
+            return res.status(403).json({ message: 'Staff only' });
+        }
+        try {
+            const [rows] = await db.query(
+                `SELECT a.appointment_id, a.appointment_date, a.time_slot, a.appointment_status,
+                        u.first_name AS patient_first_name, u.last_name AS patient_last_name,
+                        s.label AS service_label,
+                        p.payment_id, p.amount, p.amount AS price, p.payment_date, p.method,
+                        p.status AS payment_status
+                 FROM payments p
+                 JOIN appointments a ON a.appointment_id = p.appointment_id
+                 JOIN services s ON s.service_id = a.service_id
+                 JOIN users u ON u.user_id = a.patient_id
+                 WHERE NOT (p.method = 'online' AND p.status = 'pending')
+                 ORDER BY a.appointment_date DESC, a.time_slot DESC`
+            );
+            res.json(rows);
+        } catch (err) {
+            console.error('List payments error:', err);
+            res.status(500).json({ message: 'Internal Server Error' });
+        }
+    });
+
+    // ── 3c. POST /api/payments/:appointmentId/pay — dashboard "Confirm Payment" ─
+    // Cash / in-person card only. The amount always comes from the DB, never the client.
+    app.post('/api/payments/:appointmentId/pay', authenticateToken, async (req, res) => {
+        if (!['employee', 'admin'].includes(req.user.role)) {
+            return res.status(403).json({ message: 'Staff only' });
+        }
+        const appointmentId = Number(req.params.appointmentId);
+        if (!Number.isInteger(appointmentId) || appointmentId <= 0) {
+            return res.status(400).json({ message: 'Invalid appointment id' });
+        }
+        try {
+            const [rows] = await db.query('SELECT status, method FROM payments WHERE appointment_id = ?', [appointmentId]);
+            if (rows.length === 0) return res.status(404).json({ message: 'Payment record not found' });
+            if (rows[0].method === 'online') {
+                return res.status(400).json({ message: 'Online payments are confirmed automatically by PayMongo.' });
+            }
+            const [upd] = await db.query(
+                `UPDATE payments SET status = 'paid', paid_at = NOW(), payment_date = CURDATE()
+                 WHERE appointment_id = ? AND status = 'pending'`,
+                [appointmentId]
+            );
+            if (upd.affectedRows === 0) {
+                return res.status(409).json({ message: `Payment is already '${rows[0].status}'.` });
+            }
+            await logActivity(db, {
+                user_id: req.user.user_id, user_role: req.user.role,
+                action: 'PAYMENT_MARKED_PAID', target_table: 'payments', target_id: appointmentId,
+                notes: `Cash/card payment for appointment #${appointmentId} confirmed by staff.`,
+                ip_address: getIp(req)
+            });
+            res.json({ message: 'Payment accepted successfully' });
+        } catch (err) {
+            console.error('Pay error:', err);
+            res.status(500).json({ message: 'Internal Server Error' });
+        }
+    });
 
     // ── 4. POST /api/payments/:appointmentId/refund ───────────────────────────
     // Admin or receptionist issues a refund.

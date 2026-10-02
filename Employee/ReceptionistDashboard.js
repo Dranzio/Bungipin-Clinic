@@ -129,6 +129,7 @@ function renderPayments(appointments) {
     const statusConfig = {
       paid:     { bg: 'bg-[#E5EFD8]', text: 'text-[#4A5D23]', dot: 'text-[#4A5D23]', label: 'Paid' },
       pending:  { bg: 'bg-[#FDECC8]', text: 'text-[#C97B14]', dot: 'text-[#C97B14]', label: 'Pending' },
+      refund_pending: { bg: 'bg-[#DCE9FB]', text: 'text-[#1D4E9E]', dot: 'text-[#1D4E9E]', label: 'Refund Pending' },
       refunded: { bg: 'bg-[#FCE4E4]', text: 'text-[#C92A2A]', dot: 'text-[#C92A2A]', label: 'Refunded' }
     };
     const sc = statusConfig[appt.payment_status] || statusConfig.pending;
@@ -150,6 +151,12 @@ function renderPayments(appointments) {
         <button onclick="refundPayment(${appt.appointment_id})"
           class="bg-[#d8544e] hover:bg-[#d8544e] text-white font-bold px-4 py-1.5 rounded-full text-xs transition active:scale-95 inline-flex items-center gap-1.5 cursor-pointer shadow-sm">
           <i class="fa-solid fa-ban"></i> Refund
+        </button>`;
+    } else if (appt.payment_status === 'refund_pending') {
+      actionsHtml = `
+        <button onclick="refundPayment(${appt.appointment_id})"
+          class="bg-[#1D4E9E] hover:bg-[#173f80] text-white font-bold px-4 py-1.5 rounded-full text-xs transition active:scale-95 inline-flex items-center gap-1.5 cursor-pointer shadow-sm">
+          <i class="fa-solid fa-rotate"></i> Process / Check Refund
         </button>`;
     } else {
       actionsHtml = `<span class="text-gray-400 italic text-xs font-medium">—</span>`;
@@ -339,8 +346,10 @@ window.refundPayment = async function(appointmentId) {
     });
 
     if (response.ok) {
-      appt.payment_status = 'refunded';
+      const data = await response.json().catch(() => ({}));
+      appt.payment_status = data.status || 'refunded';
       applyFilters();
+      if (data.message) alert(data.message);
     } else {
       const data = await response.json();
       alert(`Error: ${data.message}`);
