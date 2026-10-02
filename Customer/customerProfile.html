@@ -15,14 +15,11 @@
     @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
     .font-poppins { font-family: 'Poppins', sans-serif; }
 
+    /* Only highlight the actual input box */
     .input-error {
       border-color: #ef4444 !important;
       background-color: #fef2f2 !important;
-    }
-    .container-error {
-      border-color: #ef4444 !important;
-      background-color: #fff5f5 !important;
-      box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2) !important;
+      box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.25) !important;
     }
   </style>
 </head>
@@ -209,7 +206,7 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-5">
 
           <!-- Pre-existing Health Conditions -->
-          <div id="healthConditionsContainer" class="flex flex-col gap-1.5 md:col-span-2 p-3 sm:p-4 rounded-2xl transition border border-transparent">
+          <div id="healthConditionsContainer" class="flex flex-col gap-1.5 md:col-span-2 p-3 sm:p-4 rounded-2xl transition">
             <div class="flex justify-between items-baseline">
               <label class="text-[11px] font-extrabold tracking-wider text-[#2A1001] uppercase">Pre-existing Health Conditions: <span class="text-red-500">* Required</span></label>
               <span class="text-[10px] text-[#4a5e3b]/80 italic">Select applicable or check None</span>
@@ -250,7 +247,7 @@
           </div>
 
           <!-- Past Surgeries -->
-          <div id="surgeriesContainer" class="flex flex-col gap-1.5 md:col-span-2 p-3 sm:p-4 rounded-2xl transition border border-transparent">
+          <div id="surgeriesContainer" class="flex flex-col gap-1.5 md:col-span-2 p-3 sm:p-4 rounded-2xl transition">
             <div class="flex justify-between items-baseline">
               <label class="text-[11px] font-extrabold tracking-wider text-[#2A1001] uppercase">Past Surgeries: <span class="text-red-500">* Required</span></label>
               <span class="text-[10px] text-[#4a5e3b]/80 italic">Select applicable or check None</span>
@@ -290,7 +287,7 @@
           </div>
 
           <!-- Lifestyle Factors -->
-          <div id="lifestyleContainer" class="flex flex-col gap-1.5 md:col-span-2 p-3 sm:p-4 rounded-2xl transition border border-transparent">
+          <div id="lifestyleContainer" class="flex flex-col gap-1.5 md:col-span-2 p-3 sm:p-4 rounded-2xl transition">
             <div class="flex justify-between items-baseline">
               <label class="text-[11px] font-extrabold tracking-wider text-[#2A1001] uppercase">Lifestyle Factors: <span class="text-red-500">* Required</span></label>
               <span class="text-[10px] text-[#4a5e3b]/80 italic">Select applicable or check None</span>
@@ -761,7 +758,6 @@
     renderAllergies(); renderPrescriptions();
 
     document.querySelectorAll('.input-error').forEach(el => el.classList.remove('input-error'));
-    document.querySelectorAll('.container-error').forEach(el => el.classList.remove('container-error'));
     document.querySelectorAll('[id$="Error"]').forEach(el => el.classList.add('hidden'));
   }
 
@@ -1035,14 +1031,13 @@
   // ══════════════════════════════════════════════════════
   const MAX_OTHER_ITEMS = 10;
 
-  function setupOtherChipList({ checkboxId, rowId, inputId, addBtnId, listId, limitId, containerId, errorId, itemTypeName, items }) {
+  function setupOtherChipList({ checkboxId, rowId, inputId, addBtnId, listId, limitId, errorId, itemTypeName, items }) {
     const checkbox  = document.getElementById(checkboxId);
     const row       = document.getElementById(rowId);
     const input     = document.getElementById(inputId);
     const addBtn    = document.getElementById(addBtnId);
     const list      = document.getElementById(listId);
     const limitEl   = document.getElementById(limitId);
-    const container = document.getElementById(containerId);
     const errorEl   = document.getElementById(errorId);
 
     const render = () => {
@@ -1057,7 +1052,6 @@
     const clearSectionError = () => {
       input.classList.remove('input-error');
       if (errorEl) { errorEl.textContent = ''; errorEl.classList.add('hidden'); }
-      if (container) container.classList.remove('container-error');
     };
 
     checkbox.addEventListener('change', function () {
@@ -1079,20 +1073,17 @@
         errorEl.textContent = '';
         errorEl.classList.add('hidden');
       }
-      if (container) container.classList.remove('container-error');
     });
 
     const addValue = () => {
       const val = sanitizeInput(input.value);
       if (!val) {
-        setFieldError(input, errorEl, `Please specify a ${itemTypeName} before adding.`);
-        if (container) container.classList.add('container-error');
+        setFieldError(input, errorEl, `Please type your other ${itemTypeName} and click '+ Add'.`);
         input.focus();
         return;
       }
       if (val.length < 2) {
         setFieldError(input, errorEl, `${itemTypeName.charAt(0).toUpperCase() + itemTypeName.slice(1)} must be at least 2 characters.`);
-        if (container) container.classList.add('container-error');
         input.focus();
         return;
       }
@@ -1130,7 +1121,10 @@
             input.value = '';
             render();
           }
-          if (items.length === 0) return false;
+          if (items.length === 0) {
+            setFieldError(input, errorEl, `Please type your other ${itemTypeName} and click '+ Add'.`);
+            return false;
+          }
         }
         clearSectionError();
         return true;
@@ -1149,7 +1143,6 @@
     addBtnId: 'addHealthConditionOtherBtn',
     listId: 'healthConditionOtherList',
     limitId: 'healthConditionLimit',
-    containerId: 'healthConditionsContainer',
     errorId: 'healthConditionError',
     itemTypeName: 'condition',
     items: healthConditionOthers
@@ -1162,7 +1155,6 @@
     addBtnId: 'addSurgeryOtherBtn',
     listId: 'surgeryOtherList',
     limitId: 'surgeryLimit',
-    containerId: 'surgeriesContainer',
     errorId: 'surgeryError',
     itemTypeName: 'surgery',
     items: surgeryOthers
@@ -1175,19 +1167,16 @@
     addBtnId: 'addLifeFactorOtherBtn',
     listId: 'lifeFactorOtherList',
     limitId: 'lifeFactorLimit',
-    containerId: 'lifestyleContainer',
     errorId: 'lifeFactorError',
     itemTypeName: 'lifestyle factor',
     items: lifeFactorOthers
   });
 
-  function setupNoneCheckbox({ noneId, checkboxSel, otherCheckboxId, otherRowId, otherHandler, otherItems, containerId, errorId }) {
+  function setupNoneCheckbox({ noneId, checkboxSel, otherCheckboxId, otherRowId, otherHandler, otherItems, errorId }) {
     const noneCb = document.getElementById(noneId);
-    const container = document.getElementById(containerId);
     const errorEl = document.getElementById(errorId);
 
     const clearError = () => {
-      if (container) container.classList.remove('container-error');
       if (errorEl) { errorEl.textContent = ''; errorEl.classList.add('hidden'); }
     };
 
@@ -1221,7 +1210,6 @@
     otherRowId: 'healthConditionOtherRow',
     otherHandler: healthConditionOtherHandler,
     otherItems: healthConditionOthers,
-    containerId: 'healthConditionsContainer',
     errorId: 'healthConditionError'
   });
 
@@ -1232,7 +1220,6 @@
     otherRowId: 'surgeryOtherRow',
     otherHandler: surgeryOtherHandler,
     otherItems: surgeryOthers,
-    containerId: 'surgeriesContainer',
     errorId: 'surgeryError'
   });
 
@@ -1243,7 +1230,6 @@
     otherRowId: 'lifeFactorOtherRow',
     otherHandler: lifeFactorOtherHandler,
     otherItems: lifeFactorOthers,
-    containerId: 'lifestyleContainer',
     errorId: 'lifeFactorError'
   });
 
@@ -1431,7 +1417,7 @@
   });
 
   // ══════════════════════════════════════════════════════
-  //  PDF UPLOADS & VIEWING (ALWAYS AVAILABLE)
+  //  PDF UPLOADS & VIEWING
   // ══════════════════════════════════════════════════════
   let uploadedPdfs = [];
 
@@ -1626,24 +1612,19 @@
   }
 
   // ══════════════════════════════════════════════════════
-  //  STRICT VALIDATION
+  //  STRICT VALIDATION (Only highlight input boxes)
   // ══════════════════════════════════════════════════════
   function validateCompleteForm() {
     let isValid = true;
     let firstInvalid = null;
 
-    function check(el, errEl, msg, containerEl = null) {
+    function check(el, errEl, msg) {
       setFieldError(el, errEl, msg);
-      if (containerEl) containerEl.classList.add('container-error');
       isValid = false;
-      if (!firstInvalid && (el || containerEl)) firstInvalid = el || containerEl;
+      if (!firstInvalid && el) firstInvalid = el;
     }
 
-    ['healthConditionsContainer','surgeriesContainer','lifestyleContainer'].forEach(id => {
-      document.getElementById(id)?.classList.remove('container-error');
-    });
-
-    // Birthday (Required)
+    // 1. Birthday (Required)
     const bday = birthdayInput.value;
     if (!bday) {
       check(birthdayInput, document.getElementById('birthdayError'), 'Birthday is required.');
@@ -1655,7 +1636,7 @@
       else setFieldError(birthdayInput, document.getElementById('birthdayError'), '');
     }
 
-    // Phone (Required)
+    // 2. Phone (Required)
     const ph = phoneInput.value.trim();
     if (!ph) {
       check(phoneInput, document.getElementById('phoneError'), 'Phone number is required.');
@@ -1665,7 +1646,7 @@
       setFieldError(phoneInput, document.getElementById('phoneError'), '');
     }
 
-    // Secondary Email (Optional)
+    // 3. Secondary Email (Optional)
     const sec = document.getElementById('secondary-email').value.trim();
     const pri = document.getElementById('email').value.trim();
     if (sec) {
@@ -1678,7 +1659,7 @@
       }
     }
 
-    // Password (8-64 characters if entered)
+    // 4. Password (8-64 characters if entered)
     if (newPassword.value) {
       if (newPassword.value.length < 8) {
         check(newPassword, document.getElementById('passwordError'), 'Password must be at least 8 characters.');
@@ -1695,40 +1676,49 @@
       }
     }
 
-    // 1. Health Conditions
+    // 5. Pre-existing Health Conditions
     const hcCount = document.querySelectorAll('.healthConditionCheckbox:checked').length;
     const hcNone  = document.getElementById('healthConditionNoneCheckbox').checked;
     const hcOther = document.getElementById('healthConditionOtherCheckbox').checked;
     const hcOtherVal = sanitizeInput(document.getElementById('healthConditionOtherInput').value);
-    if (hcCount === 0 && !hcNone && (!hcOther || (healthConditionOthers.length === 0 && !hcOtherVal))) {
-      check(null, document.getElementById('healthConditionError'), 'Pre-existing health conditions selection is required. Please choose your conditions or select "None".', document.getElementById('healthConditionsContainer'));
+    
+    if (hcCount === 0 && !hcNone && !hcOther) {
+      check(null, document.getElementById('healthConditionError'), 'Please select your pre-existing health conditions or check "None".');
+    } else if (hcOther && healthConditionOthers.length === 0 && !hcOtherVal) {
+      check(document.getElementById('healthConditionOtherInput'), document.getElementById('healthConditionError'), 'Please type your other condition and click "+ Add".');
     } else {
-      setFieldError(null, document.getElementById('healthConditionError'), '');
+      setFieldError(document.getElementById('healthConditionOtherInput'), document.getElementById('healthConditionError'), '');
     }
 
-    // 2. Past Surgeries
+    // 6. Past Surgeries
     const surgCount = document.querySelectorAll('.surgeryCheckbox:checked').length;
     const surgNone  = document.getElementById('surgeryNoneCheckbox').checked;
     const surgOther = document.getElementById('surgeryOtherCheckbox').checked;
     const surgOtherVal = sanitizeInput(document.getElementById('surgeryOtherInput').value);
-    if (surgCount === 0 && !surgNone && (!surgOther || (surgeryOthers.length === 0 && !surgOtherVal))) {
-      check(null, document.getElementById('surgeryError'), 'Past surgeries selection is required. Please choose your past surgeries or select "None".', document.getElementById('surgeriesContainer'));
+
+    if (surgCount === 0 && !surgNone && !surgOther) {
+      check(null, document.getElementById('surgeryError'), 'Please select your past surgeries or check "None".');
+    } else if (surgOther && surgeryOthers.length === 0 && !surgOtherVal) {
+      check(document.getElementById('surgeryOtherInput'), document.getElementById('surgeryError'), 'Please type your other surgery and click "+ Add".');
     } else {
-      setFieldError(null, document.getElementById('surgeryError'), '');
+      setFieldError(document.getElementById('surgeryOtherInput'), document.getElementById('surgeryError'), '');
     }
 
-    // 3. Lifestyle Factors
+    // 7. Lifestyle Factors
     const lfCount = document.querySelectorAll('.lifeFactorCheckbox:checked').length;
     const lfNone  = document.getElementById('lifeFactorNoneCheckbox').checked;
     const lfOther = document.getElementById('lifeFactorOtherCheckbox').checked;
     const lfOtherVal = sanitizeInput(document.getElementById('lifeFactorOtherInput').value);
-    if (lfCount === 0 && !lfNone && (!lfOther || (lifeFactorOthers.length === 0 && !lfOtherVal))) {
-      check(null, document.getElementById('lifeFactorError'), 'Lifestyle factors selection is required. Please choose applicable factors or select "None".', document.getElementById('lifestyleContainer'));
+
+    if (lfCount === 0 && !lfNone && !lfOther) {
+      check(null, document.getElementById('lifeFactorError'), 'Please select applicable lifestyle factors or check "None".');
+    } else if (lfOther && lifeFactorOthers.length === 0 && !lfOtherVal) {
+      check(document.getElementById('lifeFactorOtherInput'), document.getElementById('lifeFactorError'), 'Please type your other lifestyle factor and click "+ Add".');
     } else {
-      setFieldError(null, document.getElementById('lifeFactorError'), '');
+      setFieldError(document.getElementById('lifeFactorOtherInput'), document.getElementById('lifeFactorError'), '');
     }
 
-    // 4. Pregnancy Status (Mandatory for Females)
+    // 8. Pregnancy Status (Mandatory for Females)
     const sexVal = (document.getElementById('sex').value || '').trim().toLowerCase();
     const pregInput = document.getElementById('pregnancy-status');
     if (sexVal === 'female' || sexVal === 'f') {
@@ -1739,21 +1729,15 @@
       }
     }
 
-    // 5. "Others" Validations
-    if (!healthConditionOtherHandler.validate()) {
-      check(document.getElementById('healthConditionOtherInput'), document.getElementById('healthConditionError'), 'Please add the specified other condition.', document.getElementById('healthConditionsContainer'));
-    } else {
-      document.getElementById('healthConditionOtherInput').classList.remove('input-error');
+    // 9. Check if user typed into medication or allergen inputs without clicking "+ Add"
+    const pendingMed = sanitizeInput(document.getElementById('medicationNameInput').value);
+    if (pendingMed) {
+      check(document.getElementById('medicationNameInput'), document.getElementById('prescriptionError'), 'Please click "+ Add" to save this prescription or clear the box.');
     }
-    if (!surgeryOtherHandler.validate()) {
-      check(document.getElementById('surgeryOtherInput'), document.getElementById('surgeryError'), 'Please add the specified other surgery.', document.getElementById('surgeriesContainer'));
-    } else {
-      document.getElementById('surgeryOtherInput').classList.remove('input-error');
-    }
-    if (!lifeFactorOtherHandler.validate()) {
-      check(document.getElementById('lifeFactorOtherInput'), document.getElementById('lifeFactorError'), 'Please add the specified other lifestyle factor.', document.getElementById('lifestyleContainer'));
-    } else {
-      document.getElementById('lifeFactorOtherInput').classList.remove('input-error');
+
+    const pendingAllergen = sanitizeInput(document.getElementById('allergenInput').value);
+    if (pendingAllergen) {
+      check(document.getElementById('allergenInput'), document.getElementById('allergyError'), 'Please click "+ Add" to save this allergen or clear the box.');
     }
 
     if (!isValid && firstInvalid) {
@@ -1791,7 +1775,7 @@
     }
 
     if (!validateCompleteForm()) {
-      showNotification('error', 'Please answer all required medical sections and resolve errors before saving.');
+      showNotification('error', 'Please answer all required medical sections and resolve highlighted inputs before saving.');
       return;
     }
 
@@ -1837,11 +1821,6 @@
       setFormLocked(true);
       submitBtnText.textContent = 'Update Changes';
 
-      // Unlock the booking link immediately in this tab, rather than
-      // waiting on the 'profile_status_changed' socket event — Socket.IO
-      // rooms don't reliably work across Vercel's separate serverless
-      // instances, so the emit from the server can silently never reach
-      // this connection even though the save itself succeeded.
       if (typeof updateBookingLinkUI === 'function') {
         updateBookingLinkUI(Boolean(birthdayInput.value));
       }
@@ -1869,7 +1848,6 @@
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') { e.preventDefault(); form.requestSubmit(); }
   });
 </script>
-
 
 <script src="/InactivityTimer/InactivityTimer.js"></script>
 </body>
