@@ -71,22 +71,24 @@ CREATE TABLE admin_profiles (
        FOREIGN KEY (admin_id) REFERENCES users(user_id) ON DELETE CASCADE
 );
 
--- ================= PENDING REGISTRATIONS (OTP STAGING) =================
+-- ================= PENDING REGISTRATIONS (EMAIL-LINK STAGING) =================
+-- A signup waits here until the emailed confirmation link is opened. Only then
+-- does auth.js call sp_register_user to create the real `users` row.
+-- The raw token lives only in the email; just its SHA-256 hash is stored.
 CREATE TABLE pending_registrations (
-       id                 INT AUTO_INCREMENT PRIMARY KEY,
-       email              VARCHAR(255) NOT NULL,
-       password           VARCHAR(255) NOT NULL,
-       first_name         VARCHAR(100),
-       last_name          VARCHAR(100),
-       phone              VARCHAR(50),
-       sex                VARCHAR(20),
-       birthday           DATE,
-       otp_code           VARCHAR(10),
-       verification_token VARCHAR(255),
-       expires_at         DATETIME NOT NULL,
-       created_at         DATETIME DEFAULT CURRENT_TIMESTAMP,
-       INDEX idx_email (email),
-       INDEX idx_expires (expires_at)
+       pending_id     INT AUTO_INCREMENT PRIMARY KEY,
+       first_name     VARCHAR(50)  NOT NULL,
+       last_name      VARCHAR(50)  NOT NULL,
+       email          VARCHAR(150) NOT NULL,
+       phone          VARCHAR(15)  NOT NULL DEFAULT '',
+       password_hash  VARCHAR(255) NOT NULL,
+       sex            CHAR(1)      NOT NULL,
+       token_hash     CHAR(64)     NOT NULL,
+       expires_at     DATETIME     NOT NULL,
+       created_at     TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+       UNIQUE KEY uq_pending_email (email),
+       UNIQUE KEY uq_pending_token (token_hash),
+       INDEX idx_pending_expires (expires_at)
 );
 
 -- Public ID & Registration Procedure
@@ -229,20 +231,32 @@ CREATE TABLE appointments (
         created_at          TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (patient_id)  REFERENCES patient_profiles(patient_id) ON DELETE CASCADE,
         FOREIGN KEY (employee_id) REFERENCES employee_profiles(employee_id) ON DELETE SET NULL,
-        FOREIGN KEY (service_id)  REFERENCES services(service_id) ON DELETE RESTRICT
+        FOREIGN KEY (service_id)  REFERENCES services(service_id) ON DELETE RESTRICT,
+        INDEX idx_slot_lookup (employee_id, appointment_date, appointment_status),
+        INDEX idx_hold_expiry (appointment_status, hold_expires_at)
 );
 
 -- ================= PAYMENTS =================
+-- One row per appointment. Online payments are confirmed ONLY by the PayMongo
+-- webhook (PaymongoWebhook.js); cash/card rows are marked paid by staff.
+--   pending         -> waiting for payment
+--   paid            -> money received
+--   refund_pending  -> online payment arrived but the slot was already taken
+--   refunded        -> refund issued
 CREATE TABLE payments (
         payment_id           INT AUTO_INCREMENT PRIMARY KEY,
         appointment_id       INT NOT NULL UNIQUE,
         amount               DECIMAL(10,2) NOT NULL,
         payment_date         DATE,
+        paid_at              DATETIME NULL,
         method               ENUM('cash','card','online') NOT NULL,
-        status               ENUM('pending','paid','refunded') NOT NULL DEFAULT 'pending',
-        paymongo_session_id  VARCHAR(255) NULL,
+        status               ENUM('pending','paid','refund_pending','refunded') NOT NULL DEFAULT 'pending',
+        paymongo_session_id  VARCHAR(255) NULL,       -- cs_...  Checkout Session created for this appointment
+        paymongo_payment_id  VARCHAR(255) NULL,       -- pay_... set by the webhook; needed for refunds
         checkout_url         TEXT NULL,
-        FOREIGN KEY (appointment_id) REFERENCES appointments(appointment_id) ON DELETE CASCADE
+        FOREIGN KEY (appointment_id) REFERENCES appointments(appointment_id) ON DELETE CASCADE,
+        UNIQUE KEY uq_payments_session (paymongo_session_id),
+        INDEX idx_payments_status (status)
 );
 
 -- ================= DOCUMENTS, XRAYS & MESSAGES =================
@@ -544,8 +558,8 @@ INSERT INTO doctor_schedules (employee_id, day_of_week, start_time, end_time, br
 INSERT INTO appointments (patient_id, employee_id, service_id, appointment_date, time_slot, end_time, appointment_status, queue_status, reschedule_status, reschedule_count, patient_note) VALUES
     (1, 3, 2, '2026-09-10', '10:00:00', '10:45:00', 'approved', 'completed', 'none', 0, 'First-time patient');
 
-INSERT INTO payments (appointment_id, amount, payment_date, method, status) VALUES
-    (1, 1500.00, '2026-09-10', 'card', 'paid');
+INSERT INTO payments (appointment_id, amount, payment_date, paid_at, method, status) VALUES
+    (1, 1500.00, '2026-09-10', '2026-09-10 10:45:00', 'card', 'paid');
 
 INSERT INTO xrays (patient_id, appointment_id, uploaded_by, file_url) VALUES
     (1, 1, 3, '/xrays/patient1_visit1.png');

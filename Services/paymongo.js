@@ -5,12 +5,11 @@ const BASE = 'https://api.paymongo.com';
 const HOLD_MINUTES = 15;
 
 // Which appointments currently occupy a slot. Use with the table alias "a".
-// An 'awaiting_payment' row only blocks while its hold hasn't expired, so an
+// A 'pending' row only blocks while its hold hasn't expired, so an
 // abandoned checkout frees the slot automatically (no cron required).
-// [PAYMONGO FIX] The previous value was `(a.appointment_status IN ('pending','approved')` — an UNCLOSED
-// parenthesis and no awaiting_payment clause, which is a SQL syntax error wherever it is used.
-const BLOCKING_SQL = `(a.appointment_status IN ('pending','approved')
-    OR (a.appointment_status = 'awaiting_payment' AND a.hold_expires_at > NOW()))`;
+const BLOCKING_SQL = `(a.appointment_status = 'approved'
+    OR (a.appointment_status = 'pending'
+        AND (a.hold_expires_at IS NULL OR a.hold_expires_at > NOW())))`;
 
 function authHeader() {
     // Secret key is the Basic-auth username; the trailing colon = empty password.
@@ -56,11 +55,29 @@ async function createCheckoutSession({ appointmentId, items, successUrl, cancelU
 }
 
 /**
+ * Fetch a Checkout Session by id (used to double-check a payment when the
+ * webhook was missed). Uses PayMongo's documented "Retrieve a Checkout" call.
+ * Returns the session resource ({ id, attributes }).
+ */
+async function getCheckoutSession(sessionId) {
+    const res = await fetch(`${BASE}/v1/checkout_sessions/${encodeURIComponent(sessionId)}`, {
+        headers: { Authorization: authHeader() }
+    });
+    const json = await res.json();
+    if (!res.ok) {
+        const err = new Error('PayMongo checkout session lookup failed');
+        err.details = json;
+        throw err;
+    }
+    return json.data;
+}
+
+/**
  * Verify the Paymongo-Signature header against the RAW request body.
  * Format used here: "t=<timestamp>,te=<test sig>,li=<live sig>", where each
  * sig = HMAC-SHA256(webhookSecret, `${t}.${rawBody}`) as hex.
- * !! Confirm this against the webhook-verification section of PayMongo's docs
- * !! for your account before going live — I couldn't load that page.
+ * Matches PayMongo's "Securing a webhook" docs: use `te` for test-mode events
+ * and `li` for live-mode events.
  */
 function verifyWebhookSignature(rawBody, header) {
     const secret = process.env.PAYMONGO_WEBHOOK_SECRET;
@@ -83,4 +100,4 @@ function verifyWebhookSignature(rawBody, header) {
     );
 }
 
-module.exports = { BLOCKING_SQL, HOLD_MINUTES,createCheckoutSession, verifyWebhookSignature };
+module.exports = { BLOCKING_SQL, HOLD_MINUTES, createCheckoutSession, getCheckoutSession, verifyWebhookSignature };

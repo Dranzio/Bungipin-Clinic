@@ -1,8 +1,6 @@
 const authenticateToken = require('../authMiddleware');
 const { logActivity } = require('../Admin/auditLogRoutes');
-
-// paymongo import
-const { createCheckoutSession, BLOCKING_SQL, HOLD_MINUTES } = require('../Services/paymongo');
+const { sendAppointmentEmail } = require('../AppointmentEmails');
 
 function getIp(req) {
     return req.ip || req.headers['x-forwarded-for'];
@@ -70,22 +68,15 @@ function registerBookingRoute(app, db) {
                 });
             }
 
-            // Existing bookings for this dentist on this date block out the time
-            // they actually occupy (time_slot -> end_time), not just their exact
-            // start — a 90-minute booking at 9:00 must also block 9:30 and
-            // 10:00, not just 9:00 itself. Only 'pending'/'approved' hold a
-            // slot: cancelled releases it immediately, and 'completed' is
-            // necessarily in the past so can't collide with a future slot.
-            // duration_minutes is pulled in only as a fallback for any legacy
-            // row whose end_time wasn't set correctly.
+            // Existing bookings for this dentist on this date block out the time they occupy
 
             // eli: updated query to use BLOCKING_SQL to block temporary "awaiting_payment"
             const [bookedRows] = await db.query(
                 `SELECT a.time_slot, a.end_time, s.duration_minutes
-                FROM appointments a
-                LEFT JOIN services s ON a.service_id = s.service_id
-                WHERE a.employee_id = ? AND a.appointment_date = ?
-                   AND ${BLOCKING_SQL}`,
+                 FROM appointments a
+                          LEFT JOIN services s ON a.service_id = s.service_id
+                 WHERE a.employee_id = ? AND a.appointment_date = ?
+                   AND a.appointment_status IN ('pending', 'approved')`,
                 [doctorId, date]
             );
 
@@ -206,22 +197,29 @@ function registerBookingRoute(app, db) {
             : 'online';
         const isOnline = methodEnum === 'online';
 
+        // 2. Enforce Max Advance Booking Limit (e.g. 6 Months from today)
+        const maxAllowedDate = new Date();
+        maxAllowedDate.setMonth(maxAllowedDate.getMonth() + MAX_ADVANCE_MONTHS);
+        maxAllowedDate.setHours(23, 59, 59, 999);
+
+        if (appointmentDateTime > maxAllowedDate) {
+            return res.status(400).json({
+                message: `Appointments can only be scheduled up to ${MAX_ADVANCE_MONTHS} months in advance.`
+            });
+        }
 
         const connection = await db.getConnection();
 
         try {
             await connection.beginTransaction();
 
-            // Active-bookings cap: a patient sitting on several unresolved
-            // pending/approved requests at once gets blocked from queuing up
-            // more until staff act on (or the patient cancels) an existing one.
-
+            // Active-bookings cap (Max 3)
             // eli: update active count check to use BLOCKING_SQL so holds count against patient limits
             const [activeRows] = await connection.query(
                 `SELECT COUNT(*) AS active_count
-                FROM appointments a
-                WHERE a.patient_id = ?
-                    AND ${BLOCKING_SQL}`,
+                 FROM appointments
+                 WHERE patient_id = ?
+                   AND appointment_status IN ('pending', 'approved')`,
                 [patientId]
             );
 
@@ -232,13 +230,10 @@ function registerBookingRoute(app, db) {
                 });
             }
 
-            // Price AND duration both come from the database, never the
-            // client — look up every selected service in one go.
-
+            // Look up every selected service
+            // Price AND duration both come from the database, never the client — look up every selected service in one go
             // eli: select 'label" column with price n duration for paymongo checkout session
             const [serviceRows] = await connection.query(
-                // [PAYMONGO PATCH] FIXED column: the services table has `label` (no `service_name`),
-                // so the old COALESCE(service_name, ...) threw ER_BAD_FIELD_ERROR on every booking.
                 'SELECT service_id, label, price, duration_minutes, is_available FROM services WHERE service_id IN (?)',
                 [allServiceIds]
             );
@@ -259,9 +254,9 @@ function registerBookingRoute(app, db) {
             const [doctorRows] = await connection.query(
                 `SELECT ep.employee_id
                  FROM employee_profiles ep
-                 JOIN users u ON ep.employee_id = u.user_id
+                          JOIN users u ON ep.employee_id = u.user_id
                  WHERE ep.employee_id = ? AND ep.position = 'Dentist' AND u.account_status = 'active'
-                 FOR UPDATE`,
+                     FOR UPDATE`,
                 [employeeId]
             );
             if (doctorRows.length === 0) {
@@ -269,9 +264,7 @@ function registerBookingRoute(app, db) {
                 return res.status(404).json({ message: 'Selected dentist is not available' });
             }
 
-            // Compute the real end time this booking occupies, from the
-            // authoritative summed duration — not whatever the client
-            // estimated for the UI preview.
+            // Compute exact booking end time
             const [startH, startM] = time_slot.split(':').map(Number);
             const totalStartMins = startH * 60 + startM;
             const totalEndMins = totalStartMins + totalDuration;
@@ -279,23 +272,14 @@ function registerBookingRoute(app, db) {
             const endM = totalEndMins % 60;
             const endTime = `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}:00`;
 
-            // Re-check for an overlapping booking inside the transaction
-            // (FOR UPDATE) rather than relying only on a pre-transaction
-            // check — two requests hitting this at the same instant would
-            // otherwise both pass the frontend's earlier /available-slots
-            // check. This blocks by overlapping RANGE, not just an exact
-            // start-time match, since a multi-service booking must also
-            // block slots that start partway through it. 'completed'
-            // appointments are excluded since they're necessarily in the
-            // past and can't overlap a future slot being booked here.
-            
+            // Check for overlapping bookings inside the transaction
             // eli: updated query to use BLOCKING_SQL to block temporary "awaiting_payment"
             const [clashRows] = await connection.query(
-                `SELECT a.appointment_id FROM appointments a
-                WHERE a.employee_id = ? AND a.appointment_date = ?
-                AND ${BLOCKING_SQL}
-                AND a.time_slot < ? AND ? < a.end_time
-                FOR UPDATE`,
+                `SELECT appointment_id FROM appointments
+                 WHERE employee_id = ? AND appointment_date = ?
+                   AND appointment_status IN ('pending', 'approved')
+                   AND time_slot < ? AND ? < end_time
+                     FOR UPDATE`,
                 [employeeId, appointment_date, endTime, time_slot]
             );
             if (clashRows.length > 0) {
@@ -303,22 +287,8 @@ function registerBookingRoute(app, db) {
                 return res.status(409).json({ message: 'This time slot has just been reserved by another patient. Please choose a different slot.' });
             }
 
-            // employee_id is the dentist the patient actually selected and
-            // whose real schedule/availability the slot was validated
-            // against (see /api/doctors/:id/available-slots) — leaving this
-            // NULL meant the row never blocked that dentist's slot for
-            // anyone else. service_id keeps the first selected service as
-            // the appointment's primary record; the full duration/price
-            // across ALL selected services is still what's stored in
-            // end_time and payments.amount below.
-            //
-            // NOTE: queue_status / reschedule_status / reschedule_count
-            // aren't in the appointments schema I've seen so far — keeping
-            // them here since they look like part of this branch's
-            // reschedule feature, but please confirm these columns actually
-            // exist (and on main's copy of the table too) before running
-            // this, or the INSERT will fail with an unknown-column error.
-            
+
+
             // eli: insert appointment status as 'awaiting_payment' + hold_expires_at if online
             const statusVal = isOnline ? 'awaiting_payment' : 'pending';
             const [result] = await connection.query(
@@ -359,41 +329,10 @@ function registerBookingRoute(app, db) {
                 ip_address: getIp(req)
             });
 
-
-            // eli: generate paymongo checkout session if online payment; CHECK FOR URL CHANGE FOR HOSTING VERCEL AAAAA
-            if (isOnline) {
-                const base = process.env.APP_BASE_URL || 'http://localhost:3000';
-
-                try {
-                    const session = await createCheckoutSession({
-                        appointmentId,
-                        items: serviceRows.map(s => ({ name: s.label, price: s.price })),
-                        successUrl: `${base}/Customer/PaymentSuccess.html?appointment_id=${appointmentId}`,
-                        cancelUrl: `${base}/Customer/Booking.html`
-                    });
-
-                    await db.query(
-                        `UPDATE payments SET paymongo_session_id = ?, checkout_url = ? WHERE appointment_id = ?`,
-                        [session.id, session.checkoutUrl, appointmentId]
-                    );
-
-                    return res.status(201).json({
-                        success: true,
-                        appointment_id: appointmentId,
-                        checkout_url: session.checkoutUrl,
-                        hold_minutes: HOLD_MINUTES
-                    });
-                } catch (payErr) {
-                    console.error('Checkout session error:', payErr.details || payErr);
-                    // Release the held slot immediately if PayMongo API fails
-                    await db.query(
-                        `UPDATE appointments SET appointment_status = 'cancelled', hold_expires_at = NULL WHERE appointment_id = ?`,
-                        [appointmentId]
-                    );
-                    return res.status(502).json({ message: 'Could not start online payment. Please try again or choose Pay in Clinic.' });
-                }
-            }
-
+            await sendAppointmentEmail(db, appointmentId, 'booked', {
+                // appointments only stores the first service; list them all in the email
+                service: serviceRows.map(sv => sv.label).filter(Boolean).join(', ')
+            });
 
             res.status(201).json({
                 success: true,
@@ -409,6 +348,29 @@ function registerBookingRoute(app, db) {
             connection.release();
         }
     });
+
+    // Automatically cancel past pending appointments that were never attended/approved
+    async function autoCancelExpiredAppointments(db, io = null) {
+        try {
+            const [result] = await db.query(`
+                UPDATE appointments
+                SET appointment_status = 'cancelled',
+                    patient_note = CONCAT(COALESCE(patient_note, ''), ' [System: Auto-cancelled due to expired schedule]')
+                WHERE appointment_status = 'pending'
+                  AND (
+                    appointment_date < CURDATE()
+                        OR (appointment_date = CURDATE() AND end_time < CURTIME())
+                    )
+            `);
+
+            if (result.affectedRows > 0 && io) {
+                io.emit('appointment-updated');
+            }
+        } catch (err) {
+            console.error('Auto-cancel expired appointments error:', err);
+        }
+    }
+
 }
 
 module.exports = registerBookingRoute;
