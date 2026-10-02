@@ -32,7 +32,7 @@ function requireAdmin(req, res, next) {
 }
 
 /**
- * Strict Input Validation and Sanitizati/on for User Manag/ement
+ * Strict Input Validation and Sanitization for User Management
  */
 function validateUserInput(body, isCreate = false) {
     const clean = {};
@@ -74,14 +74,17 @@ function validateUserInput(body, isCreate = false) {
     }
     clean.phone = phone;
 
-    // 4. Creation-specific validations (Sex & Role)
-    if (isCreate) {
+    // 4. Sex Validation (Allowed on Create AND Edit)
+    if (isCreate || body.sex !== undefined) {
         const sex = typeof body.sex === 'string' ? body.sex.trim().toUpperCase() : '';
         if (!['M', 'F'].includes(sex)) {
-            return { error: "Please select a sex ('M' for Male or 'F' for Female)" };
+            return { error: "Please select a valid sex ('M' for Male or 'F' for Female)" };
         }
         clean.sex = sex;
+    }
 
+    // Role (only allowed on create)
+    if (isCreate) {
         const role = typeof body.role === 'string' ? body.role.trim().toLowerCase() : '';
         if (!['employee', 'admin'].includes(role)) {
             return { error: "Role must be 'employee' or 'admin'" };
@@ -132,10 +135,6 @@ function validateUserInput(body, isCreate = false) {
     return { data: clean };
 }
 
-// Single select shape for consistent frontend data
-// eli: REMOVED ep.specialization MUNA SO THE USERS CAN LOAD IN userManage.html
-// eli to eli: REMEMBER TO PUT IT BACK WHEN ADDED NA SA SCHEMA
-// nevermind 0.0
 const USER_SELECT = `
     SELECT u.user_id, u.public_id, u.first_name, u.last_name, u.email, u.phone,
            u.sex, u.role, u.account_status, u.is_locked, u.login_attempts, u.created_at,
@@ -261,7 +260,7 @@ function registerUserManagementRoutes(app, db) {
         }
     });
 
-    // PATCH /api/users/:id — Edit account details
+    // PATCH /api/users/:id — Edit account details (Supports updating Sex)
     app.patch('/api/users/:id', authenticateToken, requireAdmin, async (req, res) => {
         const userId = Number(req.params.id);
         if (!Number.isInteger(userId) || userId <= 0) {
@@ -271,7 +270,7 @@ function registerUserManagementRoutes(app, db) {
         const validation = validateUserInput(req.body, false);
         if (validation.error) return res.status(400).json({ message: validation.error });
 
-        const { first_name, last_name, email, phone, position, specialization, permission_level } = validation.data;
+        const { first_name, last_name, email, phone, sex, position, specialization, permission_level } = validation.data;
 
         const connection = await db.getConnection();
 
@@ -288,8 +287,8 @@ function registerUserManagementRoutes(app, db) {
             }
 
             await connection.query(
-                'UPDATE users SET first_name = ?, last_name = ?, email = ?, phone = ? WHERE user_id = ?',
-                [first_name, last_name, email, phone, userId]
+                'UPDATE users SET first_name = ?, last_name = ?, email = ?, phone = ?, sex = COALESCE(?, sex) WHERE user_id = ?',
+                [first_name, last_name, email, phone, sex || null, userId]
             );
 
             if (existing.role === 'employee' && position) {
@@ -595,14 +594,6 @@ function registerUserManagementRoutes(app, db) {
 
         try {
             console.log(`[Email Service] Dispatched temporary credentials to ${email} for User #${userId}`);
-
-            // When you add Nodemailer or SendGrid, place the send logic here:
-            // await mailTransport.sendMail({
-            //     from: '"Dental Clinic" <noreply@clinic.com>',
-            //     to: email,
-            //     subject: 'Your Clinic Account Temporary Credentials',
-            //     html: `<p>Hello ${name || 'User'},</p><p>Your temporary password is: <strong>${temp_password}</strong></p>`
-            // });
 
             await logActivity(db, {
                 user_id: req.user.user_id,

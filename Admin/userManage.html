@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- DENIED DIRECT PAGE ACCESS VI/A URL -->
+    <!-- DENIED DIRECT PAGE ACCESS VIA URL -->
     <script src="../pageProtection.js"></script>
     <link href="/output.css" rel="stylesheet">
     <title>User Management</title>
@@ -156,9 +156,22 @@
                     <input type="email" id="editEmail" readonly required maxlength="100" class="w-full h-10 px-4 rounded-full border border-[#2A1001]/20 outline-none bg-[#dedede] text-[#2c3e2b]/70 font-semibold text-sm transition cursor-not-allowed shadow-inner" />
                 </div>
 
-                <div class="mb-4">
-                    <label class="block text-xs font-bold text-[#2A1001] uppercase mb-1">Phone</label>
-                    <input type="tel" id="editPhone" pattern="^09\d{9}$" maxlength="11" readonly required class="w-full h-10 px-4 rounded-full border border-[#2A1001]/20 outline-none bg-[#dedede] text-[#2c3e2b]/70 font-semibold text-sm transition cursor-not-allowed shadow-inner" placeholder="09171234567" />
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="block text-xs font-bold text-[#2A1001] uppercase mb-1">Phone</label>
+                        <input type="tel" id="editPhone" pattern="^09\d{9}$" maxlength="11" readonly required class="w-full h-10 px-4 rounded-full border border-[#2A1001]/20 outline-none bg-[#dedede] text-[#2c3e2b]/70 font-semibold text-sm transition cursor-not-allowed shadow-inner" placeholder="09171234567" />
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-[#2A1001] uppercase mb-1">Sex</label>
+                        <div id="editSexContainer" class="flex flex-nowrap items-center justify-center gap-3 h-10 px-3 rounded-full bg-[#dedede] border border-[#2A1001]/20 shadow-inner transition">
+                            <label class="flex items-center gap-1.5 text-xs sm:text-sm text-[#2A1001] font-medium cursor-not-allowed whitespace-nowrap">
+                                <input type="radio" name="editSex" value="M" disabled class="w-4 h-4 shrink-0 accent-[#2A1001] cursor-not-allowed" /> Male
+                            </label>
+                            <label class="flex items-center gap-1.5 text-xs sm:text-sm text-[#2A1001] font-medium cursor-not-allowed whitespace-nowrap">
+                                <input type="radio" name="editSex" value="F" disabled class="w-4 h-4 shrink-0 accent-[#2A1001] cursor-not-allowed" /> Female
+                            </label>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="mb-4">
@@ -521,7 +534,7 @@
         const btn = document.getElementById('alertModalOkBtn');
 
         titleEl.textContent = String(title || 'Notification');
-        msgEl.textContent = String(message || '');
+        msgEl.innerHTML = String(message || '');
 
         if (type === 'error') {
             iconContainer.className = 'w-14 h-14 mx-auto mb-3.5 rounded-full flex items-center justify-center bg-red-100 text-red-600';
@@ -1240,6 +1253,20 @@
             el.classList.toggle('cursor-text', !locked);
         });
 
+        // Toggle Sex radio buttons lock state
+        const sexContainer = document.getElementById('editSexContainer');
+        if (sexContainer) {
+            sexContainer.classList.toggle('bg-[#dedede]', locked);
+            sexContainer.classList.toggle('bg-white', !locked);
+        }
+        document.querySelectorAll('input[name="editSex"]').forEach(r => {
+            r.disabled = locked;
+            r.classList.toggle('cursor-not-allowed', locked);
+            r.classList.toggle('cursor-pointer', !locked);
+            r.parentElement?.classList.toggle('cursor-not-allowed', locked);
+            r.parentElement?.classList.toggle('cursor-pointer', !locked);
+        });
+
         ['editPosition', 'editPermission'].forEach(id => {
             const el = document.getElementById(id);
             if (!el) return;
@@ -1277,6 +1304,12 @@
             document.getElementById('editLastName').value = originalUserSnapshot.last_name || '';
             document.getElementById('editEmail').value = originalUserSnapshot.email || '';
             document.getElementById('editPhone').value = originalUserSnapshot.phone || '';
+            
+            const sexUpper = (originalUserSnapshot.sex || '').toUpperCase();
+            document.querySelectorAll('input[name="editSex"]').forEach(r => {
+                r.checked = r.value === sexUpper;
+            });
+
             document.getElementById('editPosition').value = originalUserSnapshot.position || 'Dentist';
             setSelectedSpecializations('editSpecializationOption', originalUserSnapshot.specialization || '');
             document.getElementById('editPermission').value = originalUserSnapshot.permission_level || 'Regular Admin';
@@ -1329,6 +1362,12 @@
         document.getElementById('editPhone').value = u.phone || '';
         document.getElementById('editRole').value = u.role || '';
 
+        // Populate Sex in Edit modal
+        const sexUpper = (u.sex || '').toUpperCase();
+        document.querySelectorAll('input[name="editSex"]').forEach(r => {
+            r.checked = r.value === sexUpper;
+        });
+
         toggleEditPositionField(u.role, u.position, u.permission_level, u.specialization);
         setFormLocked(true);
 
@@ -1358,6 +1397,7 @@
         const lastName = document.getElementById('editLastName').value.trim();
         const email = document.getElementById('editEmail').value.trim();
         const phone = document.getElementById('editPhone').value.trim();
+        const selectedSexRadio = document.querySelector('input[name="editSex"]:checked');
 
         const nameRegex = /^[A-Za-zÀ-ÖØ-öø-ÿ]+([ '-][A-Za-zÀ-ÖØ-öø-ÿ]+)*$/;
         if (!nameRegex.test(firstName) || firstName.length < 2) {
@@ -1388,6 +1428,10 @@
             email: email,
             phone: phone
         };
+
+        if (selectedSexRadio) {
+            payload.sex = selectedSexRadio.value;
+        }
 
         if (user.role === 'employee') {
             payload.position = document.getElementById('editPosition').value;
@@ -1530,7 +1574,6 @@
     document.getElementById('createAccountBtn').addEventListener('click', () => {
         createAccountForm.reset();
 
-        // Ensure sex radio buttons and specialization checkboxes are unselected by default
         document.querySelectorAll('input[name="newSex"]').forEach(r => { r.checked = false; });
         document.querySelectorAll('input[name="newSpecializationOption"]').forEach(cb => { cb.checked = false; });
 
@@ -1684,9 +1727,8 @@
     // ================= GLOBAL CTRL + S KEYBOARD SHORTCUT =================
     window.addEventListener('keydown', function(e) {
         if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S')) {
-            e.preventDefault(); // Stop default browser page save
+            e.preventDefault();
 
-            // 1. Doctor Schedule Modal is open
             const scheduleModal = document.getElementById('doctorScheduleModal');
             if (scheduleModal && !scheduleModal.classList.contains('hidden')) {
                 const saveScheduleBtn = document.getElementById('saveScheduleBtn');
@@ -1696,7 +1738,6 @@
                 return;
             }
 
-            // 2. Edit Profile Modal is open and editing is active
             const editModal = document.getElementById('editModal');
             if (editModal && !editModal.classList.contains('hidden')) {
                 const submitGroup = document.getElementById('submitGroup');
@@ -1707,7 +1748,6 @@
                 return;
             }
 
-            // 3. Create Account Modal is open
             const createModal = document.getElementById('createModal');
             if (createModal && !createModal.classList.contains('hidden')) {
                 const saveCreateBtn = document.getElementById('saveCreateBtn');
@@ -1757,6 +1797,6 @@
     }
 </script>
 
-s<script src="/InactivityTimer/InactivityTimer.js"></script>
+<script src="/InactivityTimer/InactivityTimer.js"></script>
 </body>
 </html>
