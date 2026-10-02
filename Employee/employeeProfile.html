@@ -39,25 +39,71 @@
     }
 
     (async () => {
-      try {
-        const response = await fetch('/Taskbar/Employee_Task.html');
-        if (response.ok) {
-          const data = await response.text();
-          document.getElementById('sidebar-placeholder').innerHTML = data;
-          const currentPage = window.location.pathname.split("/").pop();
-          document.querySelectorAll('.nav-link').forEach(link => {
-            if (link.getAttribute('data-page') === currentPage) {
-              link.classList.add('bg-[#FDFCE9]');
+        try {
+            // Retrieve the user's role and position saved during login
+            let userRole = localStorage.getItem('userRole') || 'employee'; 
+            let userPosition = localStorage.getItem('userPosition');
+
+            // If userPosition is missing, fetch it from the API
+            if (!userPosition) {
+                const token = localStorage.getItem('userToken');
+                if (token) {
+                    try {
+                        const profileRes = await fetch('/api/employee-profile', {
+                            headers: { 'Authorization': `Bearer ${token}` }
+                        });
+                        if (profileRes.ok) {
+                            const profileData = await profileRes.json();
+                            if (profileData.position) {
+                                userPosition = profileData.position.toLowerCase();
+                                localStorage.setItem('userPosition', userPosition);
+                            }
+                        }
+                    } catch (e) {
+                        console.error('Failed to fetch position', e);
+                    }
+                }
             }
-          });
-          if (typeof initSidebar === 'function') {
-            initSidebar();
-          }
-          syncContentOffset();
+            
+            userPosition = userPosition || 'receptionist';
+            
+            let taskbarFile = '/Taskbar/Receptionist_Task.html';
+            
+            if (userRole === 'admin') {
+                taskbarFile = '/Taskbar/Admin_Task.html';
+            } else if (userRole === 'employee' || userRole === 'receptionist' || userRole === 'dentist') {
+                if (userPosition === 'dentist' || userRole === 'dentist') {
+                    taskbarFile = '/Taskbar/Dentist_Task.html';
+                } else {
+                    taskbarFile = '/Taskbar/Receptionist_Task.html';
+                }
+            }
+
+            // Fetch the assigned taskbar
+            let response = await fetch(taskbarFile);
+            
+            if (response.ok) {
+                const data = await response.text();
+                document.getElementById('sidebar-placeholder').innerHTML = data;
+                
+                // Highlight the active page in the sidebar
+                const currentPage = window.location.pathname.split("/").pop();
+                document.querySelectorAll('.nav-link').forEach(link => {
+                    if (link.getAttribute('data-page') === currentPage) {
+                        link.classList.add('bg-[#FDFCE9]');
+                    }
+                });
+                
+                if (typeof initSidebar === 'function') {
+                    initSidebar();
+                }
+                syncContentOffset();
+            } else {
+                console.warn(`Failed to load taskbar: ${taskbarFile}`);
+            }
+        } catch (error) {
+            console.log('Sidebar fallback:', error);
         }
-      } catch (error) {
-        console.log('Sidebar fallback:', error);
-      }
     })();
   </script>
 

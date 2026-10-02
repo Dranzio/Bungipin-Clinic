@@ -219,10 +219,17 @@
             }
 
             localStorage.setItem('userToken', data.token);
+            if (data.user) {
+                if (data.user.role) localStorage.setItem('userRole', data.user.role);
+                else localStorage.removeItem('userRole');
+                
+                if (data.user.position) localStorage.setItem('userPosition', data.user.position.toLowerCase());
+                else localStorage.removeItem('userPosition');
+            }
 
             // Redirect based on role — adjust these paths to match your actual folder structure
             if (data.user.role === 'employee') {
-                window.location.href = '../Employee/bookingRequest.html';
+                window.location.href = '../Employee/employeeProfile.html';
             } else if (data.user.role === 'admin') {
                 window.location.href = '../Admin/Index.html'; //important please dont lowercase
             } else {

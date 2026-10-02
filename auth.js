@@ -272,7 +272,12 @@ router.post('/login', async (req, res) => {
     }
 
     try {
-        const [rows] = await db.query('SELECT * FROM users WHERE email = ?', [email]);
+        const [rows] = await db.query(`
+            SELECT u.*, e.position 
+            FROM users u 
+            LEFT JOIN employee_profiles e ON u.user_id = e.employee_id 
+            WHERE u.email = ?
+        `, [email]);
         const user = rows[0];
 
         if (!user) {
@@ -397,7 +402,8 @@ router.post('/login', async (req, res) => {
                 public_id: user.public_id,
                 first_name: user.first_name,
                 last_name: user.last_name,
-                role: user.role
+                role: user.role,
+                position: user.position
             }
         });
     } catch (err) {
