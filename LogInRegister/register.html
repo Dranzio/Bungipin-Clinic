@@ -44,31 +44,35 @@
                 Let’s get you all set up to begin your journey with Bungipin Dental Clinic!
             </p>
 
-            <div class="flex flex-col sm:flex-row gap-4">
-                <div class="flex-1">
-                    <label class="text-sm md:text-[20px] block font-semibold text-[#2A1001] font-poppins mb-2">
-                        First Name: <span class="text-red-500">*</span>
-                    </label>
+<div class="flex flex-col sm:flex-row gap-4">
+    <div class="flex-1">
+        <label class="text-sm md:text-[20px] block font-semibold text-[#2A1001] font-poppins mb-2">
+            First Name: <span class="text-red-500">*</span>
+        </label>
+        <input type="text" id="first_name" name="first_name" required minlength="5"
+               pattern="[a-zA-Z\u00C0-\u017F\s'\\-.]{5,50}"
+               title="Letters, spaces, hyphens, apostrophes, and periods only (Min. 5 characters)"
+               class="w-full h-8 md:h-11 px-4 bg-white outline-none rounded-[30px] border border-gray-200 mb-4 md:mb-6"
+               placeholder="Bungie" maxlength="50" />
+    </div>
 
-                    <input type="text" id="first_name" name="first_name" required
-                           pattern="[a-zA-Z\u00C0-\u017F\s'\\-.]{1,50}"
-                           title="Letters, spaces, hyphens, apostrophes, and periods only"
-                           class="w-full h-8 md:h-11 px-4 bg-white outline-none rounded-[30px] border border-gray-200 mb-4 md:mb-12"
-                           placeholder="Bungie" maxlength="20" />
-                </div>
+    <div class="flex-1">
+        <label class="text-sm md:text-[20px] block font-semibold text-[#2A1001] font-poppins mb-2">
+            Last Name: <span class="text-red-500">*</span>
+        </label>
+        <input type="text" id="last_name" name="last_name" required minlength="5"
+               pattern="[a-zA-Z\u00C0-\u017F\s'\\-.]{5,50}"
+               title="Letters, spaces, hyphens, apostrophes, and periods only (Min. 5 characters)"
+               class="w-full h-8 md:h-11 px-4 bg-white outline-none rounded-[30px] border border-gray-200 mb-4 md:mb-6"
+               placeholder="Holmes" maxlength="50" />
+    </div>
+</div>
 
-                <div class="flex-1">
-                    <label class="text-sm md:text-[20px] block font-semibold text-[#2A1001] font-poppins mb-2">
-                        Last Name: <span class="text-red-500">*</span>
-                    </label>
+<!-- Warning message container for Name Fields -->
+<div id="nameWarning" class="text-red-700 text-xs md:text-sm font-poppins font-semibold mb-6 md:mb-8 hidden"></div>
 
-                    <input type="text" id="last_name" name="last_name" required
-                           pattern="[a-zA-Z\u00C0-\u017F\s'\\-.]{1,50}"
-                           title="Letters, spaces, hyphens, apostrophes, and periods only"
-                           class="w-full h-8 md:h-11 px-4 bg-white outline-none rounded-[30px] border border-gray-200 mb-4 md:mb-12"
-                           placeholder="Holmes" maxlength="20" />
-                </div>
-            </div>
+            <!-- NEW: Warning message container for Name Fields -->
+            <div id="nameWarning" class="text-red-700 text-xs md:text-sm font-poppins font-semibold mb-6 md:mb-8 hidden"></div>
 
             <div class="flex flex-col sm:flex-row gap-4">
                 <div class="flex-1">
@@ -96,24 +100,18 @@
 
             <div class="flex flex-col sm:flex-row gap-4">
                 <div class="flex-1">
-                    <label
-                            class="text-sm md:text-[20px] block font-semibold text-[#2A1001] font-poppins mb-2">
+                    <label class="text-sm md:text-[20px] block font-semibold text-[#2A1001] font-poppins mb-2">
                         Password: <span class="text-red-500">*</span>
                     </label>
 
-                    <div class="relative w-full mb-12 md:mb-14">
+                    <!-- Reduced mb-12 to mb-8 to make room for the checklist -->
+                    <div class="relative w-full mb-8">
+                        <input type="password" id="password_hash" name="password_hash" required minlength="8" maxlength="25"
+                            class="w-full h-8 md:h-11 px-4 pr-16 bg-white outline-none rounded-[30px] border border-gray-200"
+                            placeholder="12345678" />
 
-                        <input type="password" id="password_hash" name="password_hash"  required minlength="8" maxlength="25"
-                               class="w-full h-8 md:h-11 px-4 pr-16 bg-white outline-none rounded-[30px] border border-gray-200"
-                               placeholder="12345678"
-                        />
-
-                        <button
-                                type="button"
-                                id="ShowPass"
-                                aria-label="Show Password"
-                                class="absolute right-4 top-0 h-8 md:h-11 flex items-center cursor-pointer text-sm text-gray-500 hover:text-gray-700 font-medium"
-                        >
+                        <button type="button" id="ShowPass" aria-label="Show Password"
+                                class="absolute right-4 top-0 h-8 md:h-11 flex items-center cursor-pointer text-sm text-gray-500 hover:text-gray-700 font-medium">
                             Show
                         </button>
 
@@ -128,11 +126,17 @@
                             Strength:
                             <span id="PassStrength"></span>
                         </p>
-
                     </div>
 
-                    <div id="passwordWarning"
-                         class="text-red-700 text-xs md:text-sm font-poppins font-semibold mb-6 md:mb-12 hidden">
+                    <!-- NEW: Password Criteria Checklist -->
+                    <div id="passwordCriteria" class="mt-8 mb-6 md:mb-10 pl-2">
+                        <p class="text-sm md:text-base font-bold text-[#2A1001] font-poppins mb-2">Password Criteria:</p>
+                        <ul class="list-disc pl-5 text-xs md:text-sm font-poppins space-y-1">
+                            <li id="req-length" class="text-[#2A1001] transition-colors duration-200">Must exceed 8 characters</li>
+                            <li id="req-case" class="text-[#2A1001] transition-colors duration-200">Must have Upper and Lower case</li>
+                            <li id="req-num" class="text-[#2A1001] transition-colors duration-200">Must have numbers</li>
+                            <li id="req-spec" class="text-[#2A1001] transition-colors duration-200">Must have special characters</li>
+                        </ul>
                     </div>
                 </div>
 
@@ -148,6 +152,14 @@
 
                         <button type="button" id="ConShowEye" aria-label="Show Password"
                                 class="absolute right-4 top-1/2 -translate-y-1/2 cursor-pointer text-sm text-gray-500 hover:text-gray-700 font-medium">Show</button>
+                    </div>
+
+                    <div id="passwordWarning"
+                        class="text-red-700 text-xs md:text-sm font-poppins font-semibold mb-6 md:mb-12 hidden">
+                    </div>
+
+                    <div class="w-full flex justify-end">
+                        <div class="g-recaptcha" data-sitekey="6Le1oNotAAAAAMjJoXpkHuKwitySmmIIfWV2g-Mm"></div>
                     </div>
                 </div>
             </div>
@@ -172,11 +184,6 @@
                                class="w-4 h-4 accent-[#2A1001]" />
                         Female
                     </label>
-                </div>
-
-
-                <div class="w-full flex justify-end">
-                    <div class="g-recaptcha" data-sitekey="6LemONotAAAAAAvRRDvNvBEByKw1mywct8RWdTZY"></div>
                 </div>
             </div>
 
@@ -225,8 +232,9 @@
                     Clear Fields
                 </button>
 
-                <button type="button" id="DraftBtn"
+                <button type="button" id="DraftBtn" disabled
                         class="w-1/2 sm:w-[220px] text-sm md:text-[20px] font-bold py-2 px-4 rounded-full transition-all duration-200 ease-in-out text-center
+                        disabled:bg-[#808a92] disabled:text-[#2A1001] disabled:cursor-not-allowed disabled:shadow-none disabled:hover:scale-100 disabled:active:scale-100
                         bg-[#D5C04D] text-[#FDFCE9] shadow-lg hover:scale-105 hover:bg-[#FDFCE9] cursor-pointer hover:text-[#2A1001] hover:shadow-xl active:scale-95 active:bg-[#c2ae3b]">
                     Save Draft
                 </button>
@@ -438,6 +446,35 @@
                 }
             });
 
+            const fName = document.getElementById('first_name').value.trim();
+            const lName = document.getElementById('last_name').value.trim();
+            const nameWarning = document.getElementById('nameWarning');
+            let nameWarnMsg = "";
+            // 1. Check for minimum 5 characters
+            if ((fName.length > 0 && fName.length < 5) || (lName.length > 0 && lName.length < 5)) {
+                nameWarnMsg = "Names must be at least 5 characters long.";
+                allRequiredFilled = false;
+            } 
+            // 2. Check for 3+ repeating identical characters (e.g. "aaa")
+            else if (/(.)\1{2,}/.test(fName) || /(.)\1{2,}/.test(lName)) {
+                nameWarnMsg = "Names cannot contain 3 or more repeating characters (e.g., 'aaa').";
+                allRequiredFilled = false;
+            } 
+            // 3. Check for repetitive sequential patterns (e.g. "ababab")
+            else if (/(.{2,})\1{2,}/.test(fName) || /(.{2,})\1{2,}/.test(lName)) {
+                nameWarnMsg = "Names cannot contain repetitive patterns (e.g., 'ababab').";
+                allRequiredFilled = false;
+            }
+
+            // Display or hide the warning message
+            if (nameWarnMsg !== "") {
+                nameWarning.textContent = nameWarnMsg;
+                nameWarning.classList.remove('hidden');
+            } else {
+                nameWarning.textContent = "";
+                nameWarning.classList.add('hidden');
+            }
+
             const sexSelected = document.querySelector('input[name="sex"]:checked');
 
             if (!sexSelected) {
@@ -456,6 +493,16 @@
 
             const hasRepeatChar = /(.)\1{2,}/.test(passwordValue);
             const hasRepeatPattern = /(.{2,})\1{2,}/.test(passwordValue);
+            
+            const reqLength = document.getElementById('req-length');
+            const reqCase = document.getElementById('req-case');
+            const reqNum = document.getElementById('req-num');
+            const reqSpec = document.getElementById('req-spec');
+
+            if (reqLength) reqLength.className = hasMinLength ? 'text-green-600 transition-colors' : 'text-gray-500 transition-colors';
+            if (reqCase) reqCase.className = hasUpperLower ? 'text-green-600 transition-colors' : 'text-gray-500 transition-colors';
+            if (reqNum) reqNum.className = hasNumber ? 'text-green-600 transition-colors' : 'text-gray-500 transition-colors';
+            if (reqSpec) reqSpec.className = hasSpecialChar ? 'text-green-600 transition-colors' : 'text-gray-500 transition-colors';
 
             let strength = 0;
 
@@ -480,25 +527,21 @@
                 allRequiredFilled = false;
 
             } else if (passwordValue !== "" && hasRepeatChar){
-                warningMessage = "Password should not have repetitive characters";
+                warningMessage = "Password should not have repetitive characters";  
                 allRequiredFilled = false;
             } else if (passwordValue !== "" && hasRepeatPattern){
                 warningMessage = "Password should not have repetitive patterns";
                 allRequiredFilled = false;
             } else if (passwordValue !== "" && !hasMinLength) {
-                warningMessage = "Password must be at least 8 characters long.";
                 allRequiredFilled = false;
 
             } else if (passwordValue !== "" && !hasNumber) {
-                warningMessage = "Password must include at least one number.";
                 allRequiredFilled = false;
 
             }  else if (passwordValue !== "" && !hasSpecialChar) {
-                warningMessage = "Password must include at least one special character.";
                 allRequiredFilled = false;
 
             }   else if (passwordValue !== "" && !hasUpperLower) {
-                warningMessage = "Password must include uppercase and lowercase letters.";
                 allRequiredFilled = false;
 
             }   else if (confirmValue !== "" && !passwordsMatch) {
@@ -519,6 +562,7 @@
             }
 
             clearBtn.disabled = !hasAnyInput;
+            draftBtn.disabled = !hasAnyInput;
             createAccountBtn.disabled = !allRequiredFilled || strength < 3;
         }
 
