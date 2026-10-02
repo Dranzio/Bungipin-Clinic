@@ -1,4 +1,9 @@
 // ── BOOKING CONTROLLER (Clean 30-Min Intervals & Strict Specialization) ───────
+// [PAYMONGO PATCH] OVERVIEW — Online payment now goes through PayMongo's hosted
+// checkout (the server returns `checkout_url` and we redirect to it). The old
+// fake payment UI (typed-in GCash/Maya/GoTyme/PayPal/card forms + setTimeout)
+// was removed. Everything else (services, doctors, calendar, slots, cash
+// booking) is unchanged. Search this file for "[PAYMONGO PATCH]" to see each edit.
 const API_BASE_URL = window.BACKEND_API_BASE_URL || '';
 
 function escapeHtml(value) {
@@ -11,6 +16,10 @@ function sanitizeInput(str, maxLen = 100) {
     return String(str ?? '').trim().replace(/[<>]/g, '').slice(0, maxLen);
 }
 
+// [PAYMONGO PATCH] REMOVED here: isValidPHMobile, isValidEmail, isValidCardNumber,
+// isValidExpiry, isValidCVV, isValidCardLast4, isValidNameField. They only served
+// the removed fake payment forms (card/e-wallet details are now entered on
+// PayMongo's page, never on ours).
 // ── State Management ────────────────────────────────────────────────────────
 let availableServices = [];
 let availableDoctors  = [];
@@ -19,6 +28,7 @@ let selectedDoctorId  = null;
 let selectedDateValue = '';
 let selectedStartTime = '';
 let selectedEndTime   = '';
+// [PAYMONGO PATCH] REMOVED: `let currentPaymentChannel = 'gcash';` (channel is now picked on PayMongo's page).
 
 function getEstimatedDuration(service) {
     if (service.duration_minutes) return Number(service.duration_minutes);
@@ -69,6 +79,7 @@ document.addEventListener('DOMContentLoaded', () => {
     loadServices();
     loadDoctors();
     initBookingForm();
+    // [PAYMONGO PATCH] REMOVED: initPaymentChannels(); (the fake channel tabs no longer exist)
 });
 
 // ── 1. Load Services ────────────────────────────────────────────────────────
@@ -246,6 +257,7 @@ function updateLiveCalculations() {
 
     const displayTotal = document.getElementById('liveTotalDisplay');
     const displayDuration = document.getElementById('liveDurationDisplay');
+    // [PAYMONGO PATCH] REMOVED: `onlineAmountText` (#onlinePayAmountText lived in the deleted online-payment modal).
 
     if (displayTotal) displayTotal.textContent = `₱${totalAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
     if (displayDuration) displayDuration.textContent = formatDuration(totalMinutes);
@@ -568,6 +580,10 @@ function initCalendar() {
     renderCalendar(currentDate);
 }
 
+// [PAYMONGO PATCH] REMOVED the whole "7. Philippine Payment Channels" section:
+//   initPaymentChannels() and renderChannelContent() — fake GCash / Maya / GoTyme /
+//   PayPal / Card forms with fake QR codes and made-up merchant numbers. They never
+//   charged anyone. Replaced by PayMongo hosted checkout (see "9. Submit Appointment").
 // ── 8. Booking Form & Summary Modals ────────────────────────────────────────
 function initBookingForm() {
     const bookingForm           = document.getElementById('booking-form');
@@ -576,6 +592,9 @@ function initBookingForm() {
     const receiptContent        = document.getElementById('receipt-content');
     const payOnlineBtn          = document.getElementById('pay-online-btn');
     const payCashBtn            = document.getElementById('pay-cash-btn');
+    // [PAYMONGO PATCH] REMOVED consts: onlinePaymentModal, closeOnlinePaymentBtn,
+    // submitOnlineBookingBtn (their HTML was deleted from Booking.html).
+    // Also: cash calls were shortened from submitBookingToDatabase('cash', null, null) to ('cash').
 
     if (!bookingForm) return;
 
@@ -644,6 +663,7 @@ function initBookingForm() {
 
     if (closeModalBtn) closeModalBtn.addEventListener('click', () => receiptModal.classList.add('hidden'));
 
+    // [PAYMONGO PATCH] REPLACED the old "Pay Online" handler (it opened the fake modal).
     // Online payment: create the held booking, then send the patient to
     // PayMongo's hosted checkout. NO card / wallet details are collected here.
     if (payOnlineBtn) {
@@ -682,8 +702,13 @@ function initBookingForm() {
         });
     }
 
+    // [PAYMONGO PATCH] REMOVED from initBookingForm: the close-online-payment click
+    // handler and the entire submitOnlineBookingBtn handler (per-channel validation
+    // + `setTimeout(...)` fake payment + submitBookingToDatabase('online', channel, ref)).
 }
 
+// [PAYMONGO PATCH] REMOVED the "Validation Input Helpers" that only the fake forms used:
+// restrictToDigits, restrictToDigitsAndSpaces, restrictToExpiryFormat, restrictToNameChars.
 function showValidationModal(message, focusTarget = null) {
     const modal = document.getElementById('validation-modal');
     const text = document.getElementById('validation-modal-text');
@@ -733,6 +758,11 @@ function showSuccessModal({ date, time, doctorName, servicesLabel, amount }) {
 }
 
 // ── 9. Submit Appointment ───────────────────────────────────────────────────
+// [PAYMONGO PATCH] REWRITTEN: submitBookingToDatabase(method) now takes only 'cash' or
+// 'online'. It no longer sends payment_channel / payment_reference (the server and
+// PayMongo decide those). For 'online' it redirects to the returned checkout_url;
+// for 'cash' it shows the success modal as before. Also added resetPayOnlineBtn()
+// and 409 handling (slot taken -> refresh the slot list).
 function resetPayOnlineBtn() {
     const btn = document.getElementById('pay-online-btn');
     if (!btn) return;
