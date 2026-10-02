@@ -1,9 +1,6 @@
 const authenticateToken = require('../authMiddleware');
 const { logActivity } = require('../Admin/auditLogRoutes');
 const { sendAppointmentEmail } = require('../AppointmentEmails');
-// [PAYMONGO FIX] ADDED: these three were used below but never imported/defined (ReferenceError on every booking).
-const { createCheckoutSession, BLOCKING_SQL, HOLD_MINUTES } = require('../Services/paymongo');
-const MAX_ADVANCE_MONTHS = 6; // must match the limit used in Customer/Booking.js
 
 function getIp(req) {
     return req.ip || req.headers['x-forwarded-for'];
@@ -79,7 +76,7 @@ function registerBookingRoute(app, db) {
                  FROM appointments a
                           LEFT JOIN services s ON a.service_id = s.service_id
                  WHERE a.employee_id = ? AND a.appointment_date = ?
-                   AND ${BLOCKING_SQL}`, // [PAYMONGO FIX] was IN ('pending','approved'): live online holds now block the slot
+                   AND a.appointment_status IN ('pending', 'approved')`,
                 [doctorId, date]
             );
 
@@ -206,8 +203,8 @@ function registerBookingRoute(app, db) {
         maxAllowedDate.setHours(23, 59, 59, 999);
 
         if (appointmentDateTime > maxAllowedDate) {
-            return res.status(400).json({ 
-                message: `Appointments can only be scheduled up to ${MAX_ADVANCE_MONTHS} months in advance.` 
+            return res.status(400).json({
+                message: `Appointments can only be scheduled up to ${MAX_ADVANCE_MONTHS} months in advance.`
             });
         }
 
@@ -220,9 +217,9 @@ function registerBookingRoute(app, db) {
             // eli: update active count check to use BLOCKING_SQL so holds count against patient limits
             const [activeRows] = await connection.query(
                 `SELECT COUNT(*) AS active_count
-                 FROM appointments a
-                 WHERE a.patient_id = ?
-                   AND ${BLOCKING_SQL}`, // [PAYMONGO FIX] counts live holds toward the cap too
+                 FROM appointments
+                 WHERE patient_id = ?
+                   AND appointment_status IN ('pending', 'approved')`,
                 [patientId]
             );
 
@@ -278,11 +275,10 @@ function registerBookingRoute(app, db) {
             // Check for overlapping bookings inside the transaction
             // eli: updated query to use BLOCKING_SQL to block temporary "awaiting_payment"
             const [clashRows] = await connection.query(
-                // [PAYMONGO FIX] was IN ('pending','approved'): two patients could double-book a slot being paid for
-                `SELECT a.appointment_id FROM appointments a
-                 WHERE a.employee_id = ? AND a.appointment_date = ?
-                   AND ${BLOCKING_SQL}
-                   AND a.time_slot < ? AND ? < a.end_time
+                `SELECT appointment_id FROM appointments
+                 WHERE employee_id = ? AND appointment_date = ?
+                   AND appointment_status IN ('pending', 'approved')
+                   AND time_slot < ? AND ? < end_time
                      FOR UPDATE`,
                 [employeeId, appointment_date, endTime, time_slot]
             );
@@ -291,8 +287,8 @@ function registerBookingRoute(app, db) {
                 return res.status(409).json({ message: 'This time slot has just been reserved by another patient. Please choose a different slot.' });
             }
 
-            
-            
+
+
             // eli: insert appointment status as 'awaiting_payment' + hold_expires_at if online
             const statusVal = isOnline ? 'awaiting_payment' : 'pending';
             const [result] = await connection.query(
@@ -328,42 +324,6 @@ function registerBookingRoute(app, db) {
                 ip_address: getIp(req)
             });
 
-            // [PAYMONGO FIX] ADDED — THIS WAS THE MISSING PAYMONGO ROUTING. The booking route never called
-            // PayMongo and never returned `checkout_url`, so Pay Online had nowhere to redirect.
-            // Online: open a Checkout Session for the held slot and send the browser to it.
-            // (Returning here also means the "booked" email is only sent for cash; online gets
-            // its confirmation after the webhook marks it paid.)
-            if (isOnline) {
-                const base = (process.env.APP_BASE_URL || 'http://localhost:3000').replace(/\/$/, '');
-                try {
-                    const session = await createCheckoutSession({
-                        appointmentId,
-                        items: serviceRows.map(s => ({ name: s.label, price: s.price })),
-                        // File on disk is Customer/Paymentsuccess.html — exact case matters on Vercel/Linux.
-                        successUrl: `${base}/Customer/Paymentsuccess.html?appointment_id=${appointmentId}`,
-                        cancelUrl: `${base}/Customer/Booking.html`
-                    });
-                    await db.query(
-                        `UPDATE payments SET paymongo_session_id = ?, checkout_url = ? WHERE appointment_id = ?`,
-                        [session.id, session.checkoutUrl, appointmentId]
-                    );
-                    return res.status(201).json({
-                        success: true,
-                        appointment_id: appointmentId,
-                        checkout_url: session.checkoutUrl,
-                        hold_minutes: HOLD_MINUTES
-                    });
-                } catch (payErr) {
-                    console.error('Checkout session error:', payErr.details ? JSON.stringify(payErr.details) : payErr);
-                    // Release the held slot immediately so the patient can try again.
-                    await db.query(
-                        `UPDATE appointments SET appointment_status = 'cancelled', hold_expires_at = NULL WHERE appointment_id = ?`,
-                        [appointmentId]
-                    );
-                    return res.status(502).json({ message: 'Could not start online payment. Please try again or choose Pay in Clinic.' });
-                }
-            }
-
             await sendAppointmentEmail(db, appointmentId, 'booked', {
                 // appointments only stores the first service; list them all in the email
                 service: serviceRows.map(sv => sv.label).filter(Boolean).join(', ')
@@ -385,26 +345,26 @@ function registerBookingRoute(app, db) {
     });
 
     // Automatically cancel past pending appointments that were never attended/approved
-async function autoCancelExpiredAppointments(db, io = null) {
-    try {
-        const [result] = await db.query(`
-            UPDATE appointments
-            SET appointment_status = 'cancelled',
-                patient_note = CONCAT(COALESCE(patient_note, ''), ' [System: Auto-cancelled due to expired schedule]')
-            WHERE appointment_status = 'pending'
-              AND (
-                  appointment_date < CURDATE()
-                  OR (appointment_date = CURDATE() AND end_time < CURTIME())
-              )
-        `);
+    async function autoCancelExpiredAppointments(db, io = null) {
+        try {
+            const [result] = await db.query(`
+                UPDATE appointments
+                SET appointment_status = 'cancelled',
+                    patient_note = CONCAT(COALESCE(patient_note, ''), ' [System: Auto-cancelled due to expired schedule]')
+                WHERE appointment_status = 'pending'
+                  AND (
+                    appointment_date < CURDATE()
+                        OR (appointment_date = CURDATE() AND end_time < CURTIME())
+                    )
+            `);
 
-        if (result.affectedRows > 0 && io) {
-            io.emit('appointment-updated');
+            if (result.affectedRows > 0 && io) {
+                io.emit('appointment-updated');
+            }
+        } catch (err) {
+            console.error('Auto-cancel expired appointments error:', err);
         }
-    } catch (err) {
-        console.error('Auto-cancel expired appointments error:', err);
     }
-}
 
 }
 

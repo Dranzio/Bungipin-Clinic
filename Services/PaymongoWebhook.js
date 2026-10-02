@@ -9,6 +9,7 @@
 const express = require('express');
 const { logActivity } = require('../Admin/auditLogRoutes');
 const { verifyWebhookSignature, BLOCKING_SQL } = require('./paymongo');
+const { sendAppointmentEmail } = require('../AppointmentEmails');
 
 async function handlePaid(db, session) {
     const match = /^APPT-(\d+)$/.exec(session.attributes?.reference_number || '');
@@ -27,9 +28,9 @@ async function handlePaid(db, session) {
                     a.patient_id, a.appointment_status, a.employee_id,
                     a.appointment_date, a.time_slot, a.end_time
              FROM payments p
-             JOIN appointments a ON a.appointment_id = p.appointment_id
+                      JOIN appointments a ON a.appointment_id = p.appointment_id
              WHERE p.appointment_id = ?
-             FOR UPDATE`,
+                 FOR UPDATE`,
             [appointmentId]
         );
         if (rows.length === 0) { await conn.rollback(); return; }
@@ -58,7 +59,7 @@ async function handlePaid(db, session) {
              WHERE a.employee_id = ? AND a.appointment_date = ?
                AND a.appointment_id <> ? AND ${BLOCKING_SQL}
                AND a.time_slot < ? AND ? < a.end_time
-             FOR UPDATE`,
+                 FOR UPDATE`,
             [row.employee_id, row.appointment_date, appointmentId, row.end_time, row.time_slot]
         );
         const slotTaken = clash.length > 0;
@@ -86,9 +87,15 @@ async function handlePaid(db, session) {
             target_table: 'payments',
             target_id: appointmentId,
             notes: `PayMongo webhook: session ${session.id}, payment ${pay?.id}.` +
-                   (slotTaken ? ' Slot was taken after hold expiry — marked refund_pending.' : ''),
+                (slotTaken ? ' Slot was taken after hold expiry — marked refund_pending.' : ''),
             ip_address: null
         });
+
+        // Online bookings only count as "booked" once they're paid, so this is
+        // where the patient's booking-received email goes. (Never throws.)
+        if (!slotTaken) {
+            await sendAppointmentEmail(db, appointmentId, 'booked');
+        }
     } catch (err) {
         await conn.rollback();
         throw err;
@@ -134,3 +141,5 @@ function registerPaymongoWebhook(app, db) {
 }
 
 module.exports = registerPaymongoWebhook;
+// Also used by the reconcile route in PaymentRoutes.js.
+module.exports.handlePaid = handlePaid;
