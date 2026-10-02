@@ -1,10 +1,6 @@
-// ── BOOKING CONTROLLER (Clean 30-Min Intervals & Strict Specialization) ───────
-// [PAYMONGO PATCH] OVERVIEW — Online payment now goes through PayMongo's hosted
-// checkout (the server returns `checkout_url` and we redirect to it). The old
-// fake payment UI (typed-in GCash/Maya/GoTyme/PayPal/card forms + setTimeout)
-// was removed. Everything else (services, doctors, calendar, slots, cash
-// booking) is unchanged. Search this file for "[PAYMONGO PATCH]" to see each edit.
+// ── BOOKING CONTROLLER (Clean 30-Min Intervals, Strict Advance Limit & Slot Validation) ──
 const API_BASE_URL = window.BACKEND_API_BASE_URL || '';
+const MAX_ADVANCE_MONTHS = 6; // Limit booking to 6 months in advance
 
 function escapeHtml(value) {
     const div = document.createElement('div');
@@ -16,10 +12,6 @@ function sanitizeInput(str, maxLen = 100) {
     return String(str ?? '').trim().replace(/[<>]/g, '').slice(0, maxLen);
 }
 
-// [PAYMONGO PATCH] REMOVED here: isValidPHMobile, isValidEmail, isValidCardNumber,
-// isValidExpiry, isValidCVV, isValidCardLast4, isValidNameField. They only served
-// the removed fake payment forms (card/e-wallet details are now entered on
-// PayMongo's page, never on ours).
 // ── State Management ────────────────────────────────────────────────────────
 let availableServices = [];
 let availableDoctors  = [];
@@ -28,7 +20,6 @@ let selectedDoctorId  = null;
 let selectedDateValue = '';
 let selectedStartTime = '';
 let selectedEndTime   = '';
-// [PAYMONGO PATCH] REMOVED: `let currentPaymentChannel = 'gcash';` (channel is now picked on PayMongo's page).
 
 function getEstimatedDuration(service) {
     if (service.duration_minutes) return Number(service.duration_minutes);
@@ -79,7 +70,6 @@ document.addEventListener('DOMContentLoaded', () => {
     loadServices();
     loadDoctors();
     initBookingForm();
-    // [PAYMONGO PATCH] REMOVED: initPaymentChannels(); (the fake channel tabs no longer exist)
 });
 
 // ── 1. Load Services ────────────────────────────────────────────────────────
@@ -104,13 +94,13 @@ async function loadServices() {
         }
     } catch {
         availableServices = [
-            { service_id: 1, label: 'Dental Checkup & Consultation', price: 500, duration_minutes: 30, required_specialization: 'General Dentist', icon: '../assets/Checkup.png' },
-            { service_id: 2, label: 'Oral Prophylaxis (Cleaning)', price: 1500, duration_minutes: 45, required_specialization: 'General Dentist', icon: '../assets/cleaning.png' },
-            { service_id: 3, label: 'Tooth Restoration (Pasta)', price: 1200, duration_minutes: 30, required_specialization: 'General Dentist', icon: '../assets/pasta.png' },
-            { service_id: 4, label: 'Laser Teeth Whitening', price: 4500, duration_minutes: 60, required_specialization: 'General Dentist', icon: '../assets/whitening.png' },
-            { service_id: 5, label: 'Braces Installation / Adjustment', price: 3500, duration_minutes: 60, required_specialization: 'Orthodontist', icon: '../assets/logo.png' },
-            { service_id: 6, label: 'Root Canal Treatment', price: 6500, duration_minutes: 90, required_specialization: 'Endodontist', icon: '../assets/logo.png' },
-            { service_id: 7, label: 'Impacted Wisdom Tooth Surgery', price: 5000, duration_minutes: 60, required_specialization: 'Oral Surgeon', icon: '../assets/logo.png' }
+            { service_id: 1, label: 'Dental Checkup & Consultation', price: 500, duration_minutes: 30, required_specialization: 'General Dentist', description: 'Comprehensive oral examination and diagnostic consultation.', icon: '../assets/Checkup.png' },
+            { service_id: 2, label: 'Oral Prophylaxis (Cleaning)', price: 1500, duration_minutes: 45, required_specialization: 'General Dentist', description: 'Professional teeth cleaning to remove plaque and tartar buildup.', icon: '../assets/cleaning.png' },
+            { service_id: 3, label: 'Tooth Restoration (Pasta)', price: 1200, duration_minutes: 30, required_specialization: 'General Dentist', description: 'Composite tooth filling to restore decayed or chipped teeth.', icon: '../assets/pasta.png' },
+            { service_id: 4, label: 'Laser Teeth Whitening', price: 4500, duration_minutes: 60, required_specialization: 'General Dentist', description: 'Advanced laser technology for professional shade brightening.', icon: '../assets/whitening.png' },
+            { service_id: 5, label: 'Braces Installation / Adjustment', price: 3500, duration_minutes: 60, required_specialization: 'Orthodontist', description: 'Orthodontic alignment and bracket adjustments.', icon: '../assets/logo.png' },
+            { service_id: 6, label: 'Root Canal Treatment', price: 6500, duration_minutes: 90, required_specialization: 'Endodontist', description: 'Therapy to treat infected tooth pulp and save the natural tooth.', icon: '../assets/logo.png' },
+            { service_id: 7, label: 'Impacted Wisdom Tooth Surgery', price: 5000, duration_minutes: 60, required_specialization: 'Oral Surgeon', description: 'Minor oral surgical extraction for impacted third molars.', icon: '../assets/logo.png' }
         ];
         renderServiceCards();
     }
@@ -125,7 +115,7 @@ function fallbackIcon(label) {
     return '../assets/logowithtitle.png';
 }
 
-// ── 2. Render Services (DOCTOR-FIRST FILTERING) ─────────────────────────────
+// ── 2. Render Services ──────────────────────────────────────────────────────
 function renderServiceCards() {
     const serviceGrid = document.getElementById('service-grid');
     if (!serviceGrid) return;
@@ -149,7 +139,7 @@ function renderServiceCards() {
 
         if (!isCompatible && selectedDoctor) {
             // 🔴 RED BANNER — INCOMPATIBLE WITH CURRENT DOCTOR
-            card.className = `flex flex-col w-full max-w-[240px] h-[270px] justify-between items-center text-center rounded-2xl border-2 border-dashed border-red-400 bg-red-50/50 transition-all duration-200 cursor-not-allowed p-4 pt-7 relative shadow-sm opacity-70 select-none overflow-hidden`;
+            card.className = `flex flex-col w-full max-w-[240px] h-[285px] justify-between items-center text-center rounded-2xl border-2 border-dashed border-red-400 bg-red-50/50 transition-all duration-200 cursor-not-allowed p-4 pt-7 relative shadow-sm opacity-70 select-none overflow-hidden`;
 
             card.innerHTML = `
                 <div class="absolute -top-0.5 inset-x-0 bg-red-600 text-white text-[9px] font-black uppercase tracking-wider py-0.5 text-center shadow-sm">
@@ -160,7 +150,7 @@ function renderServiceCards() {
                     <i class="fa-regular fa-clock text-[9px]"></i> ${duration}m
                 </div>
 
-                <h3 class="font-extrabold text-sm sm:text-base break-words w-full text-gray-600 line-clamp-2 px-2 mt-4">
+                <h3 class="font-extrabold text-sm sm:text-base break-words w-full text-gray-600 line-clamp-2 px-1 mt-4">
                     ${escapeHtml(service.label)}
                 </h3>
 
@@ -172,14 +162,13 @@ function renderServiceCards() {
                 </div>
             `;
 
-            // ⚠️ BLOCKS SELECTION
             card.addEventListener('click', () => {
                 showValidationModal(`Cannot add "${service.label}".\n\nDr. ${selectedDoctor.name} is a ${doctorSpec}. This procedure requires a ${reqSpec}.\n\nPlease select a ${reqSpec} from the dentist dropdown above to book this service.`);
             });
 
         } else {
             // ✅ COMPATIBLE / ACTIVE CARD
-            card.className = `flex flex-col w-full max-w-[240px] h-[270px] justify-between items-center text-center rounded-2xl border-2 transition-all duration-200 cursor-pointer p-4 pt-7 relative shadow-sm hover:scale-[1.02] overflow-hidden ${
+            card.className = `flex flex-col w-full max-w-[240px] h-[285px] justify-between items-center text-center rounded-2xl border-2 transition-all duration-200 cursor-pointer p-4 pt-7 relative shadow-sm hover:scale-[1.02] overflow-hidden ${
                 isSelected 
                     ? 'bg-[#D7E3A5] border-[#667733] ring-2 ring-[#667733]' 
                     : 'bg-white border-black hover:bg-[#F7F5EE]'
@@ -194,28 +183,73 @@ function renderServiceCards() {
                     <i class="fa-regular fa-clock text-[9px]"></i> ${duration}m
                 </div>
 
-                <h3 class="font-extrabold text-sm sm:text-base break-words w-full text-[#2A1001] line-clamp-2 px-2 mt-5">
+                <h3 class="font-extrabold text-sm sm:text-base break-words w-full text-[#2A1001] line-clamp-2 px-1 mt-4">
                     ${escapeHtml(service.label)}
                 </h3>
 
                 <img src="${imgSrc}" class="w-16 h-16 object-contain my-1" alt="${escapeHtml(service.label)}" onerror="this.src='../assets/logowithtitle.png'">
 
-                <div class="w-full pt-2 border-t border-[#2A1001]/10 flex justify-between items-center px-2">
+                <!-- Styled #D3DCBE View Details Button -->
+                <button type="button" class="viewServiceDetailBtn bg-[#D3DCBE] hover:bg-[#c4cfab] text-[#2A1001] px-3.5 py-1 rounded-full text-xs font-extrabold transition shadow-xs flex items-center gap-1.5 cursor-pointer mb-1 z-10 active:scale-95" data-service-id="${service.service_id}">
+                    <i class="fa-solid fa-circle-info text-[#667733]"></i> View Details
+                </button>
+
+                <div class="w-full pt-1.5 border-t border-[#2A1001]/10 flex justify-between items-center px-2">
                     <span class="text-[10px] font-bold text-[#2A1001]/60 uppercase">Price:</span>
                     <span class="font-black text-sm text-[#2A1001]">₱${Number(service.price).toLocaleString()}</span>
                 </div>
             `;
 
-            card.addEventListener('click', () => toggleServiceSelection(service));
+            card.addEventListener('click', (e) => {
+                if (e.target.closest('.viewServiceDetailBtn')) return;
+                toggleServiceSelection(service);
+            });
         }
 
         serviceGrid.appendChild(card);
     });
 
+    // View Details Modal Trigger
+    document.querySelectorAll('.viewServiceDetailBtn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const sid = btn.dataset.serviceId;
+            const serv = availableServices.find(s => s.service_id == sid);
+            if (serv) openServiceDetailModal(serv);
+        });
+    });
+
     updateLiveCalculations();
 }
 
-// ── 3. Toggle Service Selection (SERVICE-FIRST FILTERING) ───────────────────
+function openServiceDetailModal(service) {
+    const modal = document.getElementById('service-detail-modal');
+    if (!modal) return;
+
+    document.getElementById('modalServiceTitle').textContent = service.label;
+    document.getElementById('modalServiceSpec').textContent = `Specialization: ${service.required_specialization || 'General Dentist'}`;
+    document.getElementById('modalServiceDesc').textContent = service.description || 'Standard high-quality dental care procedure carried out with clinical equipment.';
+    document.getElementById('modalServiceDuration').textContent = formatDuration(getEstimatedDuration(service));
+    document.getElementById('modalServicePrice').textContent = `₱${Number(service.price).toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
+
+    const selectBtn = document.getElementById('modalServiceSelectBtn');
+    const isSelected = selectedServices.some(s => s.service_id == service.service_id);
+    selectBtn.textContent = isSelected ? 'Deselect Service' : 'Select This Service';
+    selectBtn.className = `mt-2 w-full py-2.5 font-bold rounded-full transition shadow-md cursor-pointer text-sm ${isSelected ? 'bg-red-600 hover:bg-red-700 text-white' : 'bg-[#667733] hover:bg-[#556022] text-white'}`;
+
+    selectBtn.onclick = () => {
+        toggleServiceSelection(service);
+        modal.classList.add('hidden');
+    };
+
+    modal.classList.remove('hidden');
+}
+
+document.getElementById('close-service-detail')?.addEventListener('click', () => {
+    document.getElementById('service-detail-modal').classList.add('hidden');
+});
+
+// ── 3. Toggle Service Selection ─────────────────────────────────────────────
 function toggleServiceSelection(service) {
     const index = selectedServices.findIndex(s => s.service_id == service.service_id);
     const duration = getEstimatedDuration(service);
@@ -224,7 +258,6 @@ function toggleServiceSelection(service) {
     if (index > -1) {
         selectedServices.splice(index, 1);
     } else {
-        // Block if currently selected doctor cannot perform this service
         if (selectedDoctorId) {
             const currentDoc = availableDoctors.find(d => d.doctor_id == selectedDoctorId);
             if (currentDoc && !doctorCanPerformService(currentDoc.specialization, reqSpec)) {
@@ -242,7 +275,6 @@ function toggleServiceSelection(service) {
         });
     }
 
-    // 💡 Filters Doctor Dropdown according to selected services
     populateDoctorDropdown();
     renderServiceCards();
 
@@ -257,7 +289,6 @@ function updateLiveCalculations() {
 
     const displayTotal = document.getElementById('liveTotalDisplay');
     const displayDuration = document.getElementById('liveDurationDisplay');
-    // [PAYMONGO PATCH] REMOVED: `onlineAmountText` (#onlinePayAmountText lived in the deleted online-payment modal).
 
     if (displayTotal) displayTotal.textContent = `₱${totalAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
     if (displayDuration) displayDuration.textContent = formatDuration(totalMinutes);
@@ -268,7 +299,7 @@ function updateLiveCalculations() {
     }
 }
 
-// ── 4. Load & Populate Doctor Dropdown (SERVICE-FIRST FILTER) ───────────────
+// ── 4. Load Doctors ─────────────────────────────────────────────────────────
 async function loadDoctors() {
     try {
         const token = localStorage.getItem('userToken');
@@ -351,7 +382,6 @@ function initDoctorSelection() {
 
         const currentDoc = availableDoctors.find(d => d.doctor_id == selectedDoctorId);
 
-        // 🧹 Clean up incompatible services when switching doctors
         if (currentDoc) {
             const beforeCount = selectedServices.length;
             selectedServices = selectedServices.filter(s => 
@@ -370,7 +400,7 @@ function initDoctorSelection() {
     });
 }
 
-// ── 5. Dynamic Time Slots Fetcher (CLEAN 30-MIN INTERVALS PRESERVED) ─────────
+// ── 5. Dynamic Time Slots Fetcher ───────────────────────────────────────────
 async function fetchAvailableSlotsForDoctor(doctorId, dateString) {
     const container = document.getElementById('timeSlotsContainer');
     if (!container) return;
@@ -480,7 +510,7 @@ function renderDynamicSlots(container, slots, durationMinutes) {
                 renderDynamicSlots(container, slots, durationMinutes);
             });
         } else {
-            btn.className = 'flex flex-col w-full py-2 px-3 bg-gray-100 rounded-2xl border border-gray-200 items-center justify-center text-center text-gray-400 text-xs cursor-not-allowed opacity-60 select-none';
+            btn.className = 'flex flex-col w-full py-2 px-3 bg-gray-100 rounded-2xl border border-gray-200 items-center justify-center text-center text-gray-400 text-xs cursor-not-allowed opacity-60 select-none pointer-events-none';
             btn.innerHTML = `
                 <span class="text-xs font-semibold line-through">${format12Hour(slot.time_slot)}</span>
                 <span class="text-[9px] text-gray-400 font-medium">${escapeHtml(slot.reason || 'Unavailable')}</span>
@@ -509,14 +539,10 @@ function initCalendar() {
     ];
 
     let currentDate = new Date();
-    let today = new Date();
+    const today = new Date();
 
-    function isPastDate(dateString) {
-        const selectedDay = new Date(`${dateString}T00:00:00`);
-        const currentDay = new Date();
-        currentDay.setHours(0, 0, 0, 0);
-        return selectedDay < currentDay;
-    }
+    const maxDate = new Date(today);
+    maxDate.setMonth(maxDate.getMonth() + MAX_ADVANCE_MONTHS);
 
     if (PNote && CurrentCount) {
         PNote.addEventListener('input', function () {
@@ -534,6 +560,18 @@ function initCalendar() {
         if (!daysContainer) return;
         daysContainer.innerHTML = '';
 
+        if (prevButton) {
+            const isCurrentMonth = (year === today.getFullYear() && month === today.getMonth());
+            prevButton.style.opacity = isCurrentMonth ? '0.3' : '1';
+            prevButton.style.pointerEvents = isCurrentMonth ? 'none' : 'auto';
+        }
+
+        if (nextButton) {
+            const isMaxMonth = (year > maxDate.getFullYear()) || (year === maxDate.getFullYear() && month >= maxDate.getMonth());
+            nextButton.style.opacity = isMaxMonth ? '0.3' : '1';
+            nextButton.style.pointerEvents = isMaxMonth ? 'none' : 'auto';
+        }
+
         const prevMonthLastDay = new Date(year, month, 0).getDate();
         for (let i = firstDay; i > 0; i--) {
             const dayDiv = document.createElement('div');
@@ -543,21 +581,31 @@ function initCalendar() {
         }
 
         for (let i = 1; i <= lastDay; i++) {
+            const cellDate = new Date(year, month, i);
+            const isPast = cellDate < new Date(today.getFullYear(), today.getMonth(), today.getDate());
+            const isBeyondLimit = cellDate > maxDate;
+            const isDisabled = isPast || isBeyondLimit;
+
             const dayDiv = document.createElement('div');
-            dayDiv.className = 'w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center font-bold text-xs sm:text-sm text-[#2A1001] cursor-pointer transition-all hover:bg-[#D7E3A5] hover:scale-110';
             dayDiv.textContent = i;
 
-            if (i === today.getDate() && month === today.getMonth() && year === today.getFullYear()) {
-                dayDiv.classList.add('border-2', 'border-[#667733]', 'bg-[#FDFCE9]');
-            }
-
-            const formattedMonth = String(month + 1).padStart(2, '0');
-            const formattedDay = String(i).padStart(2, '0');
-            const sqlDateStr = `${year}-${formattedMonth}-${formattedDay}`;
-
-            if (isPastDate(sqlDateStr)) {
-                dayDiv.className = 'w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center font-medium text-xs sm:text-sm bg-gray-100 text-gray-400 cursor-not-allowed select-none';
+            if (isDisabled) {
+                dayDiv.className = 'w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center font-medium text-xs sm:text-sm bg-gray-50 text-gray-300 cursor-not-allowed select-none';
             } else {
+                dayDiv.className = 'w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center font-bold text-xs sm:text-sm text-[#2A1001] cursor-pointer transition-all hover:bg-[#D7E3A5] hover:scale-110';
+
+                if (i === today.getDate() && month === today.getMonth() && year === today.getFullYear()) {
+                    dayDiv.classList.add('border-2', 'border-[#667733]', 'bg-[#FDFCE9]');
+                }
+
+                const formattedMonth = String(month + 1).padStart(2, '0');
+                const formattedDay = String(i).padStart(2, '0');
+                const sqlDateStr = `${year}-${formattedMonth}-${formattedDay}`;
+
+                if (selectedDateValue === sqlDateStr) {
+                    dayDiv.classList.add('bg-[#667733]', 'text-white');
+                }
+
                 dayDiv.addEventListener('click', () => {
                     document.querySelectorAll('#days > div').forEach(d => d.classList.remove('bg-[#667733]', 'text-white'));
                     dayDiv.classList.add('bg-[#667733]', 'text-white');
@@ -580,11 +628,7 @@ function initCalendar() {
     renderCalendar(currentDate);
 }
 
-// [PAYMONGO PATCH] REMOVED the whole "7. Philippine Payment Channels" section:
-//   initPaymentChannels() and renderChannelContent() — fake GCash / Maya / GoTyme /
-//   PayPal / Card forms with fake QR codes and made-up merchant numbers. They never
-//   charged anyone. Replaced by PayMongo hosted checkout (see "9. Submit Appointment").
-// ── 8. Booking Form & Summary Modals ────────────────────────────────────────
+// ── 8. Booking Form & Summary Modals (With Subtotal & 12% VAT Breakdown) ─────
 function initBookingForm() {
     const bookingForm           = document.getElementById('booking-form');
     const receiptModal          = document.getElementById('receipt-modal');
@@ -592,9 +636,6 @@ function initBookingForm() {
     const receiptContent        = document.getElementById('receipt-content');
     const payOnlineBtn          = document.getElementById('pay-online-btn');
     const payCashBtn            = document.getElementById('pay-cash-btn');
-    // [PAYMONGO PATCH] REMOVED consts: onlinePaymentModal, closeOnlinePaymentBtn,
-    // submitOnlineBookingBtn (their HTML was deleted from Booking.html).
-    // Also: cash calls were shortened from submitBookingToDatabase('cash', null, null) to ('cash').
 
     if (!bookingForm) return;
 
@@ -621,16 +662,20 @@ function initBookingForm() {
         const noteVal = sanitizeInput(document.getElementById('PNote')?.value, 250) || 'None';
         const docObj  = availableDoctors.find(d => d.doctor_id == selectedDoctorId);
         const doctorName = docObj ? docObj.name : 'Attending Dentist';
+        
+        // 💰 Subtotal & 12% VAT Computation
         const totalAmount = selectedServices.reduce((sum, s) => sum + s.price, 0);
+        const subtotal = totalAmount / 1.12; // Net of VAT
+        const vatAmount = totalAmount - subtotal; // 12% Value Added Tax
         const totalMinutes = selectedServices.reduce((sum, s) => sum + (s.duration_minutes || 30), 0);
 
         const servicesListHtml = selectedServices.map(s => `
-            <div class="flex justify-between items-center py-1 text-xs sm:text-sm border-b border-black/10">
-                <div>
-                    <span class="font-bold text-[#2A1001]">${escapeHtml(s.label)}</span>
+            <div class="flex justify-between items-center py-1 text-xs sm:text-sm border-b border-black/10 gap-2">
+                <div class="min-w-0">
+                    <span class="font-bold text-[#2A1001] break-words">${escapeHtml(s.label)}</span>
                     <span class="text-[10px] text-gray-500 ml-1">(${s.duration_minutes || 30}m)</span>
                 </div>
-                <span class="font-black text-[#2A1001]">₱${s.price.toLocaleString()}</span>
+                <span class="font-black text-[#2A1001] shrink-0">₱${s.price.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
             </div>
         `).join('');
 
@@ -647,14 +692,25 @@ function initBookingForm() {
                 ${servicesListHtml}
             </div>
 
-            <div class="flex justify-between items-center pt-2 border-t border-black/20 text-sm sm:text-base font-black text-[#667733]">
-                <span>Total Amount Due:</span>
-                <span>₱${totalAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
+            <!-- 🧾 Tax & Subtotal Breakdown -->
+            <div class="border-t border-black/15 pt-2 flex flex-col gap-1 text-xs">
+                <div class="flex justify-between items-center text-[#2A1001]/80">
+                    <span>Subtotal (VAT Exclusive):</span>
+                    <span class="font-bold">₱${subtotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                </div>
+                <div class="flex justify-between items-center text-[#2A1001]/80">
+                    <span>Value Added Tax (12% VAT):</span>
+                    <span class="font-bold">₱${vatAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                </div>
+                <div class="flex justify-between items-center pt-1.5 border-t border-black/20 text-sm sm:text-base font-black text-[#667733]">
+                    <span>Total Amount Due (VAT Inclusive):</span>
+                    <span>₱${totalAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                </div>
             </div>
 
             <div class="bg-white/80 p-2 sm:p-2.5 rounded-xl border border-black/10 text-xs mt-1">
                 <span class="font-bold">Patient Note:</span>
-                <p class="italic text-[#2A1001]/80 mt-0.5">${escapeHtml(noteVal)}</p>
+                <p class="italic text-[#2A1001]/80 mt-0.5 break-words">${escapeHtml(noteVal)}</p>
             </div>
         `;
 
@@ -663,9 +719,6 @@ function initBookingForm() {
 
     if (closeModalBtn) closeModalBtn.addEventListener('click', () => receiptModal.classList.add('hidden'));
 
-    // [PAYMONGO PATCH] REPLACED the old "Pay Online" handler (it opened the fake modal).
-    // Online payment: create the held booking, then send the patient to
-    // PayMongo's hosted checkout. NO card / wallet details are collected here.
     if (payOnlineBtn) {
         payOnlineBtn.addEventListener('click', () => {
             if (payOnlineBtn.disabled) return;
@@ -675,8 +728,6 @@ function initBookingForm() {
             submitBookingToDatabase('online');
         });
 
-        // Browser Back from PayMongo can restore this page from cache with the
-        // button still disabled — reset it.
         window.addEventListener('pageshow', (e) => { if (e.persisted) resetPayOnlineBtn(); });
     }
 
@@ -701,14 +752,8 @@ function initBookingForm() {
             };
         });
     }
-
-    // [PAYMONGO PATCH] REMOVED from initBookingForm: the close-online-payment click
-    // handler and the entire submitOnlineBookingBtn handler (per-channel validation
-    // + `setTimeout(...)` fake payment + submitBookingToDatabase('online', channel, ref)).
 }
 
-// [PAYMONGO PATCH] REMOVED the "Validation Input Helpers" that only the fake forms used:
-// restrictToDigits, restrictToDigitsAndSpaces, restrictToExpiryFormat, restrictToNameChars.
 function showValidationModal(message, focusTarget = null) {
     const modal = document.getElementById('validation-modal');
     const text = document.getElementById('validation-modal-text');
@@ -742,12 +787,17 @@ function showSuccessModal({ date, time, doctorName, servicesLabel, amount }) {
         return;
     }
 
+    const sub = Number(amount || 0) / 1.12;
+    const vat = Number(amount || 0) - sub;
+
     details.innerHTML = `
-        <div class="flex justify-between"><span class="font-bold text-[#2A1001]/60">Date:</span><span class="font-semibold">${escapeHtml(date || '')}</span></div>
-        <div class="flex justify-between"><span class="font-bold text-[#2A1001]/60">Time:</span><span class="font-semibold">${escapeHtml(time || '')}</span></div>
-        <div class="flex justify-between"><span class="font-bold text-[#2A1001]/60">Dentist:</span><span class="font-semibold">${escapeHtml(doctorName || '')}</span></div>
-        <div class="flex justify-between"><span class="font-bold text-[#2A1001]/60">Services:</span><span class="font-semibold text-right">${escapeHtml(servicesLabel || '')}</span></div>
-        <div class="flex justify-between border-t border-black/10 pt-1.5 mt-1"><span class="font-bold text-[#2A1001]/60">Amount Paid:</span><span class="font-black text-[#667733]">₱${Number(amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}</span></div>
+        <div class="flex justify-between gap-2"><span class="font-bold text-[#2A1001]/60 shrink-0">Date:</span><span class="font-semibold text-right">${escapeHtml(date || '')}</span></div>
+        <div class="flex justify-between gap-2"><span class="font-bold text-[#2A1001]/60 shrink-0">Time:</span><span class="font-semibold text-right">${escapeHtml(time || '')}</span></div>
+        <div class="flex justify-between gap-2"><span class="font-bold text-[#2A1001]/60 shrink-0">Dentist:</span><span class="font-semibold text-right">${escapeHtml(doctorName || '')}</span></div>
+        <div class="flex justify-between gap-2"><span class="font-bold text-[#2A1001]/60 shrink-0">Services:</span><span class="font-semibold text-right break-words">${escapeHtml(servicesLabel || '')}</span></div>
+        <div class="flex justify-between gap-2 text-xs pt-1 border-t border-black/10"><span class="text-[#2A1001]/60">Subtotal:</span><span>₱${sub.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></div>
+        <div class="flex justify-between gap-2 text-xs"><span class="text-[#2A1001]/60">12% VAT:</span><span>₱${vat.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></div>
+        <div class="flex justify-between border-t border-black/10 pt-1.5 mt-1"><span class="font-bold text-[#2A1001]/60">Total Amount:</span><span class="font-black text-[#667733]">₱${Number(amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></div>
     `;
     modal.classList.remove('hidden');
 
@@ -758,11 +808,6 @@ function showSuccessModal({ date, time, doctorName, servicesLabel, amount }) {
 }
 
 // ── 9. Submit Appointment ───────────────────────────────────────────────────
-// [PAYMONGO PATCH] REWRITTEN: submitBookingToDatabase(method) now takes only 'cash' or
-// 'online'. It no longer sends payment_channel / payment_reference (the server and
-// PayMongo decide those). For 'online' it redirects to the returned checkout_url;
-// for 'cash' it shows the success modal as before. Also added resetPayOnlineBtn()
-// and 409 handling (slot taken -> refresh the slot list).
 function resetPayOnlineBtn() {
     const btn = document.getElementById('pay-online-btn');
     if (!btn) return;
@@ -774,8 +819,6 @@ async function submitBookingToDatabase(method) {
     const token = localStorage.getItem('userToken');
     const totalMinutes = selectedServices.reduce((sum, s) => sum + (s.duration_minutes || 30), 0);
 
-    // Price and duration are recomputed server-side; the payment channel is
-    // chosen by the patient on PayMongo's page, so it is NOT sent from here.
     const payload = {
         appointment_date: selectedDateValue,
         time_slot: selectedStartTime,
@@ -808,8 +851,6 @@ async function submitBookingToDatabase(method) {
             throw err;
         }
 
-        // ── Online: hand off to PayMongo. The booking only becomes final once
-        // the server receives PayMongo's payment-confirmed webhook.
         if (method === 'online') {
             if (!result.checkout_url) {
                 throw new Error('The payment page could not be opened. Please try again or choose Pay in Clinic.');
@@ -818,7 +859,6 @@ async function submitBookingToDatabase(method) {
             return;
         }
 
-        // ── Cash: booking is recorded immediately as pending.
         const docObj = availableDoctors.find(d => d.doctor_id == selectedDoctorId);
         const totalAmount = selectedServices.reduce((sum, s) => sum + s.price, 0);
 
@@ -835,7 +875,6 @@ async function submitBookingToDatabase(method) {
         resetPayOnlineBtn();
         showValidationModal('Booking Error: ' + error.message);
 
-        // Slot was taken by someone else: close the summary and refresh slots.
         if (error.status === 409) {
             document.getElementById('receipt-modal')?.classList.add('hidden');
             selectedStartTime = '';

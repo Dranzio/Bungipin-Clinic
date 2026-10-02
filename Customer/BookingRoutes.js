@@ -2,18 +2,28 @@ const authenticateToken = require('../authMiddleware');
 const { logActivity } = require('../Admin/auditLogRoutes');
 const { sendAppointmentEmail } = require('../AppointmentEmails');
 const { createCheckoutSession, BLOCKING_SQL, HOLD_MINUTES } = require('../Services/paymongo');
-const MAX_ADVANCE_MONTHS = 6; // must match the limit used in Customer/Booking.js
+const MAX_ADVANCE_MONTHS = 6;
 
 function getIp(req) {
     return req.ip || req.headers['x-forwarded-for'];
 }
+function getNow(tz = process.env.CLINIC_TIMEZONE || 'Asia/Manila') {
+    const now = new Date(new Date().toLocaleString('en-US', { timeZone: tz }));
+    const yyyy = now.getFullYear();
+    const mm = String(now.getMonth() + 1).padStart(2, '0');
+    const dd = String(now.getDate()).padStart(2, '0');
+    return {
+        todayDateStr: `${yyyy}-${mm}-${dd}`,
+        currentMinutes: now.getHours() * 60 + now.getMinutes()
+    };
+}
 
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
-const MAX_ACTIVE_BOOKINGS_LIMIT = 3; // Max active (pending/approved) bookings per patient
+const MAX_ACTIVE_BOOKINGS_LIMIT = 3;
 
 function registerBookingRoute(app, db) {
 
-    // ── 1. GET /api/doctors (Includes Specialization) ──
+    // ── 1. GET /api/doctors ──
     app.get('/api/doctors', authenticateToken, async (req, res) => {
         try {
             const [rows] = await db.query(
@@ -32,7 +42,7 @@ function registerBookingRoute(app, db) {
         }
     });
 
-    // ── 2. GET /api/doctors/:id/available-slots (Accurate Overlap & Instant Reopening) ──
+    // ── 2. GET /api/doctors/:id/available-slots ──
     app.get('/api/doctors/:id/available-slots', authenticateToken, async (req, res) => {
         const doctorId = Number(req.params.id);
         const { date } = req.query;
@@ -53,7 +63,6 @@ function registerBookingRoute(app, db) {
         const dayNames = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 
         try {
-            // 1. Get Doctor's Working Schedule for this day
             const [scheduleRows] = await db.query(
                 `SELECT start_time, end_time, break_start, break_end, is_active
                  FROM doctor_schedules
@@ -70,9 +79,6 @@ function registerBookingRoute(app, db) {
                 });
             }
 
-            // Existing bookings for this dentist on this date block out the time they occupy
-
-            // eli: updated query to use BLOCKING_SQL to block temporary "awaiting_payment"
             const [bookedRows] = await db.query(
                 `SELECT a.time_slot, a.end_time, s.duration_minutes
                  FROM appointments a
@@ -88,8 +94,6 @@ function registerBookingRoute(app, db) {
                 return h * 60 + (m || 0);
             };
 
-            // Calculate exact booked intervals, falling back to the service's
-            // own duration if end_time is ever missing or corrupt.
             const bookedIntervals = bookedRows.map(r => {
                 const bStart = toMinutes(r.time_slot);
                 let bEnd = r.end_time ? toMinutes(r.end_time) : 0;
@@ -104,14 +108,13 @@ function registerBookingRoute(app, db) {
             const hasBreak = !!(schedule.break_start && schedule.break_end);
             const breakStart = hasBreak ? toMinutes(schedule.break_start) : null;
             const breakEnd = hasBreak ? toMinutes(schedule.break_end) : null;
-            const step = 30; // Clean 30-minute start interval
+            const step = 30;
 
-            const now = new Date();
-            const isToday = targetDate.toDateString() === now.toDateString();
+            const { todayDateStr, currentMinutes } = getNow();
+            const isToday = (date === todayDateStr);
 
             const slots = [];
-            // Generate clean 30-min start intervals
-            for (let cur = startMins; cur + duration <= endMins; cur += step) {
+            for (let cur = startMins; cur + step <= endMins; cur += step) {
                 const sM = cur;
                 const eM = cur + duration;
 
@@ -123,32 +126,38 @@ function registerBookingRoute(app, db) {
                 let isAvailable = true;
                 let reason = 'Available';
 
-                // Check Closing Time
-                if (eM > endMins) {
+                // 1. Slot is in the past for today (Philippine Time)
+                if (isToday && sM <= currentMinutes) {
                     isAvailable = false;
-                    reason = 'Exceeds Shift Closing';
+                    reason = 'Past Time';
                 }
-                // Check Lunch Break
-                else if (hasBreak && ((sM >= breakStart && sM < breakEnd) || (sM < breakEnd && eM > breakStart))) {
+                // 2. Doctor Lunch Break
+                else if (hasBreak && sM >= breakStart && sM < breakEnd) {
                     isAvailable = false;
                     reason = 'Doctor Lunch Break';
                 }
-                    // Check Overlap with active appointments — ranges [sM,eM) and
-                // [b.start,b.end) overlap when sM < b.end AND b.start < eM.
+                // 3. Morning appointment running into lunch
+                else if (hasBreak && sM < breakStart && eM > breakStart) {
+                    isAvailable = false;
+                    reason = 'Too Long Before Lunch';
+                }
+                // 4. Exceeds shift closing
+                else if (eM > endMins) {
+                    isAvailable = false;
+                    reason = 'Exceeds Dentist Shift'; 
+                }
+                // 5. Already booked
                 else if (bookedIntervals.some(b => sM < b.end && b.start < eM)) {
                     isAvailable = false;
                     reason = 'Already Booked';
                 }
-                // Check Past Time today
-                else if (isToday) {
-                    const slotDateTime = new Date(`${date}T${timeSlot}`);
-                    if (slotDateTime <= now) {
-                        isAvailable = false;
-                        reason = 'Past Time';
-                    }
-                }
 
-                slots.push({ time_slot: timeSlot, end_time_slot: endTimeSlot, is_available: isAvailable, reason });
+                slots.push({
+                    time_slot: timeSlot,
+                    end_time_slot: endTimeSlot,
+                    is_available: isAvailable,
+                    reason
+                });
             }
 
             res.json({ is_working_day: true, slots });
@@ -158,7 +167,7 @@ function registerBookingRoute(app, db) {
         }
     });
 
-    // ── 3. POST /api/appointments (Active Booking Limit + Overlap Protection + end_time) ──
+    // ── 3. POST /api/appointments ──
     app.post('/api/appointments', authenticateToken, async (req, res) => {
         if (req.user.role !== 'patient') {
             return res.status(403).json({ message: 'Only patients can book appointments' });
@@ -167,12 +176,6 @@ function registerBookingRoute(app, db) {
         const patientId = req.user.user_id;
         const { appointment_date, time_slot, service_id, service_ids, doctor_id, patient_note, payment_method } = req.body;
 
-        // service_ids (array) is what Booking.js actually sends when the
-        // patient picks several treatments in one visit — service_id alone
-        // used to be trusted for both price AND duration, silently dropping
-        // every service after the first from billing and from the time the
-        // appointment actually occupies. Accept either, but always resolve
-        // to the full list.
         const allServiceIds = Array.isArray(service_ids) && service_ids.length > 0
             ? service_ids
             : (service_id ? [service_id] : []);
@@ -186,20 +189,16 @@ function registerBookingRoute(app, db) {
             return res.status(400).json({ message: 'Invalid doctor selected' });
         }
 
-        // no past dates
         const appointmentDateTime = new Date(`${appointment_date}T${time_slot}`);
         if (Number.isNaN(appointmentDateTime.getTime()) || appointmentDateTime <= new Date()) {
             return res.status(400).json({ message: 'Appointments must be scheduled for a future date and time' });
         }
 
-
-        // eli: check if payment is online to set status and holds properly
         const methodEnum = ['cash', 'card', 'online'].includes(String(payment_method).toLowerCase())
             ? String(payment_method).toLowerCase()
             : 'online';
         const isOnline = methodEnum === 'online';
 
-        // 2. Enforce Max Advance Booking Limit (e.g. 6 Months from today)
         const maxAllowedDate = new Date();
         maxAllowedDate.setMonth(maxAllowedDate.getMonth() + MAX_ADVANCE_MONTHS);
         maxAllowedDate.setHours(23, 59, 59, 999);
@@ -215,8 +214,6 @@ function registerBookingRoute(app, db) {
         try {
             await connection.beginTransaction();
 
-            // Active-bookings cap (Max 3)
-            // eli: update active count check to use BLOCKING_SQL so holds count against patient limits
             const [activeRows] = await connection.query(
                 `SELECT COUNT(*) AS active_count
                  FROM appointments a
@@ -232,9 +229,6 @@ function registerBookingRoute(app, db) {
                 });
             }
 
-            // Look up every selected service
-            // Price AND duration both come from the database, never the client — look up every selected service in one go
-            // eli: select 'label" column with price n duration for paymongo checkout session
             const [serviceRows] = await connection.query(
                 'SELECT service_id, label, price, duration_minutes, is_available FROM services WHERE service_id IN (?)',
                 [allServiceIds]
@@ -266,7 +260,6 @@ function registerBookingRoute(app, db) {
                 return res.status(404).json({ message: 'Selected dentist is not available' });
             }
 
-            // Compute exact booking end time
             const [startH, startM] = time_slot.split(':').map(Number);
             const totalStartMins = startH * 60 + startM;
             const totalEndMins = totalStartMins + totalDuration;
@@ -274,8 +267,6 @@ function registerBookingRoute(app, db) {
             const endM = totalEndMins % 60;
             const endTime = `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}:00`;
 
-            // Check for overlapping bookings inside the transaction
-            // eli: updated query to use BLOCKING_SQL to block temporary "awaiting_payment"
             const [clashRows] = await connection.query(
                 `SELECT a.appointment_id FROM appointments a
                  WHERE a.employee_id = ? AND a.appointment_date = ?
@@ -289,23 +280,18 @@ function registerBookingRoute(app, db) {
                 return res.status(409).json({ message: 'This time slot has just been reserved by another patient. Please choose a different slot.' });
             }
 
-
-
-            // eli: insert appointment status as 'awaiting_payment' + hold_expires_at if online
             const [result] = await connection.query(
                 `INSERT INTO appointments
                  (patient_id, employee_id, service_id, appointment_date, time_slot, end_time, appointment_status, hold_expires_at, queue_status, reschedule_status, reschedule_count, patient_note)
                  VALUES (?, ?, ?, ?, ?, ?, ?, ${isOnline ? 'DATE_ADD(NOW(), INTERVAL ? MINUTE)' : 'NULL'}, 'pending', 'none', 0, ?)`,
                 [
                     patientId, employeeId, allServiceIds[0], appointment_date, time_slot, endTime,
-                    'pending', // online bookings stay 'pending' + hold_expires_at until the webhook confirms payment
+                    'pending',
                     ...(isOnline ? [HOLD_MINUTES] : []),
                     patient_note || null
                 ]
             );
             const appointmentId = result.insertId;
-
-            // [PAYMONGO FIX] removed a duplicate `const methodEnum` here — it is already computed (and validated) above.
 
             await connection.query(
                 `INSERT INTO payments (appointment_id, amount, payment_date, method, status)
@@ -325,8 +311,6 @@ function registerBookingRoute(app, db) {
                 ip_address: getIp(req)
             });
 
-            // Online: open a PayMongo Checkout Session for the held slot and return its URL.
-            // (The 'booked' email for online is sent by the webhook once payment is confirmed.)
             if (isOnline) {
                 const base = (process.env.APP_BASE_URL || 'http://localhost:3000').replace(/\/$/, '');
                 try {
@@ -351,7 +335,6 @@ function registerBookingRoute(app, db) {
                     });
                 } catch (payErr) {
                     console.error('Checkout session error:', payErr.details ? JSON.stringify(payErr.details) : payErr);
-                    // Release the held slot immediately so the patient can try again.
                     await db.query(
                         `UPDATE appointments SET appointment_status = 'cancelled', hold_expires_at = NULL WHERE appointment_id = ?`,
                         [appointmentId]
@@ -361,7 +344,6 @@ function registerBookingRoute(app, db) {
             }
 
             await sendAppointmentEmail(db, appointmentId, 'booked', {
-                // appointments only stores the first service; list them all in the email
                 service: serviceRows.map(sv => sv.label).filter(Boolean).join(', ')
             });
 
@@ -380,7 +362,6 @@ function registerBookingRoute(app, db) {
         }
     });
 
-    // Automatically cancel past pending appointments that were never attended/approved
     async function autoCancelExpiredAppointments(db, io = null) {
         try {
             const [result] = await db.query(`
@@ -401,7 +382,6 @@ function registerBookingRoute(app, db) {
             console.error('Auto-cancel expired appointments error:', err);
         }
     }
-
 }
 
 module.exports = registerBookingRoute;
