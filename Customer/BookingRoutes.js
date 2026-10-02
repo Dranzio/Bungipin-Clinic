@@ -203,8 +203,8 @@ function registerBookingRoute(app, db) {
         maxAllowedDate.setHours(23, 59, 59, 999);
 
         if (appointmentDateTime > maxAllowedDate) {
-            return res.status(400).json({ 
-                message: `Appointments can only be scheduled up to ${MAX_ADVANCE_MONTHS} months in advance.` 
+            return res.status(400).json({
+                message: `Appointments can only be scheduled up to ${MAX_ADVANCE_MONTHS} months in advance.`
             });
         }
 
@@ -287,8 +287,8 @@ function registerBookingRoute(app, db) {
                 return res.status(409).json({ message: 'This time slot has just been reserved by another patient. Please choose a different slot.' });
             }
 
-            
-            
+
+
             // eli: insert appointment status as 'awaiting_payment' + hold_expires_at if online
             const statusVal = isOnline ? 'awaiting_payment' : 'pending';
             const [result] = await connection.query(
@@ -350,26 +350,26 @@ function registerBookingRoute(app, db) {
     });
 
     // Automatically cancel past pending appointments that were never attended/approved
-async function autoCancelExpiredAppointments(db, io = null) {
-    try {
-        const [result] = await db.query(`
-            UPDATE appointments
-            SET appointment_status = 'cancelled',
-                patient_note = CONCAT(COALESCE(patient_note, ''), ' [System: Auto-cancelled due to expired schedule]')
-            WHERE appointment_status = 'pending'
-              AND (
-                  appointment_date < CURDATE()
-                  OR (appointment_date = CURDATE() AND end_time < CURTIME())
-              )
-        `);
+    async function autoCancelExpiredAppointments(db, io = null) {
+        try {
+            const [result] = await db.query(`
+                UPDATE appointments
+                SET appointment_status = 'cancelled',
+                    patient_note = CONCAT(COALESCE(patient_note, ''), ' [System: Auto-cancelled due to expired schedule]')
+                WHERE appointment_status = 'pending'
+                  AND (
+                    appointment_date < CURDATE()
+                        OR (appointment_date = CURDATE() AND end_time < CURTIME())
+                    )
+            `);
 
-        if (result.affectedRows > 0 && io) {
-            io.emit('appointment-updated');
+            if (result.affectedRows > 0 && io) {
+                io.emit('appointment-updated');
+            }
+        } catch (err) {
+            console.error('Auto-cancel expired appointments error:', err);
         }
-    } catch (err) {
-        console.error('Auto-cancel expired appointments error:', err);
     }
-}
 
 }
 

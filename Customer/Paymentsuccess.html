@@ -97,6 +97,17 @@
                 return;
             }
 
+            // Still pending after ~20s: ask the server to double-check with PayMongo
+            // once, in case the webhook was delayed or missed.
+            if (attempt === 10) {
+                try {
+                    await fetch(`/api/payments/${encodeURIComponent(appointmentId)}/reconcile`, {
+                        method: 'POST',
+                        headers: token ? { Authorization: `Bearer ${token}` } : {}
+                    });
+                } catch (_) { /* the next poll will pick up any change */ }
+            }
+
             if (attempt < MAX_TRIES) {
                 setTimeout(() => poll(attempt + 1), POLL_MS);
                 return;
