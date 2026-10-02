@@ -6,350 +6,9 @@ function getIp(req) {
     return req.ip || req.headers['x-forwarded-for'];
 }
 
-const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
-const MAX_ACTIVE_BOOKINGS_LIMIT = 3; // Max active (pending/approved) bookings per patient
+const MAX_ADVANCE_MONTHS = 6; // Limit reschedules up to 6 months in advance
 
-function registerBookingRoute(app, db) {
-
-    // ── 1. GET /api/doctors (Includes Specialization) ──
-    app.get('/api/doctors', authenticateToken, async (req, res) => {
-        try {
-            const [rows] = await db.query(
-                `SELECT ep.employee_id AS doctor_id, ep.position,
-                        COALESCE(ep.specialization, 'General Dentist') AS specialization,
-                        CONCAT('Dr. ', u.first_name, ' ', u.last_name) AS name
-                 FROM employee_profiles ep
-                          JOIN users u ON ep.employee_id = u.user_id
-                 WHERE ep.position = 'Dentist' AND u.account_status = 'active'
-                 ORDER BY u.first_name`
-            );
-            res.json(rows);
-        } catch (err) {
-            console.error('Load doctors error:', err);
-            res.status(500).json({ message: 'Internal Server Error' });
-        }
-    });
-
-    // ── 2. GET /api/doctors/:id/available-slots (Accurate Overlap & Instant Reopening) ──
-    app.get('/api/doctors/:id/available-slots', authenticateToken, async (req, res) => {
-        const doctorId = Number(req.params.id);
-        const { date } = req.query;
-        const duration = Number(req.query.duration) || 30;
-
-        if (!Number.isInteger(doctorId) || doctorId <= 0) {
-            return res.status(400).json({ message: 'Invalid doctor id' });
-        }
-        if (!date || !DATE_PATTERN.test(date)) {
-            return res.status(400).json({ message: 'A valid date (YYYY-MM-DD) is required' });
-        }
-
-        const targetDate = new Date(`${date}T00:00:00`);
-        if (Number.isNaN(targetDate.getTime())) {
-            return res.status(400).json({ message: 'Invalid date' });
-        }
-        const dayOfWeek = targetDate.getDay();
-        const dayNames = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
-
-        try {
-            // 1. Get Doctor's Working Schedule for this day
-            const [scheduleRows] = await db.query(
-                `SELECT start_time, end_time, break_start, break_end, is_active
-                 FROM doctor_schedules
-                 WHERE employee_id = ? AND day_of_week = ?`,
-                [doctorId, dayOfWeek]
-            );
-
-            const schedule = scheduleRows[0];
-            if (!schedule || !schedule.is_active || !schedule.start_time || !schedule.end_time) {
-                return res.json({
-                    is_working_day: false,
-                    slots: [],
-                    message: `Dentist is not on duty on ${dayNames[dayOfWeek]}s (Closed).`
-                });
-            }
-
-            // Existing bookings for this dentist on this date block out the time they occupy
-
-            // eli: updated query to use BLOCKING_SQL to block temporary "awaiting_payment"
-            const [bookedRows] = await db.query(
-                `SELECT a.time_slot, a.end_time, s.duration_minutes
-                 FROM appointments a
-                          LEFT JOIN services s ON a.service_id = s.service_id
-                 WHERE a.employee_id = ? AND a.appointment_date = ?
-                   AND a.appointment_status IN ('pending', 'approved')`,
-                [doctorId, date]
-            );
-
-            const toMinutes = t => {
-                if (!t) return 0;
-                const [h, m] = String(t).split(':').map(Number);
-                return h * 60 + (m || 0);
-            };
-
-            // Calculate exact booked intervals, falling back to the service's
-            // own duration if end_time is ever missing or corrupt.
-            const bookedIntervals = bookedRows.map(r => {
-                const bStart = toMinutes(r.time_slot);
-                let bEnd = r.end_time ? toMinutes(r.end_time) : 0;
-                if (bEnd <= bStart) {
-                    bEnd = bStart + (r.duration_minutes || 30);
-                }
-                return { start: bStart, end: bEnd };
-            });
-
-            const startMins = toMinutes(schedule.start_time);
-            const endMins = toMinutes(schedule.end_time);
-            const hasBreak = !!(schedule.break_start && schedule.break_end);
-            const breakStart = hasBreak ? toMinutes(schedule.break_start) : null;
-            const breakEnd = hasBreak ? toMinutes(schedule.break_end) : null;
-            const step = 30; // Clean 30-minute start interval
-
-            const now = new Date();
-            const isToday = targetDate.toDateString() === now.toDateString();
-
-            const slots = [];
-            // Generate clean 30-min start intervals
-            for (let cur = startMins; cur + duration <= endMins; cur += step) {
-                const sM = cur;
-                const eM = cur + duration;
-
-                const startH = Math.floor(sM / 60), startM = sM % 60;
-                const endH = Math.floor(eM / 60), endM = eM % 60;
-                const timeSlot = `${String(startH).padStart(2, '0')}:${String(startM).padStart(2, '0')}:00`;
-                const endTimeSlot = `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}:00`;
-
-                let isAvailable = true;
-                let reason = 'Available';
-
-                // Check Closing Time
-                if (eM > endMins) {
-                    isAvailable = false;
-                    reason = 'Exceeds Shift Closing';
-                }
-                // Check Lunch Break
-                else if (hasBreak && ((sM >= breakStart && sM < breakEnd) || (sM < breakEnd && eM > breakStart))) {
-                    isAvailable = false;
-                    reason = 'Doctor Lunch Break';
-                }
-                    // Check Overlap with active appointments — ranges [sM,eM) and
-                // [b.start,b.end) overlap when sM < b.end AND b.start < eM.
-                else if (bookedIntervals.some(b => sM < b.end && b.start < eM)) {
-                    isAvailable = false;
-                    reason = 'Already Booked';
-                }
-                // Check Past Time today
-                else if (isToday) {
-                    const slotDateTime = new Date(`${date}T${timeSlot}`);
-                    if (slotDateTime <= now) {
-                        isAvailable = false;
-                        reason = 'Past Time';
-                    }
-                }
-
-                slots.push({ time_slot: timeSlot, end_time_slot: endTimeSlot, is_available: isAvailable, reason });
-            }
-
-            res.json({ is_working_day: true, slots });
-        } catch (err) {
-            console.error('Available slots error:', err);
-            res.status(500).json({ message: 'Internal Server Error' });
-        }
-    });
-
-    // ── 3. POST /api/appointments (Active Booking Limit + Overlap Protection + end_time) ──
-    app.post('/api/appointments', authenticateToken, async (req, res) => {
-        if (req.user.role !== 'patient') {
-            return res.status(403).json({ message: 'Only patients can book appointments' });
-        }
-
-        const patientId = req.user.user_id;
-        const { appointment_date, time_slot, service_id, service_ids, doctor_id, patient_note, payment_method } = req.body;
-
-        // service_ids (array) is what Booking.js actually sends when the
-        // patient picks several treatments in one visit — service_id alone
-        // used to be trusted for both price AND duration, silently dropping
-        // every service after the first from billing and from the time the
-        // appointment actually occupies. Accept either, but always resolve
-        // to the full list.
-        const allServiceIds = Array.isArray(service_ids) && service_ids.length > 0
-            ? service_ids
-            : (service_id ? [service_id] : []);
-
-        if (!appointment_date || !time_slot || allServiceIds.length === 0 || !payment_method || !doctor_id) {
-            return res.status(400).json({ message: 'Missing required booking fields' });
-        }
-
-        const employeeId = Number(doctor_id);
-        if (!Number.isInteger(employeeId) || employeeId <= 0) {
-            return res.status(400).json({ message: 'Invalid doctor selected' });
-        }
-
-        // no past dates
-        const appointmentDateTime = new Date(`${appointment_date}T${time_slot}`);
-        if (Number.isNaN(appointmentDateTime.getTime()) || appointmentDateTime <= new Date()) {
-            return res.status(400).json({ message: 'Appointments must be scheduled for a future date and time' });
-        }
-
-
-        // eli: check if payment is online to set status and holds properly
-        const methodEnum = ['cash', 'card', 'online'].includes(String(payment_method).toLowerCase())
-            ? String(payment_method).toLowerCase()
-            : 'online';
-        const isOnline = methodEnum === 'online';
-
-        // 2. Enforce Max Advance Booking Limit (e.g. 6 Months from today)
-        const maxAllowedDate = new Date();
-        maxAllowedDate.setMonth(maxAllowedDate.getMonth() + MAX_ADVANCE_MONTHS);
-        maxAllowedDate.setHours(23, 59, 59, 999);
-
-        if (appointmentDateTime > maxAllowedDate) {
-            return res.status(400).json({ 
-                message: `Appointments can only be scheduled up to ${MAX_ADVANCE_MONTHS} months in advance.` 
-            });
-        }
-
-        const connection = await db.getConnection();
-
-        try {
-            await connection.beginTransaction();
-
-            // Active-bookings cap (Max 3)
-            // eli: update active count check to use BLOCKING_SQL so holds count against patient limits
-            const [activeRows] = await connection.query(
-                `SELECT COUNT(*) AS active_count
-                 FROM appointments
-                 WHERE patient_id = ?
-                   AND appointment_status IN ('pending', 'approved')`,
-                [patientId]
-            );
-
-            if (activeRows[0].active_count >= MAX_ACTIVE_BOOKINGS_LIMIT) {
-                await connection.rollback();
-                return res.status(429).json({
-                    message: `You already have ${MAX_ACTIVE_BOOKINGS_LIMIT} active appointments. Please complete or cancel an existing appointment before booking a new one.`
-                });
-            }
-
-            // Look up every selected service
-            // Price AND duration both come from the database, never the client — look up every selected service in one go
-            // eli: select 'label" column with price n duration for paymongo checkout session
-            const [serviceRows] = await connection.query(
-                'SELECT service_id, label, price, duration_minutes, is_available FROM services WHERE service_id IN (?)',
-                [allServiceIds]
-            );
-
-            if (serviceRows.length !== allServiceIds.length) {
-                await connection.rollback();
-                return res.status(404).json({ message: 'One or more selected services were not found' });
-            }
-            const unavailable = serviceRows.find(s => !s.is_available);
-            if (unavailable) {
-                await connection.rollback();
-                return res.status(400).json({ message: 'One or more selected services are currently unavailable' });
-            }
-
-            const totalPrice = serviceRows.reduce((sum, s) => sum + Number(s.price), 0);
-            const totalDuration = serviceRows.reduce((sum, s) => sum + Number(s.duration_minutes || 30), 0);
-
-            const [doctorRows] = await connection.query(
-                `SELECT ep.employee_id
-                 FROM employee_profiles ep
-                          JOIN users u ON ep.employee_id = u.user_id
-                 WHERE ep.employee_id = ? AND ep.position = 'Dentist' AND u.account_status = 'active'
-                     FOR UPDATE`,
-                [employeeId]
-            );
-            if (doctorRows.length === 0) {
-                await connection.rollback();
-                return res.status(404).json({ message: 'Selected dentist is not available' });
-            }
-
-            // Compute exact booking end time
-            const [startH, startM] = time_slot.split(':').map(Number);
-            const totalStartMins = startH * 60 + startM;
-            const totalEndMins = totalStartMins + totalDuration;
-            const endH = Math.floor(totalEndMins / 60);
-            const endM = totalEndMins % 60;
-            const endTime = `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}:00`;
-
-            // Check for overlapping bookings inside the transaction
-            // eli: updated query to use BLOCKING_SQL to block temporary "awaiting_payment"
-            const [clashRows] = await connection.query(
-                `SELECT appointment_id FROM appointments
-                 WHERE employee_id = ? AND appointment_date = ?
-                   AND appointment_status IN ('pending', 'approved')
-                   AND time_slot < ? AND ? < end_time
-                     FOR UPDATE`,
-                [employeeId, appointment_date, endTime, time_slot]
-            );
-            if (clashRows.length > 0) {
-                await connection.rollback();
-                return res.status(409).json({ message: 'This time slot has just been reserved by another patient. Please choose a different slot.' });
-            }
-
-            
-            
-            // eli: insert appointment status as 'awaiting_payment' + hold_expires_at if online
-            const statusVal = isOnline ? 'awaiting_payment' : 'pending';
-            const [result] = await connection.query(
-                `INSERT INTO appointments
-                 (patient_id, employee_id, service_id, appointment_date, time_slot, end_time, appointment_status, hold_expires_at, queue_status, reschedule_status, reschedule_count, patient_note)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ${isOnline ? 'DATE_ADD(NOW(), INTERVAL ? MINUTE)' : 'NULL'}, 'pending', 'none', 0, ?)`,
-                [
-                    patientId, employeeId, allServiceIds[0], appointment_date, time_slot, endTime,
-                    isOnline ? 'awaiting_payment' : 'pending',
-                    ...(isOnline ? [HOLD_MINUTES] : []),
-                    patient_note || null
-                ]
-            );
-            const appointmentId = result.insertId;
-
-            // Normalize payment_method against the DB enum rather than
-            // trusting the client value verbatim — an unexpected string here
-            // would otherwise throw a DB error instead of failing gracefully.
-            const methodEnum = ['cash', 'card', 'online'].includes(String(payment_method).toLowerCase())
-                ? String(payment_method).toLowerCase()
-                : 'online';
-
-            await connection.query(
-                `INSERT INTO payments (appointment_id, amount, payment_date, method, status)
-                 VALUES (?, ?, CURDATE(), ?, 'pending')`,
-                [appointmentId, totalPrice, methodEnum]
-            );
-
-            await connection.commit();
-
-            await logActivity(db, {
-                user_id: patientId,
-                user_role: 'patient',
-                action: 'BOOK_APPOINTMENT',
-                target_table: 'appointments',
-                target_id: appointmentId,
-                notes: `Booked ${allServiceIds.length > 1 ? allServiceIds.length + ' services' : 'an appointment'} for ${appointment_date} at ${time_slot}.`,
-                ip_address: getIp(req)
-            });
-
-            await sendAppointmentEmail(db, appointmentId, 'booked', {
-                // appointments only stores the first service; list them all in the email
-                service: serviceRows.map(sv => sv.label).filter(Boolean).join(', ')
-            });
-
-            res.status(201).json({
-                success: true,
-                message: 'Booking successfully recorded!',
-                appointment_id: appointmentId
-            });
-
-        } catch (err) {
-            await connection.rollback();
-            console.error('Booking error:', err);
-            res.status(500).json({ message: 'Internal Server Error' });
-        } finally {
-            connection.release();
-        }
-    });
-
-    // Automatically cancel past pending appointments that were never attended/approved
+// Auto-cancel past pending appointments that were never served/approved
 async function autoCancelExpiredAppointments(db, io = null) {
     try {
         const [result] = await db.query(`
@@ -358,9 +17,9 @@ async function autoCancelExpiredAppointments(db, io = null) {
                 patient_note = CONCAT(COALESCE(patient_note, ''), ' [System: Auto-cancelled due to expired schedule]')
             WHERE appointment_status = 'pending'
               AND (
-                  appointment_date < CURDATE()
-                  OR (appointment_date = CURDATE() AND end_time < CURTIME())
-              )
+                appointment_date < CURDATE()
+                    OR (appointment_date = CURDATE() AND end_time < CURTIME())
+                )
         `);
 
         if (result.affectedRows > 0 && io) {
@@ -371,6 +30,493 @@ async function autoCancelExpiredAppointments(db, io = null) {
     }
 }
 
+function registerBookingRequestRoutes(app, db, io) {
+
+    function getDurationForService(serviceLabel) {
+        const l = String(serviceLabel || '').toLowerCase();
+        if (l.includes('root') || l.includes('canal')) return 90;
+        if (l.includes('whiten')) return 60;
+        if (l.includes('clean') || l.includes('prophylaxis')) return 45;
+        if (l.includes('pasta') || l.includes('filling')) return 30;
+        return 30;
+    }
+
+    function calculateEndTime(timeSlot, durationMins) {
+        if (!timeSlot) return null;
+        const [hStr, mStr] = String(timeSlot).split(':');
+        const startMins = parseInt(hStr, 10) * 60 + parseInt(mStr || '0', 10);
+        const endMins = startMins + durationMins;
+        const endH = Math.floor(endMins / 60);
+        const endM = endMins % 60;
+        return `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}:00`;
+    }
+
+    function timeToMins(timeStr) {
+        if (!timeStr) return 0;
+        const [h, m] = String(timeStr).split(':').map(Number);
+        return h * 60 + (m || 0);
+    }
+
+    // ── 1. GET /api/appointments — Booking requests & approved appointments list ──
+    app.get('/api/appointments', authenticateToken, async (req, res) => {
+        if (!['employee', 'admin'].includes(req.user.role)) {
+            return res.status(403).json({ message: 'Not authorized' });
+        }
+
+        // ✅ Automatically clear expired pending appointments before loading list
+        await autoCancelExpiredAppointments(db, io);
+
+        const { status } = req.query;
+
+        try {
+            let query = `
+                SELECT
+                    a.appointment_id,
+                    a.appointment_status,
+                    a.queue_status,
+                    a.appointment_date,
+                    a.time_slot,
+                    a.end_time AS end_time_slot,
+                    a.reschedule_status,
+                    COALESCE(a.reschedule_count, 0) AS reschedule_count,
+                    a.requested_date,
+                    a.requested_time,
+                    a.reschedule_reason,
+                    a.patient_note,
+                    a.dentist_note,
+                    a.created_at,
+                    u.user_id AS patient_id,
+                    u.public_id,
+                    u.first_name,
+                    u.last_name,
+                    u.email AS patient_email,
+                    u.phone AS patient_phone,
+                    s.service_id,
+                    s.label AS service_label,
+                    s.price AS service_price,
+                    p.payment_id,
+                    p.status AS payment_status,
+                    p.method AS payment_method,
+                    p.amount AS payment_amount,
+                    doc.user_id AS dentist_id,
+                    doc.first_name AS dentist_first_name,
+                    doc.last_name AS dentist_last_name
+                FROM appointments a
+                         JOIN users u ON a.patient_id = u.user_id
+                         JOIN services s ON a.service_id = s.service_id
+                         LEFT JOIN payments p ON a.appointment_id = p.appointment_id
+                         LEFT JOIN users doc ON a.employee_id = doc.user_id
+            `;
+            const params = [];
+
+            if (status && status !== 'all') {
+                if (status === 'reschedule_requested') {
+                    query += ' WHERE a.reschedule_status = \'requested\'';
+                } else {
+                    query += ' WHERE a.appointment_status = ?';
+                    params.push(status);
+                }
+            }
+
+            query += ' ORDER BY (a.reschedule_status = \'requested\') DESC, a.created_at DESC';
+
+            const [rows] = await db.query(query, params);
+            res.json(rows);
+        } catch (err) {
+            console.error('Load bookings error:', err);
+            res.status(500).json({ message: 'Internal Server Error' });
+        }
+    });
+
+    // ── 2. GET /api/appointments/occupied — Blocked/taken slots for calendar ──
+    app.get('/api/appointments/occupied', authenticateToken, async (req, res) => {
+        if (!['employee', 'admin'].includes(req.user.role)) {
+            return res.status(403).json({ message: 'Not authorized' });
+        }
+
+        try {
+            const [rows] = await db.query(
+                `SELECT appointment_id, appointment_date, time_slot, end_time AS end_time_slot
+                 FROM appointments
+                 WHERE appointment_status IN ('pending', 'approved')
+                   AND appointment_date >= CURDATE()`
+            );
+            res.json(rows);
+        } catch (err) {
+            console.error('Load occupied slots error:', err);
+            res.status(500).json({ message: 'Internal Server Error' });
+        }
+    });
+
+    // ── 3. PATCH /api/appointments/:id/status — Accept or decline pending booking ──
+    app.patch('/api/appointments/:id/status', authenticateToken, async (req, res) => {
+        if (!['employee', 'admin'].includes(req.user.role)) {
+            return res.status(403).json({ message: 'Not authorized' });
+        }
+
+        const { appointment_status } = req.body;
+        const validStatuses = ['approved', 'cancelled'];
+        if (!validStatuses.includes(appointment_status)) {
+            return res.status(400).json({ message: 'Invalid appointment_status value' });
+        }
+
+        const appointmentId = req.params.id;
+        const connection = await db.getConnection();
+
+        try {
+            await connection.beginTransaction();
+
+            const [apptRows] = await connection.query(
+                'SELECT patient_id, appointment_status FROM appointments WHERE appointment_id = ? FOR UPDATE',
+                [appointmentId]
+            );
+            if (apptRows.length === 0) {
+                await connection.rollback();
+                return res.status(404).json({ message: 'Appointment not found' });
+            }
+
+            // [PAYMONGO FIX] ADDED: a held online booking is still unpaid — staff can't approve/decline it.
+            if (apptRows[0].appointment_status === 'awaiting_payment') {
+                await connection.rollback();
+                return res.status(409).json({ message: 'This booking is still awaiting online payment.' });
+            }
+
+            if (appointment_status === 'approved') {
+                const assignedEmployeeId = req.user.role === 'employee' ? req.user.user_id : null;
+                await connection.query(
+                    `UPDATE appointments
+                     SET appointment_status = 'approved',
+                         employee_id = COALESCE(employee_id, ?),
+                         queue_status = 'pending'
+                     WHERE appointment_id = ?`,
+                    [assignedEmployeeId, appointmentId]
+                );
+            } else {
+                await connection.query(
+                    `UPDATE appointments
+                     SET appointment_status = 'cancelled'
+                     WHERE appointment_id = ?`,
+                    [appointmentId]
+                );
+
+                // [PAYMONGO FIX] ADDED: declining an already-PAID booking used to leave the payment 'paid' (money stuck).
+                await connection.query(
+                    `UPDATE payments SET status = CASE WHEN status = 'paid' THEN 'refund_pending' ELSE status END
+                     WHERE appointment_id = ?`,
+                    [appointmentId]
+                );
+            }
+
+            const notifTitle = appointment_status === 'approved' ? 'Appointment Approved' : 'Appointment Declined';
+            const notifMessage = appointment_status === 'approved'
+                ? 'Your appointment request has been approved and confirmed!'
+                : 'Your appointment request has been declined. Please contact the clinic or choose a different slot.';
+
+            await connection.query(
+                `INSERT INTO notifications (user_id, type, title, message, appointment_id)
+                 VALUES (?, 'appointment_status', ?, ?, ?)`,
+                [apptRows[0].patient_id, notifTitle, notifMessage, appointmentId]
+            );
+
+            await connection.commit();
+
+            await logActivity(db, {
+                user_id: req.user.user_id,
+                user_role: req.user.role,
+                action: appointment_status === 'approved' ? 'APPROVE_APPOINTMENT' : 'CANCEL_APPOINTMENT',
+                target_table: 'appointments',
+                target_id: appointmentId,
+                notes: appointment_status === 'approved' ? 'Booking request approved.' : 'Booking request declined.',
+                ip_address: getIp(req)
+            });
+
+            await sendAppointmentEmail(
+                db,
+                appointmentId,
+                appointment_status === 'approved' ? 'approved' : 'cancelled',
+                { cancelledBy: 'clinic', declined: apptRows[0].appointment_status === 'pending' }
+            );
+
+            if (io) {
+                io.emit('appointment-updated', { appointment_id: appointmentId, status: appointment_status });
+                io.emit('queue_updated');
+            }
+
+            res.json({ message: `Appointment ${appointment_status} successfully` });
+
+        } catch (err) {
+            await connection.rollback();
+            console.error('Update appointment status error:', err);
+            res.status(500).json({ message: 'Internal Server Error' });
+        } finally {
+            connection.release();
+        }
+    });
+
+    // ── 4. PATCH /api/appointments/:id/reschedule-review — Staff Decision on Reschedule Requests ──
+    app.patch('/api/appointments/:id/reschedule-review', authenticateToken, async (req, res) => {
+        if (!['employee', 'admin'].includes(req.user.role)) {
+            return res.status(403).json({ message: 'Not authorized' });
+        }
+
+        const appointmentId = req.params.id;
+        const { action, decline_reason } = req.body;
+
+        if (!['approve', 'decline'].includes(action)) {
+            return res.status(400).json({ message: 'Action must be "approve" or "decline"' });
+        }
+
+        const connection = await db.getConnection();
+
+        try {
+            await connection.beginTransaction();
+
+            const [apptRows] = await connection.query(
+                `SELECT a.appointment_id, a.patient_id, a.appointment_date, a.time_slot,
+                        a.reschedule_status, a.requested_date, a.requested_time, s.label AS service_label
+                 FROM appointments a
+                          JOIN services s ON a.service_id = s.service_id
+                 WHERE a.appointment_id = ? FOR UPDATE`,
+                [appointmentId]
+            );
+
+            if (!apptRows.length) {
+                await connection.rollback();
+                return res.status(404).json({ message: 'Appointment not found' });
+            }
+
+            const appt = apptRows[0];
+            if (appt.reschedule_status !== 'requested') {
+                await connection.rollback();
+                return res.status(400).json({ message: 'No active reschedule request for this appointment' });
+            }
+
+            if (action === 'approve') {
+                const duration = getDurationForService(appt.service_label);
+                const reqStart = timeToMins(appt.requested_time);
+                const reqEnd = reqStart + duration;
+                const calculatedEnd = calculateEndTime(appt.requested_time, duration);
+
+                const [existing] = await connection.query(
+                    `SELECT appointment_id, time_slot, end_time FROM appointments
+                     WHERE appointment_date = ?
+                       AND appointment_status = 'approved'
+                       AND appointment_id != ?`,
+                    [appt.requested_date, appointmentId]
+                );
+
+                const hasOverlap = existing.some(b => {
+                    const bStart = timeToMins(b.time_slot);
+                    const bEnd = b.end_time ? timeToMins(b.end_time) : bStart + 30;
+                    return reqStart < bEnd && reqEnd > bStart;
+                });
+
+                if (hasOverlap) {
+                    await connection.rollback();
+                    return res.status(409).json({
+                        message: 'Requested slot is already booked by another confirmed patient. Please use "Pick Other Slot".'
+                    });
+                }
+
+                await connection.query(
+                    `UPDATE appointments
+                     SET appointment_date = requested_date,
+                         time_slot = requested_time,
+                         end_time = ?,
+                         reschedule_status = 'approved',
+                         reschedule_count = reschedule_count + 1,
+                         requested_date = NULL,
+                         requested_time = NULL,
+                         reschedule_reason = NULL
+                     WHERE appointment_id = ?`,
+                    [calculatedEnd, appointmentId]
+                );
+
+                const notifMsg = `Your request to reschedule to ${appt.requested_date} at ${appt.requested_time} has been APPROVED!`;
+                await connection.query(
+                    `INSERT INTO notifications (user_id, type, title, message, appointment_id)
+                     VALUES (?, 'reschedule_approved', 'Reschedule Approved', ?, ?)`,
+                    [appt.patient_id, notifMsg, appointmentId]
+                );
+
+            } else {
+                await connection.query(
+                    `UPDATE appointments
+                     SET reschedule_status = 'declined',
+                         requested_date = NULL,
+                         requested_time = NULL
+                     WHERE appointment_id = ?`,
+                    [appointmentId]
+                );
+
+                const reasonText = decline_reason ? ` Note: ${decline_reason}` : '';
+                const notifMsg = `Your reschedule request was declined. Your confirmed appointment remains on ${appt.appointment_date} at ${appt.time_slot}.${reasonText}`;
+
+                await connection.query(
+                    `INSERT INTO notifications (user_id, type, title, message, appointment_id)
+                     VALUES (?, 'reschedule_declined', 'Reschedule Request Declined', ?, ?)`,
+                    [appt.patient_id, notifMsg, appointmentId]
+                );
+            }
+
+            await connection.commit();
+
+            await logActivity(db, {
+                user_id: req.user.user_id,
+                user_role: req.user.role,
+                action: action === 'approve' ? 'APPROVE_RESCHEDULE' : 'DECLINE_RESCHEDULE',
+                target_table: 'appointments',
+                target_id: appointmentId,
+                notes: action === 'approve'
+                    ? `Reschedule approved — moved to ${appt.requested_date} at ${appt.requested_time}.`
+                    : `Reschedule request declined.${decline_reason ? ' Reason: ' + decline_reason : ''}`,
+                ip_address: getIp(req)
+            });
+
+            if (io) {
+                io.emit('appointment-updated', { appointment_id: appointmentId });
+            }
+
+            if (action === 'approve') {
+                await sendAppointmentEmail(db, appointmentId, 'rescheduleApproved', {
+                    previousDate: appt.appointment_date,
+                    previousTime: appt.time_slot
+                });
+            }
+
+            res.json({
+                success: true,
+                message: action === 'approve' ? 'Reschedule request approved.' : 'Reschedule request declined.'
+            });
+
+        } catch (err) {
+            await connection.rollback();
+            console.error('Reschedule review error:', err);
+            res.status(500).json({ message: 'Internal Server Error' });
+        } finally {
+            connection.release();
+        }
+    });
+
+    // ── 5. PATCH /api/appointments/:id/reschedule — Staff Direct Reschedule (Pick Other Slot) ──
+    app.patch('/api/appointments/:id/reschedule', authenticateToken, async (req, res) => {
+        if (!['employee', 'admin'].includes(req.user.role)) {
+            return res.status(403).json({ message: 'Not authorized' });
+        }
+
+        const appointmentId = req.params.id;
+        const { appointment_date, time_slot, reason } = req.body;
+
+        if (!appointment_date || !time_slot) {
+            return res.status(400).json({ message: 'appointment_date and time_slot are required' });
+        }
+
+        // Enforce 6-Month Advance Limit
+        const reschedDateTime = new Date(`${appointment_date}T${time_slot}`);
+        const maxAllowedDate = new Date();
+        maxAllowedDate.setMonth(maxAllowedDate.getMonth() + MAX_ADVANCE_MONTHS);
+        maxAllowedDate.setHours(23, 59, 59, 999);
+
+        if (reschedDateTime > maxAllowedDate) {
+            return res.status(400).json({
+                message: `Appointments can only be scheduled up to ${MAX_ADVANCE_MONTHS} months in advance.`
+            });
+        }
+
+        const connection = await db.getConnection();
+
+        try {
+            await connection.beginTransaction();
+
+            const [apptRows] = await connection.query(
+                `SELECT a.patient_id, a.appointment_status, a.appointment_date, a.time_slot, s.label AS service_label
+                 FROM appointments a
+                          JOIN services s ON a.service_id = s.service_id
+                 WHERE a.appointment_id = ? FOR UPDATE`,
+                [appointmentId]
+            );
+            if (!apptRows.length) {
+                await connection.rollback();
+                return res.status(404).json({ message: 'Appointment not found' });
+            }
+
+            const duration = getDurationForService(apptRows[0].service_label);
+            const slotStart = timeToMins(time_slot);
+            const slotEnd = slotStart + duration;
+            const calculatedEnd = calculateEndTime(time_slot, duration);
+
+            const [existing] = await connection.query(
+                `SELECT appointment_id, time_slot, end_time FROM appointments
+                 WHERE appointment_date = ?
+                   AND appointment_status = 'approved'
+                   AND appointment_id != ?`,
+                [appointment_date, appointmentId]
+            );
+
+            const hasOverlap = existing.some(b => {
+                const bStart = timeToMins(b.time_slot);
+                const bEnd = b.end_time ? timeToMins(b.end_time) : bStart + 30;
+                return slotStart < bEnd && slotEnd > bStart;
+            });
+
+            if (hasOverlap) {
+                await connection.rollback();
+                return res.status(409).json({ message: 'This time slot overlaps with another confirmed patient.' });
+            }
+
+            await connection.query(
+                `UPDATE appointments
+                 SET appointment_date = ?,
+                     time_slot = ?,
+                     end_time = ?,
+                     reschedule_status = 'approved',
+                     reschedule_count = reschedule_count + 1,
+                     requested_date = NULL,
+                     requested_time = NULL,
+                     reschedule_reason = NULL
+                 WHERE appointment_id = ?`,
+                [appointment_date, time_slot, calculatedEnd, appointmentId]
+            );
+
+            const notifMsg = `Your appointment has been rescheduled by our clinic staff to ${appointment_date} at ${time_slot}.${reason ? ` Reason: ${reason}` : ''}`;
+            await connection.query(
+                `INSERT INTO notifications (user_id, type, title, message, appointment_id)
+                 VALUES (?, 'appointment_rescheduled', 'Appointment Rescheduled', ?, ?)`,
+                [apptRows[0].patient_id, notifMsg, appointmentId]
+            );
+
+            await connection.commit();
+
+            await logActivity(db, {
+                user_id: req.user.user_id,
+                user_role: req.user.role,
+                action: 'RESCHEDULE_APPOINTMENT',
+                target_table: 'appointments',
+                target_id: appointmentId,
+                notes: `Rescheduled by staff to ${appointment_date} at ${time_slot}.${reason ? ' Reason: ' + reason : ''}`,
+                ip_address: getIp(req)
+            });
+
+            if (io) {
+                io.emit('appointment-updated', { appointment_id: appointmentId });
+            }
+
+            await sendAppointmentEmail(db, appointmentId, 'rescheduled', {
+                previousDate: apptRows[0].appointment_date,
+                previousTime: apptRows[0].time_slot,
+                reason
+            });
+
+            res.json({ success: true, message: 'Appointment rescheduled successfully.' });
+
+        } catch (err) {
+            await connection.rollback();
+            console.error('Direct reschedule error:', err);
+            res.status(500).json({ message: 'Internal Server Error' });
+        } finally {
+            connection.release();
+        }
+    });
 }
 
-module.exports = registerBookingRoute;
+module.exports = registerBookingRequestRoutes;
