@@ -46,11 +46,9 @@
 
     (async () => {
         try {
-            // Retrieve the user's role and position saved during login
             let userRole = localStorage.getItem('userRole') || 'employee'; 
             let userPosition = localStorage.getItem('userPosition');
 
-            // If userPosition is missing, fetch it from the API
             if (!userPosition) {
                 const token = localStorage.getItem('userToken');
                 if (token) {
@@ -71,29 +69,20 @@
                 }
             }
             
-            userPosition = userPosition || 'receptionist';
+            userPosition = (userPosition || 'receptionist').toLowerCase();
             
-            // Determine which taskbar file to load based on the role and position
             let taskbarFile = '/Taskbar/Receptionist_Task.html';
-            
             if (userRole === 'admin') {
                 taskbarFile = '/Taskbar/Admin_Task.html';
-            } else if (userRole === 'employee' || userRole === 'receptionist' || userRole === 'dentist') {
-                if (userPosition === 'dentist' || userRole === 'dentist') {
-                    taskbarFile = '/Taskbar/Dentist_Task.html';
-                } else {
-                    taskbarFile = '/Taskbar/Receptionist_Task.html';
-                }
+            } else if (userPosition === 'dentist' || userRole === 'dentist') {
+                taskbarFile = '/Taskbar/Dentist_Task.html';
             }
 
-            // Fetch the assigned taskbar
             let response = await fetch(taskbarFile);
-            
             if (response.ok) {
                 const data = await response.text();
                 document.getElementById('sidebar-placeholder').innerHTML = data;
                 
-                // Highlight the active page in the sidebar
                 const currentPage = window.location.pathname.split("/").pop();
                 document.querySelectorAll('.nav-link').forEach(link => {
                     if (link.getAttribute('data-page') === currentPage) {
@@ -105,8 +94,6 @@
                     initSidebar();
                 }
                 syncContentOffset();
-            } else {
-                console.warn(`Failed to load taskbar: ${taskbarFile}`);
             }
         } catch (error) {
             console.log('Sidebar fallback:', error);
@@ -122,9 +109,6 @@
             <h1 class="text-2xl sm:text-3xl md:text-5xl 2xl:text-[73px] pt-2 sm:pt-5 font-bold text-[#2A1001] font-['Poppins']">
                 Patient Records
             </h1>
-            <p class="text-xs sm:text-sm font-semibold text-[#667733] mt-0.5">
-                Comprehensive clinical medical history &amp; treatment charts
-            </p>
         </div>
         <img
             src="../assets/logowithtitle.png"
@@ -138,25 +122,31 @@
     <div class="px-4 sm:px-8 max-w-6xl w-full mx-auto mb-6 flex flex-col md:flex-row items-center justify-between gap-3">
         
         <!-- Search bar -->
-        <div class="relative w-full md:max-w-md">
+        <div class="relative w-full sm:max-w-md flex items-center">
+            <span class="absolute left-4 flex items-center pointer-events-none text-gray-400">
+                <i class="fa-solid fa-magnifying-glass text-sm"></i>
+            </span>
             <input
                 type="text"
                 id="searchInput"
                 placeholder="Search by patient name, ID, phone, or email..."
-                class="h-11 w-full rounded-full border border-black/20 bg-white px-5 outline-none shadow-sm text-sm focus:ring-2 focus:ring-[#667733]/50"
+                class="h-11 w-full pl-11 pr-4 rounded-full border border-[#2A1001]/20 bg-white outline-none shadow-sm text-xs sm:text-sm text-[#2A1001] focus:ring-2 focus:ring-[#667733]/40 transition"
             />
         </div>
 
         <div class="flex items-center gap-3 w-full md:w-auto justify-start md:justify-end">
             <!-- Sort dropdown -->
-            <div class="relative">
-                <select id="sortSelect" class="h-11 pl-4 pr-9 rounded-full bg-[#D5C04D] hover:bg-[#c6b242] font-bold text-xs sm:text-sm text-[#2A1001] outline-none cursor-pointer appearance-none shadow-sm transition">
+            <div class="relative inline-flex items-center">
+                <select id="sortSelect" class="h-11 pl-5 pr-10 rounded-full bg-[#D5C04D] hover:bg-[#c6b242] font-bold text-xs sm:text-sm text-[#2A1001] outline-none cursor-pointer appearance-none shadow-sm transition">
                     <option value="recent" class="bg-white text-[#2A1001]">Sort: Most Recent Visit</option>
                     <option value="oldest" class="bg-white text-[#2A1001]">Oldest First</option>
                     <option value="name_asc" class="bg-white text-[#2A1001]">Name (A-Z)</option>
                     <option value="name_desc" class="bg-white text-[#2A1001]">Name (Z-A)</option>
                 </select>
-                <div class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[#2A1001] text-xs">▼</div>
+                <!-- Custom dropdown arrow icon inside relative wrapper -->
+                <span class="pointer-events-none absolute right-4 flex items-center text-[#2A1001]">
+                    <i class="fa-solid fa-chevron-down text-xs font-bold"></i>
+                </span>
             </div>
         </div>
     </div>
@@ -210,145 +200,156 @@
                     <i class="fa-solid fa-address-card text-[#667733]"></i> <span id="mHeaderName">Patient Record</span>
                 </h2>
                 <p class="text-xs sm:text-sm font-bold text-[#667733] mt-0.5" id="mHeaderPublicId">
-                    ID: PAT-0000
+                    Patient ID: PAT-0000
                 </p>
             </div>
             <div class="flex items-center gap-2">
-                <span id="mLastVisitBadge" class="text-xs font-bold px-3 py-1 rounded-full bg-white border border-[#2A1001]/15 text-[#2A1001] shadow-sm">
+                <span id="mLastVisitBadge" class="text-xs font-bold px-3.5 py-1.5 rounded-full bg-[#EAE7DF] border border-[#2A1001]/15 text-[#2A1001] shadow-inner">
                     Last Visit: N/A
                 </span>
             </div>
         </div>
 
-        <!-- Form Sections Content Container (Matching New Customer Profile Cards) -->
+        <!-- Form Sections Content Container -->
         <div class="flex flex-col gap-6 w-full">
 
-            <!-- ── CARD 1: Basic Information ── -->
+            <!-- ── CARD 1: Basic Information (Row-by-Row Layout) ── -->
             <div class="relative w-full bg-[#D7E3A5] rounded-2xl p-5 sm:p-7 pt-8 sm:pt-9 shadow-sm border border-[#d2dbbe]">
                 <span class="absolute -top-3 left-4 sm:left-6 bg-[#667733] text-white text-[10px] sm:text-xs font-bold px-3 sm:px-4 py-1 rounded-full tracking-wider uppercase shadow-sm">
                     Basic Information
                 </span>
-                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
-                    <div class="flex flex-col gap-1">
-                        <label class="text-[10px] sm:text-[11px] font-extrabold tracking-wider text-[#2A1001] uppercase">First Name:</label>
-                        <div id="mFirstName" class="w-full px-4 py-2 rounded-full bg-white text-[#2c3e2b] font-semibold text-xs sm:text-sm shadow-inner truncate"></div>
+                <div class="flex flex-col gap-3.5 w-full">
+                    <!-- Row 1: First Name & Last Name -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5 w-full">
+                        <div class="flex flex-col gap-1 w-full">
+                            <label class="text-[10px] sm:text-[11px] font-extrabold tracking-wider text-[#2A1001] uppercase">First Name:</label>
+                            <div id="mFirstName" class="w-full min-h-[40px] px-4 py-2 rounded-2xl bg-[#EAE7DF] border border-[#2A1001]/15 text-[#2A1001] font-semibold text-xs sm:text-sm shadow-inner flex items-center select-all"></div>
+                        </div>
+                        <div class="flex flex-col gap-1 w-full">
+                            <label class="text-[10px] sm:text-[11px] font-extrabold tracking-wider text-[#2A1001] uppercase">Last Name:</label>
+                            <div id="mLastName" class="w-full min-h-[40px] px-4 py-2 rounded-2xl bg-[#EAE7DF] border border-[#2A1001]/15 text-[#2A1001] font-semibold text-xs sm:text-sm shadow-inner flex items-center select-all"></div>
+                        </div>
                     </div>
-                    <div class="flex flex-col gap-1">
-                        <label class="text-[10px] sm:text-[11px] font-extrabold tracking-wider text-[#2A1001] uppercase">Last Name:</label>
-                        <div id="mLastName" class="w-full px-4 py-2 rounded-full bg-white text-[#2c3e2b] font-semibold text-xs sm:text-sm shadow-inner truncate"></div>
-                    </div>
-                    <div class="flex flex-col gap-1">
-                        <label class="text-[10px] sm:text-[11px] font-extrabold tracking-wider text-[#2A1001] uppercase">Sex:</label>
-                        <div id="mSex" class="w-full px-4 py-2 rounded-full bg-white text-[#2c3e2b] font-semibold text-xs sm:text-sm shadow-inner capitalize"></div>
-                    </div>
-                    <div class="flex flex-col gap-1">
-                        <label class="text-[10px] sm:text-[11px] font-extrabold tracking-wider text-[#2A1001] uppercase">Birthday &amp; Age:</label>
-                        <div id="mBirthday" class="w-full px-4 py-2 rounded-full bg-white text-[#2c3e2b] font-semibold text-xs sm:text-sm shadow-inner truncate"></div>
+
+                    <!-- Row 2: Sex & Birthday/Age -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5 w-full">
+                        <div class="flex flex-col gap-1 w-full">
+                            <label class="text-[10px] sm:text-[11px] font-extrabold tracking-wider text-[#2A1001] uppercase">Sex:</label>
+                            <div id="mSex" class="w-full min-h-[40px] px-4 py-2 rounded-2xl bg-[#EAE7DF] border border-[#2A1001]/15 text-[#2A1001] font-semibold text-xs sm:text-sm shadow-inner flex items-center capitalize select-all"></div>
+                        </div>
+                        <div class="flex flex-col gap-1 w-full">
+                            <label class="text-[10px] sm:text-[11px] font-extrabold tracking-wider text-[#2A1001] uppercase">Birthday &amp; Age:</label>
+                            <div id="mBirthday" class="w-full min-h-[40px] px-4 py-2 rounded-2xl bg-[#EAE7DF] border border-[#2A1001]/15 text-[#2A1001] font-semibold text-xs sm:text-sm shadow-inner flex items-center select-all"></div>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- ── CARD 2: Contact & Location Information ── -->
+            <!-- ── CARD 2: Contact & Location Information (Row-by-Row Layout) ── -->
             <div class="relative w-full bg-[#D7E3A5] rounded-2xl p-5 sm:p-7 pt-8 sm:pt-9 shadow-sm border border-[#d2dbbe]">
                 <span class="absolute -top-3 left-4 sm:left-6 bg-[#667733] text-white text-[10px] sm:text-xs font-bold px-3 sm:px-4 py-1 rounded-full tracking-wider uppercase shadow-sm">
                     Contact &amp; Location Information
                 </span>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
-                    <div class="flex flex-col gap-1">
-                        <label class="text-[10px] sm:text-[11px] font-extrabold tracking-wider text-[#2A1001] uppercase">Primary Email:</label>
-                        <div id="mEmail" class="w-full px-4 py-2 rounded-full bg-white text-[#2c3e2b] font-semibold text-xs sm:text-sm shadow-inner truncate"></div>
-                    </div>
-                    <div class="flex flex-col gap-1">
-                        <label class="text-[10px] sm:text-[11px] font-extrabold tracking-wider text-[#2A1001] uppercase">Secondary Email:</label>
-                        <div id="mSecondaryEmail" class="w-full px-4 py-2 rounded-full bg-white text-[#2c3e2b] font-medium text-xs sm:text-sm shadow-inner truncate"></div>
-                    </div>
-                    <div class="flex flex-col gap-1">
-                        <label class="text-[10px] sm:text-[11px] font-extrabold tracking-wider text-[#2A1001] uppercase">Phone Number:</label>
-                        <div id="mPhone" class="w-full px-4 py-2 rounded-full bg-white text-[#2c3e2b] font-semibold text-xs sm:text-sm shadow-inner truncate"></div>
+                <div class="flex flex-col gap-3.5 w-full">
+                    <!-- Row 1: Primary Email & Secondary Email -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5 w-full">
+                        <div class="flex flex-col gap-1 w-full">
+                            <label class="text-[10px] sm:text-[11px] font-extrabold tracking-wider text-[#2A1001] uppercase">Primary Email:</label>
+                            <div id="mEmail" class="w-full min-h-[40px] px-4 py-2 rounded-2xl bg-[#EAE7DF] border border-[#2A1001]/15 text-[#2A1001] font-semibold text-xs sm:text-sm shadow-inner flex items-center break-all select-all"></div>
+                        </div>
+                        <div class="flex flex-col gap-1 w-full">
+                            <label class="text-[10px] sm:text-[11px] font-extrabold tracking-wider text-[#2A1001] uppercase">Secondary Email:</label>
+                            <div id="mSecondaryEmail" class="w-full min-h-[40px] px-4 py-2 rounded-2xl bg-[#EAE7DF] border border-[#2A1001]/15 text-[#2A1001] font-medium text-xs sm:text-sm shadow-inner flex items-center break-all select-all"></div>
+                        </div>
                     </div>
 
-                    <!-- Address Breakdown -->
-                    <div class="flex flex-col gap-1.5 md:col-span-3 mt-1">
+                    <!-- Row 2: Phone Number -->
+                    <div class="flex flex-col gap-1 w-full">
+                        <label class="text-[10px] sm:text-[11px] font-extrabold tracking-wider text-[#2A1001] uppercase">Phone Number:</label>
+                        <div id="mPhone" class="w-full min-h-[40px] px-4 py-2 rounded-2xl bg-[#EAE7DF] border border-[#2A1001]/15 text-[#2A1001] font-semibold text-xs sm:text-sm shadow-inner flex items-center select-all"></div>
+                    </div>
+
+                    <!-- Row 3: Complete Address -->
+                    <div class="flex flex-col gap-1 w-full">
                         <label class="text-[10px] sm:text-[11px] font-extrabold tracking-wider text-[#2A1001] uppercase">Complete Address:</label>
-                        <div id="mFullAddress" class="w-full px-4 py-2.5 rounded-xl bg-white text-[#2c3e2b] font-medium text-xs sm:text-sm shadow-inner leading-relaxed"></div>
+                        <div id="mFullAddress" class="w-full min-h-[44px] px-4 py-2.5 rounded-2xl bg-[#EAE7DF] border border-[#2A1001]/15 text-[#2A1001] font-medium text-xs sm:text-sm shadow-inner leading-relaxed flex items-center break-words select-all"></div>
                     </div>
                 </div>
             </div>
-
-            <!-- ── CARD 3: Medical Information & Clinical History ── -->
-            <div id="mMedicalInfoCard" class="relative w-full bg-[#D7E3A5] rounded-2xl p-5 sm:p-7 pt-8 sm:pt-9 shadow-sm border border-[#d2dbbe]">
+            <!-- ── CARD 3: Medical Information & Clinical History (Dentist/Admin Only) ── -->
+            <div id="mMedicalInfoCard" class="relative w-full bg-[#D7E3A5] rounded-2xl p-5 sm:p-7 pt-8 sm:pt-9 shadow-sm border border-[#d2dbbe] flex flex-col gap-4">
                 <span class="absolute -top-3 left-4 sm:left-6 bg-[#667733] text-white text-[10px] sm:text-xs font-bold px-3 sm:px-4 py-1 rounded-full tracking-wider uppercase shadow-sm">
                     Medical Information &amp; Clinical History
                 </span>
                 
-                <div class="flex flex-col gap-4">
+                <div class="flex flex-col gap-3.5 w-full">
 
                     <!-- Pre-existing Health Conditions -->
-                    <div class="flex flex-col gap-1">
+                    <div class="flex flex-col gap-1 w-full">
                         <label class="text-[10px] sm:text-[11px] font-extrabold tracking-wider text-[#2A1001] uppercase flex items-center gap-1.5">
                             <i class="fa-solid fa-heart-pulse text-[#667733]"></i> Pre-existing Health Conditions:
                         </label>
-                        <div id="mHealthConditions" class="flex flex-wrap gap-1.5 min-h-[32px] p-2 rounded-xl bg-white/70"></div>
+                        <div id="mHealthConditions" class="w-full min-h-[40px] px-4 py-2 rounded-2xl bg-[#EAE7DF] border border-[#2A1001]/15 text-[#2A1001] shadow-inner flex items-center flex-wrap gap-2"></div>
                     </div>
 
                     <!-- Past Surgeries -->
-                    <div class="flex flex-col gap-1">
+                    <div class="flex flex-col gap-1 w-full">
                         <label class="text-[10px] sm:text-[11px] font-extrabold tracking-wider text-[#2A1001] uppercase flex items-center gap-1.5">
                             <i class="fa-solid fa-hospital-user text-[#667733]"></i> Past Surgeries:
                         </label>
-                        <div id="mSurgeries" class="flex flex-wrap gap-1.5 min-h-[32px] p-2 rounded-xl bg-white/70"></div>
+                        <div id="mSurgeries" class="w-full min-h-[40px] px-4 py-2 rounded-2xl bg-[#EAE7DF] border border-[#2A1001]/15 text-[#2A1001] shadow-inner flex items-center flex-wrap gap-2"></div>
                     </div>
 
                     <!-- Lifestyle Factors -->
-                    <div class="flex flex-col gap-1">
+                    <div class="flex flex-col gap-1 w-full">
                         <label class="text-[10px] sm:text-[11px] font-extrabold tracking-wider text-[#2A1001] uppercase flex items-center gap-1.5">
                             <i class="fa-solid fa-dna text-[#667733]"></i> Lifestyle Factors:
                         </label>
-                        <div id="mLifeFactors" class="flex flex-wrap gap-1.5 min-h-[32px] p-2 rounded-xl bg-white/70"></div>
+                        <div id="mLifeFactors" class="w-full min-h-[40px] px-4 py-2 rounded-2xl bg-[#EAE7DF] border border-[#2A1001]/15 text-[#2A1001] shadow-inner flex items-center flex-wrap gap-2"></div>
                     </div>
 
                     <!-- Current Prescriptions -->
-                    <div class="flex flex-col gap-1">
+                    <div class="flex flex-col gap-1 w-full">
                         <label class="text-[10px] sm:text-[11px] font-extrabold tracking-wider text-[#2A1001] uppercase flex items-center gap-1.5">
                             <i class="fa-solid fa-prescription-bottle-medical text-[#667733]"></i> Current Prescriptions:
                         </label>
-                        <div id="mPrescriptions" class="flex flex-wrap gap-1.5 min-h-[32px] p-2 rounded-xl bg-white/70"></div>
+                        <div id="mPrescriptions" class="w-full min-h-[40px] px-4 py-2 rounded-2xl bg-[#EAE7DF] border border-[#2A1001]/15 text-[#2A1001] shadow-inner flex items-center flex-wrap gap-2"></div>
                     </div>
 
                     <!-- Allergies & Warnings -->
-                    <div class="flex flex-col gap-1">
+                    <div class="flex flex-col gap-1 w-full">
                         <label class="text-[10px] sm:text-[11px] font-extrabold tracking-wider text-[#2A1001] uppercase flex items-center gap-1.5">
                             <i class="fa-solid fa-triangle-exclamation text-amber-700"></i> Allergies / Historical Allergies:
                         </label>
-                        <div id="mAllergies" class="flex flex-wrap gap-1.5 min-h-[32px] p-2 rounded-xl bg-white/70"></div>
+                        <div id="mAllergies" class="w-full min-h-[40px] px-4 py-2 rounded-2xl bg-[#EAE7DF] border border-[#2A1001]/15 text-[#2A1001] shadow-inner flex items-center flex-wrap gap-2"></div>
                     </div>
 
                     <!-- Pregnancy Status (Conditional) -->
-                    <div id="mPregnancyWrapper" class="hidden flex-col gap-1">
+                    <div id="mPregnancyWrapper" class="hidden flex-col gap-1 w-full">
                         <label class="text-[10px] sm:text-[11px] font-extrabold tracking-wider text-[#2A1001] uppercase flex items-center gap-1.5">
                             <i class="fa-solid fa-person-breastfeeding text-[#667733]"></i> Pregnancy &amp; Nursing Status:
                         </label>
-                        <div id="mPregnancy" class="w-full px-4 py-2 rounded-full bg-white text-[#2c3e2b] font-semibold text-xs sm:text-sm shadow-inner"></div>
+                        <div id="mPregnancy" class="w-full min-h-[40px] px-4 py-2 rounded-2xl bg-[#EAE7DF] border border-[#2A1001]/15 text-[#2A1001] font-semibold text-xs sm:text-sm shadow-inner flex items-center"></div>
                     </div>
 
                 </div>
             </div>
 
-            <!-- ── CARD 4: Uploaded Medical Documents / PDFs ── -->
+            <!-- ── CARD 4: Uploaded Medical Documents / PDFs (Dentist/Admin Only) ── -->
             <div id="mMedicalDocsCard" class="relative w-full bg-[#D7E3A5] rounded-2xl p-5 sm:p-7 pt-8 sm:pt-9 shadow-sm border border-[#d2dbbe]">
                 <span class="absolute -top-3 left-4 sm:left-6 bg-[#667733] text-white text-[10px] sm:text-xs font-bold px-3 sm:px-4 py-1 rounded-full tracking-wider uppercase shadow-sm">
                     Medical Documents &amp; PDFs
                 </span>
-                <div id="mMedicalDocsList" class="flex flex-col gap-2">
+                <div id="mMedicalDocsList" class="flex flex-col gap-2 w-full">
                     <!-- Populated dynamically -->
                 </div>
             </div>
 
-            <!-- ── CARD 5: Clinical Sessions & Visit History (Tabbed) ── -->
+            <!-- ── CARD 5: Clinical Sessions & Visit History ── -->
             <div class="bg-[#D3DCBE] rounded-3xl p-5 sm:p-7 border border-[#2A1001]/15 shadow-sm flex flex-col gap-4">
                 
                 <!-- Tab Switching Navigation -->
-                <div class="flex gap-2 border-b-2 border-[#2A1001]/20 pb-1">
+                <div id="tabNavContainer" class="flex gap-2 border-b-2 border-[#2A1001]/20 pb-1">
                     <button id="tabSessionBtn" class="tabBtn px-5 py-2 font-bold text-xs sm:text-sm text-[#2A1001] border-b-4 border-[#667733] -mb-1.5 transition cursor-pointer flex items-center gap-1.5">
                         <i class="fa-solid fa-stethoscope"></i> Today's Clinical Session
                     </button>
@@ -357,21 +358,21 @@
                     </button>
                 </div>
 
-                <!-- Tab 1: Today's Clinical Session -->
+                <!-- Tab 1: Today's Clinical Session (Dentist/Admin Only) -->
                 <div id="tabSessionContent" class="tabContent pt-2">
                     
                     <!-- No Active Ongoing Session Notice -->
-                    <div id="noSessionContent" class="hidden text-center py-8 bg-white/60 rounded-2xl p-6 border border-[#2A1001]/10">
+                    <div id="noSessionContent" class="hidden text-center py-8 bg-[#EAE7DF] rounded-2xl p-6 border border-[#2A1001]/10">
                         <i class="fa-solid fa-user-clock text-3xl text-[#2A1001]/30 mb-2 block"></i>
                         <p class="text-[#2A1001]/70 font-bold text-sm">No ongoing session active for this patient today.</p>
-                        <p class="text-[#2A1001]/50 text-xs mt-0.5">Sessions activate automatically when queue status is marked ongoing.</p>
+                        <p class="text-[#2A1001]/50 text-xs mt-0.5">Sessions activate automatically when queue status is marked as ongoing.</p>
                     </div>
 
                     <!-- Active Session Form -->
                     <div id="sessionActiveContent" class="flex flex-col gap-4">
                         <div>
                             <label class="block font-bold text-[#2A1001] text-xs uppercase tracking-wide mb-1">Patient's Chief Concern:</label>
-                            <div id="mPatientNote" class="w-full p-3.5 rounded-2xl bg-white/80 text-[#2A1001] text-xs sm:text-sm min-h-[40px] shadow-inner font-medium"></div>
+                            <div id="mPatientNote" class="w-full p-3.5 rounded-2xl bg-[#EAE7DF] border border-[#2A1001]/15 text-[#2A1001] text-xs sm:text-sm min-h-[40px] shadow-inner font-medium"></div>
                         </div>
 
                         <div>
@@ -382,7 +383,7 @@
                         <!-- X-Ray Dropzone -->
                         <div>
                             <label class="block font-bold text-[#2A1001] text-xs uppercase tracking-wide mb-1">Upload Session X-Rays:</label>
-                            <div id="xrayDropZone" class="border-2 border-dashed border-[#2A1001]/30 rounded-2xl bg-white/60 py-6 flex flex-col items-center justify-center cursor-pointer hover:bg-white/90 transition shadow-inner">
+                            <div id="xrayDropZone" class="border-2 border-dashed border-[#2A1001]/30 rounded-2xl bg-[#EAE7DF]/70 py-6 flex flex-col items-center justify-center cursor-pointer hover:bg-white transition shadow-inner">
                                 <i class="fa-solid fa-x-ray text-2xl text-[#667733] mb-1"></i>
                                 <span class="text-xs font-bold text-[#2A1001]" id="xrayLabel">Click or drag X-ray images to upload</span>
                                 <span class="text-[10px] text-gray-500">Supports JPG, PNG (Max 10MB)</span>
@@ -473,6 +474,12 @@
     let currentSearch = "";
     let currentSort = "recent";
 
+    function isDoctorOrAdminUser() {
+        const userRole = (localStorage.getItem('userRole') || 'employee').toLowerCase();
+        const userPosition = (localStorage.getItem('userPosition') || 'receptionist').toLowerCase();
+        return userRole === 'admin' || userRole === 'dentist' || userPosition === 'dentist';
+    }
+
     // ── Load Patients From Backend ──────────────────────────────────────────
     async function loadPatientsFromDatabase() {
         try {
@@ -499,7 +506,20 @@
     const tabHistoryContent = document.getElementById('tabHistoryContent');
 
     function activateTab(tab) {
-        if (tab === 'session') {
+        const isDentistOrAdmin = isDoctorOrAdminUser();
+        
+        if (!isDentistOrAdmin || tab === 'history') {
+            tabHistoryContent.classList.remove('hidden');
+            tabSessionContent.classList.add('hidden');
+
+            tabHistoryBtn.classList.add('border-[#667733]', 'text-[#2A1001]');
+            tabHistoryBtn.classList.remove('border-transparent', 'text-[#2A1001]/50');
+
+            if (tabSessionBtn) {
+                tabSessionBtn.classList.add('border-transparent', 'text-[#2A1001]/50');
+                tabSessionBtn.classList.remove('border-[#667733]', 'text-[#2A1001]');
+            }
+        } else {
             tabSessionContent.classList.remove('hidden');
             tabHistoryContent.classList.add('hidden');
 
@@ -508,15 +528,6 @@
 
             tabHistoryBtn.classList.add('border-transparent', 'text-[#2A1001]/50');
             tabHistoryBtn.classList.remove('border-[#667733]', 'text-[#2A1001]');
-        } else {
-            tabHistoryContent.classList.remove('hidden');
-            tabSessionContent.classList.add('hidden');
-
-            tabHistoryBtn.classList.add('border-[#667733]', 'text-[#2A1001]');
-            tabHistoryBtn.classList.remove('border-transparent', 'text-[#2A1001]/50');
-
-            tabSessionBtn.classList.add('border-transparent', 'text-[#2A1001]/50');
-            tabSessionBtn.classList.remove('border-[#667733]', 'text-[#2A1001]');
         }
     }
 
@@ -534,20 +545,25 @@
         return `(${age} yrs)`;
     }
 
+    // Clean, elegant read-only badge renderer (no awkward chip boxes when empty)
     function renderChipBadges(containerId, items, badgeType = 'default') {
         const container = document.getElementById(containerId);
         if (!container) return;
 
-        const normalized = Array.isArray(items) ? items : [];
+        const normalized = (Array.isArray(items) ? items : []).filter(item => {
+            const val = typeof item === 'string' ? item.trim() : (item.description || item.allergen || item.medication_name || '').trim();
+            return val && val.toLowerCase() !== 'none';
+        });
+
         if (normalized.length === 0) {
-            container.innerHTML = `<span class="text-xs text-gray-500 italic">None recorded</span>`;
+            container.innerHTML = `<span class="text-xs text-gray-500 font-medium italic select-none">None recorded</span>`;
             return;
         }
 
         const styles = {
-            default: 'bg-white text-[#2A1001] border-[#c1ccab]',
+            default: 'bg-[#FDFCE9] text-[#2A1001] border-[#c1ccab]',
             warning: 'bg-red-50 text-red-800 border-red-200 font-bold',
-            prescription: 'bg-white text-[#667733] border-[#667733]/40 font-bold'
+            prescription: 'bg-[#EAF0DD] text-[#4a5825] border-[#667733]/30 font-bold'
         };
 
         const s = styles[badgeType] || styles.default;
@@ -556,7 +572,7 @@
             let label = typeof item === 'string' ? item : (item.description || item.allergen || item.medication_name || '');
             if (item.dosage) label += ` (${item.dosage})`;
             return `
-                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs border shadow-inner ${s}">
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs border shadow-sm ${s}">
                     ${escHtml(label)}
                 </span>
             `;
@@ -569,17 +585,18 @@
         if (!p) return;
 
         currentPatientId = id;
+        const isDentistOrAdmin = isDoctorOrAdminUser();
 
         // Header
         document.getElementById('mHeaderName').textContent = `${p.first_name || ''} ${p.last_name || ''}`;
-        document.getElementById('mHeaderPublicId').textContent = `System ID: ${p.public_id || `PAT-${p.patient_id}`}`;
+        document.getElementById('mHeaderPublicId').textContent = `Patient ID: ${p.public_id || `PAT-${p.patient_id}`}`;
         
         const lastVisitDate = p.last_visit 
             ? new Date(p.last_visit + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
             : 'No visits yet';
         document.getElementById('mLastVisitBadge').textContent = `Last Visit: ${lastVisitDate}`;
 
-        // Basic Information
+        // 1. Basic Information (Read-only grey boxes)
         document.getElementById('mFirstName').textContent = p.first_name || '—';
         document.getElementById('mLastName').textContent = p.last_name || '—';
         document.getElementById('mSex').textContent = p.sex || '—';
@@ -588,84 +605,88 @@
         const ageStr = calculateAge(p.birthday);
         document.getElementById('mBirthday').textContent = `${birthdayFormatted} ${ageStr}`.trim();
 
-        // Contact & Location
+        // 2. Contact & Location (Read-only grey boxes)
         document.getElementById('mEmail').textContent = p.email || '—';
         document.getElementById('mSecondaryEmail').textContent = p.secondary_email || 'None';
         document.getElementById('mPhone').textContent = p.phone || '—';
 
-        // Full Address Breakdown
         const fullAddr = p.address || [p.address_street, p.address_barangay, p.address_city, p.address_province].filter(Boolean).join(', ') || 'No address provided';
         document.getElementById('mFullAddress').textContent = fullAddr;
 
-        // Medical History Chips
-        renderChipBadges('mHealthConditions', p.health_conditions, 'default');
-        renderChipBadges('mSurgeries', p.surgeries, 'default');
-        renderChipBadges('mLifeFactors', p.life_factors, 'default');
-        renderChipBadges('mPrescriptions', p.prescriptions, 'prescription');
-        renderChipBadges('mAllergies', p.allergies, 'warning');
-
-        // Pregnancy Status (Shown if female or populated)
-        const sexLower = (p.sex || '').toLowerCase();
-        const pregWrap = document.getElementById('mPregnancyWrapper');
-        if (sexLower === 'f' || sexLower === 'female' || p.pregnancy_status) {
-            pregWrap.classList.remove('hidden');
-            pregWrap.classList.add('flex');
-            document.getElementById('mPregnancy').textContent = p.pregnancy_status || 'Not Pregnant';
-        } else {
-            pregWrap.classList.add('hidden');
-            pregWrap.classList.remove('flex');
-        }
-
-        const userRole = localStorage.getItem('userRole') || 'employee';
-        const userPosition = localStorage.getItem('userPosition') || 'receptionist';
-        const isDentistOrAdmin = userRole === 'admin' || userRole === 'dentist' || userPosition === 'dentist';
-
-        // Uploaded Medical PDF Documents
+        // 3. Medical History & Documents (Dentist/Admin Only)
+        const medicalInfoCard = document.getElementById('mMedicalInfoCard');
         const docsCard = document.getElementById('mMedicalDocsCard');
         const docsList = document.getElementById('mMedicalDocsList');
-        const docs = Array.isArray(p.patient_documents) ? p.patient_documents : [];
+        const tabSessionBtnEl = document.getElementById('tabSessionBtn');
 
-        if (docs.length > 0 && isDentistOrAdmin) {
-            docsCard.classList.remove('hidden');
-            docsList.innerHTML = docs.map((doc, idx) => `
-                <div class="flex items-center justify-between bg-white border border-[#c1ccab] rounded-xl px-4 py-2.5 shadow-inner">
-                    <div class="flex items-center gap-2 min-w-0">
-                        <i class="fa-solid fa-file-pdf text-red-600 text-base"></i>
-                        <span class="text-xs sm:text-sm font-semibold text-[#2c3e2b] truncate">Medical Document #${idx + 1} (${escHtml(doc.uploaded_at ? doc.uploaded_at.split('T')[0] : 'PDF')})</span>
-                    </div>
-                    <a href="${escHtml(doc.file_url)}" target="_blank" rel="noopener noreferrer" class="bg-[#667733] hover:bg-[#556022] text-white font-bold text-xs px-3.5 py-1.5 rounded-full transition shrink-0 flex items-center gap-1">
-                        <i class="fa-solid fa-eye"></i> View PDF
-                    </a>
-                </div>
-            `).join('');
-        } else {
-            docsCard.classList.add('hidden');
-            docsList.innerHTML = '';
-        }
-
-        // Ongoing Live Session
-        const ongoing = p.ongoing_appointment;
-        document.getElementById('mPatientNote').textContent = ongoing ? (ongoing.patient_note || 'No specific concern noted.') : 'No ongoing concern';
-        document.getElementById('mNotes').value = ongoing ? (ongoing.dentist_note || '') : '';
-
-        refreshSessionTabVisibility(p);
-        renderXrayPreviews(p);
-
-        // Past Visits History Tab
-        renderVisitHistory(p.past_appointments, p.xrays || []);
-        document.getElementById('pastVisitsCount').textContent = (p.past_appointments || []).length;
-
-        const medicalInfoCard = document.getElementById('mMedicalInfoCard');
-
-        if (!isDentistOrAdmin) {
-            medicalInfoCard.classList.add('hidden');
-            medicalInfoCard.classList.remove('flex');
-        } else {
+        if (isDentistOrAdmin) {
             medicalInfoCard.classList.remove('hidden');
             medicalInfoCard.classList.add('flex');
+
+            renderChipBadges('mHealthConditions', p.health_conditions, 'default');
+            renderChipBadges('mSurgeries', p.surgeries, 'default');
+            renderChipBadges('mLifeFactors', p.life_factors, 'default');
+            renderChipBadges('mPrescriptions', p.prescriptions, 'prescription');
+            renderChipBadges('mAllergies', p.allergies, 'warning');
+
+            const sexLower = (p.sex || '').toLowerCase();
+            const pregWrap = document.getElementById('mPregnancyWrapper');
+            if (sexLower === 'f' || sexLower === 'female' || p.pregnancy_status) {
+                pregWrap.classList.remove('hidden');
+                pregWrap.classList.add('flex');
+                document.getElementById('mPregnancy').textContent = p.pregnancy_status || 'Not Pregnant';
+            } else {
+                pregWrap.classList.add('hidden');
+                pregWrap.classList.remove('flex');
+            }
+
+            const docs = Array.isArray(p.patient_documents) ? p.patient_documents : [];
+            if (docs.length > 0) {
+                docsCard.classList.remove('hidden');
+                docsList.innerHTML = docs.map((doc, idx) => `
+                    <div class="flex items-center justify-between bg-[#EAE7DF] border border-[#2A1001]/15 rounded-2xl px-4 py-2.5 shadow-inner">
+                        <div class="flex items-center gap-2 min-w-0">
+                            <i class="fa-solid fa-file-pdf text-red-600 text-base"></i>
+                            <span class="text-xs sm:text-sm font-semibold text-[#2A1001] truncate">Medical Document #${idx + 1} (${escHtml(doc.uploaded_at ? doc.uploaded_at.split('T')[0] : 'PDF')})</span>
+                        </div>
+                        <a href="${escHtml(doc.file_url)}" target="_blank" rel="noopener noreferrer" class="bg-[#667733] hover:bg-[#556022] text-white font-bold text-xs px-3.5 py-1.5 rounded-full transition shrink-0 flex items-center gap-1">
+                            <i class="fa-solid fa-eye"></i> View PDF
+                        </a>
+                    </div>
+                `).join('');
+            } else {
+                docsCard.classList.add('hidden');
+                docsList.innerHTML = '';
+            }
+
+            if (tabSessionBtnEl) tabSessionBtnEl.classList.remove('hidden');
+
+            const ongoing = p.ongoing_appointment;
+            document.getElementById('mPatientNote').textContent = ongoing ? (ongoing.patient_note || 'No specific concern noted.') : 'No ongoing concern';
+            document.getElementById('mNotes').value = ongoing ? (ongoing.dentist_note || '') : '';
+
+            refreshSessionTabVisibility(p);
+            renderXrayPreviews(p);
+
+            activateTab(ongoing ? 'session' : 'history');
+        } else {
+            // Receptionist view: Hide medical info, medical PDFs, and Session Tab
+            medicalInfoCard.classList.add('hidden');
+            medicalInfoCard.classList.remove('flex');
+
+            docsCard.classList.add('hidden');
+            docsList.innerHTML = '';
+
+            if (tabSessionBtnEl) tabSessionBtnEl.classList.add('hidden');
+            tabSessionContent.classList.add('hidden');
+
+            activateTab('history');
         }
 
-        activateTab('session');
+        // Past Visits History Tab
+        renderVisitHistory(p.past_appointments, p.xrays || [], isDentistOrAdmin);
+        document.getElementById('pastVisitsCount').textContent = (p.past_appointments || []).length;
+
         document.getElementById('saveConfirmation').classList.add('hidden');
         document.getElementById('patientModal').classList.remove('hidden');
     }
@@ -684,12 +705,12 @@
     }
 
     // ── Render Past Visits History ──────────────────────────────────────────
-    function renderVisitHistory(appointmentsList, allXrays) {
+    function renderVisitHistory(appointmentsList, allXrays, isDentistOrAdmin = false) {
         const container = document.getElementById('visitHistoryList');
         if (!container) return;
 
         if (!appointmentsList || appointmentsList.length === 0) {
-            container.innerHTML = `<p class="text-xs text-[#2A1001]/50 text-center py-6">No previous visits recorded for this patient.</p>`;
+            container.innerHTML = `<p class="text-xs text-[#2A1001]/50 text-center py-6 font-medium">No previous visits recorded for this patient.</p>`;
             return;
         }
 
@@ -697,7 +718,7 @@
             const xrayCount = (allXrays || []).filter(x => x.appointment_id === a.appointment_id).length;
 
             return `
-                <div class="bg-white/80 rounded-2xl p-4 border border-[#2A1001]/10 shadow-sm flex flex-col gap-1.5">
+                <div class="bg-[#EAE7DF] rounded-2xl p-4 border border-[#2A1001]/15 shadow-inner flex flex-col gap-1.5">
                     <div class="flex justify-between items-start gap-2">
                         <p class="font-extrabold text-sm text-[#2A1001] font-mono">${escHtml(a.appointment_date)}</p>
                         <span class="text-xs font-bold text-[#667733] bg-[#667733]/15 px-3 py-0.5 rounded-full border border-[#667733]/20">
@@ -705,30 +726,36 @@
                         </span>
                     </div>
                     <p class="text-xs text-[#2A1001]/80"><span class="font-bold">Patient Concern:</span> ${escHtml(a.patient_note) || 'None noted'}</p>
-                    <p class="text-xs text-green-900 bg-green-50/70 p-2 rounded-xl border border-green-200"><span class="font-bold">Dentist Diagnosis &amp; Remarks:</span> ${escHtml(a.dentist_note) || 'No notes recorded'}</p>
-
-                    ${xrayCount > 0 ? `
-                        <div class="pt-1 mt-1">
-                            <button class="viewVisitXraysBtn text-xs font-bold text-white bg-[#667733] hover:bg-[#556022] transition px-3 py-1.5 rounded-full flex items-center gap-1 cursor-pointer" data-appointment-id="${escHtml(a.appointment_id)}" data-date="${escHtml(a.appointment_date)}" data-service="${escHtml(a.service_label || 'Dental Service')}">
-                                <i class="fa-solid fa-x-ray"></i> View Visit X-Rays (${xrayCount})
-                            </button>
-                        </div>
+                    
+                    ${isDentistOrAdmin ? `
+                        <p class="text-xs text-green-900 bg-[#D7E3A5]/60 p-2.5 rounded-xl border border-[#667733]/20 mt-1">
+                            <span class="font-bold">Dentist Diagnosis &amp; Remarks:</span> ${escHtml(a.dentist_note) || 'No notes recorded'}
+                        </p>
+                        ${xrayCount > 0 ? `
+                            <div class="pt-1 mt-1">
+                                <button class="viewVisitXraysBtn text-xs font-bold text-white bg-[#667733] hover:bg-[#556022] transition px-3.5 py-1.5 rounded-full flex items-center gap-1 cursor-pointer" data-appointment-id="${escHtml(a.appointment_id)}" data-date="${escHtml(a.appointment_date)}" data-service="${escHtml(a.service_label || 'Dental Service')}">
+                                    <i class="fa-solid fa-x-ray"></i> View Visit X-Rays (${xrayCount})
+                                </button>
+                            </div>
+                        ` : ''}
                     ` : ''}
                 </div>
             `;
         }).join('');
 
-        document.querySelectorAll('.viewVisitXraysBtn').forEach(btn => {
-            btn.addEventListener('click', function () {
-                const xraysForVisit = (allXrays || []).filter(x => x.appointment_id == this.dataset.appointmentId);
-                document.getElementById('visitXrayModalDate').textContent = `X-Rays for visit: ${this.dataset.date}`;
-                document.getElementById('visitXrayModalService').textContent = `Service: ${this.dataset.service}`;
-                document.getElementById('visitXrayModalGrid').innerHTML = xraysForVisit
-                    .map(x => `<img src="${escHtml(x.file_url)}" class="w-full aspect-square rounded-xl object-cover cursor-pointer hover:opacity-90 transition border border-black/10 shadow-sm" alt="X-Ray"/>`)
-                    .join('');
-                document.getElementById('visitXrayModal').classList.remove('hidden');
+        if (isDentistOrAdmin) {
+            document.querySelectorAll('.viewVisitXraysBtn').forEach(btn => {
+                btn.addEventListener('click', function () {
+                    const xraysForVisit = (allXrays || []).filter(x => x.appointment_id == this.dataset.appointmentId);
+                    document.getElementById('visitXrayModalDate').textContent = `X-Rays for visit: ${this.dataset.date}`;
+                    document.getElementById('visitXrayModalService').textContent = `Service: ${this.dataset.service}`;
+                    document.getElementById('visitXrayModalGrid').innerHTML = xraysForVisit
+                        .map(x => `<img src="${escHtml(x.file_url)}" class="w-full aspect-square rounded-xl object-cover cursor-pointer hover:opacity-90 transition border border-black/10 shadow-sm" alt="X-Ray"/>`)
+                        .join('');
+                    document.getElementById('visitXrayModal').classList.remove('hidden');
+                });
             });
-        });
+        }
     }
 
     // ── X-Ray Previews & Handling ───────────────────────────────────────────
@@ -1115,12 +1142,10 @@
         container.innerHTML = '';
         document.getElementById('qrPatientName').textContent = `${p.first_name} ${p.last_name} (${p.public_id || `PAT-${p.patient_id}`})`;
 
-        // Use standard online SVG QR generator payload
         const qrPayload = JSON.stringify({
             id: p.public_id || `PAT-${p.patient_id}`,
             name: `${p.first_name} ${p.last_name}`,
             phone: p.phone,
-            allergies: (p.allergies || []).map(a => a.allergen),
             emergency: p.secondary_email || p.email
         });
 
@@ -1137,16 +1162,11 @@
         document.getElementById('qrModal').classList.add('hidden');
     });
 
-    // ── Printable Patient Medical Chart ──────────────────────────────────────
+    // ── Printable Patient Chart ──────────────────────────────────────
     function buildPrintablePatientChart(p) {
+        const isDentistOrAdmin = isDoctorOrAdminUser();
         const listText = (arr, fn) => (Array.isArray(arr) && arr.length ? arr.map(fn).join(', ') : 'None recorded');
         const row = (label, val) => `<tr><td>${label}:</td><td><strong>${escHtml(val) || '&mdash;'}</strong></td></tr>`;
-
-        const conditions = listText(p.health_conditions, c => typeof c === 'string' ? c : c.description);
-        const surgeries = listText(p.surgeries, s => typeof s === 'string' ? s : s.description);
-        const lifeFactors = listText(p.life_factors, l => typeof l === 'string' ? l : l.description);
-        const allergies = listText(p.allergies, a => typeof a === 'string' ? a : a.allergen);
-        const prescriptions = listText(p.prescriptions, rx => rx.dosage ? `${rx.medication_name} (${rx.dosage})` : rx.medication_name);
 
         const fullAddr = p.address || [p.address_street, p.address_barangay, p.address_city, p.address_province].filter(Boolean).join(', ') || 'None';
 
@@ -1157,9 +1177,30 @@
                     <span style="color:#667733; font-weight:bold;">${escHtml(a.service_label || 'Dental Service')}</span>
                 </div>
                 <div><b>Patient Concern:</b> ${escHtml(a.patient_note) || 'None noted'}</div>
-                <div><b>Dentist Clinical Diagnosis:</b> ${escHtml(a.dentist_note) || 'No notes recorded'}</div>
+                ${isDentistOrAdmin ? `<div><b>Dentist Diagnosis:</b> ${escHtml(a.dentist_note) || 'No notes recorded'}</div>` : ''}
             </div>
         `).join('') || '<p style="color:#888; font-style:italic;">No past visit history recorded.</p>';
+
+        let medicalSectionHtml = '';
+        if (isDentistOrAdmin) {
+            const conditions = listText(p.health_conditions, c => typeof c === 'string' ? c : c.description);
+            const surgeries = listText(p.surgeries, s => typeof s === 'string' ? s : s.description);
+            const lifeFactors = listText(p.life_factors, l => typeof l === 'string' ? l : l.description);
+            const allergies = listText(p.allergies, a => typeof a === 'string' ? a : a.allergen);
+            const prescriptions = listText(p.prescriptions, rx => rx.dosage ? `${rx.medication_name} (${rx.dosage})` : rx.medication_name);
+
+            medicalSectionHtml = `
+                <h2>Medical &amp; Clinical History</h2>
+                <table class="info">
+                    ${row('Pre-existing Health Conditions', conditions)}
+                    ${row('Past Surgeries', surgeries)}
+                    ${row('Lifestyle Factors', lifeFactors)}
+                    ${row('Allergies / Warnings', allergies)}
+                    ${row('Current Prescriptions', prescriptions)}
+                    ${row('Pregnancy & Nursing Status', p.pregnancy_status)}
+                </table>
+            `;
+        }
 
         return `<!DOCTYPE html>
 <html>
@@ -1181,7 +1222,7 @@
 <body>
     <div class="header">
         <h1>DENTAL CLINIC INC.</h1>
-        <p>Official Patient Record &amp; Clinical Dental Chart</p>
+        <p>Official Patient Record &amp; Chart</p>
         <p>Printed on: ${new Date().toLocaleDateString()} &bull; Patient ID: ${escHtml(p.public_id || `PAT-${p.patient_id}`)}</p>
     </div>
 
@@ -1196,15 +1237,7 @@
         ${row('Complete Address', fullAddr)}
     </table>
 
-    <h2>Medical &amp; Clinical History</h2>
-    <table class="info">
-        ${row('Pre-existing Health Conditions', conditions)}
-        ${row('Past Surgeries', surgeries)}
-        ${row('Lifestyle Factors', lifeFactors)}
-        ${row('Allergies / Warnings', allergies)}
-        ${row('Current Prescriptions', prescriptions)}
-        ${row('Pregnancy & Nursing Status', p.pregnancy_status)}
-    </table>
+    ${medicalSectionHtml}
 
     <h2>Past Dental Visits &amp; Treatment History</h2>
     ${visits}
@@ -1235,3 +1268,4 @@
   <script src="/InactivityTimer/InactivityTimer.js"></script>
 </body>
 </html>
+

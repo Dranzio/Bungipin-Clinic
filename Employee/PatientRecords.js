@@ -27,6 +27,104 @@ const upload = multer({
 
 function registerPatientRecordsRoutes(app, db, io = null) {
 
+    // Helper: Build structured patient records with robust fallback queries
+    async function fetchFullPatientRecords(db, specificPatientId = null) {
+        let whereClause = "WHERE u.role = 'patient'";
+        const params = [];
+
+        if (specificPatientId) {
+            whereClause += " AND u.user_id = ?";
+            params.push(specificPatientId);
+        }
+
+        const [pRows] = await db.query(`
+            SELECT
+                u.user_id AS patient_id,
+                u.public_id,
+                u.first_name,
+                u.last_name,
+                u.email,
+                u.phone,
+                u.sex,
+                pp.birthday,
+                pp.secondary_email,
+                pp.address,
+                pp.address_street,
+                pp.address_barangay,
+                pp.address_city,
+                pp.address_province,
+                pp.pregnancy_status
+            FROM users u
+                     JOIN patient_profiles pp ON pp.patient_id = u.user_id
+            ${whereClause}
+            ORDER BY u.user_id ASC
+        `, params);
+
+        const fullRecords = [];
+
+        for (const p of pRows) {
+            const [conditions] = await db.query('SELECT description FROM health_conditions WHERE patient_id = ?', [p.patient_id]).catch(() => [[]]);
+            const [surgeries] = await db.query('SELECT description FROM surgeries WHERE patient_id = ?', [p.patient_id]).catch(() => [[]]);
+            const [lifeFactors] = await db.query('SELECT description FROM life_factors WHERE patient_id = ?', [p.patient_id]).catch(() => [[]]);
+            const [allergies] = await db.query('SELECT allergen FROM allergies WHERE patient_id = ?', [p.patient_id]).catch(() => [[]]);
+            const [prescriptions] = await db.query('SELECT medication_name, dosage FROM prescriptions WHERE patient_id = ?', [p.patient_id]).catch(() => [[]]);
+            const [xrays] = await db.query('SELECT xray_id, appointment_id, file_url FROM xrays WHERE patient_id = ?', [p.patient_id]).catch(() => [[]]);
+            const [docs] = await db.query('SELECT document_id, file_url, uploaded_at FROM patient_documents WHERE patient_id = ?', [p.patient_id]).catch(() => [[]]);
+
+            const [[lastVisitRow]] = await db.query(`
+                SELECT MAX(appointment_date) AS last_visit FROM appointments
+                WHERE patient_id = ? AND appointment_status = 'completed'
+            `, [p.patient_id]).catch(() => [[{ last_visit: null }]]);
+
+            // Correctly route ongoing queue sessions
+            const [[ongoing]] = await db.query(`
+                SELECT 
+                    a.appointment_id, 
+                    a.appointment_date, 
+                    a.time_slot,
+                    s.label AS service_label, 
+                    a.dentist_note, 
+                    a.patient_note,
+                    a.queue_status
+                FROM appointments a
+                JOIN services s ON a.service_id = s.service_id
+                WHERE a.patient_id = ? 
+                  AND a.queue_status = 'ongoing'
+                  AND a.appointment_status IN ('approved', 'pending')
+                ORDER BY a.appointment_date DESC, a.time_slot DESC LIMIT 1
+            `, [p.patient_id]).catch(() => [[null]]);
+
+            const [pastAppts] = await db.query(`
+                SELECT 
+                    a.appointment_id, 
+                    a.appointment_date, 
+                    s.label AS service_label, 
+                    a.dentist_note, 
+                    a.patient_note
+                FROM appointments a
+                JOIN services s ON a.service_id = s.service_id
+                WHERE a.patient_id = ? AND a.appointment_status = 'completed'
+                ORDER BY a.appointment_date DESC
+            `, [p.patient_id]).catch(() => [[]]);
+
+            fullRecords.push({
+                ...p,
+                health_conditions: conditions,
+                surgeries: surgeries,
+                life_factors: lifeFactors,
+                allergies: allergies,
+                prescriptions: prescriptions,
+                xrays: xrays,
+                patient_documents: docs,
+                last_visit: lastVisitRow ? lastVisitRow.last_visit : null,
+                ongoing_appointment: ongoing || null,
+                past_appointments: pastAppts
+            });
+        }
+
+        return fullRecords;
+    }
+
     // GET /api/patients — Retrieve all patient records
     app.get('/api/patients', authenticateToken, async (req, res) => {
         if (!['employee', 'admin'].includes(req.user.role)) {
@@ -34,87 +132,7 @@ function registerPatientRecordsRoutes(app, db, io = null) {
         }
 
         try {
-            let patients = [];
-            try {
-                const [rows] = await db.query('CALL sp_get_all_patient_records()');
-                if (rows && rows[0]) {
-                    patients = rows[0].map(r => {
-                        const record = r.patient_record;
-                        return typeof record === 'string' ? JSON.parse(record) : record;
-                    });
-                }
-            } catch (spErr) {
-                console.warn('SP sp_get_all_patient_records fallback to query:', spErr.message);
-
-                const [pRows] = await db.query(`
-                    SELECT
-                        u.user_id AS patient_id,
-                        u.public_id,
-                        u.first_name,
-                        u.last_name,
-                        u.email,
-                        u.phone,
-                        u.sex,
-                        pp.birthday,
-                        pp.secondary_email,
-                        pp.address,
-                        pp.address_street,
-                        pp.address_barangay,
-                        pp.address_city,
-                        pp.address_province,
-                        pp.pregnancy_status
-                    FROM users u
-                             JOIN patient_profiles pp ON pp.patient_id = u.user_id
-                    WHERE u.role = 'patient'
-                    ORDER BY u.user_id ASC
-                `);
-
-                for (const p of pRows) {
-                    const [conditions] = await db.query('SELECT description FROM health_conditions WHERE patient_id = ?', [p.patient_id]).catch(() => [[]]);
-                    const [surgeries] = await db.query('SELECT description FROM surgeries WHERE patient_id = ?', [p.patient_id]).catch(() => [[]]);
-                    const [lifeFactors] = await db.query('SELECT description FROM life_factors WHERE patient_id = ?', [p.patient_id]).catch(() => [[]]);
-                    const [allergies] = await db.query('SELECT allergen FROM allergies WHERE patient_id = ?', [p.patient_id]).catch(() => [[]]);
-                    const [prescriptions] = await db.query('SELECT medication_name, dosage FROM prescriptions WHERE patient_id = ?', [p.patient_id]).catch(() => [[]]);
-                    const [xrays] = await db.query('SELECT xray_id, appointment_id, file_url FROM xrays WHERE patient_id = ?', [p.patient_id]).catch(() => [[]]);
-                    const [docs] = await db.query('SELECT document_id, file_url, uploaded_at FROM patient_documents WHERE patient_id = ?', [p.patient_id]).catch(() => [[]]);
-
-                    const [[lastVisitRow]] = await db.query(`
-                        SELECT MAX(appointment_date) AS last_visit FROM appointments
-                        WHERE patient_id = ? AND appointment_status = 'completed'
-                    `, [p.patient_id]).catch(() => [[{ last_visit: null }]]);
-
-                    const [[ongoing]] = await db.query(`
-                        SELECT a.appointment_id, a.appointment_date, s.label AS service_label, a.dentist_note, a.patient_note
-                        FROM appointments a
-                                 JOIN services s ON a.service_id = s.service_id
-                        WHERE a.patient_id = ? AND a.appointment_status = 'approved' AND a.queue_status = 'ongoing'
-                        ORDER BY a.time_slot DESC LIMIT 1
-                    `, [p.patient_id]).catch(() => [[null]]);
-
-                    const [pastAppts] = await db.query(`
-                        SELECT a.appointment_id, a.appointment_date, s.label AS service_label, a.dentist_note, a.patient_note
-                        FROM appointments a
-                                 JOIN services s ON a.service_id = s.service_id
-                        WHERE a.patient_id = ? AND a.appointment_status = 'completed'
-                        ORDER BY a.appointment_date DESC
-                    `, [p.patient_id]).catch(() => [[]]);
-
-                    patients.push({
-                        ...p,
-                        health_conditions: conditions,
-                        surgeries: surgeries,
-                        life_factors: lifeFactors,
-                        allergies: allergies,
-                        prescriptions: prescriptions,
-                        xrays: xrays,
-                        patient_documents: docs,
-                        last_visit: lastVisitRow ? lastVisitRow.last_visit : null,
-                        ongoing_appointment: ongoing || null,
-                        past_appointments: pastAppts
-                    });
-                }
-            }
-
+            const patients = await fetchFullPatientRecords(db);
             res.json(patients);
         } catch (err) {
             console.error('Load all patient records error:', err);
@@ -134,12 +152,10 @@ function registerPatientRecordsRoutes(app, db, io = null) {
         }
 
         try {
-            const [rows] = await db.query('CALL sp_get_patient_record(?)', [patientId]);
-            if (rows && rows[0] && rows[0][0]) {
-                const record = rows[0][0].patient_record;
-                return res.json(typeof record === 'string' ? JSON.parse(record) : record);
+            const records = await fetchFullPatientRecords(db, patientId);
+            if (records.length > 0) {
+                return res.json(records[0]);
             }
-
             return res.status(404).json({ message: 'Patient not found' });
         } catch (err) {
             console.error('Fetch patient record error:', err);
@@ -334,7 +350,6 @@ function registerPatientRecordsRoutes(app, db, io = null) {
                 ip_address: getIp(req)
             });
 
-            // Emit to Queue and all active screens
             if (io) {
                 io.emit('queue_updated');
                 io.emit('appointment-updated', { appointment_id: appointmentId, status: 'completed' });
