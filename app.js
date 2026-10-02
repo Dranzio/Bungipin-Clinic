@@ -5,9 +5,6 @@ const cors = require("cors");
 const authRoutes = require("./auth");
 const path = require("path");
 const registerPatientProfileRoute = require("./Customer/CustomerProfile");
-const registerBookingRoute = require("./Customer/BookingRoutes");
-const registerPaymentRoutes = require("./Services/PaymentRoutes");
-const registerPaymongoWebhook = require("./Services/PaymongoWebhook");
 const registerHistoryRoutes = require("./Customer/HistoryRoutes");
 const registerEmployeeProfileRoute = require("./Employee/EmployeeProfile");
 const registerBookingRequestRoutes = require("./Employee/BookingRequest");
@@ -18,10 +15,11 @@ const authenticateToken = require("./authMiddleware");
 const registerDoctorScheduleRoutes = require('./Employee/doctorScheduleRoutes');
 const { registerActivityLogRoutes } = require('./Admin/auditLogRoutes');
 
+
 // payment stuff
-const registerPaymongoWebhook = require("../Services/PaymongoWebhook");
-const registerPaymentRoutes = require("../Services/PaymentRoutes");
-const registerBookingRoute = rerequire("../Customer/BookingRoutes");
+const registerPaymongoWebhook = require("./Services/PaymongoWebhook");
+const registerPaymentRoutes = require("./Services/PaymentRoutes");
+const registerBookingRoute = require("./Customer/BookingRoutes");
 
 
 // show IO in routes
