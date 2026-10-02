@@ -2,6 +2,7 @@ const bcrypt = require('bcrypt');
 const crypto = require('crypto');
 const authenticateToken = require('../authMiddleware');
 const { logActivity } = require('./auditLogRoutes');
+const { staffAccountCreated, notify } = require('./EmailTemplates');
 
 const SALT_ROUNDS = 10;
 
@@ -246,7 +247,17 @@ function registerUserManagementRoutes(app, db) {
             });
 
             const user = await fetchUser(db, newUserId);
-            res.status(201).json({ ...user, temp_password: tempPassword });
+
+            // Email the login details. notify() never throws, so a mail problem
+            // can't fail an account that was already created.
+            const emailSent = await notify(email, staffAccountCreated({
+                firstName: first_name,
+                role,
+                email,
+                tempPassword
+            }));
+
+            res.status(201).json({ ...user, temp_password: tempPassword, email_sent: emailSent });
 
         } catch (err) {
             await connection.rollback();
@@ -583,17 +594,33 @@ function registerUserManagementRoutes(app, db) {
         }
     });
 
-    // POST /api/users/:id/send-credentials — Sends temporary password to user's email
+    // POST /api/users/:id/send-credentials — Emails the temporary password to the user
     app.post('/api/users/:id/send-credentials', authenticateToken, requireAdmin, async (req, res) => {
         const userId = Number(req.params.id);
-        const { email, name, temp_password } = req.body;
+        const { temp_password } = req.body;
 
-        if (!Number.isInteger(userId) || !email || !temp_password) {
-            return res.status(400).json({ message: 'User ID, recipient email, and password are required' });
+        if (!Number.isInteger(userId) || userId <= 0 || !temp_password) {
+            return res.status(400).json({ message: 'User ID and temporary password are required' });
         }
 
         try {
-            console.log(`[Email Service] Dispatched temporary credentials to ${email} for User #${userId}`);
+            // Use the address and name on file rather than trusting the request body.
+            const user = await fetchUser(db, userId);
+            if (!user) return res.status(404).json({ message: 'User not found' });
+
+            const sent = await notify(user.email, staffAccountCreated({
+                firstName: user.first_name,
+                role: user.role,
+                email: user.email,
+                tempPassword: temp_password,
+                variant: 'resent'
+            }));
+
+            if (!sent) {
+                return res.status(502).json({
+                    message: 'The email could not be sent. Please check the mail configuration and try again.'
+                });
+            }
 
             await logActivity(db, {
                 user_id: req.user.user_id,
@@ -601,11 +628,11 @@ function registerUserManagementRoutes(app, db) {
                 action: 'SEND_CREDENTIALS_EMAIL',
                 target_table: 'users',
                 target_id: userId,
-                notes: `Temporary credentials dispatched to ${email}.`,
+                notes: `Temporary credentials emailed to ${user.email}.`,
                 ip_address: getIp(req)
             });
 
-            res.json({ message: 'Credentials sent to email successfully', recipient: email });
+            res.json({ message: 'Credentials sent to email successfully', recipient: user.email });
         } catch (err) {
             console.error('Email sending error:', err);
             res.status(500).json({ message: 'Failed to send credentials email' });
