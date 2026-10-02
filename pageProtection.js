@@ -15,6 +15,8 @@
 
     function redirectToLogin() {
         localStorage.removeItem('userToken');
+        localStorage.removeItem('userRole');
+        localStorage.removeItem('userPosition');
         window.location.replace(loginUrl);
     }
 
@@ -98,6 +100,8 @@
             console.error('Logout request failed (clearing local session anyway):', err);
         }
         localStorage.removeItem('userToken');
+        localStorage.removeItem('userRole');
+        localStorage.removeItem('userPosition');
         window.location.replace(loginUrl);
     };
 })();

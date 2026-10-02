@@ -46,21 +46,67 @@
 
     (async () => {
         try {
-            let response = await fetch('/Taskbar/Receptionist_Task.html');
-            if (!response.ok) response = await fetch('/Taskbar/Admin_Task.html');
+            // Retrieve the user's role and position saved during login
+            let userRole = localStorage.getItem('userRole') || 'employee'; 
+            let userPosition = localStorage.getItem('userPosition');
+
+            // If userPosition is missing, fetch it from the API
+            if (!userPosition) {
+                const token = localStorage.getItem('userToken');
+                if (token) {
+                    try {
+                        const profileRes = await fetch('/api/employee-profile', {
+                            headers: { 'Authorization': `Bearer ${token}` }
+                        });
+                        if (profileRes.ok) {
+                            const profileData = await profileRes.json();
+                            if (profileData.position) {
+                                userPosition = profileData.position.toLowerCase();
+                                localStorage.setItem('userPosition', userPosition);
+                            }
+                        }
+                    } catch (e) {
+                        console.error('Failed to fetch position', e);
+                    }
+                }
+            }
+            
+            userPosition = userPosition || 'receptionist';
+            
+            // Determine which taskbar file to load based on the role and position
+            let taskbarFile = '/Taskbar/Receptionist_Task.html';
+            
+            if (userRole === 'admin') {
+                taskbarFile = '/Taskbar/Admin_Task.html';
+            } else if (userRole === 'employee' || userRole === 'receptionist' || userRole === 'dentist') {
+                if (userPosition === 'dentist' || userRole === 'dentist') {
+                    taskbarFile = '/Taskbar/Dentist_Task.html';
+                } else {
+                    taskbarFile = '/Taskbar/Receptionist_Task.html';
+                }
+            }
+
+            // Fetch the assigned taskbar
+            let response = await fetch(taskbarFile);
+            
             if (response.ok) {
                 const data = await response.text();
                 document.getElementById('sidebar-placeholder').innerHTML = data;
+                
+                // Highlight the active page in the sidebar
                 const currentPage = window.location.pathname.split("/").pop();
                 document.querySelectorAll('.nav-link').forEach(link => {
                     if (link.getAttribute('data-page') === currentPage) {
                         link.classList.add('bg-[#FDFCE9]');
                     }
                 });
+                
                 if (typeof initSidebar === 'function') {
                     initSidebar();
                 }
                 syncContentOffset();
+            } else {
+                console.warn(`Failed to load taskbar: ${taskbarFile}`);
             }
         } catch (error) {
             console.log('Sidebar fallback:', error);
@@ -230,7 +276,7 @@
             </div>
 
             <!-- ── CARD 3: Medical Information & Clinical History ── -->
-            <div class="relative w-full bg-[#D7E3A5] rounded-2xl p-5 sm:p-7 pt-8 sm:pt-9 shadow-sm border border-[#d2dbbe]">
+            <div id="mMedicalInfoCard" class="relative w-full bg-[#D7E3A5] rounded-2xl p-5 sm:p-7 pt-8 sm:pt-9 shadow-sm border border-[#d2dbbe]">
                 <span class="absolute -top-3 left-4 sm:left-6 bg-[#667733] text-white text-[10px] sm:text-xs font-bold px-3 sm:px-4 py-1 rounded-full tracking-wider uppercase shadow-sm">
                     Medical Information &amp; Clinical History
                 </span>
@@ -570,12 +616,16 @@
             pregWrap.classList.remove('flex');
         }
 
+        const userRole = localStorage.getItem('userRole') || 'employee';
+        const userPosition = localStorage.getItem('userPosition') || 'receptionist';
+        const isDentistOrAdmin = userRole === 'admin' || userRole === 'dentist' || userPosition === 'dentist';
+
         // Uploaded Medical PDF Documents
         const docsCard = document.getElementById('mMedicalDocsCard');
         const docsList = document.getElementById('mMedicalDocsList');
         const docs = Array.isArray(p.patient_documents) ? p.patient_documents : [];
 
-        if (docs.length > 0) {
+        if (docs.length > 0 && isDentistOrAdmin) {
             docsCard.classList.remove('hidden');
             docsList.innerHTML = docs.map((doc, idx) => `
                 <div class="flex items-center justify-between bg-white border border-[#c1ccab] rounded-xl px-4 py-2.5 shadow-inner">
@@ -604,6 +654,16 @@
         // Past Visits History Tab
         renderVisitHistory(p.past_appointments, p.xrays || []);
         document.getElementById('pastVisitsCount').textContent = (p.past_appointments || []).length;
+
+        const medicalInfoCard = document.getElementById('mMedicalInfoCard');
+
+        if (!isDentistOrAdmin) {
+            medicalInfoCard.classList.add('hidden');
+            medicalInfoCard.classList.remove('flex');
+        } else {
+            medicalInfoCard.classList.remove('hidden');
+            medicalInfoCard.classList.add('flex');
+        }
 
         activateTab('session');
         document.getElementById('saveConfirmation').classList.add('hidden');
