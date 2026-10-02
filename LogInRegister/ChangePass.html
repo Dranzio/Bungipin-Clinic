@@ -17,11 +17,19 @@
     <form id="reset-form" class="space-y-5">
         <div>
             <label for="new_password" class="block text-xs sm:text-sm font-medium text-[#38220f] mb-2">New Password</label>
-            <input type="password" id="new_password" name="password" minlength="8" class="w-full px-4 py-3 bg-[#e8eddf] text-[#38220f] rounded-xl border border-transparent focus:outline-none focus:ring-2 focus:ring-[#586f42] placeholder-[#38220f]/40 text-sm" placeholder="" required>
+            <!-- Wrapped in relative div for absolute button positioning -->
+            <div class="relative">
+                <input type="password" id="new_password" name="password" minlength="8" class="w-full px-4 pr-16 py-3 bg-[#e8eddf] text-[#38220f] rounded-xl border border-transparent focus:outline-none focus:ring-2 focus:ring-[#586f42] placeholder-[#38220f]/40 text-sm" placeholder="" required>
+                <button type="button" id="toggleNewPass" class="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-medium text-[#38220f]/60 hover:text-[#38220f] focus:outline-none transition-colors cursor-pointer">Show</button>
+            </div>
         </div>
         <div>
             <label for="confirm_password" class="block text-xs sm:text-sm font-medium text-[#38220f] mb-2">Confirm Password</label>
-            <input type="password" id="confirm_password" name="confirmPassword" minlength="8" class="w-full px-4 py-3 bg-[#e8eddf] text-[#38220f] rounded-xl border border-transparent focus:outline-none focus:ring-2 focus:ring-[#586f42] text-sm" required>
+            <!-- Wrapped in relative div for absolute button positioning -->
+            <div class="relative">
+                <input type="password" id="confirm_password" name="confirmPassword" minlength="8" class="w-full px-4 pr-16 py-3 bg-[#e8eddf] text-[#38220f] rounded-xl border border-transparent focus:outline-none focus:ring-2 focus:ring-[#586f42] text-sm" required>
+                <button type="button" id="toggleConfirmPass" class="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-medium text-[#38220f]/60 hover:text-[#38220f] focus:outline-none transition-colors cursor-pointer">Show</button>
+            </div>
         </div>
         <button type="submit" id="submitBtn" class="w-full py-3 px-4 bg-[#586f42] hover:bg-[#4a5e37] text-white font-medium rounded-xl transition-colors duration-200 text-sm shadow-sm disabled:opacity-60 disabled:cursor-not-allowed">Change Password</button>
     </form>
@@ -32,6 +40,34 @@
 </div>
 
 <script>
+    // --- NEW: Show/Hide Password Logic ---
+    const toggleNewPass = document.getElementById('toggleNewPass');
+    const newPasswordInput = document.getElementById('new_password');
+    
+    toggleNewPass.addEventListener('click', () => {
+        if (newPasswordInput.type === 'password') {
+            newPasswordInput.type = 'text';
+            toggleNewPass.textContent = 'Hide';
+        } else {
+            newPasswordInput.type = 'password';
+            toggleNewPass.textContent = 'Show';
+        }
+    });
+
+    const toggleConfirmPass = document.getElementById('toggleConfirmPass');
+    const confirmPasswordInput = document.getElementById('confirm_password');
+    
+    toggleConfirmPass.addEventListener('click', () => {
+        if (confirmPasswordInput.type === 'password') {
+            confirmPasswordInput.type = 'text';
+            toggleConfirmPass.textContent = 'Hide';
+        } else {
+            confirmPasswordInput.type = 'password';
+            toggleConfirmPass.textContent = 'Show';
+        }
+    });
+    // -------------------------------------
+
     const form = document.getElementById('reset-form');
     const statusMessage = document.getElementById('statusMessage');
     const submitBtn = document.getElementById('submitBtn');
@@ -54,8 +90,8 @@
     form.addEventListener('submit', async function (e) {
         e.preventDefault();
 
-        const password = document.getElementById('new_password').value;
-        const confirmPassword = document.getElementById('confirm_password').value;
+        const password = newPasswordInput.value;
+        const confirmPassword = confirmPasswordInput.value;
 
         if (password !== confirmPassword) {
             showStatus('Passwords do not match.', true);
