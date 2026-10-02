@@ -7,7 +7,6 @@
 // because signature checking needs the raw, unparsed body.
 
 const express = require('express');
-// [PAYMONGO PATCH] FIXED require path: this file lives in Services/, so it needs '../Admin/...'
 const { logActivity } = require('../Admin/auditLogRoutes');
 const { verifyWebhookSignature, BLOCKING_SQL } = require('./paymongo');
 
@@ -115,8 +114,14 @@ function registerPaymongoWebhook(app, db) {
         catch { return res.status(400).json({ message: 'Bad JSON' }); }
 
         try {
-            if (event?.data?.type === 'checkout_session.payment.paid') {
-                await handlePaid(db, event.data.data);
+            // [PAYMONGO FIX] PayMongo's docs show TWO event layouts: the newer one puts the type at
+            // data.type and the session at data.data; the older one at data.attributes.type /
+            // data.attributes.data. Accept either so a webhook version change can't silently break this.
+            const ev = event?.data;
+            const evType = ev?.attributes?.type || ev?.type;
+            const session = ev?.attributes?.data || ev?.data;
+            if (evType === 'checkout_session.payment.paid' && session?.id) {
+                await handlePaid(db, session);
             }
             // Unknown event types: still 200 so PayMongo doesn't retry them.
             return res.status(200).json({ received: true });

@@ -5,8 +5,6 @@
 //   PATCH  /api/payments/:appointmentId/mark-paid     - Receptionist marks cash/card payment as paid
 //   POST   /api/payments/:appointmentId/refund        - Admin/receptionist issues a refund via PayMongo
 
-// [PAYMONGO PATCH] FIXED require paths below: this file lives in Services/, so they need '../'
-// (originally './authMiddleware' and './Admin/auditLogRoutes', which would crash on startup).
 const authenticateToken = require('../authMiddleware');
 const { logActivity } = require('../Admin/auditLogRoutes');
 
@@ -299,7 +297,7 @@ function registerPaymentRoutes(app, db) {
 
 
     // ── 4. POST /api/payments/:appointmentId/refund ───────────────────────────
-    // [PAYMONGO PATCH] REWRITTEN (the old version is in review/all-changes.diff history / your zip). Changes:
+    // [PAYMONGO FIX] REWRITTEN (the old version is in review/all-changes.diff history / your zip). Changes:
     //  - PayMongo's `reason` only accepts duplicate | fraudulent | others, so we always send
     //    'others' and put staff's free-text note in `notes` (the old code sent the free text
     //    as `reason`, which PayMongo would reject).

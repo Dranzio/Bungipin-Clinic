@@ -175,6 +175,12 @@ function registerBookingRequestRoutes(app, db, io) {
                 return res.status(404).json({ message: 'Appointment not found' });
             }
 
+            // [PAYMONGO FIX] ADDED: a held online booking is still unpaid — staff can't approve/decline it.
+            if (apptRows[0].appointment_status === 'awaiting_payment') {
+                await connection.rollback();
+                return res.status(409).json({ message: 'This booking is still awaiting online payment.' });
+            }
+
             if (appointment_status === 'approved') {
                 const assignedEmployeeId = req.user.role === 'employee' ? req.user.user_id : null;
                 await connection.query(
@@ -189,6 +195,13 @@ function registerBookingRequestRoutes(app, db, io) {
                 await connection.query(
                     `UPDATE appointments
                      SET appointment_status = 'cancelled'
+                     WHERE appointment_id = ?`,
+                    [appointmentId]
+                );
+
+                // [PAYMONGO FIX] ADDED: declining an already-PAID booking used to leave the payment 'paid' (money stuck).
+                await connection.query(
+                    `UPDATE payments SET status = CASE WHEN status = 'paid' THEN 'refund_pending' ELSE status END
                      WHERE appointment_id = ?`,
                     [appointmentId]
                 );
