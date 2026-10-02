@@ -18,6 +18,12 @@ const authenticateToken = require("./authMiddleware");
 const registerDoctorScheduleRoutes = require('./Employee/doctorScheduleRoutes');
 const { registerActivityLogRoutes } = require('./Admin/auditLogRoutes');
 
+// payment stuff
+const registerPaymongoWebhook = require("../Services/PaymongoWebhook");
+const registerPaymentRoutes = require("../Services/PaymentRoutes");
+const registerBookingRoute = rerequire("../Customer/BookingRoutes");
+
+
 // show IO in routes
 const http = require('http');
 const { Server } = require('socket.io');

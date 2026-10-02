@@ -3,7 +3,7 @@ const mysql = require('mysql2');
 const mysqlPool = mysql.createPool({
     host: process.env.DB_HOST || 'localhost',
     user: process.env.DB_USER || 'root',
-    password: process.env.DB_PASSWORD || 'root',
+    password: process.env.DB_PASSWORD || 'Sep2024101585*!',
     database: process.env.DB_NAME || 'defaultdb',
     port: process.env.DB_PORT || 3306,
     ssl: process.env.DB_HOST ? { rejectUnauthorized: false } : false,

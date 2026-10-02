@@ -1,5 +1,6 @@
 const authenticateToken = require('../authMiddleware');
 const { logActivity } = require('../Admin/auditLogRoutes');
+const { sendAppointmentEmail } = require('../AppointmentEmails');
 
 function getIp(req) {
     return req.ip || req.headers['x-forwarded-for'];
@@ -16,9 +17,9 @@ async function autoCancelExpiredAppointments(db, io = null) {
                 patient_note = CONCAT(COALESCE(patient_note, ''), ' [System: Auto-cancelled due to expired schedule]')
             WHERE appointment_status = 'pending'
               AND (
-                  appointment_date < CURDATE()
-                  OR (appointment_date = CURDATE() AND end_time < CURTIME())
-              )
+                appointment_date < CURDATE()
+                    OR (appointment_date = CURDATE() AND end_time < CURTIME())
+                )
         `);
 
         if (result.affectedRows > 0 && io) {
@@ -216,6 +217,13 @@ function registerBookingRequestRoutes(app, db, io) {
                 ip_address: getIp(req)
             });
 
+            await sendAppointmentEmail(
+                db,
+                appointmentId,
+                appointment_status === 'approved' ? 'approved' : 'cancelled',
+                { cancelledBy: 'clinic', declined: apptRows[0].appointment_status === 'pending' }
+            );
+
             if (io) {
                 io.emit('appointment-updated', { appointment_id: appointmentId, status: appointment_status });
                 io.emit('queue_updated');
@@ -298,7 +306,7 @@ function registerBookingRequestRoutes(app, db, io) {
                 }
 
                 await connection.query(
-                    `UPDATE appointments 
+                    `UPDATE appointments
                      SET appointment_date = requested_date,
                          time_slot = requested_time,
                          end_time = ?,
@@ -320,7 +328,7 @@ function registerBookingRequestRoutes(app, db, io) {
 
             } else {
                 await connection.query(
-                    `UPDATE appointments 
+                    `UPDATE appointments
                      SET reschedule_status = 'declined',
                          requested_date = NULL,
                          requested_time = NULL
@@ -354,6 +362,13 @@ function registerBookingRequestRoutes(app, db, io) {
 
             if (io) {
                 io.emit('appointment-updated', { appointment_id: appointmentId });
+            }
+
+            if (action === 'approve') {
+                await sendAppointmentEmail(db, appointmentId, 'rescheduleApproved', {
+                    previousDate: appt.appointment_date,
+                    previousTime: appt.time_slot
+                });
             }
 
             res.json({
@@ -390,8 +405,8 @@ function registerBookingRequestRoutes(app, db, io) {
         maxAllowedDate.setHours(23, 59, 59, 999);
 
         if (reschedDateTime > maxAllowedDate) {
-            return res.status(400).json({ 
-                message: `Appointments can only be scheduled up to ${MAX_ADVANCE_MONTHS} months in advance.` 
+            return res.status(400).json({
+                message: `Appointments can only be scheduled up to ${MAX_ADVANCE_MONTHS} months in advance.`
             });
         }
 
@@ -401,9 +416,9 @@ function registerBookingRequestRoutes(app, db, io) {
             await connection.beginTransaction();
 
             const [apptRows] = await connection.query(
-                `SELECT a.patient_id, a.appointment_status, s.label AS service_label 
+                `SELECT a.patient_id, a.appointment_status, a.appointment_date, a.time_slot, s.label AS service_label
                  FROM appointments a
-                 JOIN services s ON a.service_id = s.service_id
+                          JOIN services s ON a.service_id = s.service_id
                  WHERE a.appointment_id = ? FOR UPDATE`,
                 [appointmentId]
             );
@@ -419,7 +434,7 @@ function registerBookingRequestRoutes(app, db, io) {
 
             const [existing] = await connection.query(
                 `SELECT appointment_id, time_slot, end_time FROM appointments
-                 WHERE appointment_date = ? 
+                 WHERE appointment_date = ?
                    AND appointment_status = 'approved'
                    AND appointment_id != ?`,
                 [appointment_date, appointmentId]
@@ -437,7 +452,7 @@ function registerBookingRequestRoutes(app, db, io) {
             }
 
             await connection.query(
-                `UPDATE appointments 
+                `UPDATE appointments
                  SET appointment_date = ?,
                      time_slot = ?,
                      end_time = ?,
@@ -472,6 +487,12 @@ function registerBookingRequestRoutes(app, db, io) {
             if (io) {
                 io.emit('appointment-updated', { appointment_id: appointmentId });
             }
+
+            await sendAppointmentEmail(db, appointmentId, 'rescheduled', {
+                previousDate: apptRows[0].appointment_date,
+                previousTime: apptRows[0].time_slot,
+                reason
+            });
 
             res.json({ success: true, message: 'Appointment rescheduled successfully.' });
 

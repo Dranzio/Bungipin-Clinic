@@ -5,6 +5,7 @@ const crypto = require('crypto');
 const router = express.Router();
 const db = require('./db');
 const { sendEmail } = require('./Mailer');
+const { passwordReset, verifyRegistration } = require('./EmailTemplates');
 const authenticateToken = require('./authMiddleware');
 const { clearAuthCookie, extractToken } = authenticateToken;
 const { logActivity } = require('./Admin/auditLogRoutes');
@@ -48,13 +49,38 @@ function escapeHtml(str) {
     }[c]));
 }
 
+// Asks Google whether a captcha token from the form is genuine and unused.
+// The secret key stays on the server (RECAPTCHA_SECRET_KEY in the environment);
+// the page only ever has the public site key, so a bot that skips the page
+// and POSTs here directly can't produce a valid token.
+async function verifyCaptcha(token) {
+    const secret = process.env.RECAPTCHA_SECRET_KEY;
+    if (!secret) {
+        console.error('RECAPTCHA_SECRET_KEY is not set');
+        return false;
+    }
+    try {
+        const resp = await fetch('https://www.google.com/recaptcha/api/siteverify', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({ secret, response: token })
+        });
+        const data = await resp.json();
+        if (!data.success) console.error('reCAPTCHA rejected:', data['error-codes']);
+        return data.success === true;
+    } catch (err) {
+        console.error('reCAPTCHA verification failed:', err);
+        return false;
+    }
+}
+
 // POST /api/auth/register — patient self-registration only.
 // Does NOT create the account yet. The validated signup (with the password
 // already hashed) is parked in pending_registrations, and an emailed link
 // finishes the job via POST /verify-registration. Nothing is inserted into
 // `users` until the email address is proven to belong to the registrant.
 router.post('/register', async (req, res) => {
-    let { first_name, last_name, email, phone, password, sex } = req.body;
+    let { first_name, last_name, email, phone, password, sex, captcha_token } = req.body;
     const ip_address = getIp(req);
 
     if (!first_name || !last_name || !email || !password || !sex) {
@@ -82,6 +108,12 @@ router.post('/register', async (req, res) => {
         return res.status(400).json({ error: 'Password must be at least 8 characters.' });
     }
 
+    // Checked last on purpose: a captcha token is single-use, so a typo in the
+    // form above shouldn't burn it.
+    if (!captcha_token || typeof captcha_token !== 'string' || !(await verifyCaptcha(captcha_token))) {
+        return res.status(400).json({ error: 'Please complete the captcha and try again.' });
+    }
+
     try {
         // Fail fast if a real account already exists (same behavior as before).
         const [existing] = await db.query('SELECT user_id FROM users WHERE email = ?', [email]);
@@ -102,7 +134,7 @@ router.post('/register', async (req, res) => {
         await db.query('DELETE FROM pending_registrations WHERE expires_at < NOW() OR email = ?', [email]);
         await db.query(
             `INSERT INTO pending_registrations
-                (first_name, last_name, email, phone, password_hash, sex, token_hash, expires_at)
+             (first_name, last_name, email, phone, password_hash, sex, token_hash, expires_at)
              VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
             [first_name, last_name, email, phone, password_hash, sex, tokenHash, expiresAt]
         );
@@ -113,9 +145,7 @@ router.post('/register', async (req, res) => {
         try {
             await sendEmail({
                 to: email,
-                subject: 'Confirm your Bungipin Dental Clinic account',
-                text: `Hi ${first_name},\n\nThanks for signing up! Confirm your email to finish creating your account. This link expires in ${VERIFY_TOKEN_TTL_HOURS} hours:\n\n${verifyLink}\n\nIf you didn't sign up, you can ignore this email and no account will be created.`,
-                html: `<p>Hi ${safeName},</p><p>Thanks for signing up! Confirm your email to finish creating your account. This link expires in ${VERIFY_TOKEN_TTL_HOURS} hours:</p><p><a href="${verifyLink}">${verifyLink}</a></p><p>If you didn't sign up, you can ignore this email and no account will be created.</p>`
+                ...verifyRegistration({ firstName: first_name, link: verifyLink, hours: VERIFY_TOKEN_TTL_HOURS })
             });
         } catch (mailErr) {
             // Don't leave a pending row nobody can ever activate.
@@ -293,7 +323,7 @@ router.post('/login', async (req, res) => {
             // UPDATE with a comparison, because assignments inside a single
             // UPDATE are evaluated left-to-right and that ordering is easy
             // to get subtly wrong.)
-            
+
             const newAttempts = user.login_attempts + 1;
             const isLocked = newAttempts >= MAX_LOGIN_ATTEMPTS;
             await db.query(
@@ -306,7 +336,7 @@ router.post('/login', async (req, res) => {
                 // eli: moved io initialization up to fix ReferenceError
                 const io = req.app.get('io');
                 if (io) io.emit('user-locked', {userId: user.user_id});
-                
+
                 // update userManage of the account lockout
                 await db.query('UPDATE users SET is_locked = TRUE WHERE user_id = ?', [user.user_id]);
                 await logActivity(db, {
@@ -322,7 +352,7 @@ router.post('/login', async (req, res) => {
                 return res.status(429).json({ error: LOCKED_MESSAGE });
             }
 
-            
+
             await logActivity(db, {
                 user_id: user.user_id,
                 user_email: user.email,
@@ -429,9 +459,7 @@ router.post('/forgot-password', async (req, res) => {
 
         await sendEmail({
             to: email,
-            subject: 'Reset your password',
-            text: `We received a request to reset your password. This link expires in ${RESET_TOKEN_TTL_MINUTES} minutes:\n\n${resetLink}\n\nIf you didn't request this, you can ignore this email.`,
-            html: `<p>We received a request to reset your password. This link expires in ${RESET_TOKEN_TTL_MINUTES} minutes:</p><p><a href="${resetLink}">${resetLink}</a></p><p>If you didn't request this, you can ignore this email.</p>`
+            ...passwordReset({ resetLink, minutes: RESET_TOKEN_TTL_MINUTES })
         });
 
         await logActivity(db, {

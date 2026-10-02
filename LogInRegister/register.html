@@ -176,7 +176,7 @@
 
 
                 <div class="w-full flex justify-end">
-                    <div class="g-recaptcha" data-sitekey="6Lfjx9YtAAAAAFgaPvGxgv8qWGONXwVwwCvia4S4"></div>
+                    <div class="g-recaptcha" data-sitekey="6LemONotAAAAAAvRRDvNvBEByKw1mywct8RWdTZY"></div>
                 </div>
             </div>
 
@@ -201,6 +201,10 @@
                     <span id="privacyLink"
                           class="text-blue-500 hover:underline cursor-pointer">
                         Privacy Policy
+                    </span>
+
+                    <span id="termsHint" class="block text-xs text-[#2A1001]/70 mt-1">
+                        Open and read both documents to enable this checkbox.
                     </span>
                 </div>
             </div>
@@ -304,6 +308,7 @@
         const statusBanner = document.getElementById('statusBanner');
         const bannerSpinner = document.getElementById('bannerSpinner');
         const bannerText = document.getElementById('bannerText');
+        const termsHint = document.getElementById('termsHint');
 
         function showStatusBanner (message, isLoading = false) {
             bannerText.textContent = message;
@@ -779,11 +784,12 @@
         function openModal(title, content) {
             modalTitle.innerText = title;
             modalContent.innerHTML = content;
-            requestAnimationFrame(() => {
-                modalContent.scrollTop = 0;
-            });
             policyModal.classList.remove('hidden');
             document.body.style.overflow = 'hidden';
+            modalContent.scrollTop = 0;
+            // If the text is short enough to fit without scrolling, no scroll
+            // event will ever fire, so check once the modal has been laid out.
+            requestAnimationFrame(checkReadProgress);
         }
 
         function closeModal() {
@@ -794,24 +800,30 @@
         let termsRead = false;
         let privRead = false;
 
-        modalContent.addEventListener('scroll', () => {
+        // Marks the open document as read once its end is visible. Runs on scroll
+        // AND right after the modal opens: a short document fits on screen with
+        // nothing to scroll, so no scroll event would ever unlock the checkbox.
+        function checkReadProgress() {
             const threshold = 10;
             const isAtBottom = modalContent.scrollHeight - modalContent.scrollTop - modalContent.clientHeight <= threshold;
 
-            if (isAtBottom) {
-                if (modalTitle.innerText === 'Terms & Conditions') {
-                    termsRead = true;
-                } else if (modalTitle.innerText === 'Privacy Policy') {
-                    privRead = true;
-                }
+            if (!isAtBottom) return;
 
-                if (termsRead && privRead) {
-                    termsCheckbox.disabled = false;
-                    termsCheckbox.checked = true;
-                    checkForm();
-                }
+            if (modalTitle.innerText === 'Terms & Conditions') {
+                termsRead = true;
+            } else if (modalTitle.innerText === 'Privacy Policy') {
+                privRead = true;
             }
-        });
+
+            if (termsRead && privRead) {
+                termsCheckbox.disabled = false;
+                termsCheckbox.checked = true;
+                termsHint.classList.add('hidden');
+                checkForm();
+            }
+        }
+
+        modalContent.addEventListener('scroll', checkReadProgress);
 
 
 
@@ -865,6 +877,16 @@
                 confirmPassword.setCustomValidity('');
             }
 
+            if (typeof grecaptcha === 'undefined') {
+                alert('The captcha could not load. Please refresh the page and try again.');
+                return;
+            }
+            const captchaToken = grecaptcha.getResponse();
+            if (!captchaToken) {
+                alert('Please tick "I\'m not a robot" first.');
+                return;
+            }
+
             const sexValue =
                 document.querySelector('input[name="sex"]:checked')?.value;
 
@@ -874,7 +896,8 @@
                 email: document.getElementById('email').value.trim(),
                 phone: document.getElementById('phone').value.trim(),
                 password: password.value,
-                sex: sexValue
+                sex: sexValue,
+                captcha_token: captchaToken
             };
 
             showStatusBanner('Account is being made...', true);
@@ -908,6 +931,7 @@
                 );
 
                 form.reset();
+                if (typeof grecaptcha !== 'undefined') grecaptcha.reset();
 
                 showStatusBanner(
                     data.message || 'Check your email to finish creating your account.',
@@ -922,6 +946,8 @@
                 );
 
                 statusBanner.classList.add('hidden');
+                // Captcha tokens are single-use, so a fresh one is needed for the retry.
+                if (typeof grecaptcha !== 'undefined') grecaptcha.reset();
                 alert(error.message);
             }
         });
