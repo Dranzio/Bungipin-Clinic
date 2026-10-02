@@ -23,7 +23,13 @@
                         </button>
                     </div>
                     <p id="password-gate-error" class="password-gate-error" role="alert"></p>
-                    <button type="submit">Continue</button>
+                    
+                    <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 10px;">
+                        <button type="submit" style="width: 100%;">Continue</button>
+                        <button type="button" id="password-gate-cancel" style="background: transparent; border: none; color: #6b7280; font-size: 13px; font-weight: 600; text-decoration: underline; cursor: pointer; padding: 5px; font-family: inherit;">
+                            Cancel and go back
+                        </button>
+                    </div>
                 </form>
             </div>`;
         document.body.appendChild(gate);
@@ -37,6 +43,7 @@
         const error = document.getElementById('password-gate-error');
         const submitBtn = form.querySelector('button[type="submit"]');
         const toggleBtn = document.getElementById('password-gate-toggle');
+        const cancelBtn = document.getElementById('password-gate-cancel');
         const token = localStorage.getItem('userToken');
 
         // 🚫 Disable Paste, Copy, Cut, and Drag & Drop
@@ -59,6 +66,17 @@
                     toggleBtn.textContent = 'Show';
                 }
                 input.focus();
+            });
+        }
+
+        // 🔙 Cancel / Go Back Logic
+        if (cancelBtn) {
+            cancelBtn.addEventListener('click', () => {
+                if (window.history.length > 1) {
+                    window.history.back(); // Go back to the previous page
+                } else {
+                    window.location.replace('/patientRecords.html'); // Fallback route if opened in a new tab
+                }
             });
         }
 
@@ -98,6 +116,7 @@
                         // 🔒 3 Failed Attempts Reached -> Lock & Force Logout
                         input.disabled = true;
                         submitBtn.disabled = true;
+                        if (cancelBtn) cancelBtn.style.display = 'none';
                         if (toggleBtn) toggleBtn.style.display = 'none';
                         error.textContent = 'Too many failed attempts. For your security, you are being logged out...';
                         
