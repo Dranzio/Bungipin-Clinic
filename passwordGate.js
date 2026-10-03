@@ -12,7 +12,7 @@
         
         gate.innerHTML = `
             <div class="bg-[#F3EFE4] border border-[#2A1001]/20 rounded-3xl p-6 sm:p-8 max-w-sm w-full shadow-2xl relative text-center flex flex-col items-center gap-3 my-auto" 
-                 style="background-color: #F3EFE4 !important; border: 1.5px solid rgba(42, 16, 1, 0.2) !important; border-radius: 24px !important; padding: 28px 24px !important; max-width: 380px !important; width: 100% !important; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25) !important; text-align: center !important; display: flex !important; flex-direction: column !important; align-items: center !important; gap: 12px !important; box-sizing: border-box !important;"
+                 style="background-color: #F3EFE4 !important; border: 1px solid rgba(42, 16, 1, 0.2) !important; border-radius: 24px !important; padding: 28px 24px !important; max-width: 380px !important; width: 100% !important; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25) !important; text-align: center !important; display: flex !important; flex-direction: column !important; align-items: center !important; gap: 12px !important; box-sizing: border-box !important;"
                  role="dialog" aria-modal="true" aria-labelledby="password-gate-title">
                 
                 <!-- Lock Icon Wrap -->
@@ -25,33 +25,33 @@
                     <h2 id="password-gate-title" style="margin: 0 !important; font-size: 20px !important; font-weight: 800 !important; color: #2A1001 !important; font-family: 'Poppins', sans-serif !important;">
                         Security Verification
                     </h2>
-                    <p style="margin: 4px 0 0 0 !important; font-size: 12px !important; color: rgba(42, 16, 1, 0.7) !important; line-height: 1.4 !important; font-weight: 500 !important;">
+                    <p style="margin: 4px 0 0 0 !important; font-size: 12px !important; color: rgba(42, 16, 1, 0.7) !important; line-height: 1.4 !important; font-weight: 500 !important; font-family: 'Poppins', sans-serif !important;">
                         Please enter your password to access this protected receptionist area.
                     </p>
                 </div>
 
                 <form id="password-gate-form" style="width: 100% !important; display: flex !important; flex-direction: column !important; gap: 10px !important; margin-top: 6px !important; box-sizing: border-box !important;">
                     
-                    <!-- Pinned Input (Non-Bold Normal Font) & Far-Right Toggle Button -->
+                    <!-- Standard Design Text Box with Clean Non-Bold Green Show Toggle -->
                     <div style="position: relative !important; width: 100% !important; display: block !important; box-sizing: border-box !important; margin: 4px 0 !important;">
                         <input id="password-gate-input" type="password" autocomplete="current-password" required placeholder="Enter your password..."
-                               style="width: 100% !important; min-width: 100% !important; height: 46px !important; padding-left: 18px !important; padding-right: 65px !important; text-align: left !important; border-radius: 9999px !important; border: 1.5px solid rgba(42, 16, 1, 0.25) !important; background-color: #ffffff !important; outline: none !important; font-size: 13px !important; color: #2A1001 !important; font-family: inherit !important; box-sizing: border-box !important; font-weight: 400 !important; display: block !important;">
+                               style="width: 100% !important; min-width: 100% !important; height: 44px !important; padding-left: 18px !important; padding-right: 65px !important; text-align: left !important; border-radius: 9999px !important; border: 1px solid rgba(42, 16, 1, 0.2) !important; background-color: #ffffff !important; outline: none !important; font-size: 13px !important; color: #2A1001 !important; font-family: 'Poppins', sans-serif !important; box-sizing: border-box !important; font-weight: 400 !important; display: block !important; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important;">
                         
                         <button type="button" id="password-gate-toggle" aria-label="Show Password" 
-                                style="position: absolute !important; right: 16px !important; left: auto !important; top: 50% !important; bottom: auto !important; transform: translateY(-50%) !important; background: transparent !important; border: none !important; outline: none !important; cursor: pointer !important; font-size: 13px !important; color: #667733 !important; font-weight: 800 !important; font-family: inherit !important; padding: 4px 6px !important; margin: 0 !important; line-height: 1 !important; z-index: 50 !important; display: inline-block !important; width: auto !important; min-width: 0 !important; box-shadow: none !important;">
+                                style="position: absolute !important; right: 16px !important; left: auto !important; top: 50% !important; bottom: auto !important; transform: translateY(-50%) !important; background: transparent !important; border: none !important; outline: none !important; cursor: pointer !important; font-size: 13px !important; color: #667733 !important; font-weight: 500 !important; font-family: 'Poppins', sans-serif !important; padding: 4px 6px !important; margin: 0 !important; line-height: 1 !important; z-index: 50 !important; display: inline-block !important; width: auto !important; min-width: 0 !important; box-shadow: none !important;">
                             Show
                         </button>
                     </div>
 
-                    <p id="password-gate-error" role="alert" style="margin: 0 !important; font-size: 11px !important; font-weight: 700 !important; color: #dc2626 !important; min-height: 16px !important;"></p>
+                    <p id="password-gate-error" role="alert" style="margin: 0 !important; font-size: 11px !important; font-weight: 600 !important; color: #dc2626 !important; min-height: 16px !important; font-family: 'Poppins', sans-serif !important;"></p>
                     
                     <div style="display: flex !important; flex-direction: column !important; gap: 8px !important; width: 100% !important; margin-top: 2px !important;">
                         <button type="submit" id="password-gate-submit"
-                                style="width: 100% !important; height: 44px !important; background-color: #667733 !important; color: #ffffff !important; font-weight: 700 !important; font-size: 13px !important; border-radius: 9999px !important; border: none !important; cursor: pointer !important; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1) !important; font-family: inherit !important; transition: all 0.2s !important; margin: 0 !important;">
+                                style="width: 100% !important; height: 44px !important; background-color: #667733 !important; color: #ffffff !important; font-weight: 700 !important; font-size: 13px !important; border-radius: 9999px !important; border: none !important; cursor: pointer !important; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1) !important; font-family: 'Poppins', sans-serif !important; transition: all 0.2s !important; margin: 0 !important;">
                             Confirm &amp; Continue
                         </button>
                         <button type="button" id="password-gate-cancel" 
-                                style="width: 100% !important; height: 40px !important; background-color: #ffffff !important; color: #2A1001 !important; font-weight: 700 !important; font-size: 12px !important; border-radius: 9999px !important; border: 1.5px solid rgba(42, 16, 1, 0.2) !important; cursor: pointer !important; font-family: inherit !important; transition: all 0.2s !important; margin: 0 !important;">
+                                style="width: 100% !important; height: 40px !important; background-color: #ffffff !important; color: #2A1001 !important; font-weight: 700 !important; font-size: 12px !important; border-radius: 9999px !important; border: 1px solid rgba(42, 16, 1, 0.2) !important; cursor: pointer !important; font-family: 'Poppins', sans-serif !important; transition: all 0.2s !important; margin: 0 !important;">
                             Go Back
                         </button>
                     </div>
