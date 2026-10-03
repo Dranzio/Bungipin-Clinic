@@ -2,33 +2,6 @@
  * ============================================================================
  * ACTIVITY LOG ROUTES & AUDIT LOGGER HELPER
  * ============================================================================
- * 
- * Instructions for Backend Developers:
- * 1. Import `logActivity` into any route where actions happen (Auth, Services, Appointments, etc.).
- * 2. Example usage for logged-in user action:
- *      await logActivity(db, {
- *          user_id: req.user.user_id,
- *          user_email: req.user.email,
- *          user_role: req.user.role,
- *          action: 'UPDATE_SERVICE',
- *          target_table: 'services',
- *          target_id: serviceId,
- *          notes: `Updated service title to "${label}" and price to ₱${price}`,
- *          ip_address: req.ip || req.headers['x-forwarded-for']
- *      });
- * 
- * 3. Example usage for UNREGISTERED / GUEST action (e.g. failed login, public inquiry):
- *      await logActivity(db, {
- *          user_id: null,
- *          user_email: req.body.email || 'guest@unknown',
- *          user_role: 'unregistered',
- *          action: 'FAILED_LOGIN',
- *          target_table: 'users',
- *          target_id: null,
- *          notes: 'Failed password attempt from unrecognized device',
- *          ip_address: req.ip || req.headers['x-forwarded-for']
- *      });
- * ============================================================================
  */
 
 const authenticateToken = require('../authMiddleware');
@@ -102,7 +75,7 @@ function registerActivityLogRoutes(app, db) {
                 params.push(action);
             }
 
-            // 3. Date Range (Start Date & End Date)
+            // 3. Date Range Filter
             const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
             if (startDate && dateRegex.test(startDate)) {
                 conditions.push('l.created_at >= ?');

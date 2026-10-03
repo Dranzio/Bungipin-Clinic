@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <!-- DENIED DIRECT PAGE ACCESS VIA URL -->
     <script src="../pageProtection.js"></script>
     <title>Activity Log</title>
@@ -15,13 +15,30 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
         .font-poppins { font-family: 'Poppins', sans-serif; }
+
+        /* Smooth custom scrollbars for horizontal table */
+        .custom-scrollbar::-webkit-scrollbar {
+            height: 6px;
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(42, 16, 1, 0.05);
+            border-radius: 9999px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(102, 119, 51, 0.3);
+            border-radius: 9999px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: rgba(102, 119, 51, 0.6);
+        }
     </style>
 </head>
 
-<body class="min-h-screen md:h-screen md:overflow-hidden bg-[#F3EFE4] relative flex flex-col md:flex-row antialiased font-poppins text-[#2A1001]">
+<body class="min-h-screen md:h-screen md:overflow-hidden bg-[#F3EFE4] relative flex flex-col md:flex-row antialiased font-poppins text-[#2A1001] overflow-x-hidden">
 
 <!-- SIDEBAR -->
-<div id="sidebar-placeholder"></div>
+<div id="sidebar-placeholder" class="shrink-0 w-full md:w-auto"></div>
 <script>
     function syncContentOffset() {
         const placeholder = document.getElementById('sidebar-placeholder');
@@ -66,61 +83,62 @@
 
 <div id="main-content" class="flex-1 min-w-0 md:min-h-0 md:overflow-y-auto">
 
-    <!-- Header with logo (Exact Same Layout as Queue & Service Management) -->
-    <div class="flex justify-between items-start pt-5 pl-6 pr-4 md:pl-24 md:pr-8">
-        <h1 class="text-2xl sm:text-3xl md:text-5xl 2xl:text-[73px] pt-5 font-bold text-[#2A1001] font-['Poppins']">
+    <!-- Responsive Header with logo -->
+    <div class="flex justify-between items-center sm:items-start pt-4 sm:pt-5 px-4 sm:px-6 md:pl-20 md:pr-8">
+        <h1 class="text-2xl sm:text-3xl md:text-4xl lg:text-5xl 2xl:text-[68px] font-extrabold text-[#2A1001] leading-tight">
             Activity Logs
         </h1>
         <img
             src="../assets/logowithtitle.png"
-            class="w-20 sm:w-24 md:w-28 h-auto object-contain shrink-0"
+            class="w-16 sm:w-20 md:w-24 lg:w-28 h-auto object-contain shrink-0 ml-2"
             alt="Logo"/>
     </div>
 
-    <hr class="border-t border-[#2A1001] mt-2 mb-6" />
+    <hr class="border-t border-[#2A1001] mt-2 sm:mt-3 mb-4 sm:mb-6" />
 
-    <!-- ── ALWAYS DISPLAYED FILTERS & SEARCH BAR ── -->
-    <div class="w-full md:w-[92%] mx-auto px-4 sm:px-6 mb-6">
-        <div class="bg-white rounded-3xl p-5 sm:p-6 border border-[#2A1001]/15 shadow-sm">
+    <!-- ── RESPONSIVE FILTERS & SEARCH CONTAINER ── -->
+    <div class="w-full md:w-[94%] lg:w-[92%] mx-auto px-3 sm:px-6 mb-6">
+        <div class="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 border border-[#2A1001]/15 shadow-sm">
             
             <!-- Row 1: Search Box + Quick Date Presets -->
-            <div class="flex flex-col lg:flex-row items-center justify-between gap-3 mb-4">
+            <div class="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 mb-4">
                 
                 <div class="relative w-full lg:max-w-md flex items-center">
-                <i class="fa-solid fa-magnifying-glass absolute left-3.5 text-gray-400 text-sm pointer-events-none"></i>
-                <input 
-                    type="text" 
-                    id="searchInput" 
-                    placeholder="Search by name, email, action, notes, IP..."
-                    class="h-11 w-full pl-10 pr-4 rounded-full border border-[#2A1001]/20 bg-gray-50/50 outline-none shadow-xs text-sm text-[#2A1001] placeholder:text-gray-400 focus:bg-white focus:border-[#667733] transition" 
-                />
-            </div>
-                <!-- Quick Date Presets & Reset Button -->
-                <div class="flex flex-wrap items-center gap-2 w-full lg:w-auto justify-start lg:justify-end">
-                    <span class="text-xs font-bold text-[#2A1001]/60 mr-1 hidden sm:inline">Presets:</span>
-                    <button type="button" class="date-preset-btn px-3.5 py-1.5 rounded-full border border-gray-200 text-xs font-bold text-[#2A1001] hover:bg-[#FDFCE9] transition cursor-pointer" data-range="today">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3.5 text-gray-400 text-xs sm:text-sm pointer-events-none"></i>
+                    <input 
+                        type="text" 
+                        id="searchInput" 
+                        placeholder="Search name, action, notes, IP..."
+                        class="h-10 sm:h-11 w-full pl-9 sm:pl-10 pr-4 rounded-full border border-[#2A1001]/20 bg-gray-50/50 outline-none shadow-xs text-xs sm:text-sm text-[#2A1001] placeholder:text-gray-400 focus:bg-white focus:border-[#667733] transition" 
+                    />
+                </div>
+
+                <!-- Quick Date Presets & Reset Button (Responsive Wrapping) -->
+                <div class="flex flex-wrap items-center gap-1.5 sm:gap-2 w-full lg:w-auto justify-start lg:justify-end">
+                    <span class="text-[11px] sm:text-xs font-bold text-[#2A1001]/60 mr-1 hidden sm:inline">Presets:</span>
+                    <button type="button" class="date-preset-btn px-3 py-1.5 rounded-full border border-gray-200 text-[11px] sm:text-xs font-bold text-[#2A1001] hover:bg-[#FDFCE9] active:scale-95 transition cursor-pointer" data-range="today">
                         Today
                     </button>
-                    <button type="button" class="date-preset-btn px-3.5 py-1.5 rounded-full border border-gray-200 text-xs font-bold text-[#2A1001] hover:bg-[#FDFCE9] transition cursor-pointer" data-range="7days">
-                        Last 7 Days
+                    <button type="button" class="date-preset-btn px-3 py-1.5 rounded-full border border-gray-200 text-[11px] sm:text-xs font-bold text-[#2A1001] hover:bg-[#FDFCE9] active:scale-95 transition cursor-pointer" data-range="7days">
+                        7 Days
                     </button>
-                    <button type="button" class="date-preset-btn px-3.5 py-1.5 rounded-full border border-gray-200 text-xs font-bold text-[#2A1001] hover:bg-[#FDFCE9] transition cursor-pointer" data-range="30days">
-                        Last 30 Days
+                    <button type="button" class="date-preset-btn px-3 py-1.5 rounded-full border border-gray-200 text-[11px] sm:text-xs font-bold text-[#2A1001] hover:bg-[#FDFCE9] active:scale-95 transition cursor-pointer" data-range="30days">
+                        30 Days
                     </button>
-                    <button type="button" id="resetAllFiltersBtn" class="px-3.5 py-1.5 rounded-full bg-gray-100 hover:bg-red-50 text-gray-600 hover:text-red-600 text-xs font-bold transition cursor-pointer flex items-center gap-1.5" title="Reset all filters">
-                        <i class="fa-solid fa-arrow-rotate-left text-[11px]"></i> <span>Reset</span>
+                    <button type="button" id="resetAllFiltersBtn" class="px-3 py-1.5 rounded-full bg-gray-100 hover:bg-red-50 text-gray-600 hover:text-red-600 text-[11px] sm:text-xs font-bold transition cursor-pointer flex items-center gap-1 active:scale-95" title="Reset all filters">
+                        <i class="fa-solid fa-arrow-rotate-left text-[10px]"></i> <span>Reset</span>
                     </button>
                 </div>
 
             </div>
 
-            <!-- Row 2: Filter Selectors -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 pt-3 border-t border-gray-100">
+            <!-- Row 2: Responsive Filter Selectors (1 col on mobile, 2 on tablet, 4 on desktop) -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-3 border-t border-gray-100">
                 
                 <!-- Role Filter -->
                 <div class="flex flex-col gap-1">
-                    <label class="text-[11px] font-extrabold text-[#2A1001] uppercase tracking-wide">User Role</label>
-                    <select id="roleFilter" class="h-10 px-3.5 rounded-xl bg-gray-50 border border-[#2A1001]/20 text-xs font-semibold text-[#2A1001] outline-none cursor-pointer focus:bg-white focus:border-[#667733]">
+                    <label class="text-[10px] sm:text-[11px] font-extrabold text-[#2A1001] uppercase tracking-wide">User Role</label>
+                    <select id="roleFilter" class="h-9 sm:h-10 px-3 rounded-xl bg-gray-50 border border-[#2A1001]/20 text-xs font-semibold text-[#2A1001] outline-none cursor-pointer focus:bg-white focus:border-[#667733]">
                         <option value="all">All Roles</option>
                         <option value="admin">Admin</option>
                         <option value="employee">Employee / Staff</option>
@@ -131,8 +149,8 @@
 
                 <!-- Action Type Filter -->
                 <div class="flex flex-col gap-1">
-                    <label class="text-[11px] font-extrabold text-[#2A1001] uppercase tracking-wide">Action Type</label>
-                    <select id="actionFilter" class="h-10 px-3.5 rounded-xl bg-gray-50 border border-[#2A1001]/20 text-xs font-semibold text-[#2A1001] outline-none cursor-pointer focus:bg-white focus:border-[#667733]">
+                    <label class="text-[10px] sm:text-[11px] font-extrabold text-[#2A1001] uppercase tracking-wide">Action Type</label>
+                    <select id="actionFilter" class="h-9 sm:h-10 px-3 rounded-xl bg-gray-50 border border-[#2A1001]/20 text-xs font-semibold text-[#2A1001] outline-none cursor-pointer focus:bg-white focus:border-[#667733]">
                         <option value="all">All Actions</option>
                         
                         <optgroup label="Authentication & Security">
@@ -156,6 +174,8 @@
                         <optgroup label="Clinic Services">
                             <option value="CREATE_SERVICE">Added Clinic Service</option>
                             <option value="UPDATE_SERVICE">Updated Clinic Service</option>
+                            <option value="ENABLE_SERVICE">Enabled Clinic Service</option>
+                            <option value="DISABLE_SERVICE">Disabled Clinic Service</option>
                             <option value="DELETE_SERVICE">Deleted Clinic Service</option>
                         </optgroup>
 
@@ -186,35 +206,35 @@
 
                 <!-- Start Date -->
                 <div class="flex flex-col gap-1">
-                    <label class="text-[11px] font-extrabold text-[#2A1001] uppercase tracking-wide">From Date</label>
-                    <input type="date" id="startDateFilter" class="h-10 px-3.5 rounded-xl bg-gray-50 border border-[#2A1001]/20 text-xs font-semibold text-[#2A1001] outline-none cursor-pointer focus:bg-white focus:border-[#667733]" />
+                    <label class="text-[10px] sm:text-[11px] font-extrabold text-[#2A1001] uppercase tracking-wide">From Date</label>
+                    <input type="date" id="startDateFilter" class="h-9 sm:h-10 px-3 rounded-xl bg-gray-50 border border-[#2A1001]/20 text-xs font-semibold text-[#2A1001] outline-none cursor-pointer focus:bg-white focus:border-[#667733]" />
                 </div>
 
                 <!-- End Date -->
                 <div class="flex flex-col gap-1">
-                    <label class="text-[11px] font-extrabold text-[#2A1001] uppercase tracking-wide">To Date</label>
-                    <input type="date" id="endDateFilter" class="h-10 px-3.5 rounded-xl bg-gray-50 border border-[#2A1001]/20 text-xs font-semibold text-[#2A1001] outline-none cursor-pointer focus:bg-white focus:border-[#667733]" />
+                    <label class="text-[10px] sm:text-[11px] font-extrabold text-[#2A1001] uppercase tracking-wide">To Date</label>
+                    <input type="date" id="endDateFilter" class="h-9 sm:h-10 px-3 rounded-xl bg-gray-50 border border-[#2A1001]/20 text-xs font-semibold text-[#2A1001] outline-none cursor-pointer focus:bg-white focus:border-[#667733]" />
                 </div>
 
             </div>
 
             <!-- Active Removable Chips -->
-            <div id="activeChipsContainer" class="flex flex-wrap items-center gap-2 mt-4 pt-3 border-t border-gray-100 empty:hidden"></div>
+            <div id="activeChipsContainer" class="flex flex-wrap items-center gap-1.5 sm:gap-2 mt-3 pt-3 border-t border-gray-100 empty:hidden"></div>
 
         </div>
     </div>
 
-    <!-- ── QUEUE-STYLED SPACIOUS TABLE (5 Clean Columns) ── -->
-    <div class="w-full md:w-[92%] mx-auto px-4 sm:px-6 mb-12">
-        <div class="overflow-x-auto rounded-3xl w-full shadow-lg border border-[#2A1001]/10 bg-[#ECF5E2]">
-            <table class="w-full border-collapse text-left">
+    <!-- ── RESPONSIVE TABLE WITH HORIZONTAL SCROLL PROTECTION ── -->
+    <div class="w-full md:w-[94%] lg:w-[92%] mx-auto px-3 sm:px-6 mb-12">
+        <div class="overflow-x-auto custom-scrollbar rounded-2xl sm:rounded-3xl w-full shadow-lg border border-[#2A1001]/10 bg-[#ECF5E2]">
+            <table class="w-full min-w-[760px] border-collapse text-left">
                 <thead>
                     <tr class="bg-[#667733] text-white text-xs sm:text-sm uppercase tracking-wider font-extrabold">
-                        <th class="py-4 px-4 sm:px-6 w-1/5 whitespace-nowrap rounded-tl-2xl">Date &amp; Time</th>
-                        <th class="py-4 px-4 sm:px-6 w-1/4">User Account</th>
-                        <th class="py-4 px-4 sm:px-6 text-center w-28">Role</th>
-                        <th class="py-4 px-4 sm:px-6 w-1/3">Activity &amp; Details</th>
-                        <th class="py-4 px-4 sm:px-6 text-center w-24 rounded-tr-2xl">Inspect</th>
+                        <th class="py-3.5 sm:py-4 px-3.5 sm:px-6 w-[20%] whitespace-nowrap rounded-tl-2xl">Date &amp; Time</th>
+                        <th class="py-3.5 sm:py-4 px-3.5 sm:px-6 w-[24%]">User Account</th>
+                        <th class="py-3.5 sm:py-4 px-3.5 sm:px-6 text-center w-24 sm:w-28">Role</th>
+                        <th class="py-3.5 sm:py-4 px-3.5 sm:px-6 w-[36%]">Activity &amp; Details</th>
+                        <th class="py-3.5 sm:py-4 px-3.5 sm:px-6 text-center w-20 sm:w-24 rounded-tr-2xl">Inspect</th>
                     </tr>
                 </thead>
                 <tbody id="tableBody" class="divide-y divide-[#2A1001]/10 text-xs sm:text-sm font-medium">
@@ -224,58 +244,58 @@
         </div>
 
         <!-- Empty State -->
-        <div id="emptyState" class="hidden text-center py-14 bg-[#ECF5E2] rounded-3xl mt-4 border border-dashed border-[#2A1001]/20">
-            <i class="fa-solid fa-clock-rotate-left text-4xl text-[#2A1001]/30 mb-2 block"></i>
-            <p class="text-base font-bold text-[#2A1001]/80">No activity records found</p>
+        <div id="emptyState" class="hidden text-center py-12 sm:py-14 bg-[#ECF5E2] rounded-2xl sm:rounded-3xl mt-4 border border-dashed border-[#2A1001]/20">
+            <i class="fa-solid fa-clock-rotate-left text-3xl sm:text-4xl text-[#2A1001]/30 mb-2 block"></i>
+            <p class="text-sm sm:text-base font-bold text-[#2A1001]/80">No activity records found</p>
             <p class="text-xs text-[#2A1001]/50 mt-0.5">Try clearing filters or adjusting your date range.</p>
         </div>
 
-        <!-- Pagination (Queue Style) -->
-        <div class="flex justify-center items-center gap-2 my-8" id="pagination"></div>
+        <!-- Responsive Pagination -->
+        <div class="flex flex-wrap justify-center items-center gap-1.5 sm:gap-2 my-6 sm:my-8" id="pagination"></div>
     </div>
 
 </div>
 
-<!-- ================= LOG INSPECTION MODAL ================= -->
+<!-- ================= LOG INSPECTION MODAL (Fully Responsive) ================= -->
 <div id="logDetailModal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
-    <div class="bg-[#F3EFE4] rounded-3xl w-full max-w-lg p-5 sm:p-7 relative shadow-2xl border border-[#2A1001]/20 my-auto">
+    <div class="bg-white rounded-3xl w-full max-w-lg p-5 sm:p-7 relative shadow-2xl border border-[#2A1001]/20 max-h-[92vh] overflow-y-auto my-auto custom-scrollbar">
         <button id="closeDetailModal" type="button" class="absolute top-4 right-5 text-2xl font-bold text-[#2A1001]/60 hover:text-[#2A1001] cursor-pointer">&times;</button>
         
         <div class="flex items-center gap-3 mb-4 border-b border-[#2A1001]/10 pb-3">
-            <div class="w-11 h-11 rounded-2xl flex items-center justify-center text-lg font-bold bg-[#667733] text-white shadow-sm">
+            <div class="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl flex items-center justify-center text-base sm:text-lg font-bold bg-[#667733] text-white shadow-sm shrink-0">
                 <i class="fa-solid fa-clipboard-list"></i>
             </div>
-            <div>
-                <h3 class="text-base sm:text-lg font-bold text-[#2A1001]">Activity Log Breakdown</h3>
-                <p class="text-xs text-gray-500 font-medium" id="detailModalTimestamp"></p>
+            <div class="min-w-0">
+                <h3 class="text-sm sm:text-lg font-bold text-[#2A1001] truncate">Activity Log Breakdown</h3>
+                <p class="text-[11px] sm:text-xs text-gray-500 font-medium truncate" id="detailModalTimestamp"></p>
             </div>
         </div>
 
         <div class="flex flex-col gap-3 text-xs sm:text-sm">
-            <div class="bg-[#ECF5E2] p-4 rounded-2xl border border-[#2A1001]/10 shadow-inner">
+            <div class="bg-[#ECF5E2] p-3.5 sm:p-4 rounded-2xl border border-[#2A1001]/10 shadow-inner">
                 <span class="block text-[10px] font-bold uppercase tracking-wider text-[#2A1001]/60 mb-1">User Account</span>
-                <p class="font-extrabold text-[#2A1001]" id="detailModalUser">—</p>
-                <p class="text-xs text-[#2A1001]/70 font-medium" id="detailModalEmail">—</p>
-                <div class="mt-2 flex items-center gap-2">
-                    <span id="detailModalRoleText" class="font-bold text-xs capitalize text-[#2A1001]"></span>
-                    <span class="text-xs text-gray-500 font-mono" id="detailModalIp"></span>
+                <p class="font-extrabold text-[#2A1001] text-xs sm:text-sm" id="detailModalUser">—</p>
+                <p class="text-[11px] sm:text-xs text-[#2A1001]/70 font-medium truncate" id="detailModalEmail">—</p>
+                <div class="mt-2 flex flex-wrap items-center gap-2">
+                    <span id="detailModalRoleText" class="font-bold text-[11px] sm:text-xs capitalize text-[#2A1001]"></span>
+                    <span class="text-[11px] sm:text-xs text-gray-500 font-mono" id="detailModalIp"></span>
                 </div>
             </div>
 
-            <div class="bg-[#ECF5E2] p-4 rounded-2xl border border-[#2A1001]/10 shadow-inner">
+            <div class="bg-[#ECF5E2] p-3.5 sm:p-4 rounded-2xl border border-[#2A1001]/10 shadow-inner">
                 <span class="block text-[10px] font-bold uppercase tracking-wider text-[#2A1001]/60 mb-1">Action Performed</span>
                 <div id="detailModalActionBadge" class="mb-1"></div>
                 <p class="text-xs font-mono text-[#2A1001]/70" id="detailModalTarget">—</p>
             </div>
 
-            <div class="bg-[#ECF5E2] p-4 rounded-2xl border border-[#2A1001]/10 shadow-inner">
+            <div class="bg-[#ECF5E2] p-3.5 sm:p-4 rounded-2xl border border-[#2A1001]/10 shadow-inner">
                 <span class="block text-[10px] font-bold uppercase tracking-wider text-[#2A1001]/60 mb-1">Detailed Remarks &amp; Audit Output</span>
                 <p class="text-xs text-[#2A1001] font-medium leading-relaxed whitespace-pre-wrap break-words" id="detailModalNotes">—</p>
             </div>
         </div>
 
         <div class="mt-5 flex justify-end">
-            <button id="closeDetailModalBtn" type="button" class="px-6 py-2.5 rounded-full bg-[#667733] hover:bg-[#556022] text-white text-xs font-bold transition shadow-sm cursor-pointer active:scale-95">
+            <button id="closeDetailModalBtn" type="button" class="w-full sm:w-auto px-6 py-2.5 rounded-full bg-[#667733] hover:bg-[#556022] text-white text-xs font-bold transition shadow-sm cursor-pointer active:scale-95">
                 Close
             </button>
         </div>
@@ -283,144 +303,6 @@
 </div>
 
 <script>
-    // ══════════════════════════════════════════════════════════════════════════
-    //  TOGGLE TO FALSE ONCE YOUR BACKEND ENDPOINT (/api/activity-logs) IS READY
-    // ══════════════════════════════════════════════════════════════════════════
-    const USE_MOCK_DATA = false;
-
-    const MOCK_ACTIVITY_LOGS = [
-        {
-            log_id: 101,
-            user_id: 1,
-            user_full_name: "Dr. Admin Dental",
-            email: "admin@clinic.com",
-            user_role: "admin",
-            action: "UPDATE_SERVICE",
-            target_table: "services",
-            target_id: 3,
-            notes: 'Updated "Root Canal Treatment" rate to ₱8,500 and assigned to Endodontist.',
-            ip_address: "192.168.1.10",
-            created_at: new Date(Date.now() - 1000 * 60 * 12).toISOString()
-        },
-        {
-            log_id: 102,
-            user_id: 4,
-            user_full_name: "Maria Santos",
-            email: "maria.santos@gmail.com",
-            user_role: "patient",
-            action: "BOOK_APPOINTMENT",
-            target_table: "appointments",
-            target_id: 88,
-            notes: "Requested appointment for Dental Cleaning (Deep) on Friday at 10:00 AM.",
-            ip_address: "112.198.74.22",
-            created_at: new Date(Date.now() - 1000 * 60 * 45).toISOString()
-        },
-        {
-            log_id: 103,
-            user_id: null,
-            user_full_name: "Unregistered User",
-            email: "hacker99@unknown.net",
-            user_role: "unregistered",
-            action: "FAILED_LOGIN",
-            target_table: "users",
-            target_id: null,
-            notes: "Invalid password attempt for account 'admin@clinic.com' (3 failed attempts).",
-            ip_address: "49.144.12.8",
-            created_at: new Date(Date.now() - 1000 * 60 * 110).toISOString()
-        },
-        {
-            log_id: 104,
-            user_id: 2,
-            user_full_name: "Dr. Roberto Pidlaoan",
-            email: "dr.pidlaoan@clinic.com",
-            user_role: "employee",
-            action: "COMPLETE_TREATMENT",
-            target_table: "appointments",
-            target_id: 82,
-            notes: "Finished composite filling on tooth #19. Advised soft diet for 24h.",
-            ip_address: "192.168.1.15",
-            created_at: new Date(Date.now() - 1000 * 60 * 180).toISOString()
-        },
-        {
-            log_id: 105,
-            user_id: 4,
-            user_full_name: "Maria Santos",
-            email: "maria.santos@gmail.com",
-            user_role: "patient",
-            action: "UPLOAD_PDF",
-            target_table: "patient_documents",
-            target_id: 19,
-            notes: 'Uploaded medical clearance PDF "Cardiology_Clearance_2026.pdf" (1.4MB).',
-            ip_address: "112.198.74.22",
-            created_at: new Date(Date.now() - 1000 * 60 * 300).toISOString()
-        },
-        {
-            log_id: 106,
-            user_id: 1,
-            user_full_name: "Dr. Admin Dental",
-            email: "admin@clinic.com",
-            user_role: "admin",
-            action: "CREATE_USER",
-            target_table: "users",
-            target_id: 14,
-            notes: "Registered new receptionist account for 'Clara Del Rosario' with temporary password.",
-            ip_address: "192.168.1.10",
-            created_at: new Date(Date.now() - 1000 * 60 * 60 * 8).toISOString()
-        },
-        {
-            log_id: 107,
-            user_id: 3,
-            user_full_name: "Juan Dela Cruz",
-            email: "juan.delacruz@yahoo.com",
-            user_role: "patient",
-            action: "RESCHEDULE_REQUESTED",
-            target_table: "appointments",
-            target_id: 79,
-            notes: "Requested reschedule to tomorrow 2:00 PM. Reason: Schedule Conflict / Work.",
-            ip_address: "120.29.80.5",
-            created_at: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString()
-        },
-        {
-            log_id: 108,
-            user_id: null,
-            user_full_name: "Unregistered User",
-            email: "visitor.inquiry@gmail.com",
-            user_role: "unregistered",
-            action: "PASSWORD_RESET_REQUESTED",
-            target_table: "users",
-            target_id: null,
-            notes: "Requested password reset code for unregistered account lookup.",
-            ip_address: "175.176.45.10",
-            created_at: new Date(Date.now() - 1000 * 60 * 60 * 30).toISOString()
-        },
-        {
-            log_id: 109,
-            user_id: 2,
-            user_full_name: "Dr. Roberto Pidlaoan",
-            email: "dr.pidlaoan@clinic.com",
-            user_role: "employee",
-            action: "UPLOAD_XRAY",
-            target_table: "patient_xrays",
-            target_id: 33,
-            notes: "Uploaded panoramic digital X-Ray for patient #4.",
-            ip_address: "192.168.1.15",
-            created_at: new Date(Date.now() - 1000 * 60 * 60 * 48).toISOString()
-        },
-        {
-            log_id: 110,
-            user_id: 1,
-            user_full_name: "Dr. Admin Dental",
-            email: "admin@clinic.com",
-            user_role: "admin",
-            action: "ACCOUNT_UNLOCKED",
-            target_table: "users",
-            target_id: 3,
-            notes: "Cleared failed login attempts and unlocked account for 'Juan Dela Cruz'.",
-            ip_address: "192.168.1.10",
-            created_at: new Date(Date.now() - 1000 * 60 * 60 * 72).toISOString()
-        }
-    ];
-
     let allLogs = [];
     let currentRoleFilter = "all";
     let currentActionFilter = "all";
@@ -432,7 +314,7 @@
     let searchDebounce = null;
 
     function authHeaders() {
-        const token = localStorage.getItem('userToken');
+        const token = localStorage.getItem('userToken') || localStorage.getItem('token');
         return {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
@@ -449,16 +331,27 @@
             .replace(/'/g, '&#39;');
     }
 
-    function formatTimestamp(isoString) {
-        if (!isoString) return 'N/A';
-        const d = new Date(isoString);
-        if (isNaN(d.getTime())) return isoString;
-
+    function formatTimestamp(raw) {
+        if (!raw) return 'N/A';
         const pad = (n) => String(n).padStart(2, '0');
+
+        if (typeof raw === 'string') {
+            const match = raw.match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2}):(\d{2})/);
+            if (match && !raw.includes('Z') && !raw.includes('+')) {
+                const [, year, month, day, hours, minutes] = match;
+                let h = parseInt(hours, 10);
+                const ampm = h >= 12 ? 'PM' : 'AM';
+                h = h % 12 || 12;
+                return `${month}/${day}/${year}, ${pad(h)}:${minutes} ${ampm}`;
+            }
+        }
+
+        const d = new Date(raw);
+        if (isNaN(d.getTime())) return String(raw);
+
         const month = pad(d.getMonth() + 1);
         const day = pad(d.getDate());
         const year = d.getFullYear();
-
         let hours = d.getHours();
         const minutes = pad(d.getMinutes());
         const ampm = hours >= 12 ? 'PM' : 'AM';
@@ -469,7 +362,7 @@
 
     function formatActionDetails(action) {
         const act = (action || '').replace(/_/g, ' ');
-        return `<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-white border border-[#2A1001]/20 text-[#2A1001] shadow-xs"><i class="fa-solid fa-circle text-[6px] text-[#667733]"></i> ${escapeHtml(act)}</span>`;
+        return `<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] sm:text-xs font-bold bg-white border border-[#2A1001]/20 text-[#2A1001] shadow-xs"><i class="fa-solid fa-circle text-[6px] text-[#667733]"></i> ${escapeHtml(act)}</span>`;
     }
 
     function generateAutomaticSummary(item) {
@@ -482,24 +375,13 @@
     }
 
     async function getLogs() {
-        if (USE_MOCK_DATA) {
-            return MOCK_ACTIVITY_LOGS.filter(l => {
-                if (startDate) {
-                    const startTs = new Date(`${startDate} 00:00:00`).getTime();
-                    if (new Date(l.created_at).getTime() < startTs) return false;
-                }
-                if (endDate) {
-                    const endTs = new Date(`${endDate} 23:59:59`).getTime();
-                    if (new Date(l.created_at).getTime() > endTs) return false;
-                }
-                return true;
-            });
-        }
-
         try {
             const params = new URLSearchParams();
             if (startDate) params.append('startDate', startDate);
             if (endDate) params.append('endDate', endDate);
+            if (currentRoleFilter !== 'all') params.append('role', currentRoleFilter);
+            if (currentActionFilter !== 'all') params.append('action', currentActionFilter);
+            if (currentSearch.trim()) params.append('search', currentSearch.trim());
 
             const response = await fetch(`/api/activity-logs?${params.toString()}`, {
                 method: 'GET',
@@ -510,8 +392,8 @@
             const result = await response.json();
             return result.data || [];
         } catch (error) {
-            console.error("Failed to load activity logs from server. Falling back to mock dataset:", error);
-            return MOCK_ACTIVITY_LOGS;
+            console.error("Failed to load activity logs:", error);
+            return [];
         }
     }
 
@@ -536,7 +418,7 @@
         }
 
         container.innerHTML = chips.map(c => `
-            <span class="inline-flex items-center gap-1.5 bg-white border border-[#2A1001]/20 px-3 py-1 rounded-full text-xs font-bold text-[#2A1001] shadow-xs">
+            <span class="inline-flex items-center gap-1.5 bg-white border border-[#2A1001]/20 px-2.5 sm:px-3 py-1 rounded-full text-[11px] sm:text-xs font-bold text-[#2A1001] shadow-xs">
                 <span>${escapeHtml(c.label)}</span>
                 <button type="button" class="removeChipBtn text-gray-400 hover:text-red-500 font-bold ml-1 cursor-pointer" data-key="${c.key}">&times;</button>
             </span>
@@ -587,38 +469,38 @@
 
             row.innerHTML = `
                 <!-- 1. Date & Time -->
-                <td class="py-4 px-4 sm:px-6 font-medium text-[#2A1001]/80 whitespace-nowrap">
+                <td class="py-3.5 sm:py-4 px-3.5 sm:px-6 font-medium text-[#2A1001]/80 whitespace-nowrap text-xs sm:text-sm">
                     ${escapeHtml(dateText)}
                 </td>
 
                 <!-- 2. User Account -->
-                <td class="py-4 px-4 sm:px-6">
-                    <div class="font-extrabold text-[#2A1001]">${escapeHtml(item.user_full_name)}</div>
-                    <div class="text-xs text-[#2A1001]/60 font-normal truncate max-w-xs">${escapeHtml(item.email)}</div>
+                <td class="py-3.5 sm:py-4 px-3.5 sm:px-6">
+                    <div class="font-extrabold text-[#2A1001] text-xs sm:text-sm">${escapeHtml(item.user_full_name)}</div>
+                    <div class="text-[11px] sm:text-xs text-[#2A1001]/60 font-normal truncate max-w-xs">${escapeHtml(item.email)}</div>
                 </td>
 
-                <!-- 3. Role (Normal Plain Text) -->
-                <td class="py-4 px-4 sm:px-6 text-center whitespace-nowrap font-extrabold text-xs sm:text-sm text-[#2A1001] capitalize">
+                <!-- 3. Role -->
+                <td class="py-3.5 sm:py-4 px-3.5 sm:px-6 text-center whitespace-nowrap font-extrabold text-xs sm:text-sm text-[#2A1001] capitalize">
                     ${escapeHtml(item.user_role || '—')}
                 </td>
 
                 <!-- 4. Activity & Automatic Summary -->
-                <td class="py-4 px-4 sm:px-6">
+                <td class="py-3.5 sm:py-4 px-3.5 sm:px-6">
                     <div class="flex items-center gap-2 mb-1 flex-wrap">
                         ${actionBadge}
-                        <span class="text-[11px] font-mono text-gray-500 bg-white px-2 py-0.5 rounded-md border border-[#2A1001]/10">
+                        <span class="text-[10px] sm:text-[11px] font-mono text-gray-500 bg-white px-2 py-0.5 rounded-md border border-[#2A1001]/10">
                             ${escapeHtml(item.target_table || 'system')}
                         </span>
                     </div>
-                    <p class="text-xs text-[#2A1001]/80 font-medium leading-relaxed line-clamp-2">
+                    <p class="text-[11px] sm:text-xs text-[#2A1001]/80 font-medium leading-relaxed line-clamp-2">
                         ${escapeHtml(summaryText)}
                     </p>
                 </td>
 
                 <!-- 5. Inspect Action Button -->
-                <td class="py-4 px-4 sm:px-6 text-center whitespace-nowrap">
-                    <button type="button" class="viewDetailBtn inline-flex items-center justify-center gap-1.5 bg-[#667733] hover:bg-[#556022] text-white text-xs font-bold px-4 py-1.5 rounded-full transition shadow-xs cursor-pointer active:scale-95" data-log-id="${item.log_id}">
-                        <i class="fa-solid fa-eye text-xs"></i>
+                <td class="py-3.5 sm:py-4 px-3.5 sm:px-6 text-center whitespace-nowrap">
+                    <button type="button" class="viewDetailBtn inline-flex items-center justify-center gap-1.5 bg-[#667733] hover:bg-[#556022] text-white text-[11px] sm:text-xs font-bold px-3.5 sm:px-4 py-1.5 rounded-full transition shadow-xs cursor-pointer active:scale-95" data-log-id="${item.log_id}">
+                        <i class="fa-solid fa-eye text-[10px] sm:text-xs"></i>
                         <span>View</span>
                     </button>
                 </td>
@@ -630,7 +512,6 @@
         renderPagination(filtered.length);
     }
 
-    // Queue-Style Circular Pagination
     function renderPagination(totalItems) {
         const totalPages = Math.max(1, Math.ceil(totalItems / rowsPerPage));
         const pagination = document.getElementById('pagination');
@@ -646,7 +527,7 @@
         if (batchStart > 1) {
             const prevBtn = document.createElement('button');
             prevBtn.textContent = '‹';
-            prevBtn.className = "w-9 h-9 rounded-full font-bold text-[#2A1001] bg-white border border-[#2A1001]/20 hover:bg-[#2A1001]/10 transition flex items-center justify-center cursor-pointer";
+            prevBtn.className = "w-8 h-8 sm:w-9 sm:h-9 rounded-full font-bold text-[#2A1001] bg-white border border-[#2A1001]/20 hover:bg-[#2A1001]/10 transition flex items-center justify-center cursor-pointer text-xs sm:text-sm";
             prevBtn.addEventListener('click', () => {
                 currentPage = batchStart - 1;
                 renderTable();
@@ -657,7 +538,7 @@
         for (let i = batchStart; i <= batchEnd; i++) {
             const btn = document.createElement('button');
             btn.textContent = i;
-            btn.className = `w-9 h-9 rounded-full font-semibold cursor-pointer transition ${
+            btn.className = `w-8 h-8 sm:w-9 sm:h-9 rounded-full font-semibold cursor-pointer transition text-xs sm:text-sm ${
                 i === currentPage
                     ? 'bg-[#667733] text-white shadow'
                     : 'bg-white text-[#2A1001] border border-[#2A1001]/20 hover:bg-gray-50'
@@ -672,7 +553,7 @@
         if (batchEnd < totalPages) {
             const nextBtn = document.createElement('button');
             nextBtn.textContent = '›';
-            nextBtn.className = "w-9 h-9 rounded-full font-bold text-[#2A1001] bg-white border border-[#2A1001]/20 hover:bg-[#2A1001]/10 transition flex items-center justify-center cursor-pointer";
+            nextBtn.className = "w-8 h-8 sm:w-9 sm:h-9 rounded-full font-bold text-[#2A1001] bg-white border border-[#2A1001]/20 hover:bg-[#2A1001]/10 transition flex items-center justify-center cursor-pointer text-xs sm:text-sm";
             nextBtn.addEventListener('click', () => {
                 currentPage = batchEnd + 1;
                 renderTable();
@@ -742,26 +623,29 @@
     });
 
     // ── FILTER LISTENERS ──
-    document.getElementById('roleFilter').addEventListener('change', function () {
+    document.getElementById('roleFilter').addEventListener('change', async function () {
         currentRoleFilter = this.value;
         currentPage = 1;
         updateActiveChips();
+        allLogs = await getLogs();
         renderTable();
     });
 
-    document.getElementById('actionFilter').addEventListener('change', function () {
+    document.getElementById('actionFilter').addEventListener('change', async function () {
         currentActionFilter = this.value;
         currentPage = 1;
         updateActiveChips();
+        allLogs = await getLogs();
         renderTable();
     });
 
     document.getElementById('searchInput').addEventListener('input', function () {
         clearTimeout(searchDebounce);
-        searchDebounce = setTimeout(() => {
+        searchDebounce = setTimeout(async () => {
             currentSearch = this.value;
             currentPage = 1;
             updateActiveChips();
+            allLogs = await getLogs();
             renderTable();
         }, 250);
     });
@@ -812,7 +696,6 @@
             endDate = '';
             document.getElementById('startDateFilter').value = '';
             document.getElementById('endDateFilter').value = '';
-            allLogs = await getLogs();
         }
         if (key === 'search') {
             currentSearch = '';
@@ -821,6 +704,7 @@
 
         currentPage = 1;
         updateActiveChips();
+        allLogs = await getLogs();
         renderTable();
     });
 
@@ -831,6 +715,6 @@
         renderTable();
     })();
 </script>
-  <script src="/InactivityTimer/InactivityTimer.js"></script>
+<script src="/InactivityTimer/InactivityTimer.js"></script>
 </body>
 </html>
