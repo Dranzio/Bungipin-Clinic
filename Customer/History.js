@@ -633,6 +633,7 @@ function openDetailModalById(id) {
     if (appt) openDetailModal(appt);
 }
 
+// ── Detail & Receipt Modal with Overflow Fix ──
 function openDetailModal(appt) {
     currentSelectedAppt = appt;
 
@@ -647,7 +648,7 @@ function openDetailModal(appt) {
     const subtotalFormatted = `₱${subtotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     const vatFormatted = `₱${vatAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
-    const method = appt.method ? appt.method.toUpperCase() : 'IN-CLINIC CASH';
+    const method = appt.method ? (String(appt.method).toLowerCase() === 'online' ? 'PAYMONGO' : String(appt.method).toUpperCase()) : 'IN-CLINIC CASH';
     const service = escapeHtml(appt.label || 'General Dental Treatment');
     const patientName = escapeHtml((appt.patient_first_name || appt.patient_last_name)
         ? `${appt.patient_first_name || ''} ${appt.patient_last_name || ''}`.trim()
@@ -664,9 +665,9 @@ function openDetailModal(appt) {
 
     if (dentistFullName) {
         dentistDisplayHtml = `
-            <div>
+            <div class="min-w-0">
                 <span class="text-[11px] text-[#2A1001]/60 font-bold block uppercase tracking-wide">Attending Dentist</span>
-                <span class="inline-flex items-center gap-1 font-extrabold text-sm text-[#667733]">
+                <span class="inline-flex items-center gap-1 font-extrabold text-sm text-[#667733] truncate max-w-full">
                     <i class="fa-solid fa-user-doctor"></i> ${escapeHtml(dentistFullName)}
                 </span>
             </div>
@@ -682,29 +683,29 @@ function openDetailModal(appt) {
         `;
     }
 
-let reschedNotice = '';
-const isReschedPending = appt.reschedule_status === 'requested' && 
-                         appt.appointment_status !== 'cancelled' && 
-                         appt.appointment_status !== 'completed';
+    let reschedNotice = '';
+    const isReschedPending = appt.reschedule_status === 'requested' && 
+                             appt.appointment_status !== 'cancelled' && 
+                             appt.appointment_status !== 'completed';
 
-if (isReschedPending) {
-    reschedNotice = `
-        <div class="p-3.5 bg-amber-50 rounded-2xl border border-amber-300 flex items-start gap-3 text-xs text-amber-900 shadow-sm">
-            <i class="fa-solid fa-arrows-rotate text-amber-600 text-lg mt-0.5 shrink-0"></i>
-            <div class="flex-1">
-                <span class="font-extrabold block text-amber-900 uppercase tracking-wide text-xs">Pending Reschedule Request</span>
-                <p class="mt-0.5 text-xs">Requested Schedule: <strong>${escapeHtml(appt.requested_date || '')} at ${escapeHtml(appt.requested_time || '')}</strong></p>
-                <p class="italic text-amber-800 mt-1">Reason: "${escapeHtml(appt.reschedule_reason || 'Schedule Conflict')}"</p>
+    if (isReschedPending) {
+        reschedNotice = `
+            <div class="p-3.5 bg-amber-50 rounded-2xl border border-amber-300 flex items-start gap-3 text-xs text-amber-900 shadow-sm max-w-full overflow-hidden">
+                <i class="fa-solid fa-arrows-rotate text-amber-600 text-lg mt-0.5 shrink-0"></i>
+                <div class="flex-1 min-w-0">
+                    <span class="font-extrabold block text-amber-900 uppercase tracking-wide text-xs">Pending Reschedule Request</span>
+                    <p class="mt-0.5 text-xs">Requested Schedule: <strong>${escapeHtml(appt.requested_date || '')} at ${escapeHtml(appt.requested_time || '')}</strong></p>
+                    <p class="italic text-amber-800 mt-1 break-words" style="word-break: break-word; overflow-wrap: anywhere;">Reason: "${escapeHtml(appt.reschedule_reason || 'Schedule Conflict')}"</p>
+                </div>
             </div>
-        </div>
-    `;
-}
+        `;
+    }
 
     document.getElementById('detail-modal-body').innerHTML = `
         <div class="flex flex-col sm:flex-row justify-between sm:items-center pb-3 border-b border-dashed border-[#2A1001]/20 gap-2">
             <div>
                 <span class="text-[10px] sm:text-xs text-[#2A1001]/60 uppercase tracking-wider font-bold">Official Receipt No.</span>
-                <p class="font-extrabold text-sm sm:text-base text-[#2A1001] font-mono">${receiptNo}</p>
+                <p class="font-extrabold text-sm sm:text-base text-[#2A1001] font-mono break-all">${receiptNo}</p>
             </div>
             <div class="sm:text-right">
                 <span class="text-[10px] sm:text-xs text-[#2A1001]/60 uppercase tracking-wider font-bold block mb-1">Current Status</span>
@@ -715,9 +716,9 @@ if (isReschedPending) {
         ${reschedNotice}
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 py-1">
-            <div>
+            <div class="min-w-0">
                 <span class="text-[11px] text-[#2A1001]/60 font-bold block uppercase tracking-wide">Patient Name</span>
-                <span class="font-extrabold text-sm text-[#2A1001]">${patientName} (${patientId})</span>
+                <span class="font-extrabold text-sm text-[#2A1001] break-words">${patientName} (${patientId})</span>
             </div>
             ${dentistDisplayHtml}
             <div>
@@ -734,45 +735,45 @@ if (isReschedPending) {
             </div>
         </div>
 
-        <!-- 🧾 Statement & 12% VAT Breakdown Table -->
-        <div class="mt-2 pt-3 border-t border-[#2A1001]/10">
-            <table class="w-full text-xs sm:text-sm">
+        <!-- 🧾 Statement & 12% VAT Breakdown Table (Strictly Fixed Layout) -->
+        <div class="mt-2 pt-3 border-t border-[#2A1001]/10 w-full overflow-hidden">
+            <table class="w-full text-xs sm:text-sm table-fixed">
                 <thead>
                     <tr class="text-[#2A1001]/70 border-b border-[#2A1001]/10 uppercase text-[10px] tracking-wider">
-                        <th class="text-left py-2 font-extrabold">Service &amp; Description</th>
-                        <th class="text-right py-2 font-extrabold">Amount</th>
+                        <th class="text-left py-2 font-extrabold w-[65%]">Service &amp; Description</th>
+                        <th class="text-right py-2 font-extrabold w-[35%]">Amount</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr>
-                        <td class="py-2.5">
-                            <p class="font-bold text-[#2A1001] text-sm">${service}</p>
-                            <p class="text-xs text-[#2A1001]/60">${escapeHtml(appt.patient_note || 'Standard consultation and dental treatment')}</p>
+                        <td class="py-2.5 pr-2 align-top break-words max-w-0" style="word-break: break-word; overflow-wrap: anywhere;">
+                            <p class="font-bold text-[#2A1001] text-sm break-words">${service}</p>
+                            <p class="text-xs text-[#2A1001]/60 mt-0.5 break-words" style="word-break: break-word; overflow-wrap: anywhere;">${escapeHtml(appt.patient_note || 'Standard consultation and dental treatment')}</p>
                         </td>
-                        <td class="text-right py-2.5 font-extrabold text-[#2A1001] text-sm">${amountFormatted}</td>
+                        <td class="text-right py-2.5 font-extrabold text-[#2A1001] text-sm align-top whitespace-nowrap">${amountFormatted}</td>
                     </tr>
                 </tbody>
                 <tfoot class="border-t border-[#2A1001]/10 text-xs">
                     <tr>
                         <td class="pt-2 text-[#2A1001]/70">Subtotal (VAT Exclusive):</td>
-                        <td class="pt-2 text-right font-bold text-[#2A1001]">${subtotalFormatted}</td>
+                        <td class="pt-2 text-right font-bold text-[#2A1001] whitespace-nowrap">${subtotalFormatted}</td>
                     </tr>
                     <tr>
                         <td class="py-1 text-[#2A1001]/70">Value Added Tax (12% VAT):</td>
-                        <td class="py-1 text-right font-bold text-[#2A1001]">${vatFormatted}</td>
+                        <td class="py-1 text-right font-bold text-[#2A1001] whitespace-nowrap">${vatFormatted}</td>
                     </tr>
                     <tr class="border-t-2 border-[#2A1001]/20 font-black text-sm sm:text-base">
                         <td class="pt-2 text-[#2A1001]">Total Amount Due / Paid:</td>
-                        <td class="pt-2 text-right text-[#667733]">${amountFormatted}</td>
+                        <td class="pt-2 text-right text-[#667733] whitespace-nowrap">${amountFormatted}</td>
                     </tr>
                 </tfoot>
             </table>
         </div>
 
         ${dentistNote ? `
-            <div class="p-3.5 bg-green-50 rounded-2xl border border-green-200 text-xs text-green-950 shadow-inner">
+            <div class="p-3.5 bg-green-50 rounded-2xl border border-green-200 text-xs text-green-950 shadow-inner max-w-full overflow-hidden">
                 <span class="font-bold block mb-1">Dentist Clinical Remarks & Instructions:</span>
-                <p class="italic">${dentistNote}</p>
+                <p class="italic break-words" style="word-break: break-word; overflow-wrap: anywhere;">${dentistNote}</p>
             </div>
         ` : ''}
     `;
