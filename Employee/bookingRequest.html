@@ -92,7 +92,7 @@
                         type="text"
                         id="searchInput"
                         placeholder="Search patient, service, dentist, or ID..."
-                        class="h-11 w-full pl-11 pr-4 rounded-full border border-[#2A1001]/20 bg-white outline-none shadow-sm text-xs sm:text-sm font-semibold text-[#2A1001] focus:ring-2 focus:ring-[#667733]/40 transition"
+                        class="h-11 w-full pl-11 pr-4 rounded-full border border-[#2A1001]/20 bg-white outline-none shadow-sm text-xs sm:text-sm text-[#2A1001] focus:ring-2 focus:ring-[#667733]/40 transition"
                     />
                 </div>
             </div>
@@ -131,7 +131,7 @@
             <div id="noBookingsState" class="hidden text-center py-16 bg-white/50 rounded-3xl border border-dashed border-[#2A1001]/20">
                 <i class="fa-solid fa-calendar-xmark text-4xl text-[#2A1001]/30 mb-3"></i>
                 <p class="text-base sm:text-lg font-bold text-[#2A1001]/80">No booking requests found</p>
-                <p class="text-xs text-[#2A1001]/50 mt-1">There are currently no appointments matching the selected filter or search keyword.</p>
+                <p class="text-xs text-[#2A1001]/50 mt-1">There are currently no active appointments matching the selected filter or search keyword.</p>
             </div>
         </main>
     </div>
@@ -301,6 +301,14 @@
             div.textContent = value == null ? '' : String(value);
             return div.innerHTML;
         }
+
+        // Returns current date YYYY-MM-DD in local time
+        function getTodayDateStr() {
+            const d = new Date();
+            const pad = (n) => String(n).padStart(2, '0');
+            return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+        }
+
         function formatTime12h(timeStr) {
             if (!timeStr) return "";
             const [hours, minutes] = String(timeStr).split(":");
@@ -351,7 +359,7 @@
         let calSelectedEndTime = null;
 
         function authHeaders(json = false) {
-            const token = localStorage.getItem('userToken');
+            const token = localStorage.getItem('userToken') || localStorage.getItem('token');
             const headers = {};
             if (token) headers['Authorization'] = `Bearer ${token}`;
             if (json) headers['Content-Type'] = 'application/json';
@@ -462,9 +470,24 @@
             }
         }
         function updateBadges() {
-            const pendingCount = allBookings.filter(b => (b.appointment_status || '').toLowerCase() === 'pending').length;
+            const todayStr = getTodayDateStr();
+
+            // Count only active today/upcoming pending requests
+            const pendingCount = allBookings.filter(b => {
+                const s = (b.appointment_status || '').toLowerCase();
+                const dateStr = b.appointment_date ? b.appointment_date.split('T')[0] : '';
+                return s === 'pending' && dateStr >= todayStr;
+            }).length;
+
             const reschedCount = allBookings.filter(b => (b.reschedule_status || '').toLowerCase() === 'requested').length;
-            const approvedCount = allBookings.filter(b => (b.appointment_status || '').toLowerCase() === 'approved').length;
+
+            // Count only active today/upcoming approved appointments
+            const approvedCount = allBookings.filter(b => {
+                const s = (b.appointment_status || '').toLowerCase();
+                const dateStr = b.appointment_date ? b.appointment_date.split('T')[0] : '';
+                return s === 'approved' && dateStr >= todayStr;
+            }).length;
+
             const bPending = document.getElementById('badgePending');
             const bResched = document.getElementById('badgeResched');
             const bApproved = document.getElementById('badgeApproved');
@@ -474,34 +497,47 @@
             if (bApproved) bApproved.textContent = approvedCount;
             if (bAll) bAll.textContent = allBookings.length;
         }
+
         function getFilteredBookings() {
+            const todayStr = getTodayDateStr();
+
             return allBookings.filter(b => {
                 const status = (b.appointment_status || '').toLowerCase();
                 const resched = (b.reschedule_status || '').toLowerCase();
+                const apptDate = b.appointment_date ? b.appointment_date.split('T')[0] : '';
+                const isPast = apptDate && apptDate < todayStr;
+
                 let matchesStatus = false;
                 if (currentStatusFilter === 'pending') {
-                    matchesStatus = status === 'pending';
+                    // Only active upcoming/today pending requests
+                    matchesStatus = status === 'pending' && !isPast;
                 } else if (currentStatusFilter === 'reschedule_requested') {
                     matchesStatus = resched === 'requested';
                 } else if (currentStatusFilter === 'approved') {
-                    matchesStatus = status === 'approved';
+                    // Only active upcoming/today approved visits
+                    matchesStatus = status === 'approved' && !isPast;
                 } else {
+                    // Show All
                     matchesStatus = true;
                 }
+
                 const patientName = `${b.first_name || ''} ${b.last_name || ''}`.toLowerCase();
                 const service = (b.service_label || '').toLowerCase();
                 const pubId = String(b.public_id || b.appointment_id || '').toLowerCase();
                 const phone = String(b.patient_phone || '').toLowerCase();
                 const dentist = `${b.dentist_first_name || ''} ${b.dentist_last_name || ''}`.toLowerCase();
+                
                 const matchesSearch = !currentSearch ||
                     patientName.includes(currentSearch) ||
                     service.includes(currentSearch) ||
                     pubId.includes(currentSearch) ||
                     phone.includes(currentSearch) ||
                     dentist.includes(currentSearch);
+
                 return matchesStatus && matchesSearch;
             });
         }
+
         function renderBookings() {
             const container = document.getElementById('booking-container');
             const emptyState = document.getElementById('noBookingsState');
@@ -513,6 +549,9 @@
                 return;
             }
             if (emptyState) emptyState.classList.add('hidden');
+
+            const todayStr = getTodayDateStr();
+
             container.innerHTML = list.map(b => {
                 const id = b.appointment_id;
                 const status = (b.appointment_status || '').toLowerCase();
@@ -524,6 +563,8 @@
                 const publicId = escapeHtml(b.public_id || `ID: ${id}`);
                 const service = escapeHtml(b.service_label || 'Dental Treatment');
                 const scheduledDate = escapeHtml(b.appointment_date || 'TBD');
+                const apptDate = b.appointment_date ? b.appointment_date.split('T')[0] : '';
+                const isPast = apptDate && apptDate < todayStr;
                 
                 const scheduledTimeRange = getFormattedTimeRange(b.time_slot, b.end_time || b.end_time_slot, b.service_label);
                 
@@ -536,6 +577,20 @@
                     dentistBadge = `<span class="inline-flex items-center gap-1 text-[11px] font-bold text-[#667733] bg-[#ECF5E2] px-2.5 py-0.5 rounded-full border border-[#667733]/30"><i class="fa-solid fa-user-doctor"></i> ${escapeHtml(docName)}</span>`;
                 } else {
                     dentistBadge = `<span class="inline-flex items-center gap-1 text-[11px] font-bold text-amber-800 bg-amber-50 px-2.5 py-0.5 rounded-full border border-amber-200"><i class="fa-regular fa-clock text-amber-600"></i> Any Available Dentist</span>`;
+                }
+
+                // Status Badge at the top of the card
+                let statusBadge = '';
+                if (status === 'completed') {
+                    statusBadge = '<span class="text-[9px] sm:text-[10px] bg-green-100 text-green-800 font-black px-2.5 py-0.5 rounded-full border border-green-300">COMPLETED</span>';
+                } else if (status === 'cancelled') {
+                    statusBadge = '<span class="text-[9px] sm:text-[10px] bg-red-100 text-red-700 font-black px-2.5 py-0.5 rounded-full border border-red-300">CANCELLED</span>';
+                } else if (isPast) {
+                    statusBadge = '<span class="text-[9px] sm:text-[10px] bg-red-100 text-red-700 font-black px-2.5 py-0.5 rounded-full border border-red-300">SCHEDULE PASSED</span>';
+                } else if (status === 'approved') {
+                    statusBadge = '<span class="text-[9px] sm:text-[10px] bg-[#D7E3A5] text-[#1a281b] font-black px-2.5 py-0.5 rounded-full border border-[#667733]/30">APPROVED</span>';
+                } else {
+                    statusBadge = '<span class="text-[9px] sm:text-[10px] bg-[#F1B770] text-[#2A1001] font-black px-2.5 py-0.5 rounded-full">PENDING</span>';
                 }
 
                 let reschedBanner = '';
@@ -572,10 +627,13 @@
                     `;
                 }
 
+                // Action area on the right: matches CANCELLED clean muted text styling
                 let actionButtons = '';
-                if (hasReschedRequest) {
+                if (isPast && status !== 'completed') {
+                    actionButtons = `<span class="text-xs font-bold text-gray-400 uppercase tracking-wide">SCHEDULE PASSED</span>`;
+                } else if (hasReschedRequest) {
                     actionButtons = `
-                        <button class="rescheduleDirectBtn w-full sm:w-auto px-4 py-2 text-xs font-bold text-[#2A1001] bg-[#D5C04D] rounded-full hover:bg-[#c6b242] transition flex items-center justify-center gap-1.5 shadow-sm cursor-pointer active:scale-95 text-center whitespace-nowrap" data-id="${id}" title="Pick custom alternative slot">
+                        <button class="rescheduleDirectBtn w-full sm:w-auto px-4 py-2 text-xs font-bold text-[#2A1001] bg-[#D5C04D] rounded-full hover:bg-[#c6b242] transition flex items-center justify-center gap-1.5 shadow-sm cursor-pointer active:scale-95 text-center whitespace-nowrap" data-id="${id}">
                             <i class="fa-solid fa-calendar-days text-xs"></i> Pick Other Slot
                         </button>
                     `;
@@ -593,15 +651,15 @@
                     `;
                 } else if (status === 'approved') {
                     actionButtons = `
-                        <button class="rescheduleDirectBtn w-full sm:w-auto px-4 py-2 text-xs font-bold text-[#2A1001] bg-[#D5C04D] rounded-full hover:bg-[#c6b242] transition flex items-center justify-center gap-1.5 shadow-sm cursor-pointer active:scale-95 text-center whitespace-nowrap" data-id="${id}" title="Adjust appointment date & time">
+                        <button class="rescheduleDirectBtn w-full sm:w-auto px-4 py-2 text-xs font-bold text-[#2A1001] bg-[#D5C04D] rounded-full hover:bg-[#c6b242] transition flex items-center justify-center gap-1.5 shadow-sm cursor-pointer active:scale-95 text-center whitespace-nowrap" data-id="${id}">
                             <i class="fa-solid fa-calendar-days text-xs"></i> Reschedule
                         </button>
-                        <button class="declineBtn w-full sm:w-auto px-4 py-2 text-xs font-bold text-[#D9534F] bg-white border border-[#D9534F]/30 hover:bg-red-50 rounded-full transition shadow-sm cursor-pointer active:scale-95 text-center whitespace-nowrap" data-id="${id}" title="Cancel booking">
+                        <button class="declineBtn w-full sm:w-auto px-4 py-2 text-xs font-bold text-[#D9534F] bg-white border border-[#D9534F]/30 hover:bg-red-50 rounded-full transition shadow-sm cursor-pointer active:scale-95 text-center whitespace-nowrap" data-id="${id}">
                             Cancel Booking
                         </button>
                     `;
                 } else {
-                    actionButtons = `<span class="text-xs font-bold text-gray-500 uppercase">${status}</span>`;
+                    actionButtons = `<span class="text-xs font-bold text-gray-400 uppercase tracking-wide">${escapeHtml(status)}</span>`;
                 }
 
                 return `
@@ -612,7 +670,7 @@
                                     <span class="text-[11px] sm:text-xs font-bold text-[#2A1001]/60 uppercase tracking-wide">PATIENT ID: ${publicId}</span>
                                     ${isNew ? '<span class="text-[9px] sm:text-[10px] bg-green-100 text-green-700 font-extrabold px-2 py-0.5 rounded-full border border-green-300">NEW</span>' : ''} 
                                     ${isOnlinePaid ? '<span class="text-[9px] sm:text-[10px] bg-blue-100 text-blue-700 font-extrabold px-2 py-0.5 rounded-full border border-blue-300"><i class="fa-solid fa-credit-card mr-1"></i>PAID ONLINE</span>' : '<span class="text-[9px] sm:text-[10px] bg-gray-100 text-[#2A1001]/70 font-extrabold px-2 py-0.5 rounded-full"><i class="fa-solid fa-coins mr-1 text-amber-600"></i>CASH IN CLINIC</span>'}
-                                    ${status === 'approved' ? '<span class="text-[9px] sm:text-[10px] bg-[#D7E3A5] text-[#1a281b] font-black px-2.5 py-0.5 rounded-full border border-[#667733]/30">APPROVED</span>' : '<span class="text-[9px] sm:text-[10px] bg-[#F1B770] text-[#2A1001] font-black px-2.5 py-0.5 rounded-full">PENDING</span>'}
+                                    ${statusBadge}
                                     ${dentistBadge}
                                 </div>
                                 <h3 class="text-base sm:text-lg font-black text-[#2A1001] font-['Poppins'] flex items-center gap-2">

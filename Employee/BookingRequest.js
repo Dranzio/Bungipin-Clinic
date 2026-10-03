@@ -8,22 +8,24 @@ function getIp(req) {
 
 const MAX_ADVANCE_MONTHS = 6; // Limit reschedules up to 6 months in advance
 
-// Auto-cancel past pending appointments that were never served/approved
+// ── Auto-cancel all past appointments (pending OR approved) that were never served/completed ──
 async function autoCancelExpiredAppointments(db, io = null) {
     try {
         const [result] = await db.query(`
             UPDATE appointments
             SET appointment_status = 'cancelled',
-                patient_note = CONCAT(COALESCE(patient_note, ''), ' [System: Auto-cancelled due to expired schedule]')
-            WHERE appointment_status = 'pending'
+                patient_note = CONCAT(COALESCE(patient_note, ''), ' [System: Auto-cancelled - scheduled date/time has passed]')
+            WHERE appointment_status IN ('pending', 'approved')
               AND (
-                appointment_date < CURDATE()
-                    OR (appointment_date = CURDATE() AND end_time < CURTIME())
-                )
+                  appointment_date < CURDATE()
+                  OR (appointment_date = CURDATE() AND (end_time < CURTIME() OR time_slot < CURTIME()))
+              )
+              AND (queue_status IS NULL OR queue_status NOT IN ('completed', 'ongoing'))
         `);
 
         if (result.affectedRows > 0 && io) {
             io.emit('appointment-updated');
+            io.emit('queue_updated');
         }
     } catch (err) {
         console.error('Auto-cancel expired appointments error:', err);
@@ -63,7 +65,7 @@ function registerBookingRequestRoutes(app, db, io) {
             return res.status(403).json({ message: 'Not authorized' });
         }
 
-        // Automatically clear expired pending appointments before loading list
+        // Automatically auto-cancel past pending & approved appointments before returning data
         await autoCancelExpiredAppointments(db, io);
 
         const { status } = req.query;
@@ -316,7 +318,6 @@ function registerBookingRequestRoutes(app, db, io) {
                     });
                 }
 
-                // ✅ Customer-requested reschedule counts toward limit (+1)
                 await connection.query(
                     `UPDATE appointments
                      SET appointment_date = requested_date,
@@ -410,7 +411,6 @@ function registerBookingRequestRoutes(app, db, io) {
             return res.status(400).json({ message: 'appointment_date and time_slot are required' });
         }
 
-        // Enforce 6-Month Advance Limit
         const reschedDateTime = new Date(`${appointment_date}T${time_slot}`);
         const maxAllowedDate = new Date();
         maxAllowedDate.setMonth(maxAllowedDate.getMonth() + MAX_ADVANCE_MONTHS);
@@ -463,7 +463,6 @@ function registerBookingRequestRoutes(app, db, io) {
                 return res.status(409).json({ message: 'This time slot overlaps with another confirmed patient.' });
             }
 
-            // ⭐ Employee/Staff reschedule does NOT increment reschedule_count (limit is customer-only)
             await connection.query(
                 `UPDATE appointments
                  SET appointment_date = ?,

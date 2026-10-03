@@ -5,18 +5,64 @@ function getIp(req) {
     return req.ip || req.headers['x-forwarded-for'];
 }
 
+// ── Auto-cancel past unserved appointments automatically ──
+async function autoCancelExpiredAppointments(db, io = null) {
+    try {
+        const [result] = await db.query(`
+            UPDATE appointments
+            SET appointment_status = 'cancelled',
+                patient_note = CONCAT(COALESCE(patient_note, ''), ' [System: Auto-cancelled - scheduled date/time has passed]')
+            WHERE appointment_status IN ('pending', 'approved')
+              AND (
+                  appointment_date < CURDATE()
+                  OR (appointment_date = CURDATE() AND (end_time < CURTIME() OR time_slot < CURTIME()))
+              )
+              AND (queue_status IS NULL OR queue_status NOT IN ('completed', 'ongoing'))
+        `);
+
+        if (result.affectedRows > 0 && io) {
+            io.emit('appointment-updated');
+            io.emit('queue_updated');
+        }
+    } catch (err) {
+        console.error('Auto-cancel expired appointments error:', err);
+    }
+}
+
 function registerQueueRoutes(app, db, io = null) {
 
-    // GET /api/appointments/queue — Today's approved AND completed queue appointments
+    // GET /api/appointments/queue — Supports 'today', 'tomorrow', 'upcoming', 'all', or specific 'YYYY-MM-DD'
     app.get('/api/appointments/queue', authenticateToken, async (req, res) => {
         if (!['employee', 'admin'].includes(req.user.role)) {
             return res.status(403).json({ message: 'Not authorized' });
         }
 
+        // Clean out past unserved appointments automatically
+        await autoCancelExpiredAppointments(db, io);
+
         try {
+            const { date = 'today' } = req.query;
+            let dateCondition = 'a.appointment_date = CURDATE()';
+            const params = [];
+
+            if (date === 'tomorrow') {
+                dateCondition = 'a.appointment_date = CURDATE() + INTERVAL 1 DAY';
+            } else if (date === 'upcoming') {
+                // All future and today's approved bookings
+                dateCondition = 'a.appointment_date >= CURDATE()';
+            } else if (date === 'all') {
+                dateCondition = '1=1'; // Include past & future
+            } else if (/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+                dateCondition = 'a.appointment_date = ?';
+                params.push(date);
+            }
+
             const [rows] = await db.query(
                 `SELECT
                      a.appointment_id,
+                     a.appointment_date,
+                     a.time_slot,
+                     a.end_time,
                      u.public_id,
                      u.first_name,
                      u.last_name,
@@ -29,11 +75,9 @@ function registerQueueRoutes(app, db, io = null) {
                           JOIN services s ON a.service_id = s.service_id
                           LEFT JOIN patient_profiles pp ON a.patient_id = pp.patient_id
                  WHERE a.appointment_status IN ('approved', 'completed')
-                   AND (
-                       a.appointment_date = CURDATE()
-                       OR DATE(a.appointment_date) = CURDATE()
-                   )
-                 ORDER BY (a.queue_status = 'completed') ASC, a.time_slot ASC`
+                   AND ${dateCondition}
+                 ORDER BY a.appointment_date ASC, (a.queue_status = 'completed') ASC, a.time_slot ASC`,
+                params
             );
             res.json(rows);
         } catch (err) {
