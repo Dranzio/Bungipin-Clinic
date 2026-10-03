@@ -63,7 +63,7 @@ function registerBookingRequestRoutes(app, db, io) {
             return res.status(403).json({ message: 'Not authorized' });
         }
 
-        // ✅ Automatically clear expired pending appointments before loading list
+        // Automatically clear expired pending appointments before loading list
         await autoCancelExpiredAppointments(db, io);
 
         const { status } = req.query;
@@ -175,7 +175,6 @@ function registerBookingRequestRoutes(app, db, io) {
                 return res.status(404).json({ message: 'Appointment not found' });
             }
 
-            // [PAYMONGO FIX] ADDED: a held online booking is still unpaid — staff can't approve/decline it.
             if (apptRows[0].appointment_status === 'awaiting_payment') {
                 await connection.rollback();
                 return res.status(409).json({ message: 'This booking is still awaiting online payment.' });
@@ -199,7 +198,6 @@ function registerBookingRequestRoutes(app, db, io) {
                     [appointmentId]
                 );
 
-                // [PAYMONGO FIX] ADDED: declining an already-PAID booking used to leave the payment 'paid' (money stuck).
                 await connection.query(
                     `UPDATE payments SET status = CASE WHEN status = 'paid' THEN 'refund_pending' ELSE status END
                      WHERE appointment_id = ?`,
@@ -253,7 +251,7 @@ function registerBookingRequestRoutes(app, db, io) {
         }
     });
 
-    // ── 4. PATCH /api/appointments/:id/reschedule-review — Staff Decision on Reschedule Requests ──
+    // ── 4. PATCH /api/appointments/:id/reschedule-review — Staff Decision on Customer Reschedule Requests ──
     app.patch('/api/appointments/:id/reschedule-review', authenticateToken, async (req, res) => {
         if (!['employee', 'admin'].includes(req.user.role)) {
             return res.status(403).json({ message: 'Not authorized' });
@@ -318,6 +316,7 @@ function registerBookingRequestRoutes(app, db, io) {
                     });
                 }
 
+                // ✅ Customer-requested reschedule counts toward limit (+1)
                 await connection.query(
                     `UPDATE appointments
                      SET appointment_date = requested_date,
@@ -464,13 +463,13 @@ function registerBookingRequestRoutes(app, db, io) {
                 return res.status(409).json({ message: 'This time slot overlaps with another confirmed patient.' });
             }
 
+            // ⭐ Employee/Staff reschedule does NOT increment reschedule_count (limit is customer-only)
             await connection.query(
                 `UPDATE appointments
                  SET appointment_date = ?,
                      time_slot = ?,
                      end_time = ?,
                      reschedule_status = 'approved',
-                     reschedule_count = reschedule_count + 1,
                      requested_date = NULL,
                      requested_time = NULL,
                      reschedule_reason = NULL
