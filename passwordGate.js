@@ -7,27 +7,52 @@
     function createGate() {
         const gate = document.createElement('div');
         gate.id = 'password-gate';
+        gate.className = 'fixed inset-0 bg-black/60 backdrop-blur-sm z-[99999] flex items-center justify-center p-4 antialiased';
+        gate.style.cssText = 'position: fixed !important; inset: 0 !important; background: rgba(0, 0, 0, 0.6) !important; backdrop-filter: blur(4px) !important; z-index: 99999 !important; display: flex !important; align-items: center !important; justify-content: center !important; padding: 16px !important; font-family: "Poppins", sans-serif !important;';
+        
         gate.innerHTML = `
-            <div class="password-gate-card" role="dialog" aria-modal="true" aria-labelledby="password-gate-title">
-                <div class="password-gate-lock" aria-hidden="true">&#128274;</div>
-                <h1 id="password-gate-title">Confirm your password</h1>
-                <p>Enter your password to access this page.</p>
-                <form id="password-gate-form">
-                    <label for="password-gate-input">Password</label>
-                    <div style="position: relative !important; width: 100% !important; display: block !important; margin: 6px 0 14px 0 !important;">
-                        <input id="password-gate-input" type="password" autocomplete="current-password" required 
-                               style="width: 100% !important; padding-right: 55px !important; padding-left: 18px !important; text-align: left !important; box-sizing: border-box !important;">
+            <div class="bg-[#F3EFE4] border border-[#2A1001]/20 rounded-3xl p-6 sm:p-8 max-w-sm w-full shadow-2xl relative text-center flex flex-col items-center gap-3 my-auto" 
+                 style="background-color: #F3EFE4 !important; border: 1.5px solid rgba(42, 16, 1, 0.2) !important; border-radius: 24px !important; padding: 28px 24px !important; max-width: 380px !important; width: 100% !important; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25) !important; text-align: center !important; display: flex !important; flex-direction: column !important; align-items: center !important; gap: 12px !important; box-sizing: border-box !important;"
+                 role="dialog" aria-modal="true" aria-labelledby="password-gate-title">
+                
+                <!-- Lock Icon Wrap -->
+                <div class="w-14 h-14 rounded-full bg-[#D7E3A5] text-[#667733] flex items-center justify-center text-2xl shrink-0 shadow-sm"
+                     style="width: 56px !important; height: 56px !important; border-radius: 9999px !important; background-color: #D7E3A5 !important; color: #667733 !important; display: flex !important; align-items: center !important; justify-content: center !important; font-size: 22px !important; flex-shrink: 0 !important;">
+                    <i class="fa-solid fa-lock"></i>
+                </div>
+
+                <div>
+                    <h2 id="password-gate-title" style="margin: 0 !important; font-size: 20px !important; font-weight: 800 !important; color: #2A1001 !important; font-family: 'Poppins', sans-serif !important;">
+                        Security Verification
+                    </h2>
+                    <p style="margin: 4px 0 0 0 !important; font-size: 12px !important; color: rgba(42, 16, 1, 0.7) !important; line-height: 1.4 !important; font-weight: 500 !important;">
+                        Please enter your password to access this protected receptionist area.
+                    </p>
+                </div>
+
+                <form id="password-gate-form" style="width: 100% !important; display: flex !important; flex-direction: column !important; gap: 10px !important; margin-top: 6px !important; box-sizing: border-box !important;">
+                    
+                    <!-- Pinned Input & Far-Right Toggle Button -->
+                    <div style="position: relative !important; width: 100% !important; display: block !important; box-sizing: border-box !important; margin: 4px 0 !important;">
+                        <input id="password-gate-input" type="password" autocomplete="current-password" required placeholder="Enter your password..."
+                               style="width: 100% !important; min-width: 100% !important; height: 46px !important; padding-left: 18px !important; padding-right: 65px !important; text-align: left !important; border-radius: 9999px !important; border: 1.5px solid rgba(42, 16, 1, 0.25) !important; background-color: #ffffff !important; outline: none !important; font-size: 13px !important; color: #2A1001 !important; font-family: inherit !important; box-sizing: border-box !important; font-weight: 600 !important; display: block !important;">
+                        
                         <button type="button" id="password-gate-toggle" aria-label="Show Password" 
-                                style="position: absolute !important; right: 18px !important; top: 50% !important; transform: translateY(-50%) !important; background: transparent !important; border: none !important; outline: none !important; box-shadow: none !important; width: auto !important; min-width: 0 !important; height: auto !important; padding: 0 !important; margin: 0 !important; cursor: pointer !important; font-size: 13px !important; color: #6b7280 !important; font-weight: 600 !important; font-family: inherit !important; line-height: 1 !important; z-index: 10 !important;">
+                                style="position: absolute !important; right: 16px !important; left: auto !important; top: 50% !important; bottom: auto !important; transform: translateY(-50%) !important; background: transparent !important; border: none !important; outline: none !important; cursor: pointer !important; font-size: 13px !important; color: #667733 !important; font-weight: 800 !important; font-family: inherit !important; padding: 4px 6px !important; margin: 0 !important; line-height: 1 !important; z-index: 50 !important; display: inline-block !important; width: auto !important; min-width: 0 !important; box-shadow: none !important;">
                             Show
                         </button>
                     </div>
-                    <p id="password-gate-error" class="password-gate-error" role="alert"></p>
+
+                    <p id="password-gate-error" role="alert" style="margin: 0 !important; font-size: 11px !important; font-weight: 700 !important; color: #dc2626 !important; min-height: 16px !important;"></p>
                     
-                    <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 10px;">
-                        <button type="submit" style="width: 100%;">Continue</button>
-                        <button type="button" id="password-gate-cancel" style="background: transparent; border: none; color: #6b7280; font-size: 13px; font-weight: 600; text-decoration: underline; cursor: pointer; padding: 5px; font-family: inherit;">
-                            Cancel and go back
+                    <div style="display: flex !important; flex-direction: column !important; gap: 8px !important; width: 100% !important; margin-top: 2px !important;">
+                        <button type="submit" id="password-gate-submit"
+                                style="width: 100% !important; height: 44px !important; background-color: #667733 !important; color: #ffffff !important; font-weight: 700 !important; font-size: 13px !important; border-radius: 9999px !important; border: none !important; cursor: pointer !important; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1) !important; font-family: inherit !important; transition: all 0.2s !important; margin: 0 !important;">
+                            Confirm &amp; Continue
+                        </button>
+                        <button type="button" id="password-gate-cancel" 
+                                style="width: 100% !important; height: 40px !important; background-color: #ffffff !important; color: #2A1001 !important; font-weight: 700 !important; font-size: 12px !important; border-radius: 9999px !important; border: 1.5px solid rgba(42, 16, 1, 0.2) !important; cursor: pointer !important; font-family: inherit !important; transition: all 0.2s !important; margin: 0 !important;">
+                            Go Back
                         </button>
                     </div>
                 </form>
@@ -41,10 +66,10 @@
         const form = document.getElementById('password-gate-form');
         const input = document.getElementById('password-gate-input');
         const error = document.getElementById('password-gate-error');
-        const submitBtn = form.querySelector('button[type="submit"]');
+        const submitBtn = document.getElementById('password-gate-submit');
         const toggleBtn = document.getElementById('password-gate-toggle');
         const cancelBtn = document.getElementById('password-gate-cancel');
-        const token = localStorage.getItem('userToken');
+        const token = localStorage.getItem('userToken') || localStorage.getItem('token');
 
         // 🚫 Disable Paste, Copy, Cut, and Drag & Drop
         if (input) {
@@ -73,9 +98,9 @@
         if (cancelBtn) {
             cancelBtn.addEventListener('click', () => {
                 if (window.history.length > 1) {
-                    window.history.back(); // Go back to the previous page
+                    window.history.back();
                 } else {
-                    window.location.replace('/patientRecords.html'); // Fallback route if opened in a new tab
+                    window.location.replace('/Customer/History.html');
                 }
             });
         }
@@ -91,7 +116,7 @@
 
             error.textContent = '';
             submitBtn.disabled = true;
-            submitBtn.textContent = 'Checking...';
+            submitBtn.textContent = 'Verifying...';
 
             try {
                 const response = await fetch('/api/auth/reauth', {
@@ -108,39 +133,37 @@
                     failedAttempts++;
 
                     if (failedAttempts < MAX_ATTEMPTS) {
-                        // Regular error without showing count
                         error.textContent = result.error || 'Incorrect password.';
                         input.value = '';
                         input.focus();
                     } else {
-                        // 🔒 3 Failed Attempts Reached -> Lock & Force Logout
                         input.disabled = true;
                         submitBtn.disabled = true;
                         if (cancelBtn) cancelBtn.style.display = 'none';
                         if (toggleBtn) toggleBtn.style.display = 'none';
-                        error.textContent = 'Too many failed attempts. For your security, you are being logged out...';
+                        error.textContent = 'Too many failed attempts. Logging out for security...';
                         
                         localStorage.removeItem('userToken');
+                        localStorage.removeItem('token');
                         sessionStorage.clear();
 
                         setTimeout(() => {
                             window.location.replace('/LogInRegister/login.html');
-                        }, 2500);
+                        }, 2200);
                     }
                     return;
                 }
 
-                // Reset failed attempts on success
                 failedAttempts = 0;
                 document.documentElement.classList.remove('password-gate-pending');
                 document.body.classList.remove('password-gated');
                 gate.remove();
             } catch (requestError) {
-                error.textContent = 'Unable to verify your password. Please check your connection and try again.';
+                error.textContent = 'Unable to verify password. Please check your connection.';
             } finally {
                 if (failedAttempts < MAX_ATTEMPTS) {
                     submitBtn.disabled = false;
-                    submitBtn.textContent = 'Continue';
+                    submitBtn.textContent = 'Confirm & Continue';
                 }
             }
         });
