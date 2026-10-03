@@ -422,9 +422,6 @@
             </div>
             
             <div class="flex items-center gap-2.5 ml-auto">
-                <button id="showQrCodeBtn" class="bg-[#D5C04D] hover:bg-[#c6b242] text-[#2A1001] font-bold text-xs sm:text-sm px-5 py-2.5 rounded-full transition shadow-sm cursor-pointer active:scale-95 flex items-center gap-1.5">
-                    <i class="fa-solid fa-qrcode"></i> Show QR Code
-                </button>
                 <button id="printPdfBtn" class="bg-[#667733] hover:bg-[#556022] text-white font-bold text-xs sm:text-sm px-5 py-2.5 rounded-full transition shadow-sm cursor-pointer active:scale-95 flex items-center gap-1.5">
                     <i class="fa-solid fa-print"></i> Print Patient Chart
                 </button>
@@ -452,15 +449,6 @@
     </div>
 </div>
 
-<!-- ================= QR CODE MODAL ================= -->
-<div id="qrModal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-[65] flex items-center justify-center p-4">
-    <div class="bg-white rounded-3xl p-6 text-center max-w-xs w-full shadow-2xl border border-black/10 flex flex-col items-center gap-3">
-        <h3 class="font-extrabold text-base text-[#2A1001]">Patient Chart QR Code</h3>
-        <p class="text-xs text-gray-500" id="qrPatientName"></p>
-        <div id="qrCodeContainer" class="p-2 bg-gray-50 rounded-2xl border border-black/10"></div>
-        <button id="closeQrBtn" class="w-full py-2 bg-[#667733] hover:bg-[#556022] text-white text-xs font-bold rounded-full transition cursor-pointer">Close</button>
-    </div>
-</div>
 
 <!-- ================= CLIENT JAVASCRIPT ================= -->
 <script>
@@ -1133,34 +1121,9 @@
         renderTable();
     });
 
-    // ── QR Code Generator Modal ─────────────────────────────────────────────
-    document.getElementById('showQrCodeBtn')?.addEventListener('click', () => {
-        const p = patients.find(p => p.patient_id == currentPatientId);
-        if (!p) return;
 
-        const container = document.getElementById('qrCodeContainer');
-        container.innerHTML = '';
-        document.getElementById('qrPatientName').textContent = `${p.first_name} ${p.last_name} (${p.public_id || `PAT-${p.patient_id}`})`;
 
-        const qrPayload = JSON.stringify({
-            id: p.public_id || `PAT-${p.patient_id}`,
-            name: `${p.first_name} ${p.last_name}`,
-            phone: p.phone,
-            emergency: p.secondary_email || p.email
-        });
-
-        const qrImg = document.createElement('img');
-        qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(qrPayload)}`;
-        qrImg.className = "w-44 h-44 object-contain rounded-xl";
-        qrImg.alt = "QR Code";
-
-        container.appendChild(qrImg);
-        document.getElementById('qrModal').classList.remove('hidden');
-    });
-
-    document.getElementById('closeQrBtn')?.addEventListener('click', () => {
-        document.getElementById('qrModal').classList.add('hidden');
-    });
+  
 
     // ── Printable Patient Chart ──────────────────────────────────────
     function buildPrintablePatientChart(p) {
