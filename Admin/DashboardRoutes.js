@@ -35,22 +35,22 @@ function registerDashboardRoutes(app, db) {
                     GROUP BY WEEKDAY(appointment_date)
                 `);
 
-                // 💳 Completed payments & revenue for weekly
+                // 💳 Completed payments & revenue for weekly (Fixed: using p.payment_date and a.appointment_date)
                 [transactionRows] = await db.query(`
-                    SELECT WEEKDAY(COALESCE(p.payment_date, p.created_at, a.appointment_date)) AS bucket,
+                    SELECT WEEKDAY(COALESCE(p.payment_date, a.appointment_date)) AS bucket,
                            COALESCE(SUM(CASE WHEN p.status = 'paid' OR a.appointment_status = 'completed' THEN COALESCE(p.amount, s.price, 0) ELSE 0 END), 0) AS total
                     FROM appointments a
                     LEFT JOIN payments p ON a.appointment_id = p.appointment_id
                     LEFT JOIN services s ON a.service_id = s.service_id
-                    WHERE COALESCE(p.payment_date, p.created_at, a.appointment_date)
+                    WHERE COALESCE(p.payment_date, a.appointment_date)
                           >= DATE_SUB(CURDATE(), INTERVAL WEEKDAY(CURDATE()) DAY)
-                      AND COALESCE(p.payment_date, p.created_at, a.appointment_date)
+                      AND COALESCE(p.payment_date, a.appointment_date)
                           < DATE_ADD(
                               DATE_SUB(CURDATE(), INTERVAL WEEKDAY(CURDATE()) DAY),
                               INTERVAL 7 DAY
                           )
                       AND (p.status = 'paid' OR a.appointment_status = 'completed')
-                    GROUP BY WEEKDAY(COALESCE(p.payment_date, p.created_at, a.appointment_date))
+                    GROUP BY WEEKDAY(COALESCE(p.payment_date, a.appointment_date))
                 `);
 
             } else if (period === 'monthly') {
@@ -68,15 +68,15 @@ function registerDashboardRoutes(app, db) {
 
                 // 💳 Completed payments & revenue for monthly
                 [transactionRows] = await db.query(`
-                    SELECT FLOOR((DAY(COALESCE(p.payment_date, p.created_at, a.appointment_date)) - 1) / 7) AS bucket,
+                    SELECT FLOOR((DAY(COALESCE(p.payment_date, a.appointment_date)) - 1) / 7) AS bucket,
                            COALESCE(SUM(CASE WHEN p.status = 'paid' OR a.appointment_status = 'completed' THEN COALESCE(p.amount, s.price, 0) ELSE 0 END), 0) AS total
                     FROM appointments a
                     LEFT JOIN payments p ON a.appointment_id = p.appointment_id
                     LEFT JOIN services s ON a.service_id = s.service_id
-                    WHERE YEAR(COALESCE(p.payment_date, p.created_at, a.appointment_date)) = YEAR(CURDATE())
-                      AND MONTH(COALESCE(p.payment_date, p.created_at, a.appointment_date)) = MONTH(CURDATE())
+                    WHERE YEAR(COALESCE(p.payment_date, a.appointment_date)) = YEAR(CURDATE())
+                      AND MONTH(COALESCE(p.payment_date, a.appointment_date)) = MONTH(CURDATE())
                       AND (p.status = 'paid' OR a.appointment_status = 'completed')
-                    GROUP BY FLOOR((DAY(COALESCE(p.payment_date, p.created_at, a.appointment_date)) - 1) / 7)
+                    GROUP BY FLOOR((DAY(COALESCE(p.payment_date, a.appointment_date)) - 1) / 7)
                 `);
 
             } else {
@@ -102,14 +102,14 @@ function registerDashboardRoutes(app, db) {
 
                 // 💳 Completed payments & revenue for yearly
                 [transactionRows] = await db.query(`
-                    SELECT YEAR(COALESCE(p.payment_date, p.created_at, a.appointment_date)) AS bucket,
+                    SELECT YEAR(COALESCE(p.payment_date, a.appointment_date)) AS bucket,
                            COALESCE(SUM(CASE WHEN p.status = 'paid' OR a.appointment_status = 'completed' THEN COALESCE(p.amount, s.price, 0) ELSE 0 END), 0) AS total
                     FROM appointments a
                     LEFT JOIN payments p ON a.appointment_id = p.appointment_id
                     LEFT JOIN services s ON a.service_id = s.service_id
-                    WHERE YEAR(COALESCE(p.payment_date, p.created_at, a.appointment_date)) BETWEEN ? AND ?
+                    WHERE YEAR(COALESCE(p.payment_date, a.appointment_date)) BETWEEN ? AND ?
                       AND (p.status = 'paid' OR a.appointment_status = 'completed')
-                    GROUP BY YEAR(COALESCE(p.payment_date, p.created_at, a.appointment_date))
+                    GROUP BY YEAR(COALESCE(p.payment_date, a.appointment_date))
                 `, [currentYear - 4, currentYear]);
             }
 
