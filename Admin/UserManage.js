@@ -2,7 +2,7 @@ const bcrypt = require('bcrypt');
 const crypto = require('crypto');
 const authenticateToken = require('../authMiddleware');
 const { logActivity } = require('./auditLogRoutes');
-const { staffAccountCreated, notify } = require('./EmailTemplates');
+const { staffAccountCreated, notify } = require('../EmailTemplates');
 
 const SALT_ROUNDS = 10;
 
@@ -12,7 +12,6 @@ function getIp(req) {
 
 const ALLOWED_ROLES = ['employee', 'admin', 'patient'];
 const ALLOWED_POSITIONS = ['Dentist', 'Receptionist'];
-const ALLOWED_PERMISSIONS = ['Super Admin', 'Regular Admin'];
 const ALLOWED_SPECIALIZATIONS = [
     'General Dentist',
     'Pediatric Dentist',
@@ -124,13 +123,9 @@ function validateUserInput(body, isCreate = false) {
         }
     }
 
-    // 6. Permission Level (for admin)
-    if (body.permission_level !== undefined) {
-        const permission = typeof body.permission_level === 'string' ? body.permission_level.trim() : '';
-        if (permission && !ALLOWED_PERMISSIONS.includes(permission)) {
-            return { error: 'Invalid admin permission level' };
-        }
-        clean.permission_level = permission;
+    // 6. Permission Level (for admin - always standard 'Admin')
+    if (body.permission_level !== undefined || clean.role === 'admin') {
+        clean.permission_level = 'Admin';
     }
 
     return { data: clean };
@@ -201,7 +196,7 @@ function registerUserManagementRoutes(app, db) {
         const validation = validateUserInput(req.body, true);
         if (validation.error) return res.status(400).json({ message: validation.error });
 
-        const { first_name, last_name, email, phone, sex, role, position, specialization, permission_level } = validation.data;
+        const { first_name, last_name, email, phone, sex, role, position, specialization } = validation.data;
 
         const connection = await db.getConnection();
 
@@ -230,7 +225,7 @@ function registerUserManagementRoutes(app, db) {
             } else if (role === 'admin') {
                 await connection.query(
                     'UPDATE admin_profiles SET permission_level = ? WHERE admin_id = ?',
-                    [permission_level, newUserId]
+                    ['Admin', newUserId]
                 );
             }
 
@@ -248,8 +243,6 @@ function registerUserManagementRoutes(app, db) {
 
             const user = await fetchUser(db, newUserId);
 
-            // Email the login details. notify() never throws, so a mail problem
-            // can't fail an account that was already created.
             const emailSent = await notify(email, staffAccountCreated({
                 firstName: first_name,
                 role,
@@ -271,7 +264,7 @@ function registerUserManagementRoutes(app, db) {
         }
     });
 
-    // PATCH /api/users/:id — Edit account details (Supports updating Sex)
+    // PATCH /api/users/:id — Edit account details
     app.patch('/api/users/:id', authenticateToken, requireAdmin, async (req, res) => {
         const userId = Number(req.params.id);
         if (!Number.isInteger(userId) || userId <= 0) {
@@ -281,7 +274,7 @@ function registerUserManagementRoutes(app, db) {
         const validation = validateUserInput(req.body, false);
         if (validation.error) return res.status(400).json({ message: validation.error });
 
-        const { first_name, last_name, email, phone, sex, position, specialization, permission_level } = validation.data;
+        const { first_name, last_name, email, phone, sex, position, specialization } = validation.data;
 
         const connection = await db.getConnection();
 
@@ -307,10 +300,10 @@ function registerUserManagementRoutes(app, db) {
                     'UPDATE employee_profiles SET position = ?, specialization = ? WHERE employee_id = ?',
                     [position, specialization || null, userId]
                 );
-            } else if (existing.role === 'admin' && permission_level) {
+            } else if (existing.role === 'admin') {
                 await connection.query(
                     'UPDATE admin_profiles SET permission_level = ? WHERE admin_id = ?',
-                    [permission_level, userId]
+                    ['Admin', userId]
                 );
             }
 
@@ -379,7 +372,7 @@ function registerUserManagementRoutes(app, db) {
         }
     });
 
-    // RESET PASSWORD HANDLER (Supports both PATCH and POST)
+    // RESET PASSWORD HANDLER
     const handlePasswordReset = async (req, res) => {
         const userId = Number(req.params.id);
         if (!Number.isInteger(userId) || userId <= 0) {
@@ -594,7 +587,7 @@ function registerUserManagementRoutes(app, db) {
         }
     });
 
-    // POST /api/users/:id/send-credentials — Emails the temporary password to the user
+    // POST /api/users/:id/send-credentials
     app.post('/api/users/:id/send-credentials', authenticateToken, requireAdmin, async (req, res) => {
         const userId = Number(req.params.id);
         const { temp_password } = req.body;
@@ -604,7 +597,6 @@ function registerUserManagementRoutes(app, db) {
         }
 
         try {
-            // Use the address and name on file rather than trusting the request body.
             const user = await fetchUser(db, userId);
             if (!user) return res.status(404).json({ message: 'User not found' });
 
