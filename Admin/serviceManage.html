@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- DENIED DIRECT PAGE /ACCESS VIA URL -->
+    <!-- DENIED DIRECT PAGE ACCESS VIA URL -->
     <script src="../pageProtection.js"></script>
     <link href="/output.css" rel="stylesheet">
     <title>Service Management</title>
@@ -23,7 +23,7 @@
 <script>
     function syncContentOffset() {
         const placeholder = document.getElementById('sidebar-placeholder');
-        const sidebar = Array.from(placeholder.children)
+        const sidebar = Array.from(placeholder?.children || [])
             .find(el => !['SCRIPT', 'STYLE', 'LINK'].includes(el.tagName));
         if (!sidebar) return;
 
@@ -79,41 +79,42 @@
     </div>
     <hr class="border-t border-[#2A1001] mt-2 mb-6" />
 
-    <div class="px-6 md:px-16">
+    <div class="px-4 sm:px-6 md:px-16 max-w-7xl mx-auto">
 
+        <!-- Top Action Bar -->
         <div class="flex justify-between items-center mb-6">
-            <button id="addServiceBtn" class="bg-[#D5C04D] hover:bg-[#c2ad3c] transition text-[#2A1001] font-bold px-6 py-2.5 rounded-full shadow-sm flex items-center gap-2 shrink-0 whitespace-nowrap cursor-pointer active:scale-95">
+            <button id="addServiceBtn" class="bg-[#D5C04D] hover:bg-[#c2ad3c] transition text-[#2A1001] font-bold px-6 py-2.5 rounded-full shadow-sm flex items-center gap-2 shrink-0 whitespace-nowrap cursor-pointer active:scale-95 text-xs sm:text-sm">
                 <i class="fa-solid fa-plus shrink-0"></i> Add New Service
             </button>
         </div>
 
-        <div id="serviceGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
-            <!-- cards injected dynamically by JS -->
+        <!-- Responsive Service Cards Grid -->
+        <div id="serviceGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6 mb-12">
+            <!-- Cards injected dynamically -->
         </div>
 
     </div>
 </div>
 
-<!-- ================= SERVICE MODAL ================= -->
-<div id="serviceModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-    <div class="bg-white rounded-3xl w-full max-w-lg p-6 sm:p-8 relative shadow-2xl border border-black/10 max-h-[92vh] overflow-y-auto">
+<!-- ================= SERVICE MODAL (With Inline Validation Errors) ================= -->
+<div id="serviceModal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+    <div class="bg-white rounded-3xl w-full max-w-lg p-5 sm:p-8 relative shadow-2xl border border-black/10 max-h-[94vh] overflow-y-auto my-auto">
 
         <!-- Close Button -->
         <button id="closeServiceModal" type="button" class="absolute top-4 right-5 text-2xl font-bold text-[#2A1001]/60 hover:text-[#2A1001] cursor-pointer">&times;</button>
 
-        <h2 id="modalHeading" class="text-lg font-bold text-[#2A1001] uppercase tracking-wider text-center mb-5">Service Details</h2>
+        <h2 id="modalHeading" class="text-lg sm:text-xl font-extrabold text-[#2A1001] uppercase tracking-wider text-center mb-4 font-['Poppins']">Service Details</h2>
 
-        <div class="flex flex-col items-center gap-4">
+        <form id="serviceForm" novalidate class="flex flex-col items-center gap-3.5 w-full">
 
             <!-- Service Icon -->
-            <div class="relative w-24 h-24 group">
+            <div class="relative w-20 h-20 sm:w-24 sm:h-24 group shrink-0">
                 <img id="serviceIconPreview" src="" class="w-full h-full object-contain hidden" alt="Service Icon" />
 
                 <div id="iconPlaceholder" class="w-full h-full flex items-center justify-center border-2 border-dashed border-gray-300 rounded-2xl bg-gray-50">
-                    <span class="text-xs text-gray-400 text-center px-3 font-semibold">Service Icon</span>
+                    <span class="text-[11px] text-gray-400 text-center px-2 font-semibold">Icon</span>
                 </div>
 
-                <!-- Upload Overlay Button -->
                 <button id="editIconBtn" type="button" class="hidden absolute -bottom-1 -right-1 w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-md border border-gray-200 hover:bg-gray-50 transition z-10 cursor-pointer" title="Change icon">
                     <i class="fa-solid fa-camera text-xs text-[#2A1001]/80"></i>
                 </button>
@@ -122,14 +123,15 @@
 
             <!-- Service Name -->
             <div class="w-full">
-                <label class="block text-xs font-bold text-[#2A1001] uppercase mb-1">Service Name</label>
-                <input id="serviceNameInput" type="text" maxlength="80" readonly class="w-full px-4 py-2.5 rounded-full border border-[#2A1001]/20 outline-none bg-[#dedede] text-[#2c3e2b]/70 font-semibold text-sm transition cursor-not-allowed shadow-inner" placeholder="e.g. Tooth Extraction (Wisdom)" />
+                <label class="block text-xs font-bold text-[#2A1001] uppercase mb-1">Service Name <span class="text-red-500">*</span></label>
+                <input id="serviceNameInput" type="text" maxlength="80" readonly class="w-full h-11 px-4 rounded-full border border-[#2A1001]/20 outline-none bg-[#dedede] text-[#2c3e2b]/70 font-semibold text-xs sm:text-sm transition cursor-not-allowed shadow-inner" placeholder="e.g. Tooth Extraction (Wisdom)" />
+                <p id="serviceNameError" class="text-[11px] font-bold text-red-600 hidden mt-1"></p>
             </div>
 
             <!-- Assigned Dentist Specialization -->
             <div class="w-full">
-                <label class="block text-xs font-bold text-[#2A1001] uppercase mb-1">Assigned Specialization</label>
-                <select id="serviceSpecializationInput" disabled class="w-full px-4 py-2.5 rounded-full border border-[#2A1001]/20 outline-none bg-[#dedede] text-[#2c3e2b]/70 font-semibold text-sm transition cursor-not-allowed shadow-inner">
+                <label class="block text-xs font-bold text-[#2A1001] uppercase mb-1">Assigned Dentist Specialization <span class="text-red-500">*</span></label>
+                <select id="serviceSpecializationInput" disabled class="w-full h-11 px-4 rounded-full border border-[#2A1001]/20 outline-none bg-[#dedede] text-[#2c3e2b]/70 font-semibold text-xs sm:text-sm transition cursor-not-allowed shadow-inner">
                     <option value="General Dentist">General Dentist</option>
                     <option value="Pediatric Dentist">Pediatric Dentist</option>
                     <option value="Orthodontist">Orthodontist</option>
@@ -142,78 +144,97 @@
                 </select>
             </div>
 
-            <!-- Procedure Explanation / Patient Details (TEXTBOX) -->
+            <!-- Procedure Explanation / Patient Details -->
             <div class="w-full">
                 <div class="flex justify-between items-center mb-1">
-                    <label class="text-xs font-bold text-[#2A1001] uppercase">Procedure Details / Patient Explanation</label>
-                    <span class="text-[11px] font-semibold text-gray-500"><span id="descCount">0</span>/500</span>
+                    <label class="text-xs font-bold text-[#2A1001] uppercase">Procedure Details / Description</label>
+                    <span class="text-[10px] font-semibold text-gray-500"><span id="descCount">0</span>/500</span>
                 </div>
-                <textarea id="serviceDescriptionInput" maxlength="500" readonly rows="3" class="w-full px-4 py-2.5 rounded-2xl border border-[#2A1001]/20 outline-none bg-[#dedede] text-[#2c3e2b]/70 font-medium text-xs sm:text-sm transition cursor-not-allowed shadow-inner resize-none placeholder:text-gray-400" placeholder="Explain what the procedure is, what steps occur, and what patients should expect..."></textarea>
+                <textarea id="serviceDescriptionInput" maxlength="500" readonly rows="3" class="w-full px-4 py-2.5 rounded-2xl border border-[#2A1001]/20 outline-none bg-[#dedede] text-[#2c3e2b]/70 font-medium text-xs sm:text-sm transition cursor-not-allowed shadow-inner resize-none placeholder:text-gray-400" placeholder="Explain the procedure and what patients should expect..."></textarea>
+                <p id="serviceDescError" class="text-[11px] font-bold text-red-600 hidden mt-1"></p>
             </div>
 
+            <!-- Estimated Duration & Price in 2-Columns -->
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full">
                 <!-- Estimated Duration -->
                 <div>
-                    <label class="block text-xs font-bold text-[#2A1001] uppercase mb-1">Estimated Duration (mins)</label>
-                    <input id="serviceDurationInput" type="number" min="5" max="480" step="5" readonly class="w-full px-4 py-2.5 rounded-full border border-[#2A1001]/20 outline-none bg-[#dedede] text-[#2c3e2b]/70 font-semibold text-sm transition cursor-not-allowed shadow-inner" placeholder="30" />
+                    <label class="block text-xs font-bold text-[#2A1001] uppercase mb-1">Duration (mins) <span class="text-red-500">*</span></label>
+                    <input id="serviceDurationInput" type="number" min="5" max="480" step="5" readonly class="w-full h-11 px-4 rounded-full border border-[#2A1001]/20 outline-none bg-[#dedede] text-[#2c3e2b]/70 font-semibold text-xs sm:text-sm transition cursor-not-allowed shadow-inner" placeholder="30" />
+                    <p id="serviceDurationError" class="text-[11px] font-bold text-red-600 hidden mt-1"></p>
                 </div>
 
-                <!-- Price Input with Perfect Center Alignment -->
+                <!-- Price Input -->
                 <div>
-                    <label class="block text-xs font-bold text-[#2A1001] uppercase mb-1">Service Price (PHP)</label>
-                    <div id="servicePriceContainer" class="w-full px-4 py-2.5 rounded-full border border-[#2A1001]/20 bg-[#dedede] flex items-center gap-1.5 shadow-inner transition cursor-not-allowed">
-                        <span id="servicePriceSymbol" class="font-bold text-sm text-[#2c3e2b]/70 select-none leading-none">₱</span>
-                        <input id="servicePriceInput" type="text" inputmode="decimal" maxlength="10" readonly class="w-full bg-transparent border-0 outline-none p-0 text-[#2c3e2b]/70 font-semibold text-sm cursor-not-allowed placeholder:text-gray-400 leading-none" placeholder="1500" />
+                    <label class="block text-xs font-bold text-[#2A1001] uppercase mb-1">Price (PHP) <span class="text-red-500">*</span></label>
+                    <div id="servicePriceContainer" class="w-full h-11 px-4 rounded-full border border-[#2A1001]/20 bg-[#dedede] flex items-center gap-1.5 shadow-inner transition cursor-not-allowed">
+                        <span id="servicePriceSymbol" class="font-bold text-xs sm:text-sm text-[#2c3e2b]/70 select-none">₱</span>
+                        <input id="servicePriceInput" type="text" inputmode="decimal" maxlength="10" readonly class="w-full bg-transparent border-0 outline-none p-0 text-[#2c3e2b]/70 font-semibold text-xs sm:text-sm cursor-not-allowed placeholder:text-gray-400" placeholder="1500" />
                     </div>
+                    <p id="servicePriceError" class="text-[11px] font-bold text-red-600 hidden mt-1"></p>
                 </div>
             </div>
 
             <!-- VIEW MODE BUTTON -->
-            <div id="viewActionsContainer" class="w-full pt-3">
-                <button type="button" id="startEditBtn" class="w-full bg-[#667733] hover:bg-[#556022] transition text-white font-bold py-3 rounded-full shadow-md flex items-center justify-center gap-2 cursor-pointer active:scale-95 text-sm sm:text-base">
+            <div id="viewActionsContainer" class="w-full pt-2">
+                <button type="button" id="startEditBtn" class="w-full bg-[#667733] hover:bg-[#556022] transition text-white font-bold py-2.5 sm:py-3 rounded-full shadow-md flex items-center justify-center gap-2 cursor-pointer active:scale-95 text-xs sm:text-sm">
                     <i class="fa-solid fa-pen-to-square"></i> Edit Service
                 </button>
             </div>
 
             <!-- EDIT MODE BUTTONS (Save & Cancel) -->
-            <div id="editActionsContainer" class="w-full hidden flex items-center gap-3 pt-3">
-                <button type="button" id="cancelEditBtn" class="flex-1 bg-gray-200 hover:bg-gray-300 transition text-[#2A1001] font-bold py-2.5 rounded-full shadow-sm cursor-pointer active:scale-95 text-sm">
+            <div id="editActionsContainer" class="w-full hidden flex items-center gap-3 pt-2">
+                <button type="button" id="cancelEditBtn" class="flex-1 bg-gray-200 hover:bg-gray-300 transition text-[#2A1001] font-bold py-2.5 rounded-full shadow-sm cursor-pointer active:scale-95 text-xs sm:text-sm">
                     Cancel
                 </button>
-                <button type="button" id="saveServiceBtn" class="flex-1 bg-[#D5C04D] hover:bg-[#c2ad3c] transition text-[#2A1001] font-bold py-2.5 rounded-full shadow-md cursor-pointer active:scale-95 text-sm flex items-center justify-center gap-2">
+                <button type="button" id="saveServiceBtn" class="flex-1 bg-[#D5C04D] hover:bg-[#c2ad3c] transition text-[#2A1001] font-bold py-2.5 rounded-full shadow-md cursor-pointer active:scale-95 text-xs sm:text-sm flex items-center justify-center gap-2">
                     Save Changes
                 </button>
             </div>
 
+        </form>
+    </div>
+</div>
+
+<!-- ================= STATUS TOGGLE CONFIRMATION MODAL ("ARE YOU SURE?") ================= -->
+<div id="statusConfirmModal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl w-full max-w-sm p-7 text-center border border-black/10 shadow-2xl my-auto">
+        <div id="statusModalIconContainer" class="w-14 h-14 mx-auto mb-3.5 rounded-full flex items-center justify-center text-2xl">
+            <i id="statusModalIcon" class="fa-solid"></i>
+        </div>
+        <h2 id="statusModalTitle" class="text-xl font-bold text-[#2A1001] mb-2 font-['Poppins']">Disable Service?</h2>
+        <div class="text-xs sm:text-sm text-[#2A1001]/75 mb-6 leading-relaxed" id="statusModalText"></div>
+        <div class="flex justify-center gap-3">
+            <button id="cancelStatusBtn" type="button" class="flex-1 py-2.5 rounded-full font-bold text-xs sm:text-sm text-[#2A1001] bg-gray-100 hover:bg-gray-200 transition cursor-pointer">Cancel</button>
+            <button id="confirmStatusBtn" type="button" class="flex-1 py-2.5 rounded-full font-bold text-xs sm:text-sm text-white transition cursor-pointer shadow-md flex items-center justify-center gap-2"></button>
         </div>
     </div>
 </div>
 
-<!-- ================= DELETE MODAL ================= -->
-<div id="deleteModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-    <div class="bg-white rounded-3xl w-full max-w-sm p-8 text-center border border-black/10 shadow-2xl">
+<!-- ================= DELETE CONFIRMATION MODAL ================= -->
+<div id="deleteModal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl w-full max-w-sm p-7 text-center border border-black/10 shadow-2xl my-auto">
         <div class="w-14 h-14 mx-auto mb-3.5 rounded-full bg-red-100 flex items-center justify-center text-red-600 text-2xl">
             <i class="fa-solid fa-triangle-exclamation"></i>
         </div>
-        <h2 class="text-xl font-bold text-[#2A1001] mb-2">Delete Service?</h2>
+        <h2 class="text-xl font-bold text-[#2A1001] mb-2 font-['Poppins']">Delete Service?</h2>
         <p class="text-xs sm:text-sm text-[#2A1001]/70 mb-6 leading-relaxed" id="deleteModalText"></p>
         <div class="flex justify-center gap-3">
-            <button id="cancelDeleteBtn" type="button" class="flex-1 py-2.5 rounded-full font-bold text-sm text-[#2A1001] bg-gray-100 hover:bg-gray-200 transition cursor-pointer">Cancel</button>
-            <button id="confirmDeleteBtn" type="button" class="flex-1 py-2.5 rounded-full font-bold text-sm text-white bg-[#D9534F] hover:bg-[#c9302c] transition cursor-pointer shadow-md flex items-center justify-center gap-2">Yes, Delete</button>
+            <button id="cancelDeleteBtn" type="button" class="flex-1 py-2.5 rounded-full font-bold text-xs sm:text-sm text-[#2A1001] bg-gray-100 hover:bg-gray-200 transition cursor-pointer">Cancel</button>
+            <button id="confirmDeleteBtn" type="button" class="flex-1 py-2.5 rounded-full font-bold text-xs sm:text-sm text-white bg-[#D9534F] hover:bg-[#c9302c] transition cursor-pointer shadow-md flex items-center justify-center gap-2">Yes, Delete</button>
         </div>
     </div>
 </div>
 
-<!-- ================= APP ALERT MODAL ================= -->
-<div id="appAlertModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-[70] flex items-center justify-center p-4">
-    <div class="bg-white rounded-3xl w-full max-w-sm p-7 text-center shadow-2xl border border-black/10 relative transition-all">
+<!-- ================= NOTICE / APP ALERT MODAL ================= -->
+<div id="appAlertModal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-[70] flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl w-full max-w-sm p-7 text-center shadow-2xl border border-black/10 relative transition-all my-auto">
         <div id="alertModalIconContainer" class="w-14 h-14 mx-auto mb-3.5 rounded-full flex items-center justify-center">
             <i id="alertModalIcon" class="text-2xl"></i>
         </div>
-        <h3 id="alertModalTitle" class="text-lg font-bold text-[#2A1001] mb-1.5">Notification</h3>
+        <h3 id="alertModalTitle" class="text-lg font-bold text-[#2A1001] mb-1.5 font-['Poppins']">Notification</h3>
         <div id="alertModalMessage" class="text-xs sm:text-sm text-[#2A1001]/75 leading-relaxed mb-6 font-medium whitespace-pre-line"></div>
         <div class="flex justify-center">
-            <button id="alertModalOkBtn" type="button" class="px-8 py-2.5 rounded-full font-bold text-sm bg-[#667733] hover:bg-[#556022] text-white transition shadow-md cursor-pointer">
+            <button id="alertModalOkBtn" type="button" class="px-8 py-2.5 rounded-full font-bold text-xs sm:text-sm bg-[#667733] hover:bg-[#556022] text-white transition shadow-md cursor-pointer">
                 Got it
             </button>
         </div>
@@ -253,7 +274,7 @@
         const btn = document.getElementById('alertModalOkBtn');
 
         titleEl.textContent = String(title || 'Notification');
-        msgEl.textContent = String(message || '');
+        msgEl.innerHTML = String(message || '');
 
         if (type === 'error') {
             iconContainer.className = 'w-14 h-14 mx-auto mb-3.5 rounded-full flex items-center justify-center bg-red-100 text-red-600';
@@ -281,7 +302,7 @@
     });
 
     function authHeaders(json = false) {
-        const token = localStorage.getItem('userToken');
+        const token = localStorage.getItem('userToken') || localStorage.getItem('token');
         const headers = { 'Authorization': `Bearer ${token}` };
         if (json) headers['Content-Type'] = 'application/json';
         return headers;
@@ -318,6 +339,18 @@
         return await response.json();
     }
 
+    async function toggleServiceStatus(id) {
+        const response = await fetch(`/api/services/${encodeURIComponent(id)}/status`, {
+            method: 'PATCH',
+            headers: authHeaders(true)
+        });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            throw new Error(result.message || result.error || 'Failed to toggle service status');
+        }
+        return result;
+    }
+
     async function deleteService(id) {
         const response = await fetch(`/api/services/${encodeURIComponent(id)}`, { 
             method: 'DELETE', 
@@ -329,6 +362,7 @@
     let services = [];
     let activeServiceId = null;
     let pendingDeleteId = null;
+    let pendingStatusToggle = null;
     let uploadedIconData = null;
     let isCreatingNew = false;
     let originalServiceSnapshot = null;
@@ -350,8 +384,40 @@
         return `${mins} mins`;
     }
 
+    // ── INLINE ERROR HELPERS (Replaces Alert Popups) ──
+    function clearInlineErrors() {
+        ['serviceName', 'serviceDesc', 'serviceDuration', 'servicePrice'].forEach(field => {
+            const errEl = document.getElementById(`${field}Error`);
+            if (errEl) {
+                errEl.textContent = '';
+                errEl.classList.add('hidden');
+            }
+        });
+
+        // Clear highlight rings
+        document.getElementById('serviceNameInput')?.classList.remove('border-red-500', 'ring-2', 'ring-red-500/30');
+        document.getElementById('serviceDescriptionInput')?.classList.remove('border-red-500', 'ring-2', 'ring-red-500/30');
+        document.getElementById('serviceDurationInput')?.classList.remove('border-red-500', 'ring-2', 'ring-red-500/30');
+        document.getElementById('servicePriceContainer')?.classList.remove('border-red-500', 'ring-2', 'ring-red-500/30');
+    }
+
+    function setFieldError(inputId, errorId, message, containerId = null) {
+        const target = containerId ? document.getElementById(containerId) : document.getElementById(inputId);
+        const errEl = document.getElementById(errorId);
+
+        if (target) {
+            target.classList.add('border-red-500', 'ring-2', 'ring-red-500/30');
+        }
+        if (errEl) {
+            errEl.textContent = message;
+            errEl.classList.remove('hidden');
+        }
+    }
+
     // ── FORM LOCKING MECHANISM ──
     function setFormLocked(locked) {
+        clearInlineErrors();
+
         ['serviceNameInput', 'serviceDurationInput', 'serviceDescriptionInput'].forEach(id => {
             const el = document.getElementById(id);
             if (!el) return;
@@ -364,7 +430,6 @@
             el.classList.toggle('cursor-text', !locked);
         });
 
-        // Price Container & Input Locking
         const priceContainer = document.getElementById('servicePriceContainer');
         const priceInput = document.getElementById('servicePriceInput');
         const priceSymbol = document.getElementById('servicePriceSymbol');
@@ -386,7 +451,6 @@
             }
         }
 
-        // Specialization select
         const specInput = document.getElementById('serviceSpecializationInput');
         if (specInput) {
             specInput.disabled = locked;
@@ -396,10 +460,7 @@
             specInput.classList.toggle('cursor-pointer', !locked);
         }
 
-        // Upload icon button
         document.getElementById('editIconBtn').classList.toggle('hidden', locked);
-
-        // Bottom action bar toggle
         document.getElementById('viewActionsContainer').classList.toggle('hidden', !locked);
         document.getElementById('editActionsContainer').classList.toggle('hidden', locked);
     }
@@ -409,10 +470,21 @@
     if (descInputEl) {
         descInputEl.addEventListener('input', function() {
             document.getElementById('descCount').textContent = this.value.length;
+            document.getElementById('serviceDescError')?.classList.add('hidden');
+            this.classList.remove('border-red-500', 'ring-2', 'ring-red-500/30');
         });
     }
 
-    // ── STRICT NUMERIC INPUT VALIDATION FOR PRICE WITH 1,500,000 LIMIT ──
+    // Remove errors on user typing
+    ['serviceNameInput', 'serviceDurationInput'].forEach(id => {
+        document.getElementById(id)?.addEventListener('input', function() {
+            this.classList.remove('border-red-500', 'ring-2', 'ring-red-500/30');
+            const errId = id.replace('Input', 'Error');
+            document.getElementById(errId)?.classList.add('hidden');
+        });
+    });
+
+    // ── STRICT NUMERIC INPUT VALIDATION FOR PRICE ──
     const priceInputEl = document.getElementById('servicePriceInput');
     if (priceInputEl) {
         document.getElementById('servicePriceContainer')?.addEventListener('click', () => {
@@ -426,20 +498,19 @@
                 'Backspace', 'Delete', 'Tab', 'Escape', 'Enter',
                 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'
             ];
-            if (allowedKeys.includes(e.key) || e.ctrlKey || e.metaKey) {
-                return;
-            }
-
+            if (allowedKeys.includes(e.key) || e.ctrlKey || e.metaKey) return;
             if (e.key === '.' || e.key === 'Decimal') {
                 if (this.value.includes('.')) e.preventDefault();
                 return;
             }
-
             if (/^[0-9]$/.test(e.key)) return;
             e.preventDefault();
         });
 
         priceInputEl.addEventListener('input', function () {
+            document.getElementById('servicePriceContainer')?.classList.remove('border-red-500', 'ring-2', 'ring-red-500/30');
+            document.getElementById('servicePriceError')?.classList.add('hidden');
+
             let val = this.value.replace(/[^0-9.]/g, '');
             const parts = val.split('.');
             if (parts.length > 2) val = parts[0] + '.' + parts.slice(1).join('');
@@ -451,19 +522,19 @@
             const numVal = parseFloat(val);
             if (!isNaN(numVal) && numVal > 1500000) {
                 this.value = '1500000';
-                showAlert('Maximum Price Limit', 'The maximum allowed service price is ₱1,500,000.', 'info');
+                setFieldError('servicePriceInput', 'servicePriceError', '⚠️ The maximum allowed price is ₱1,500,000.', 'servicePriceContainer');
                 return;
             }
             this.value = val;
         });
     }
 
-    // Sanitize duration input (integers only)
     document.getElementById('serviceDurationInput')?.addEventListener('input', function() {
         this.value = this.value.replace(/\D/g, '');
     });
 
     function populateModalData(service) {
+        clearInlineErrors();
         const nameInput = document.getElementById('serviceNameInput');
         const specInput = document.getElementById('serviceSpecializationInput');
         const descInput = document.getElementById('serviceDescriptionInput');
@@ -528,7 +599,44 @@
         document.getElementById('serviceModal').classList.remove('hidden');
     }
 
-    // ── RENDER ADMIN SERVICE CARDS (Clean, Uncluttered, Accessible Menu) ──────
+    // ── OPEN "ARE YOU SURE?" CONFIRMATION MODAL FOR DISABLE/ENABLE ──
+    function openStatusConfirmModal(id) {
+        const cleanId = parseInt(id, 10);
+        const service = services.find(s => parseInt(s.service_id, 10) === cleanId);
+        if (!service) return;
+
+        const isAvailable = service.is_available !== false && service.is_available !== 0;
+        const willDisable = isAvailable;
+
+        pendingStatusToggle = { id: cleanId, service, willDisable };
+
+        const modal = document.getElementById('statusConfirmModal');
+        const iconContainer = document.getElementById('statusModalIconContainer');
+        const icon = document.getElementById('statusModalIcon');
+        const title = document.getElementById('statusModalTitle');
+        const text = document.getElementById('statusModalText');
+        const confirmBtn = document.getElementById('confirmStatusBtn');
+
+        if (willDisable) {
+            iconContainer.className = 'w-14 h-14 mx-auto mb-3.5 rounded-full flex items-center justify-center bg-red-100 text-red-600';
+            icon.className = 'fa-solid fa-ban text-2xl text-red-600';
+            title.textContent = 'Disable Service?';
+            text.innerHTML = `Are you sure you want to disable <strong>"${escapeHtml(service.label)}"</strong>?<br><span class="text-xs text-gray-500 mt-1 block">Patients will not be able to book this service while it is disabled.</span>`;
+            confirmBtn.className = 'flex-1 py-2.5 rounded-full font-bold text-xs sm:text-sm text-white bg-[#D9534F] hover:bg-[#c9302c] transition cursor-pointer shadow-md flex items-center justify-center gap-2';
+            confirmBtn.innerHTML = '<i class="fa-solid fa-ban text-xs"></i> Yes, Disable';
+        } else {
+            iconContainer.className = 'w-14 h-14 mx-auto mb-3.5 rounded-full flex items-center justify-center bg-green-100 text-green-700';
+            icon.className = 'fa-solid fa-circle-check text-2xl text-green-600';
+            title.textContent = 'Enable Service?';
+            text.innerHTML = `Are you sure you want to enable <strong>"${escapeHtml(service.label)}"</strong>?<br><span class="text-xs text-gray-500 mt-1 block">This service will become available for patients to book immediately.</span>`;
+            confirmBtn.className = 'flex-1 py-2.5 rounded-full font-bold text-xs sm:text-sm text-white bg-[#667733] hover:bg-[#556022] transition cursor-pointer shadow-md flex items-center justify-center gap-2';
+            confirmBtn.innerHTML = '<i class="fa-solid fa-check text-xs"></i> Yes, Enable';
+        }
+
+        modal.classList.remove('hidden');
+    }
+
+    // ── RENDER RESPONSIVE SERVICE CARDS WITH DESCRIPTIONS & RED DISABLE BUTTON ──
     async function renderServices() {
         const grid = document.getElementById('serviceGrid');
         grid.innerHTML = `<div class="col-span-full text-center py-12 text-[#2A1001]/60 font-semibold"><i class="fa-solid fa-spinner fa-spin mr-2"></i>Loading services catalog...</div>`;
@@ -544,59 +652,91 @@
             const cleanId = parseInt(s.service_id, 10);
             const iconUrl = safeIconSrc(s.icon, defaultIcons[s.label] || defaultIcons['default']);
             const durationDisplay = formatDuration(s.duration_minutes);
-            const cleanPrice = Number(s.price || 0).toLocaleString();
+            const cleanPrice = Number(s.price || 0).toLocaleString('en-US', { minimumFractionDigits: 2 });
+            const isAvailable = s.is_available !== false && s.is_available !== 0;
+            const descriptionText = s.description ? s.description.trim() : 'Standard dental care and consultation procedure performed by clinic specialists.';
 
             return `
-            <div class="bg-white rounded-[32px] p-6 shadow-sm hover:shadow-md transition-all duration-300 relative flex flex-col items-center justify-between min-h-[300px] border border-black/5">
+            <div class="bg-white rounded-[28px] p-5 sm:p-6 shadow-sm hover:shadow-md transition-all duration-300 relative flex flex-col justify-between border ${isAvailable ? 'border-black/5' : 'border-red-300 bg-gray-50/80'}">
                 
-                <!-- Duration & Specialization Badges -->
-                <div class="absolute top-4 left-4 flex flex-col gap-1 items-start">
-                    <div class="bg-amber-50 border border-amber-600/30 text-amber-900 text-[10px] font-black px-2.5 py-0.5 rounded-full flex items-center gap-1 shadow-sm">
-                        <i class="fa-regular fa-clock text-[9px]"></i> ${durationDisplay}
+                <!-- Header Badges -->
+                <div class="flex items-start justify-between gap-2 mb-3">
+                    <div class="flex flex-wrap gap-1.5 items-center">
+                        <div class="bg-amber-50 border border-amber-600/30 text-amber-900 text-[10px] font-black px-2.5 py-0.5 rounded-full flex items-center gap-1 shadow-xs">
+                            <i class="fa-regular fa-clock text-[9px]"></i> ${durationDisplay}
+                        </div>
+                        ${s.specialization || s.required_specialization ? `
+                        <div class="bg-[#D7E3A5] border border-[#c1ccab] text-[#2c3e2b] text-[10px] font-bold px-2.5 py-0.5 rounded-full shadow-xs">
+                            ${escapeHtml(s.specialization || s.required_specialization)}
+                        </div>` : ''}
+                        ${!isAvailable ? `
+                        <div class="bg-red-100 border border-red-300 text-red-700 text-[10px] font-black px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                            <i class="fa-solid fa-ban text-[8px]"></i> Disabled
+                        </div>` : ''}
                     </div>
-                    ${s.specialization || s.required_specialization ? `
-                    <div class="bg-[#D7E3A5] border border-[#c1ccab] text-[#2c3e2b] text-[9px] font-bold px-2 py-0.5 rounded-full shadow-sm">
-                        ${escapeHtml(s.specialization || s.required_specialization)}
-                    </div>` : ''}
+
+                    <!-- Context Menu -->
+                    <div class="relative z-20">
+                        <button class="menuBtn w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center text-[#2A1001] transition font-bold text-lg cursor-pointer" data-id="${cleanId}">
+                            <i class="fa-solid fa-ellipsis-vertical text-sm text-gray-500"></i>
+                        </button>
+                        <div class="menuDropdown hidden absolute right-0 top-8 bg-white border border-[#2A1001]/10 rounded-2xl shadow-xl z-30 w-44 overflow-hidden py-1" data-menu-for="${cleanId}">
+                            <button class="editOption w-full flex items-center gap-2 px-3.5 py-2 text-xs font-bold text-[#2A1001] hover:bg-[#F3EFE4] cursor-pointer" data-id="${cleanId}">
+                                <i class="fa-solid fa-pen-to-square text-[#667733]"></i> <span>Edit Details</span>
+                            </button>
+                            <button class="toggleStatusOption w-full flex items-center gap-2 px-3.5 py-2 text-xs font-bold cursor-pointer transition ${
+                                isAvailable ? 'text-red-600 hover:bg-red-50' : 'text-green-700 hover:bg-green-50'
+                            }" data-id="${cleanId}">
+                                <i class="fa-solid ${isAvailable ? 'fa-ban text-red-500' : 'fa-check text-green-600'}"></i>
+                                <span>${isAvailable ? 'Disable Service' : 'Enable Service'}</span>
+                            </button>
+                            <button class="deleteOption w-full flex items-center gap-2 px-3.5 py-2 text-xs font-bold text-red-600 hover:bg-red-50 cursor-pointer border-t border-gray-100" data-id="${cleanId}">
+                                <i class="fa-solid fa-trash-can text-red-500"></i> <span>Delete</span>
+                            </button>
+                        </div>
+                    </div>
                 </div>
 
-                <!-- Three-Dots Context Menu (Always Accessible & Unblocked) -->
-                <div class="absolute top-4 right-4 z-20">
-                    <button class="menuBtn w-8 h-8 bg-transparent hover:bg-gray-100 rounded-full flex items-center justify-center text-[#2A1001] transition font-bold text-xl leading-none pb-2 cursor-pointer shadow-sm" data-id="${cleanId}">
-                        ...
+                <!-- Icon & Title -->
+                <div class="flex flex-col items-center text-center my-2">
+                    <div class="w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center mb-2">
+                        <img src="${escapeHtml(iconUrl)}" onerror="this.src='../assets/logowithtitle.png'" class="w-full h-full object-contain ${isAvailable ? '' : 'grayscale opacity-75'}" alt="${escapeHtml(s.label)}" />
+                    </div>
+                    <h3 class="font-extrabold text-[#2A1001] text-sm sm:text-base line-clamp-1 w-full">${escapeHtml(s.label)}</h3>
+                </div>
+
+                <!-- Description Block (Responsive Multi-line) -->
+                <p class="text-xs text-gray-600 leading-relaxed line-clamp-2 text-center my-1.5 px-1 font-normal" title="${escapeHtml(descriptionText)}">
+                    ${escapeHtml(descriptionText)}
+                </p>
+
+                <!-- Bottom Bar: Price & RED Disable / GREEN Enable Button -->
+                <div class="w-full pt-3 border-t border-[#2A1001]/10 flex items-center justify-between mt-2">
+                    <div>
+                        <span class="text-[10px] font-bold text-gray-400 block uppercase tracking-wider">Price</span>
+                        <span class="font-black text-sm sm:text-base text-[#667733]">₱${cleanPrice}</span>
+                    </div>
+
+                    <!-- Card Button: RED for Disable, GREEN for Enable -->
+                    <button class="toggleStatusOption px-3.5 py-1.5 rounded-full text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-95 ${
+                        isAvailable 
+                            ? 'bg-red-100 hover:bg-red-200 text-red-700 border border-red-300' 
+                            : 'bg-green-100 hover:bg-green-200 text-green-800 border border-green-300'
+                    }" data-id="${cleanId}">
+                        <i class="fa-solid ${isAvailable ? 'fa-ban text-red-600' : 'fa-check text-green-600'} text-[10px]"></i>
+                        <span>${isAvailable ? 'Disable' : 'Enable'}</span>
                     </button>
-                    <div class="menuDropdown hidden absolute right-0 top-9 bg-white border border-[#2A1001]/10 rounded-2xl shadow-xl z-30 w-36 overflow-hidden" data-menu-for="${cleanId}">
-                        <button class="editOption w-full flex items-center gap-2.5 px-4 py-2.5 text-xs font-bold text-[#2A1001] hover:bg-[#F3EFE4] cursor-pointer" data-id="${cleanId}">
-                            <i class="fa-solid fa-pen-to-square text-xs text-[#667733]"></i> <span>Edit Service</span>
-                        </button>
-                        <button class="deleteOption w-full flex items-center gap-2.5 px-4 py-2.5 text-xs font-bold text-red-600 hover:bg-red-50 cursor-pointer border-t border-gray-100" data-id="${cleanId}">
-                            <i class="fa-solid fa-trash-can text-xs text-red-500"></i> <span>Delete</span>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Title -->
-                <h3 class="font-extrabold text-[#382414] text-base sm:text-lg mt-8 mb-2 w-full text-center px-2 line-clamp-2">${escapeHtml(s.label)}</h3>
-
-                <!-- Icon -->
-                <div class="flex justify-center items-center my-3 w-16 h-16">
-                    <img src="${escapeHtml(iconUrl)}" onerror="this.src='../assets/logowithtitle.png'" class="w-full h-full object-contain" alt="${escapeHtml(s.label)}" />
-                </div>
-
-                <!-- Price Bar -->
-                <div class="w-full pt-3 border-t border-[#2A1001]/10 flex justify-between items-center px-2 text-[#382414] mt-auto">
-                    <span class="text-xs font-bold text-gray-500 uppercase">Rate:</span>
-                    <span class="font-black text-base text-[#667733]">₱${cleanPrice}</span>
                 </div>
             </div>
             `;
         }).join('');
     }
 
+    // ── CLICK EVENTS (Delegation) ──
     document.getElementById('serviceGrid').addEventListener('click', function (e) {
-        const btn = e.target.closest('.menuBtn');
-        if (btn) {
-            const id = btn.dataset.id;
+        const menuBtn = e.target.closest('.menuBtn');
+        if (menuBtn) {
+            const id = menuBtn.dataset.id;
             document.querySelectorAll('.menuDropdown').forEach(menu => {
                 if (menu.dataset.menuFor !== id) menu.classList.add('hidden');
             });
@@ -610,6 +750,14 @@
             const id = editBtn.dataset.id;
             openServiceModal(id);
             document.querySelectorAll('.menuDropdown').forEach(m => m.classList.add('hidden'));
+            return;
+        }
+
+        const toggleBtn = e.target.closest('.toggleStatusOption');
+        if (toggleBtn) {
+            const id = toggleBtn.dataset.id;
+            document.querySelectorAll('.menuDropdown').forEach(m => m.classList.add('hidden'));
+            openStatusConfirmModal(id);
             return;
         }
 
@@ -631,6 +779,45 @@
     document.addEventListener('click', function (e) {
         if (!e.target.closest('.menuBtn')) {
             document.querySelectorAll('.menuDropdown').forEach(m => m.classList.add('hidden'));
+        }
+    });
+
+    // ── STATUS CONFIRMATION MODAL ACTIONS ──
+    document.getElementById('cancelStatusBtn').addEventListener('click', () => {
+        pendingStatusToggle = null;
+        document.getElementById('statusConfirmModal').classList.add('hidden');
+    });
+
+    document.getElementById('statusConfirmModal').addEventListener('click', function (e) {
+        if (e.target === this) {
+            pendingStatusToggle = null;
+            this.classList.add('hidden');
+        }
+    });
+
+    document.getElementById('confirmStatusBtn').addEventListener('click', async function () {
+        if (!pendingStatusToggle) return;
+        const { id, service, willDisable } = pendingStatusToggle;
+        const btn = this;
+        const originalHtml = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Processing...';
+
+        try {
+            const res = await toggleServiceStatus(id);
+            pendingStatusToggle = null;
+            document.getElementById('statusConfirmModal').classList.add('hidden');
+            await renderServices();
+            showAlert(
+                willDisable ? 'Service Disabled' : 'Service Enabled',
+                res.message || `Service "${service.label}" has been ${willDisable ? 'disabled' : 'enabled'}.`,
+                willDisable ? 'info' : 'success'
+            );
+        } catch (err) {
+            showAlert('Action Failed', err.message || 'Could not update service status.', 'error');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = originalHtml;
         }
     });
 
@@ -689,51 +876,49 @@
         reader.readAsDataURL(file);
     });
 
-    // ── SAVE / UPDATE SERVICE HANDLER ──
+    // ── SAVE SERVICE WITH INLINE VALIDATION ──
     document.getElementById('saveServiceBtn').addEventListener('click', async function () {
+        clearInlineErrors();
+
         const labelValue = document.getElementById('serviceNameInput').value.trim();
         const specValue = document.getElementById('serviceSpecializationInput').value.trim();
         const descValue = document.getElementById('serviceDescriptionInput').value.trim();
         const priceValue = parseFloat(document.getElementById('servicePriceInput').value);
         const durationValue = parseInt(document.getElementById('serviceDurationInput').value, 10);
 
+        let hasError = false;
+
         if (!labelValue || labelValue.length < 2 || labelValue.length > 80) {
-            showAlert('Validation Error', 'Service name must be between 2 and 80 characters.', 'error');
-            return;
-        }
-
-        if (/[%$^*<>{}[\]\\;~|_+=]/.test(labelValue) || /([()\-',/.]){2,}/.test(labelValue)) {
-            showAlert('Validation Error', 'Service name contains invalid symbols or repeated characters.', 'error');
-            return;
-        }
-
-        const openCount = (labelValue.match(/\(/g) || []).length;
-        const closeCount = (labelValue.match(/\)/g) || []).length;
-        if (openCount !== closeCount) {
-            showAlert('Validation Error', 'Parentheses must be properly closed (e.g. "Root Canal (Molar)").', 'error');
-            return;
-        }
-
-        const cleanTitleRegex = /^[A-Za-z0-9][A-Za-z0-9\s\-',/().]*[A-Za-z0-9.)]$/;
-        if (!cleanTitleRegex.test(labelValue)) {
-            showAlert('Validation Error', 'Please enter a valid title using letters and numbers.', 'error');
-            return;
-        }
-
-        if (isNaN(priceValue) || priceValue < 0 || priceValue > 1500000) {
-            showAlert('Validation Error', 'Please enter a valid non-negative price up to ₱1,500,000.', 'error');
-            return;
+            setFieldError('serviceNameInput', 'serviceNameError', '⚠️ Service name must be between 2 and 80 characters.');
+            hasError = true;
+        } else if (/[%$^*<>{}[\]\\;~|_+=]/.test(labelValue) || /([()\-',/.]){2,}/.test(labelValue)) {
+            setFieldError('serviceNameInput', 'serviceNameError', '⚠️ Service name contains forbidden symbols or repeated punctuation.');
+            hasError = true;
+        } else {
+            const openCount = (labelValue.match(/\(/g) || []).length;
+            const closeCount = (labelValue.match(/\)/g) || []).length;
+            if (openCount !== closeCount) {
+                setFieldError('serviceNameInput', 'serviceNameError', '⚠️ Parentheses must be properly closed.');
+                hasError = true;
+            }
         }
 
         if (isNaN(durationValue) || durationValue < 5 || durationValue > 480) {
-            showAlert('Validation Error', 'Estimated duration must be between 5 and 480 minutes.', 'error');
-            return;
+            setFieldError('serviceDurationInput', 'serviceDurationError', '⚠️ Duration must be between 5 and 480 minutes.');
+            hasError = true;
+        }
+
+        if (isNaN(priceValue) || priceValue < 0 || priceValue > 1500000) {
+            setFieldError('servicePriceInput', 'servicePriceError', '⚠️ Price must be between ₱0 and ₱1,500,000.', 'servicePriceContainer');
+            hasError = true;
         }
 
         if (descValue.length > 500) {
-            showAlert('Validation Error', 'Procedure explanation cannot exceed 500 characters.', 'error');
-            return;
+            setFieldError('serviceDescriptionInput', 'serviceDescError', '⚠️ Procedure description cannot exceed 500 characters.');
+            hasError = true;
         }
+
+        if (hasError) return;
 
         const btn = this;
         const originalText = btn.innerHTML;
@@ -757,7 +942,7 @@
             await renderServices();
             showAlert('Service Saved', 'The clinic service catalog has been updated successfully.', 'success');
         } catch (error) {
-            showAlert('Save Failed', error.message, 'error');
+            setFieldError('serviceNameInput', 'serviceNameError', `⚠️ ${error.message}`);
         } finally {
             btn.disabled = false;
             btn.innerHTML = originalText;
@@ -799,13 +984,7 @@
     });
 
     renderServices();
-
-    
-
-    document.addEventListener('keydown', e => {
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') { e.preventDefault(); form.requestSubmit(); }
-    });
 </script>
-  <script src="/InactivityTimer/InactivityTimer.js"></script>
+<script src="/InactivityTimer/InactivityTimer.js"></script>
 </body>
 </html>

@@ -92,7 +92,8 @@ function toService(row) {
         duration_minutes: Number(row.duration_minutes || 30),
         required_specialization: row.required_specialization || 'General Dentist',
         specialization: row.required_specialization || 'General Dentist',
-        description: row.description || ''
+        description: row.description || '',
+        is_available: row.is_available === 1 || row.is_available === true
     };
 }
 
@@ -148,15 +149,17 @@ function validate(body) {
 }
 
 function registerServiceRoutes(app, db) {
-    // 1. GET /api/services — Includes description, duration_minutes, and required_specialization
+    // 1. GET /api/services — Returns all for admins, active only for patients
     app.get('/api/services', authenticateToken, async (req, res) => {
         try {
-            const [rows] = await db.query(
-                `SELECT service_id, label, price, duration_minutes, required_specialization, description, icon, is_available 
-                 FROM services 
-                 WHERE is_available = TRUE 
-                 ORDER BY service_id`
-            );
+            const isAdmin = req.user && req.user.role === 'admin';
+            const sql = isAdmin
+                ? `SELECT service_id, label, price, duration_minutes, required_specialization, description, icon, is_available 
+                   FROM services ORDER BY service_id`
+                : `SELECT service_id, label, price, duration_minutes, required_specialization, description, icon, is_available 
+                   FROM services WHERE is_available = TRUE ORDER BY service_id`;
+            
+            const [rows] = await db.query(sql);
             res.json(rows.map(toService));
         } catch (err) {
             console.error('Service list error:', err);
@@ -164,7 +167,7 @@ function registerServiceRoutes(app, db) {
         }
     });
 
-    // 2. POST /api/services — Inserts service with description
+    // 2. POST /api/services
     app.post('/api/services', authenticateToken, requireAdmin, async (req, res) => {
         const v = validate(req.body);
         if (v.error) return res.status(400).json({ message: v.error });
@@ -172,8 +175,8 @@ function registerServiceRoutes(app, db) {
         try {
             const icon = await resolveIcon(req.body.icon);
             const [result] = await db.query(
-                `INSERT INTO services (label, price, duration_minutes, required_specialization, description, icon) 
-                 VALUES (?, ?, ?, ?, ?, ?)`,
+                `INSERT INTO services (label, price, duration_minutes, required_specialization, description, icon, is_available) 
+                 VALUES (?, ?, ?, ?, ?, ?, 1)`,
                 [v.label, v.price, v.duration_minutes, v.required_specialization, v.description, icon]
             );
             const [[row]] = await db.query('SELECT * FROM services WHERE service_id = ?', [result.insertId]);
@@ -196,7 +199,7 @@ function registerServiceRoutes(app, db) {
         }
     });
 
-    // 3. PUT /api/services/:id — Updates service with description
+    // 3. PUT /api/services/:id
     app.put('/api/services/:id', authenticateToken, requireAdmin, async (req, res) => {
         const id = Number(req.params.id);
         if (!Number.isInteger(id)) return res.status(400).json({ message: 'Invalid service id' });
@@ -234,7 +237,45 @@ function registerServiceRoutes(app, db) {
         }
     });
 
-    // 4. DELETE /api/services/:id
+    // 4. Toggle Status: PATCH / PUT /api/services/:id/status
+    const handleStatusToggle = async (req, res) => {
+        const id = Number(req.params.id);
+        if (!Number.isInteger(id)) return res.status(400).json({ message: 'Invalid service id' });
+
+        try {
+            const [[existing]] = await db.query('SELECT service_id, label, is_available FROM services WHERE service_id = ?', [id]);
+            if (!existing) return res.status(404).json({ message: 'Service not found' });
+
+            const current = existing.is_available === 1 || existing.is_available === true;
+            const newStatus = current ? 0 : 1; // Integer 0/1 for MySQL TINYINT
+
+            await db.query('UPDATE services SET is_available = ? WHERE service_id = ?', [newStatus, id]);
+
+            await logActivity(db, {
+                user_id: req.user.user_id,
+                user_role: req.user.role,
+                action: newStatus === 1 ? 'ENABLE_SERVICE' : 'DISABLE_SERVICE',
+                target_table: 'services',
+                target_id: id,
+                notes: `${newStatus === 1 ? 'Enabled' : 'Disabled'} service "${existing.label}".`,
+                ip_address: getIp(req)
+            });
+
+            res.json({ 
+                service_id: id, 
+                is_available: Boolean(newStatus), 
+                message: `Service "${existing.label}" has been ${newStatus === 1 ? 'enabled' : 'disabled'}.` 
+            });
+        } catch (err) {
+            console.error('Service status toggle error:', err);
+            res.status(500).json({ message: 'Database error: ' + err.message });
+        }
+    };
+
+    app.patch('/api/services/:id/status', authenticateToken, requireAdmin, handleStatusToggle);
+    app.put('/api/services/:id/status', authenticateToken, requireAdmin, handleStatusToggle);
+
+    // 5. DELETE /api/services/:id
     app.delete('/api/services/:id', authenticateToken, requireAdmin, async (req, res) => {
         const id = Number(req.params.id);
         if (!Number.isInteger(id)) return res.status(400).json({ message: 'Invalid service id' });
@@ -257,7 +298,7 @@ function registerServiceRoutes(app, db) {
             res.json({ message: 'Service deleted' });
         } catch (err) {
             if (err.code === 'ER_ROW_IS_REFERENCED_2') {
-                return res.status(409).json({ message: 'This service has appointments booked against it and cannot be deleted.' });
+                return res.status(409).json({ message: 'This service has appointments booked against it and cannot be deleted. You can disable it instead.' });
             }
             console.error('Service delete error:', err);
             res.status(500).json({ message: 'Internal Server Error' });
