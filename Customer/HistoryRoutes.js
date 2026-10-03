@@ -106,8 +106,12 @@ function registerHistoryRoutes(app, db, io) {
 
             await connection.query(
                 `UPDATE appointments
-                 SET appointment_status = 'cancelled'
-                 WHERE appointment_id = ?`,
+                SET appointment_status = 'cancelled',
+                    reschedule_status = 'none',
+                    requested_date = NULL,
+                    requested_time = NULL,
+                    reschedule_reason = NULL
+                WHERE appointment_id = ?`,
                 [appointmentId]
             );
 

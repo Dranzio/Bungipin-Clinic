@@ -2,7 +2,6 @@
 const TEST_MODE = false;
 const MAX_RESCHEDULE_LIMIT = 2; // Maximum allowed reschedules
 
-
 function escapeHtml(value) {
     const div = document.createElement('div');
     div.textContent = value == null ? '' : String(value);
@@ -386,7 +385,6 @@ function applyFiltersAndRender() {
 
     renderTable();
 }
-
 function renderTable() {
     const tbody = document.getElementById('tableBody');
     const emptyState = document.getElementById('emptyState');
@@ -411,15 +409,18 @@ function renderTable() {
             ? new Date(appt.appointment_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
             : 'N/A';
 
-        const amountFormatted = appt.amount ? `₱${Number(appt.amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}` : '₱0.00';
+        const amountFormatted = appt.amount ? `₱${Number(appt.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '₱0.00';
         const status = (appt.appointment_status || '').toLowerCase();
+        const paymentStatus = (appt.payment_status || '').toLowerCase();
         const reschedStatus = (appt.reschedule_status || '').toLowerCase();
         const reschedCount = Number(appt.reschedule_count || 0);
 
         const isCancellable = CANCELLABLE_STATUSES.includes(status);
         const isReschedulable = RESCHEDULABLE_STATUSES.includes(status);
         const hasReachedLimit = reschedCount >= MAX_RESCHEDULE_LIMIT && reschedStatus !== 'requested';
+        const isReschedPending = reschedStatus === 'requested' && status !== 'cancelled' && status !== 'completed';
 
+        // 👨‍⚕️ Attending Dentist Column
         let dentistColumnHtml = '';
         const dentistFullName = (appt.dentist_first_name || appt.dentist_last_name)
             ? `Dr. ${appt.dentist_first_name || ''} ${appt.dentist_last_name || ''}`.trim()
@@ -444,12 +445,13 @@ function renderTable() {
             dentistColumnHtml = `<span class="text-xs text-gray-400">&mdash;</span>`;
         }
 
+        // 🔄 Reschedule & Cancel Action Buttons (Aligned)
         let reschedActionHtml = '';
         if (isReschedulable) {
             if (hasReachedLimit) {
                 reschedActionHtml = `
                     <button disabled
-                            class="bg-gray-200 text-gray-400 text-xs font-bold py-1.5 px-3 rounded-full cursor-not-allowed opacity-75 shadow-none flex items-center gap-1 shrink-0 whitespace-nowrap" 
+                            class="h-8 bg-gray-200 text-gray-400 text-xs font-bold px-3 rounded-full cursor-not-allowed opacity-75 shadow-none inline-flex items-center justify-center gap-1 shrink-0 whitespace-nowrap" 
                             title="Reschedule limit reached (Max ${MAX_RESCHEDULE_LIMIT} times)">
                         <i class="fa-solid fa-lock text-[10px]"></i> Limit (${reschedCount}/${MAX_RESCHEDULE_LIMIT})
                     </button>
@@ -457,12 +459,12 @@ function renderTable() {
             } else if (reschedStatus === 'requested') {
                 reschedActionHtml = `
                     <button onclick="openRescheduleModalById(${appt.appointment_id})"
-                            class="bg-[#D5C04D] hover:bg-[#c6b242] text-[#2A1001] text-xs font-bold py-1.5 px-3 rounded-full transition active:scale-95 cursor-pointer shadow-sm flex items-center gap-1 shrink-0 whitespace-nowrap" 
+                            class="h-8 bg-[#D5C04D] hover:bg-[#c6b242] text-[#2A1001] text-xs font-bold px-3 rounded-full transition active:scale-95 cursor-pointer shadow-sm inline-flex items-center justify-center gap-1 shrink-0 whitespace-nowrap" 
                             title="Update pending reschedule request">
                         <i class="fa-solid fa-arrows-rotate text-[10px]"></i> Update Req
                     </button>
                     <button onclick="cancelRescheduleRequest(${appt.appointment_id})"
-                            class="bg-gray-100 hover:bg-gray-200 text-red-600 text-xs font-bold py-1.5 px-2.5 rounded-full border border-red-200 transition active:scale-95 cursor-pointer shrink-0 whitespace-nowrap"
+                            class="h-8 bg-gray-100 hover:bg-gray-200 text-red-600 text-xs font-bold px-2.5 rounded-full border border-red-200 transition active:scale-95 cursor-pointer inline-flex items-center justify-center shrink-0 whitespace-nowrap"
                             title="Cancel pending reschedule request">
                         <i class="fa-solid fa-xmark text-[10px]"></i> Cancel Req
                     </button>
@@ -470,10 +472,28 @@ function renderTable() {
             } else {
                 reschedActionHtml = `
                     <button onclick="openRescheduleModalById(${appt.appointment_id})"
-                            class="bg-[#D5C04D] hover:bg-[#c6b242] text-[#2A1001] text-xs font-bold py-1.5 px-3 rounded-full transition active:scale-95 cursor-pointer shadow-sm flex items-center gap-1 shrink-0 whitespace-nowrap" 
+                            class="h-8 bg-[#D5C04D] hover:bg-[#c6b242] text-[#2A1001] text-xs font-bold px-3 rounded-full transition active:scale-95 cursor-pointer shadow-sm inline-flex items-center justify-center gap-1 shrink-0 whitespace-nowrap" 
                             title="Request a new date/time (${reschedCount}/${MAX_RESCHEDULE_LIMIT} used)">
                         <i class="fa-solid fa-calendar-days text-[10px]"></i> Reschedule
                     </button>
+                `;
+            }
+        }
+
+        // 🏷️ Refund Badge Logic (Shows under Cancelled)
+        let refundStatusHtml = '';
+        if (status === 'cancelled') {
+            if (paymentStatus === 'refund_pending') {
+                refundStatusHtml = `
+                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] font-extrabold bg-blue-100 text-blue-800 border border-blue-300 uppercase tracking-wide">
+                        <i class="fa-solid fa-arrows-rotate fa-spin text-[8px] text-blue-600"></i> Refund Processing...
+                    </span>
+                `;
+            } else if (paymentStatus === 'refunded') {
+                refundStatusHtml = `
+                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] font-extrabold bg-green-100 text-green-800 border border-green-300 uppercase tracking-wide">
+                        <i class="fa-solid fa-circle-check text-[8px] text-green-600"></i> Refund Approved
+                    </span>
                 `;
             }
         }
@@ -499,18 +519,19 @@ function renderTable() {
                     <i class="fa-regular fa-clock text-[#667733] text-[11px]"></i> 
                     <span>${getFormattedTimeRange(appt.time_slot, appt.end_time_slot, appt.label)}</span>
                 </div>
-                ${reschedStatus === 'requested' ? `
+                ${isReschedPending ? `
                     <div class="text-[10px] text-amber-900 font-extrabold mt-1.5 inline-flex items-center gap-1 bg-amber-100 px-2 py-0.5 rounded-md border border-amber-300">
                         <i class="fa-solid fa-arrows-rotate fa-spin text-amber-700"></i> Resched: ${escapeHtml(appt.requested_date || '')} (${formatTime12h(appt.requested_time)})
                     </div>
                 ` : ''}
             </td>
 
-            <!-- 4. Status Column -->
+            <!-- 4. Status Column (With Refund Status) -->
             <td class="py-4 px-4 sm:px-6 text-center align-middle">
-                <div class="flex flex-col items-center gap-1">
+                <div class="flex flex-col items-center justify-center gap-1">
                     ${renderStatusBadge(appt.appointment_status)}
-                    ${reschedStatus === 'requested' ? `
+                    ${refundStatusHtml}
+                    ${isReschedPending ? `
                         <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-black bg-amber-100 text-amber-900 border border-amber-300 uppercase">
                             Resched Requested
                         </span>
@@ -518,19 +539,19 @@ function renderTable() {
                 </div>
             </td>
 
-            <!-- 5. Actions Column -->
+            <!-- 5. Actions Column (Centered & Perfectly Aligned) -->
             <td class="py-4 px-4 sm:px-6 text-center align-middle">
-                <div class="flex items-center justify-center gap-1.5 flex-wrap sm:flex-nowrap">
+                <div class="flex items-center justify-center gap-2 flex-nowrap">
                     ${reschedActionHtml}
 
                     <button onclick="openDetailModalById(${appt.appointment_id})"
-                            class="bg-[#667733] hover:bg-[#556022] text-white text-xs font-bold py-1.5 px-3 rounded-full transition flex items-center gap-1 shadow-sm active:scale-95 cursor-pointer shrink-0 whitespace-nowrap" title="View details and receipt">
+                            class="h-8 bg-[#667733] hover:bg-[#556022] text-white text-xs font-bold px-3.5 rounded-full transition inline-flex items-center justify-center gap-1 shadow-sm active:scale-95 cursor-pointer shrink-0 whitespace-nowrap" title="View details and receipt">
                         <i class="fa-solid fa-receipt text-[10px]"></i> Receipt
                     </button>
 
                     ${isCancellable ? `
                         <button onclick="openCancelModal(${appt.appointment_id})"
-                                class="bg-[#D9534F] hover:bg-[#c9302c] text-white text-xs font-bold py-1.5 px-3 rounded-full transition active:scale-95 cursor-pointer shadow-sm flex items-center gap-1 shrink-0 whitespace-nowrap" title="Cancel this appointment">
+                                class="h-8 bg-[#D9534F] hover:bg-[#c9302c] text-white text-xs font-bold px-3.5 rounded-full transition active:scale-95 cursor-pointer shadow-sm inline-flex items-center justify-center gap-1 shrink-0 whitespace-nowrap" title="Cancel this appointment">
                             <i class="fa-solid fa-ban text-[10px]"></i> Cancel
                         </button>
                     ` : ''}
@@ -620,8 +641,13 @@ function openDetailModal(appt) {
         : 'N/A';
 
     const rawAmount = Number(appt.amount || 0);
-    const amountFormatted = `₱${rawAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
-    const method = appt.method ? appt.method.toUpperCase() : 'OVER-THE-COUNTER';
+    const subtotal = rawAmount / 1.12;
+    const vatAmount = rawAmount - subtotal;
+    const amountFormatted = `₱${rawAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    const subtotalFormatted = `₱${subtotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    const vatFormatted = `₱${vatAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+    const method = appt.method ? appt.method.toUpperCase() : 'IN-CLINIC CASH';
     const service = escapeHtml(appt.label || 'General Dental Treatment');
     const patientName = escapeHtml((appt.patient_first_name || appt.patient_last_name)
         ? `${appt.patient_first_name || ''} ${appt.patient_last_name || ''}`.trim()
@@ -656,19 +682,23 @@ function openDetailModal(appt) {
         `;
     }
 
-    let reschedNotice = '';
-    if (appt.reschedule_status === 'requested') {
-        reschedNotice = `
-            <div class="p-3.5 bg-amber-50 rounded-2xl border border-amber-300 flex items-start gap-3 text-xs text-amber-900 shadow-sm">
-                <i class="fa-solid fa-arrows-rotate text-amber-600 text-lg mt-0.5 shrink-0"></i>
-                <div class="flex-1">
-                    <span class="font-extrabold block text-amber-900 uppercase tracking-wide text-xs">Pending Reschedule Request</span>
-                    <p class="mt-0.5 text-xs">Requested Schedule: <strong>${escapeHtml(appt.requested_date || '')} at ${escapeHtml(appt.requested_time || '')}</strong></p>
-                    <p class="italic text-amber-800 mt-1">Reason: "${escapeHtml(appt.reschedule_reason || 'Schedule Conflict')}"</p>
-                </div>
+let reschedNotice = '';
+const isReschedPending = appt.reschedule_status === 'requested' && 
+                         appt.appointment_status !== 'cancelled' && 
+                         appt.appointment_status !== 'completed';
+
+if (isReschedPending) {
+    reschedNotice = `
+        <div class="p-3.5 bg-amber-50 rounded-2xl border border-amber-300 flex items-start gap-3 text-xs text-amber-900 shadow-sm">
+            <i class="fa-solid fa-arrows-rotate text-amber-600 text-lg mt-0.5 shrink-0"></i>
+            <div class="flex-1">
+                <span class="font-extrabold block text-amber-900 uppercase tracking-wide text-xs">Pending Reschedule Request</span>
+                <p class="mt-0.5 text-xs">Requested Schedule: <strong>${escapeHtml(appt.requested_date || '')} at ${escapeHtml(appt.requested_time || '')}</strong></p>
+                <p class="italic text-amber-800 mt-1">Reason: "${escapeHtml(appt.reschedule_reason || 'Schedule Conflict')}"</p>
             </div>
-        `;
-    }
+        </div>
+    `;
+}
 
     document.getElementById('detail-modal-body').innerHTML = `
         <div class="flex flex-col sm:flex-row justify-between sm:items-center pb-3 border-b border-dashed border-[#2A1001]/20 gap-2">
@@ -704,12 +734,13 @@ function openDetailModal(appt) {
             </div>
         </div>
 
+        <!-- 🧾 Statement & 12% VAT Breakdown Table -->
         <div class="mt-2 pt-3 border-t border-[#2A1001]/10">
             <table class="w-full text-xs sm:text-sm">
                 <thead>
                     <tr class="text-[#2A1001]/70 border-b border-[#2A1001]/10 uppercase text-[10px] tracking-wider">
                         <th class="text-left py-2 font-extrabold">Service &amp; Description</th>
-                        <th class="text-right py-2 font-extrabold">Amount (PHP)</th>
+                        <th class="text-right py-2 font-extrabold">Amount</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -721,10 +752,18 @@ function openDetailModal(appt) {
                         <td class="text-right py-2.5 font-extrabold text-[#2A1001] text-sm">${amountFormatted}</td>
                     </tr>
                 </tbody>
-                <tfoot>
+                <tfoot class="border-t border-[#2A1001]/10 text-xs">
+                    <tr>
+                        <td class="pt-2 text-[#2A1001]/70">Subtotal (VAT Exclusive):</td>
+                        <td class="pt-2 text-right font-bold text-[#2A1001]">${subtotalFormatted}</td>
+                    </tr>
+                    <tr>
+                        <td class="py-1 text-[#2A1001]/70">Value Added Tax (12% VAT):</td>
+                        <td class="py-1 text-right font-bold text-[#2A1001]">${vatFormatted}</td>
+                    </tr>
                     <tr class="border-t-2 border-[#2A1001]/20 font-black text-sm sm:text-base">
-                        <td class="pt-3 text-[#2A1001]">Total Amount Due / Paid:</td>
-                        <td class="pt-3 text-right text-[#667733]">${amountFormatted}</td>
+                        <td class="pt-2 text-[#2A1001]">Total Amount Due / Paid:</td>
+                        <td class="pt-2 text-right text-[#667733]">${amountFormatted}</td>
                     </tr>
                 </tfoot>
             </table>
@@ -749,7 +788,14 @@ function closeDetailModal() {
 function printCurrentReceipt() {
     if (!currentSelectedAppt) return;
     const a = currentSelectedAppt;
-    const formattedAmount = `₱${Number(a.amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
+    const rawAmt = Number(a.amount || 0);
+    const subtotal = rawAmt / 1.12;
+    const vat = rawAmt - subtotal;
+
+    const formattedAmount = `₱${rawAmt.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    const formattedSubtotal = `₱${subtotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    const formattedVat = `₱${vat.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
     const receiptNo = `OR-${(a.appointment_date || '').replace(/-/g, '')}-${a.appointment_id}`;
     const patientName = `${a.patient_first_name || ''} ${a.patient_last_name || ''}`.trim() || 'Valued Patient';
     const dentistName = (a.dentist_first_name || a.dentist_last_name)
@@ -771,13 +817,13 @@ function printCurrentReceipt() {
             .info-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; margin-top: 15px; }
             .info-table th { background: #667733; color: white; text-align: left; padding: 8px; font-size: 12px; }
             .info-table td { padding: 10px 8px; border-bottom: 1px solid #ddd; }
-            .total-row { font-weight: bold; font-size: 15px; }
+            .total-row { font-weight: bold; font-size: 14px; }
             .footer { margin-top: 40px; text-align: center; font-size: 11px; color: #888; border-top: 1px solid #ccc; padding-top: 10px; }
         </style>
     </head>
     <body>
         <div class="header">
-            <h1>DENTAL CLINIC INC.</h1>
+            <h1>BUNGIPIN DENTAL CLINIC</h1>
             <p>Official Patient Appointment Receipt &amp; Statement of Service</p>
             <p>Printed on: ${new Date().toLocaleDateString()}</p>
         </div>
@@ -795,7 +841,7 @@ function printCurrentReceipt() {
                 <td style="text-align: right;"><strong>Time Slot:</strong> ${getFormattedTimeRange(a.time_slot, a.end_time_slot, a.label)}</td>
             </tr>
             <tr>
-                <td><strong>Payment Mode:</strong> ${escapeHtml((a.method || 'Over-the-counter').toUpperCase())}</td>
+                <td><strong>Payment Mode:</strong> ${escapeHtml((a.method || 'In-Clinic Cash').toUpperCase())}</td>
                 <td style="text-align: right;"><strong>Payment Status:</strong> ${escapeHtml((a.payment_status || 'Unpaid').toUpperCase())}</td>
             </tr>
         </table>
@@ -815,9 +861,17 @@ function printCurrentReceipt() {
                     </td>
                     <td style="text-align: right; font-weight: bold;">${formattedAmount}</td>
                 </tr>
+                <tr>
+                    <td style="text-align: right; font-size: 12px; color: #666;">Subtotal (VAT Exclusive):</td>
+                    <td style="text-align: right; font-size: 12px;">${formattedSubtotal}</td>
+                </tr>
+                <tr>
+                    <td style="text-align: right; font-size: 12px; color: #666;">Value Added Tax (12% VAT):</td>
+                    <td style="text-align: right; font-size: 12px;">${formattedVat}</td>
+                </tr>
                 <tr class="total-row">
-                    <td style="text-align: right; padding-top: 15px;">Total Paid / Amount Due:</td>
-                    <td style="text-align: right; padding-top: 15px; color: #667733;">${formattedAmount}</td>
+                    <td style="text-align: right; padding-top: 10px; border-top: 2px solid #2A1001;">Total Paid / Amount Due:</td>
+                    <td style="text-align: right; padding-top: 10px; border-top: 2px solid #2A1001; color: #667733;">${formattedAmount}</td>
                 </tr>
             </tbody>
         </table>
@@ -829,7 +883,7 @@ function printCurrentReceipt() {
         ` : ''}
 
         <div class="footer">
-            <p>Thank you for choosing our dental clinic for your oral healthcare!</p>
+            <p>Thank you for choosing Bungipin Dental Clinic for your oral healthcare!</p>
             <p>This document serves as an electronic official receipt statement.</p>
         </div>
     </body>
@@ -863,7 +917,6 @@ function openCancelModal(appointmentId) {
     if (customText) customText.value = '';
     if (reasonError) reasonError.classList.add('hidden');
 
-    // Refund notice: only when something was already paid
     const refundNotice = document.getElementById('cancelRefundNotice');
     const refundText = document.getElementById('cancelRefundNoticeText');
     const appt = allAppointments.find(a => Number(a.appointment_id) === Number(appointmentId));
@@ -872,8 +925,8 @@ function openCancelModal(appointmentId) {
         if (paid) {
             const amt = Number(appt.amount || 0).toLocaleString('en-PH', { style: 'currency', currency: 'PHP' });
             refundText.textContent = String(appt.method).toLowerCase() === 'online'
-                ? `You paid ${amt} online. Cancelling will automatically refund it to your original payment method.`
-                : `You paid ${amt} at the clinic. Please visit the clinic to receive your refund after cancelling.`;
+                ? `You paid ${amt} online. Cancelling will automatically process a refund to your account.`
+                : `You paid ${amt} at the clinic. Please visit the clinic to receive your cash refund.`;
             refundNotice.classList.remove('hidden');
         } else {
             refundNotice.classList.add('hidden');
@@ -1030,7 +1083,6 @@ async function openRescheduleModal(appt) {
     reschedSelectedEndTime = null;
     reschedCurrentDate = new Date();
 
-    // ❌ UNCHECK ALL RADIOS
     document.querySelectorAll('input[name="reschedReasonRadio"]').forEach(r => r.checked = false);
 
     const customContainer = document.getElementById('customReasonContainer');
@@ -1051,7 +1103,7 @@ function closeRescheduleModal() {
     pendingRescheduleAppt = null;
 }
 
-const MAX_ADVANCE_MONTHS = 6; // Set to 6 for 6 months (or 12 for 1 year)
+const MAX_ADVANCE_MONTHS = 6;
 
 function renderReschedCalendar(date) {
     const monthYearEl = document.getElementById('reschedMonthYear');
@@ -1065,21 +1117,18 @@ function renderReschedCalendar(date) {
     const firstDay = new Date(year, month, 1).getDay();
     const lastDay = new Date(year, month + 1, 0).getDate();
 
-    // 1. Calculate the max allowed date (today + 6 months)
     const maxReschedDate = new Date(reschedToday);
     maxReschedDate.setMonth(maxReschedDate.getMonth() + MAX_ADVANCE_MONTHS);
 
     monthYearEl.textContent = `${months[month]} ${year}`;
     daysContainer.innerHTML = '';
 
-    // 2. Disable "Prev" arrow if on current month
     if (reschedPrev) {
         const isCurrentMonth = (year === reschedToday.getFullYear() && month === reschedToday.getMonth());
         reschedPrev.style.opacity = isCurrentMonth ? '0.3' : '1';
         reschedPrev.style.pointerEvents = isCurrentMonth ? 'none' : 'auto';
     }
 
-    // 3. Disable "Next" arrow if reached the 6-month limit
     if (reschedNext) {
         const isMaxMonth = (year > maxReschedDate.getFullYear()) || (year === maxReschedDate.getFullYear() && month >= maxReschedDate.getMonth());
         reschedNext.style.opacity = isMaxMonth ? '0.3' : '1';
@@ -1103,7 +1152,6 @@ function renderReschedCalendar(date) {
         });
     }
 
-    // Leading filler days
     const prevMonthLastDay = new Date(year, month, 0).getDate();
     for (let i = firstDay; i > 0; i--) {
         const dayDiv = document.createElement('div');
@@ -1112,12 +1160,10 @@ function renderReschedCalendar(date) {
         daysContainer.appendChild(dayDiv);
     }
 
-    // Days of current month
     for (let i = 1; i <= lastDay; i++) {
         const dayDiv = document.createElement('div');
         const cellDate = new Date(year, month, i);
 
-        // 4. Check if past OR beyond 6 months
         const isPast = cellDate < new Date(reschedToday.getFullYear(), reschedToday.getMonth(), reschedToday.getDate());
         const isBeyondLimit = cellDate > maxReschedDate;
         const isDisabled = isPast || isBeyondLimit;
@@ -1148,7 +1194,6 @@ function renderReschedCalendar(date) {
         daysContainer.appendChild(dayDiv);
     }
 
-    // Trailing filler days (keeps calendar rectangular)
     const totalRendered = firstDay + lastDay;
     const remainingCells = (7 - (totalRendered % 7)) % 7;
     for (let i = 1; i <= remainingCells; i++) {
