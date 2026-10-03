@@ -221,7 +221,6 @@ function renderServiceCards() {
 
     updateLiveCalculations();
 }
-
 function openServiceDetailModal(service) {
     const modal = document.getElementById('service-detail-modal');
     if (!modal) return;
@@ -235,7 +234,7 @@ function openServiceDetailModal(service) {
     const selectBtn = document.getElementById('modalServiceSelectBtn');
     const isSelected = selectedServices.some(s => s.service_id == service.service_id);
     selectBtn.textContent = isSelected ? 'Deselect Service' : 'Select This Service';
-    selectBtn.className = `mt-2 w-full py-2.5 font-bold rounded-full transition shadow-md cursor-pointer text-sm ${isSelected ? 'bg-red-600 hover:bg-red-700 text-white' : 'bg-[#667733] hover:bg-[#556022] text-white'}`;
+    selectBtn.className = `mt-2 w-full py-2.5 font-bold rounded-full transition shadow-md cursor-pointer text-sm ${isSelected ? 'bg-[#D9534F] hover:bg-[#c94541] text-white' : 'bg-[#667733] hover:bg-[#556022] text-white'}`;
 
     selectBtn.onclick = () => {
         toggleServiceSelection(service);
@@ -244,7 +243,6 @@ function openServiceDetailModal(service) {
 
     modal.classList.remove('hidden');
 }
-
 document.getElementById('close-service-detail')?.addEventListener('click', () => {
     document.getElementById('service-detail-modal').classList.add('hidden');
 });
@@ -754,17 +752,73 @@ function initBookingForm() {
     }
 }
 
-function showValidationModal(message, focusTarget = null) {
+function showValidationModal(message, focusTarget = null, customTitle = null, iconType = 'warning') {
     const modal = document.getElementById('validation-modal');
-    const text = document.getElementById('validation-modal-text');
+    const titleEl = document.getElementById('validation-modal-title');
+    const textEl = document.getElementById('validation-modal-text');
+    const iconEl = document.getElementById('validation-modal-icon');
+    const iconWrap = document.getElementById('validation-modal-icon-wrap');
     const okBtn = document.getElementById('validation-modal-ok');
 
-    if (!modal || !text || !okBtn) {
+    if (!modal || !textEl || !okBtn) {
         alert(message);
         return;
     }
 
-    text.textContent = message;
+    // Clean up any raw "Booking Error:" prefixes
+    const cleanMessage = String(message || '').replace(/^Booking Error:\s*/i, '').trim();
+
+    // 🎯 Smart Title Determination
+    let finalTitle = customTitle;
+    if (!finalTitle) {
+        const lower = cleanMessage.toLowerCase();
+        if (lower.includes('3 active') || lower.includes('booking limit') || lower.includes('active appointment')) {
+            finalTitle = 'Booking Limit Reached';
+            iconType = 'limit';
+        } else if (lower.includes('specializ') || lower.includes('cannot perform') || lower.includes('requires a')) {
+            finalTitle = 'Specialist Required';
+            iconType = 'specialist';
+        } else if (lower.includes('just been reserved') || lower.includes('different slot') || lower.includes('already booked')) {
+            finalTitle = 'Slot Unavailable';
+            iconType = 'clock';
+        } else if (lower.includes('payment') || lower.includes('checkout') || lower.includes('paymongo')) {
+            finalTitle = 'Payment Notice';
+            iconType = 'payment';
+        } else if (lower.includes('please select') || lower.includes('please pick') || lower.includes('missing')) {
+            finalTitle = 'Incomplete Selection';
+            iconType = 'warning';
+        } else if (lower.includes('deselected') || lower.includes('adjusted')) {
+            finalTitle = 'Services Adjusted';
+            iconType = 'info';
+        } else {
+            finalTitle = 'Notice';
+            iconType = 'warning';
+        }
+    }
+
+    // 🎨 Dynamic Icon Styling
+    if (titleEl) titleEl.textContent = finalTitle;
+    if (textEl) textEl.textContent = cleanMessage;
+
+    if (iconEl && iconWrap) {
+        if (iconType === 'limit') {
+            iconWrap.className = 'w-14 h-14 rounded-full bg-red-100 flex items-center justify-center';
+            iconEl.className = 'fa-solid fa-circle-exclamation text-red-600 text-2xl';
+        } else if (iconType === 'specialist') {
+            iconWrap.className = 'w-14 h-14 rounded-full bg-indigo-100 flex items-center justify-center';
+            iconEl.className = 'fa-solid fa-user-doctor text-indigo-600 text-2xl';
+        } else if (iconType === 'clock') {
+            iconWrap.className = 'w-14 h-14 rounded-full bg-amber-100 flex items-center justify-center';
+            iconEl.className = 'fa-solid fa-clock-rotate-left text-amber-600 text-2xl';
+        } else if (iconType === 'info') {
+            iconWrap.className = 'w-14 h-14 rounded-full bg-blue-100 flex items-center justify-center';
+            iconEl.className = 'fa-solid fa-circle-info text-blue-600 text-2xl';
+        } else {
+            iconWrap.className = 'w-14 h-14 rounded-full bg-amber-50 flex items-center justify-center';
+            iconEl.className = 'fa-solid fa-triangle-exclamation text-amber-500 text-2xl';
+        }
+    }
+
     modal.classList.remove('hidden');
 
     const closeModal = () => {
