@@ -69,13 +69,12 @@
 
     <div id="main-content" class="flex-1 min-w-0 md:min-h-0 md:overflow-y-auto flex flex-col">
 
-        <!-- Header with Subtitle (Consistent Spacing) -->
+        <!-- Header with Subtitle -->
         <div class="flex justify-between items-start pt-5 pl-6 pr-4 md:pl-24 md:pr-8">
             <div>
                 <h1 class="text-2xl sm:text-3xl md:text-5xl 2xl:text-[73px] pt-2 sm:pt-5 font-bold text-[#2A1001] font-['Poppins']">
                     Analytics Report
                 </h1>
-               
             </div>
             <img
                 src="../assets/logowithtitle.png"
@@ -90,7 +89,7 @@
         <main class="flex-1 p-4 sm:p-6 md:p-8 flex flex-col items-center">
             <div class="w-full max-w-[1100px] space-y-6">
 
-                <!-- Action Bar Below HR: Export PDF Button -->
+                <!-- Action Bar: Export PDF Button -->
                 <div class="flex justify-end w-full">
                     <button onclick="GenPDF()" class="h-11 px-6 rounded-full bg-[#D5C04D] hover:bg-[#c2ad3c] text-[#2A1001] font-bold text-sm shadow-md active:scale-95 transition flex items-center gap-2 cursor-pointer">
                         <i class="fa-solid fa-file-arrow-down text-base"></i>
@@ -99,13 +98,13 @@
                 </div>
 
                 <!-- Charts Grid -->
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
                     <!-- 1. Patient Chart (Full Width) -->
-                    <div class="lg:col-span-2 bg-white border-2 border-[#1A1008] rounded-2xl p-5 shadow-sm">
+                    <div class="lg:col-span-2 bg-white border-2 border-[#1A1008] rounded-2xl p-5 sm:p-6 shadow-sm">
                         <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
                             <div>
-                                <h2 class="font-bold text-lg text-[#1A1008]">
+                                <h2 class="font-bold text-lg sm:text-xl text-[#1A1008]">
                                     Total Number of Patients Review
                                 </h2>
                                 <p class="text-xs text-gray-500 font-medium">
@@ -126,43 +125,53 @@
                             </div>
                         </div>
 
-                        <div class="w-full h-[300px]">
+                        <div class="w-full h-[280px]">
                             <canvas id="NumPatRev"></canvas>
                         </div>
                     </div>
 
-                    <!-- 2. Appointment Status Card -->
-                    <div class="bg-white border-2 border-[#1A1008] rounded-2xl p-5 shadow-sm">
-                        <h2 class="font-bold text-lg text-[#2A1001]">
-                            Appointment Status
-                        </h2>
-                        <p class="text-xs text-gray-500 mb-3 font-medium">
-                            Booking flow and patient attendance breakdown
-                        </p>
-                        <div class="w-full h-[220px]">
-                            <canvas id="appointmentChart"></canvas>
+                    <!-- 2. Appointment Status Card (Separated to Full Width) -->
+                    <div class="lg:col-span-2 bg-white border-2 border-[#1A1008] rounded-2xl p-5 sm:p-6 shadow-sm">
+                        <div class="mb-4 border-b border-gray-100 pb-3">
+                            <h2 class="font-bold text-lg sm:text-xl text-[#2A1001]">
+                                Appointment Status Breakdown
+                            </h2>
+                            <p class="text-xs text-gray-500 font-medium">
+                                Booking flow, patient attendance, and confirmation rates
+                            </p>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
+                            <div class="md:col-span-6 h-[240px] relative flex items-center justify-center">
+                                <canvas id="appointmentChart"></canvas>
+                            </div>
+                            <div class="md:col-span-6 space-y-2.5" id="appointmentBreakdownList">
+                                <p class="text-xs text-gray-400 italic">Loading status statistics...</p>
+                            </div>
                         </div>
                     </div>
 
-                    <!-- 3. Most Requested Services Card -->
-                    <div class="bg-white border-2 border-[#1A1008] rounded-2xl p-5 shadow-sm">
-                        <h2 class="font-bold text-lg text-[#2A1001]">
-                            Most Requested Services
-                        </h2>
-                        <p class="text-xs text-gray-500 mb-3 font-medium">
-                            Top performing treatments by patient booking demand
-                        </p>
-                        <div class="w-full h-[220px]">
+                    <!-- 3. Most Requested Services Card (Separated to Full Width — Max Space) -->
+                    <div class="lg:col-span-2 bg-white border-2 border-[#1A1008] rounded-2xl p-5 sm:p-6 shadow-sm">
+                        <div class="mb-4 border-b border-gray-100 pb-3">
+                            <h2 class="font-bold text-lg sm:text-xl text-[#2A1001]">
+                                Most Requested Services
+                            </h2>
+                            <p class="text-xs text-gray-500 font-medium">
+                                Top performing treatments ranked by patient booking demand
+                            </p>
+                        </div>
+
+                        <div class="w-full h-[280px] relative">
                             <canvas id="servChart"></canvas>
                         </div>
                     </div>
 
-                    <!-- 4. Detailed Location Demographics Card -->
-                    <div class="lg:col-span-2 bg-white border-2 border-[#1A1008] rounded-2xl p-6 shadow-sm">
-                        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-5 border-b border-gray-100 pb-3">
+                    <!-- 4. Location Demographics Card (Full Width) -->
+                    <div class="lg:col-span-2 bg-white border-2 border-[#1A1008] rounded-2xl p-5 sm:p-6 shadow-sm">
+                        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-4 border-b border-gray-100 pb-3">
                             <div>
-                                <h2 class="font-bold text-xl text-[#1A1008] flex items-center gap-2">
-
+                                <h2 class="font-bold text-lg sm:text-xl text-[#1A1008] flex items-center gap-2">
                                     Patient Demographics &amp; Branch Expansion Potential
                                 </h2>
                                 <p class="text-xs text-gray-500 font-medium">
@@ -174,31 +183,25 @@
                             </span>
                         </div>
 
-                        <!-- 2-Column Split -->
                         <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
-                            
-                            <!-- Left: Doughnut Chart -->
                             <div class="md:col-span-5 h-[230px] relative flex items-center justify-center">
                                 <canvas id="locationChart"></canvas>
                             </div>
-
-                            <!-- Right: Ranked Breakdown List with Progress Bars -->
-                            <div class="md:col-span-7 space-y-3" id="locationBreakdownList">
+                            <div class="md:col-span-7 space-y-2.5" id="locationBreakdownList">
                                 <p class="text-xs text-gray-400 italic">Loading location demographics...</p>
                             </div>
-
                         </div>
                     </div>
 
                     <!-- 5. Transactions Chart (Full Width) -->
-                    <div class="lg:col-span-2 bg-white border-2 border-[#1A1008] rounded-2xl p-5 shadow-sm mb-6">
+                    <div class="lg:col-span-2 bg-white border-2 border-[#1A1008] rounded-2xl p-5 sm:p-6 shadow-sm mb-6">
                         <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
                             <div>
-                                <h2 class="font-bold text-lg text-[#1A1008]">
+                                <h2 class="font-bold text-lg sm:text-xl text-[#1A1008]">
                                     Total Number of Transactions &amp; Revenue
                                 </h2>
                                 <p class="text-xs text-gray-500 font-medium">
-                                    Completed payments collected over the selected period
+                                    Completed payments and revenue collected over the selected period
                                 </p>
                             </div>
 
@@ -215,7 +218,7 @@
                             </div>
                         </div>
 
-                        <div class="w-full h-[300px]">
+                        <div class="w-full h-[280px]">
                             <canvas id="TransactionRep"></canvas>
                         </div>
                     </div>
@@ -229,6 +232,8 @@
 </div>
 
 <script>
+    let currentDashboardData = null; // 👈 Live data tracker for PDF export
+
     const NumPatients = document.getElementById('NumPatRev');
     const appointChart = document.getElementById('appointmentChart');
     const servChart = document.getElementById('servChart');
@@ -258,12 +263,18 @@
         '#FA8D8D'  // Coral
     ];
 
+    const apptStatusColors = [
+        '#D5C04D', // Pending
+        '#88925F', // Approved
+        '#A2AC89', // Completed
+        '#FA8D8D'  // Cancelled
+    ];
+
     function setPatientButton(activeButton) {
         [numweeklyBtn, nummonthlyBtn, numyearlyBtn].forEach(btn => {
             btn.classList.remove('bg-[#88925F]', 'text-white');
             btn.classList.add('bg-gray-200', 'text-[#2A1001]');
         });
-
         activeButton.classList.remove('bg-gray-200', 'text-[#2A1001]');
         activeButton.classList.add('bg-[#88925F]', 'text-white');
     }
@@ -273,26 +284,51 @@
             btn.classList.remove('bg-[#88925F]', 'text-white');
             btn.classList.add('bg-gray-200', 'text-[#2A1001]');
         });
-
         activeButton.classList.remove('bg-gray-200', 'text-[#2A1001]');
         activeButton.classList.add('bg-[#88925F]', 'text-white');
     }
 
     function buildPatientColors(data) {
         return data.map(value => {
-            if (value <= 10) {
-                return '#FA8D8D';
-            } else if (value <= 20) {
-                return '#D5C04D';
-            } else if (value <= 40) {
-                return '#D3D078';
-            } else {
-                return '#88925F';
-            }
+            if (value <= 10) return '#FA8D8D';
+            if (value <= 20) return '#D5C04D';
+            if (value <= 40) return '#D3D078';
+            return '#88925F';
         });
     }
 
-    // Render the Ranked Breakdown List on the Right Side
+    function renderAppointmentBreakdown(labels, data) {
+        const container = document.getElementById('appointmentBreakdownList');
+        if (!container) return;
+
+        const total = (data || []).reduce((a, b) => a + b, 0);
+        if (total === 0 || !labels || labels.length === 0) {
+            container.innerHTML = '<p class="text-xs text-gray-400 italic">No appointments recorded yet.</p>';
+            return;
+        }
+
+        let html = '';
+        labels.forEach((statusName, index) => {
+            const count = data[index] || 0;
+            const percentage = total > 0 ? Math.round((count / total) * 100) : 0;
+            const color = apptStatusColors[index % apptStatusColors.length];
+
+            html += `
+                <div class="bg-gray-50 p-2.5 rounded-xl border border-black/5 flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <span class="w-3 h-3 rounded-full shrink-0" style="background-color: ${color}"></span>
+                        <span class="font-bold text-xs sm:text-sm text-[#2A1001]">${statusName}</span>
+                    </div>
+                    <div class="text-right">
+                        <span class="font-black text-sm text-[#2A1001]">${count}</span>
+                        <span class="text-xs text-gray-500 font-medium">(${percentage}%)</span>
+                    </div>
+                </div>
+            `;
+        });
+        container.innerHTML = html;
+    }
+
     function renderLocationBreakdown(labels, data) {
         const container = document.getElementById('locationBreakdownList');
         if (!container) return;
@@ -362,12 +398,7 @@
                 labels: data.appointments.labels,
                 datasets: [{
                     data: data.appointments.data,
-                    backgroundColor: [
-                        '#D5C04D',
-                        '#A2AC89',
-                        '#D7E3A5',
-                        '#FA8D8D'
-                    ],
+                    backgroundColor: apptStatusColors,
                     borderColor: '#2A1001',
                     borderWidth: 1
                 }]
@@ -377,13 +408,19 @@
                 maintainAspectRatio: false,
                 plugins: {
                     legend: {
-                        position: 'right'
+                        position: 'right',
+                        labels: {
+                            font: { family: 'Poppins', size: 11, weight: '600' },
+                            color: '#2A1001'
+                        }
                     }
                 }
             }
         });
 
-        // Most Requested Services (Guaranteed No Label Clipping)
+        renderAppointmentBreakdown(data.appointments.labels, data.appointments.data);
+
+        // 🌟 Most Requested Services (Full Width Horizontal Bars)
         serviceChart = new Chart(servChart, {
             type: 'bar',
             data: {
@@ -392,21 +429,29 @@
                     label: 'Bookings',
                     data: data.services.data,
                     backgroundColor: [
-                        '#88925F', // Olive
-                        '#D5C04D', // Gold
-                        '#A2AC89', // Sage
-                        '#D7E3A5', // Light Green
-                        '#C7B9A0', // Warm Neutral
-                        '#FA8D8D'  // Coral
+                        '#88925F',
+                        '#D5C04D',
+                        '#A2AC89',
+                        '#D7E3A5',
+                        '#C7B9A0',
+                        '#FA8D8D'
                     ],
-                    borderRadius: 6,
-                    maxBarThickness: 18
+                    borderRadius: 8,
+                    maxBarThickness: 22
                 }]
             },
             options: {
                 indexAxis: 'y',
                 responsive: true,
                 maintainAspectRatio: false,
+                layout: {
+                    padding: {
+                        left: 10,
+                        right: 25,
+                        top: 5,
+                        bottom: 5
+                    }
+                },
                 plugins: {
                     legend: { display: false },
                     tooltip: {
@@ -428,23 +473,20 @@
                     },
                     y: {
                         grid: { display: false },
-                        afterFit: function(axis) {
-                            axis.width = 120; // 👈 Guarantees room for full service names
-                        },
                         ticks: {
                             font: {
-                                size: 11,
+                                size: 12,
                                 family: 'Poppins',
                                 weight: '600'
                             },
-                            color: '#2A1001'
+                            color: '#2A1001',
+                            autoSkip: false
                         }
                     }
                 }
             }
         });
 
-        // Location Doughnut Chart
         locationChart = new Chart(locChart, {
             type: 'doughnut',
             data: {
@@ -460,9 +502,7 @@
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: {
-                    legend: {
-                        display: false
-                    },
+                    legend: { display: false },
                     tooltip: {
                         callbacks: {
                             label: function(context) {
@@ -479,7 +519,6 @@
             }
         });
 
-        // Render Breakdown List Initial Load
         if (data.locations) {
             renderLocationBreakdown(data.locations.labels, data.locations.data);
         }
@@ -506,7 +545,6 @@
 
     async function loadDashboard(period) {
         const token = localStorage.getItem('userToken');
-
         if (!token) {
             alert('Please log in as an admin.');
             return;
@@ -514,9 +552,7 @@
 
         try {
             const response = await fetch(`/api/admin/dashboard?period=${period}`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
+                headers: { 'Authorization': `Bearer ${token}` }
             });
 
             if (!response.ok) {
@@ -525,6 +561,7 @@
             }
 
             const data = await response.json();
+            currentDashboardData = data; // 👈 Sets live data for PDF export
 
             if (!NumPatRev) {
                 createCharts(data);
@@ -539,6 +576,7 @@
             appointmentChart.data.labels = data.appointments.labels;
             appointmentChart.data.datasets[0].data = data.appointments.data;
             appointmentChart.update();
+            renderAppointmentBreakdown(data.appointments.labels, data.appointments.data);
 
             serviceChart.data.labels = data.services.labels;
             serviceChart.data.datasets[0].data = data.services.data;
@@ -594,54 +632,33 @@
     loadDashboard('weekly');
 
     function GenPDF() {
+        if (!currentDashboardData) {
+            alert('Dashboard data is still loading. Please try again in a moment.');
+            return;
+        }
+
         const { jsPDF } = window.jspdf;
         const pdf = new jsPDF('p', 'mm', 'a4');
 
         const pageWidth = 210;
         const pageHeight = 297;
-        const margin = 14;
+        const margin = 12;
         const contentWidth = pageWidth - (margin * 2);
-        const border = [26, 16, 8];
-        const olive = [136, 146, 95];
-        const grayBtn = [229, 231, 235];
-        const titleColor = [26, 16, 8];
+        const titleColor = [42, 16, 1];
+        const primaryGreen = [102, 119, 51];
+        const goldColor = [213, 192, 77];
+
+        const d = currentDashboardData;
+        const totalPatients = (d.patients.data || []).reduce((a, b) => a + b, 0);
+        const totalAppointments = (d.appointments.data || []).reduce((a, b) => a + b, 0);
+        const completedAppts = d.appointments.data[d.appointments.labels.indexOf('Completed')] || 0;
+        const totalRevenue = (d.transactions.data || []).reduce((a, b) => a + b, 0);
 
         function drawCard(x, y, w, h) {
             pdf.setFillColor(255, 255, 255);
-            pdf.setDrawColor(border[0], border[1], border[2]);
-            pdf.setLineWidth(0.4);
-            pdf.roundedRect(x, y, w, h, 4, 4, 'FD');
-        }
-
-        function isActive(btn) {
-            return btn && btn.classList.contains('bg-[#88925F]');
-        }
-
-        function drawPills(rightEdge, y, weeklyBtn, monthlyBtn, yearlyBtn) {
-            const labels = ['Weekly', 'Monthly', 'Yearly'];
-            const buttons = [weeklyBtn, monthlyBtn, yearlyBtn];
-            const pillW = 16;
-            const pillH = 6;
-            const gap = 1.5;
-            let x = rightEdge - (3 * pillW + 2 * gap);
-
-            buttons.forEach(function (btn, i) {
-                if (isActive(btn)) {
-                    pdf.setFillColor(olive[0], olive[1], olive[2]);
-                    pdf.setTextColor(255, 255, 255);
-                } else {
-                    pdf.setFillColor(grayBtn[0], grayBtn[1], grayBtn[2]);
-                    pdf.setTextColor(42, 16, 1);
-                }
-
-                pdf.roundedRect(x, y, pillW, pillH, 1.8, 1.8, 'F');
-                pdf.setFont('helvetica', 'bold');
-                pdf.setFontSize(6);
-                pdf.text(labels[i], x + pillW / 2, y + 4.1, { align: 'center' });
-                x += pillW + gap;
-            });
-
-            pdf.setTextColor(titleColor[0], titleColor[1], titleColor[2]);
+            pdf.setDrawColor(215, 215, 215);
+            pdf.setLineWidth(0.3);
+            pdf.roundedRect(x, y, w, h, 3, 3, 'FD');
         }
 
         function addChartImage(chart, x, y, w, h) {
@@ -651,59 +668,235 @@
         }
 
         // ================= PAGE 1 =================
-        pdf.setFillColor(250, 248, 244);
+        pdf.setFillColor(248, 246, 240);
+        pdf.rect(0, 0, pageWidth, pageHeight, 'F');
+
+        // Header
+        pdf.setTextColor(titleColor[0], titleColor[1], titleColor[2]);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFontSize(18);
+        pdf.text('BUNGIPIN DENTAL CLINIC', pageWidth / 2, 15, { align: 'center' });
+        
+        pdf.setFontSize(9.5);
+        pdf.setFont('helvetica', 'normal');
+        pdf.setTextColor(110, 110, 110);
+        pdf.text('Executive Analytics & Operational Performance Report', pageWidth / 2, 20, { align: 'center' });
+        pdf.text(`Report Period Generated on: ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}`, pageWidth / 2, 24.5, { align: 'center' });
+
+        // 🌟 4 KPI Summary Metric Boxes
+        const kpiY = 28;
+        const kpiH = 18;
+        const kpiGap = 3.5;
+        const kpiW = (contentWidth - (kpiGap * 3)) / 4;
+
+        const kpis = [
+            { label: 'PATIENT VISITS', val: totalPatients.toString(), color: primaryGreen },
+            { label: 'TOTAL BOOKINGS', val: totalAppointments.toString(), color: goldColor },
+            { label: 'COMPLETED TREATMENTS', val: completedAppts.toString(), color: primaryGreen },
+            { label: 'TOTAL REVENUE', val: 'PHP ' + totalRevenue.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 }), color: primaryGreen }
+        ];
+
+        kpis.forEach((kpi, idx) => {
+            const kpiX = margin + idx * (kpiW + kpiGap);
+            drawCard(kpiX, kpiY, kpiW, kpiH);
+            pdf.setFont('helvetica', 'bold');
+            pdf.setFontSize(6.5);
+            pdf.setTextColor(120, 120, 120);
+            pdf.text(kpi.label, kpiX + kpiW / 2, kpiY + 5.5, { align: 'center' });
+            
+            pdf.setFontSize(9.5);
+            pdf.setTextColor(kpi.color[0], kpi.color[1], kpi.color[2]);
+            pdf.text(kpi.val, kpiX + kpiW / 2, kpiY + 13, { align: 'center' });
+        });
+
+        // 1. Patient Visits Chart & Data Table
+        const pY = 50;
+        const pH = 65;
+        drawCard(margin, pY, contentWidth, pH);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFontSize(9);
+        pdf.setTextColor(titleColor[0], titleColor[1], titleColor[2]);
+        pdf.text('1. Patient Volume & Timeline Review', margin + 5, pY + 7);
+
+        addChartImage(NumPatRev, margin + 4, pY + 11, contentWidth * 0.58, pH - 15);
+
+        const pTableX = margin + contentWidth * 0.60;
+        pdf.setFontSize(7.5);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFillColor(240, 243, 230);
+        pdf.rect(pTableX, pY + 11, contentWidth * 0.38, 5.5, 'F');
+        pdf.setTextColor(42, 16, 1);
+        pdf.text('Timeline', pTableX + 3, pY + 15);
+        pdf.text('Patients', pTableX + contentWidth * 0.38 - 3, pY + 15, { align: 'right' });
+
+        pdf.setFont('helvetica', 'normal');
+        pdf.setFontSize(7);
+        d.patients.labels.slice(0, 7).forEach((lbl, i) => {
+            const rowY = pY + 21 + (i * 5.2);
+            pdf.setTextColor(70, 70, 70);
+            pdf.text(lbl, pTableX + 3, rowY);
+            pdf.setFont('helvetica', 'bold');
+            pdf.setTextColor(42, 16, 1);
+            pdf.text(d.patients.data[i].toString(), pTableX + contentWidth * 0.38 - 3, rowY, { align: 'right' });
+            pdf.setFont('helvetica', 'normal');
+        });
+
+        // 2. Appointment Status Breakdown Chart & Table
+        const apptY = 119;
+        const apptH = 68;
+        drawCard(margin, apptY, contentWidth, apptH);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFontSize(9);
+        pdf.setTextColor(titleColor[0], titleColor[1], titleColor[2]);
+        pdf.text('2. Appointment Status Breakdown', margin + 5, apptY + 7);
+
+        addChartImage(appointmentChart, margin + 4, apptY + 11, contentWidth * 0.48, apptH - 15);
+
+        const aTableX = margin + contentWidth * 0.52;
+        pdf.setFontSize(7.5);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFillColor(240, 243, 230);
+        pdf.rect(aTableX, apptY + 11, contentWidth * 0.46, 5.5, 'F');
+        pdf.setTextColor(42, 16, 1);
+        pdf.text('Status Category', aTableX + 3, apptY + 15);
+        pdf.text('Count', aTableX + contentWidth * 0.30, apptY + 15, { align: 'right' });
+        pdf.text('Share', aTableX + contentWidth * 0.46 - 3, apptY + 15, { align: 'right' });
+
+        d.appointments.labels.forEach((lbl, i) => {
+            const rowY = apptY + 22 + (i * 9);
+            const count = d.appointments.data[i] || 0;
+            const pct = totalAppointments > 0 ? Math.round((count / totalAppointments) * 100) : 0;
+            
+            pdf.setFont('helvetica', 'bold');
+            pdf.setTextColor(42, 16, 1);
+            pdf.text(lbl, aTableX + 3, rowY);
+            pdf.setFont('helvetica', 'normal');
+            pdf.text(count.toString(), aTableX + contentWidth * 0.30, rowY, { align: 'right' });
+            pdf.text(pct + '%', aTableX + contentWidth * 0.46 - 3, rowY, { align: 'right' });
+        });
+
+        // 3. Most Requested Services Card & Table
+        const servY = 191;
+        const servH = 96;
+        drawCard(margin, servY, contentWidth, servH);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFontSize(9);
+        pdf.setTextColor(titleColor[0], titleColor[1], titleColor[2]);
+        pdf.text('3. Most Requested Dental Services', margin + 5, servY + 7);
+
+        addChartImage(serviceChart, margin + 4, servY + 11, contentWidth * 0.54, servH - 15);
+
+        const sTableX = margin + contentWidth * 0.56;
+        pdf.setFontSize(7.5);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFillColor(240, 243, 230);
+        pdf.rect(sTableX, servY + 11, contentWidth * 0.42, 5.5, 'F');
+        pdf.setTextColor(42, 16, 1);
+        pdf.text('Service', sTableX + 3, servY + 15);
+        pdf.text('Bookings', sTableX + contentWidth * 0.42 - 3, servY + 15, { align: 'right' });
+
+        const totalServ = (d.services.data || []).reduce((a, b) => a + b, 0);
+        d.services.labels.slice(0, 5).forEach((lbl, i) => {
+            const rowY = servY + 22 + (i * 12.5);
+            const count = d.services.data[i] || 0;
+            const pct = totalServ > 0 ? Math.round((count / totalServ) * 100) : 0;
+
+            pdf.setFont('helvetica', 'bold');
+            pdf.setFontSize(7);
+            pdf.setTextColor(42, 16, 1);
+            const shortName = lbl.length > 24 ? lbl.slice(0, 22) + '...' : lbl;
+            pdf.text(`${i + 1}. ${shortName}`, sTableX + 3, rowY);
+            
+            pdf.setFont('helvetica', 'normal');
+            pdf.setFontSize(6.5);
+            pdf.setTextColor(110, 110, 110);
+            pdf.text(`${count} bookings (${pct}%)`, sTableX + 3, rowY + 3.8);
+        });
+
+        // ================= PAGE 2 =================
+        pdf.addPage();
+        pdf.setFillColor(248, 246, 240);
         pdf.rect(0, 0, pageWidth, pageHeight, 'F');
 
         pdf.setTextColor(titleColor[0], titleColor[1], titleColor[2]);
         pdf.setFont('helvetica', 'bold');
-        pdf.setFontSize(22);
-        pdf.text('Executive Analytics Report', pageWidth / 2, 20, { align: 'center' });
+        pdf.setFontSize(16);
+        pdf.text('Demographic Intelligence & Financial Revenue', pageWidth / 2, 15, { align: 'center' });
 
-        const patientsY = 28;
-        const patientsH = 75;
-        drawCard(margin, patientsY, contentWidth, patientsH);
-        pdf.setFont('helvetica', 'bold');
-        pdf.setFontSize(9);
-        pdf.text('Total Numbers of Patients Review', margin + 6, patientsY + 8);
-        drawPills(margin + contentWidth - 6, patientsY + 4, numweeklyBtn, nummonthlyBtn, numyearlyBtn);
-        addChartImage(NumPatRev, margin + 5, patientsY + 12, contentWidth - 10, patientsH - 16);
-
-        const pieGap = 6;
-        const pieY = 108;
-        const pieH = 65;
-        const pieW = (contentWidth - pieGap) / 2;
-
-        drawCard(margin, pieY, pieW, pieH);
-        pdf.setFont('helvetica', 'bold');
-        pdf.setFontSize(9);
-        pdf.text('Appointment Status', margin + 5, pieY + 8);
-        addChartImage(appointmentChart, margin + 4, pieY + 11, pieW - 8, pieH - 15);
-
-        const servicesX = margin + pieW + pieGap;
-        drawCard(servicesX, pieY, pieW, pieH);
-        pdf.text('Most Requested Services', servicesX + 5, pieY + 8);
-        addChartImage(serviceChart, servicesX + 4, pieY + 11, pieW - 8, pieH - 15);
-
-        // Location card on Page 1
-        const locY = 178;
-        const locH = 70;
+        // 4. Demographics Card & Table
+        const locY = 24;
+        const locH = 110;
         drawCard(margin, locY, contentWidth, locH);
-        pdf.text('Patient Demographics & Branch Expansion Potential', margin + 6, locY + 8);
-        addChartImage(locationChart, margin + 5, locY + 11, contentWidth - 10, locH - 15);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFontSize(9);
+        pdf.text('4. Patient Demographics & Expansion Opportunities', margin + 5, locY + 7);
 
-        // ================= PAGE 2 (Revenue Trends) =================
-        pdf.addPage();
-        pdf.setFillColor(250, 248, 244);
-        pdf.rect(0, 0, pageWidth, pageHeight, 'F');
+        addChartImage(locationChart, margin + 4, locY + 11, contentWidth * 0.48, locH - 16);
 
-        const transY = 25;
-        const transH = 95;
+        const locTableX = margin + contentWidth * 0.52;
+        pdf.setFontSize(7.5);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFillColor(240, 243, 230);
+        pdf.rect(locTableX, locY + 11, contentWidth * 0.46, 5.5, 'F');
+        pdf.setTextColor(42, 16, 1);
+        pdf.text('City / Municipality', locTableX + 3, locY + 15);
+        pdf.text('Patients', locTableX + contentWidth * 0.32, locY + 15, { align: 'right' });
+        pdf.text('Share', locTableX + contentWidth * 0.46 - 3, locY + 15, { align: 'right' });
+
+        const totalLoc = (d.locations.data || []).reduce((a, b) => a + b, 0);
+        d.locations.labels.slice(0, 6).forEach((city, i) => {
+            const rowY = locY + 23 + (i * 12);
+            const count = d.locations.data[i] || 0;
+            const pct = totalLoc > 0 ? Math.round((count / totalLoc) * 100) : 0;
+
+            pdf.setFont('helvetica', 'bold');
+            pdf.setFontSize(7);
+            pdf.setTextColor(42, 16, 1);
+            pdf.text(city, locTableX + 3, rowY);
+            
+            pdf.setFont('helvetica', 'normal');
+            pdf.text(count.toString(), locTableX + contentWidth * 0.32, rowY, { align: 'right' });
+            pdf.text(pct + '%', locTableX + contentWidth * 0.46 - 3, rowY, { align: 'right' });
+        });
+
+        // 5. Total Transactions & Revenue Card
+        const transY = 140;
+        const transH = 135;
         drawCard(margin, transY, contentWidth, transH);
         pdf.setFont('helvetica', 'bold');
-        pdf.setFontSize(10);
-        pdf.text('Total Transactions & Revenue Overview', margin + 6, transY + 9);
-        drawPills(margin + contentWidth - 6, transY + 4.5, transweeklyBtn, transmonthlyBtn, transyearlyBtn);
-        addChartImage(TransactionChart, margin + 5, transY + 14, contentWidth - 10, transH - 18);
+        pdf.setFontSize(9);
+        pdf.text('5. Completed Transactions & Revenue Timeline', margin + 5, transY + 7);
+
+        addChartImage(TransactionChart, margin + 4, transY + 12, contentWidth * 0.58, transH - 18);
+
+        const tTableX = margin + contentWidth * 0.60;
+        pdf.setFontSize(7.5);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFillColor(240, 243, 230);
+        pdf.rect(tTableX, transY + 12, contentWidth * 0.38, 5.5, 'F');
+        pdf.setTextColor(42, 16, 1);
+        pdf.text('Period', tTableX + 3, transY + 16);
+        pdf.text('Revenue (PHP)', tTableX + contentWidth * 0.38 - 3, transY + 16, { align: 'right' });
+
+        d.transactions.labels.slice(0, 7).forEach((lbl, i) => {
+            const rowY = transY + 25 + (i * 12);
+            const rev = d.transactions.data[i] || 0;
+
+            pdf.setFont('helvetica', 'bold');
+            pdf.setFontSize(7);
+            pdf.setTextColor(42, 16, 1);
+            pdf.text(lbl, tTableX + 3, rowY);
+            
+            pdf.setFont('helvetica', 'normal');
+            pdf.setTextColor(primaryGreen[0], primaryGreen[1], primaryGreen[2]);
+            pdf.text('PHP ' + rev.toLocaleString('en-US', { minimumFractionDigits: 2 }), tTableX + contentWidth * 0.38 - 3, rowY, { align: 'right' });
+        });
+
+        // Bottom Footer
+        pdf.setFontSize(7.5);
+        pdf.setFont('helvetica', 'normal');
+        pdf.setTextColor(130, 130, 130);
+        pdf.text(`Bungipin Dental Clinic System • Official Analytics Document • Page 2 of 2`, pageWidth / 2, pageHeight - 8, { align: 'center' });
 
         pdf.save('Clinic_Executive_Dashboard_Report.pdf');
     }
