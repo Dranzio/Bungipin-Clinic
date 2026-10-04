@@ -579,6 +579,6 @@ ALTER TABLE appointments
  
 -- payments: refund statuses + PayMongo ids
 ALTER TABLE payments
-  MODIFY COLUMN status ENUM('pending','paid','refund_pending','refunded') NOT NULL DEFAULT 'pending';
+    MODIFY COLUMN status ENUM('pending','paid','refund_pending','refunded', 'cancelled') NOT NULL DEFAULT 'pending';
 ALTER TABLE payments ADD COLUMN paymongo_refund_id  VARCHAR(100) NULL;
 ALTER TABLE payments ADD COLUMN refunded_at         DATETIME     NULL;
