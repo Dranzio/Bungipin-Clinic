@@ -149,6 +149,28 @@ function validate(body) {
 }
 
 function registerServiceRoutes(app, db) {
+    // 0. GET /api/public/services — no login needed. Used by the public homepage.
+    //    All enabled services, only the fields the homepage shows.
+    app.get('/api/public/services', async (req, res) => {
+        try {
+            const [rows] = await db.query(
+                `SELECT service_id, label, description, price, icon
+                 FROM services WHERE is_available = TRUE ORDER BY service_id`
+            );
+            res.set('Cache-Control', 'no-store');
+            res.json(rows.map(r => ({
+                service_id: r.service_id,
+                label: r.label,
+                description: r.description || '',
+                price: r.price === null || r.price === undefined ? null : Number(r.price),
+                icon: r.icon || null
+            })));
+        } catch (err) {
+            console.error('Public service list error:', err);
+            res.status(500).json({ message: 'Internal Server Error' });
+        }
+    });
+
     // 1. GET /api/services — Returns all for admins, active only for patients
     app.get('/api/services', authenticateToken, async (req, res) => {
         try {
