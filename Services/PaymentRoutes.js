@@ -9,7 +9,7 @@
 const authenticateToken = require('../authMiddleware');
 const { logActivity } = require('../Admin/auditLogRoutes');
 const { createCheckoutSession, getCheckoutSession } = require('./paymongo');
-const { handlePaid } = require('./PaymongoWebhook');
+const { handlePaid, syncPendingOnlinePayments } = require('./PaymongoWebhook'); // eli change: also import the sync helper
 
 // Must match the real filename in /Customer EXACTLY: Vercel (Linux) is case-sensitive.
 const PAYMENT_SUCCESS_PAGE = 'Paymentsuccess.html';
@@ -175,11 +175,11 @@ function registerPaymentRoutes(app, db) {
             try {
                 const session = await getCheckoutSession(row.paymongo_session_id);
                 const payments = session?.attributes?.payments || [];
+                // eli change: log what PayMongo said so a stuck 'pending' payment can be diagnosed in the terminal
+                console.log(`[reconcile] appt ${appointmentId}:`, payments.length ? payments.map(p => `${p.id}=${p.attributes?.status ?? p.status}`).join(', ') : 'no payments yet');
                 // handlePaid falls back to payments[0], so only call it when PayMongo
                 // actually reports a paid payment.
-
-                // check this
-                if (payments.some(p => (p.attributes?.status?? p.status) === 'paid')) {
+                if (payments.some(p => (p.attributes?.status ?? p.status) === 'paid')) {
                     await handlePaid(db, session);
                 }
             } catch (err) {
@@ -264,8 +264,11 @@ function registerPaymentRoutes(app, db) {
             return res.status(403).json({ message: 'Staff only' });
         }
         try {
+            // eli change: confirm any online payments PayMongo already marked paid before listing,
+            // so the receptionist never sees a stale 'pending' for a paid online booking.
+            await syncPendingOnlinePayments(db);
             const [rows] = await db.query(
-                `SELECT a.appointment_id, a.appointment_date, a.time_slot, a.appointment_status,
+                `SELECT a.appointment_id, a.appointment_date, a.time_slot, a.end_time AS end_time_slot, a.appointment_status,
                         u.first_name AS patient_first_name, u.last_name AS patient_last_name,
                         s.label AS service_label,
                         p.payment_id, p.amount, p.amount AS price, p.payment_date, p.method,
@@ -274,7 +277,7 @@ function registerPaymentRoutes(app, db) {
                  JOIN appointments a ON a.appointment_id = p.appointment_id
                  JOIN services s ON s.service_id = a.service_id
                  JOIN users u ON u.user_id = a.patient_id
-                 WHERE NOT (p.method = 'online' AND p.status = 'pending')
+                 -- eli change: removed the WHERE that hid unpaid online payments. The payments page now lists ALL payments.
                  ORDER BY a.appointment_date DESC, a.time_slot DESC`
             );
             res.json(rows);
@@ -326,99 +329,108 @@ function registerPaymentRoutes(app, db) {
     // For online payments: calls PayMongo Refund API.
     // For cash/card: just marks the DB as refunded (actual cash return is manual).
     // eli to eli: PayMongo refunds go back to the original payment method automatically.
-    app.post('/api/payments/:appointmentId/refund', authenticateToken, async (req, res) => {
-        if (!['employee', 'admin'].includes(req.user.role)) {
-            return res.status(403).json({ message: 'Staff only' });
+    app.post('/api/payments/:id/refund', authenticateToken, async (req, res) => {
+    const paymentId = req.params.id;
+
+    // eli refund: look up by appointment_id (passed from frontend) or payment_id
+    const apptOrPayId = req.params.id;
+
+    try {
+        // 1. Get payment details from DB
+        // eli refund: check both payment_id and appointment_id so frontend URL calls match
+        const [rows] = await db.query(
+            `SELECT p.payment_id, p.amount, p.paymongo_payment_id, p.method, p.status, a.appointment_id
+             FROM payments p
+             JOIN appointments a ON p.appointment_id = a.appointment_id
+             WHERE p.appointment_id = ? OR p.payment_id = ?`,
+            [apptOrPayId, apptOrPayId]
+        );
+
+        if (rows.length === 0) {
+            return res.status(404).json({ message: 'Payment record not found' });
         }
 
-        const appointmentId = Number(req.params.appointmentId);
-        const { reason } = req.body; // optional reason string
+        const payment = rows[0];
 
-        try {
-            const [rows] = await db.query(
-                `SELECT p.payment_id, p.status, p.method, p.amount,
-                        p.paymongo_payment_id
-                 FROM payments p
-                 WHERE p.appointment_id = ?`,
-                [appointmentId]
-            );
+        
+        // eli refund: check payment method before calling PayMongo
+        const isOnline = ['online', 'paymongo', 'mongo'].includes(String(payment.method || '').toLowerCase());
 
-            if (rows.length === 0) {
-                return res.status(404).json({ message: 'Payment record not found' });
-            }
-
-            const payment = rows[0];
-
-            // eli: Only paid or refund_pending payments can be refunded
-            if (!['paid', 'refund_pending'].includes(payment.status)) {
-                return res.status(409).json({
-                    message: `Cannot refund a payment with status '${payment.status}'. It must be 'paid' or 'refund_pending'.`
-                });
-            }
-
-            // Online payments: call PayMongo Refund API
-            if (payment.method === 'online') {
-                if (!payment.paymongo_payment_id) {
-                    return res.status(400).json({ message: 'No PayMongo payment ID found — cannot process online refund.' });
-                }
-
-                const amountInCentavos = Math.round(Number(payment.amount) * 100);
-
-                const refundRes = await fetch(`${PAYMONGO_BASE}/refunds`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': paymongoAuth()
-                    },
-                    body: JSON.stringify({
-                        data: {
-                            attributes: {
-                                amount: amountInCentavos,
-                                payment_id: payment.paymongo_payment_id,
-                                // PayMongo only accepts a fixed set of reason codes; staff's
-                                // free-text explanation goes in `notes` instead.
-                                reason: REFUND_REASONS.includes(req.body.reason_code) ? req.body.reason_code : 'others',
-                                notes: reason || 'Appointment cancelled - refund requested by patient'
-                            }
-                        }
-                    })
-                });
-
-                const refundData = await refundRes.json();
-
-                if (!refundRes.ok) {
-                    console.error('PayMongo refund error:', refundData);
-                    return res.status(502).json({ message: 'PayMongo refund failed. Please try again or process manually.' });
-                }
-            }
-
-            // eli: For cash/card, no API call needed — just update the DB
+        // eli refund: if cash / in-person payment, bypass PayMongo API call entirely
+        if (!isOnline) {
             await db.query(
-                `UPDATE payments SET status = 'refunded' WHERE appointment_id = ?`,
-                [appointmentId]
+                `UPDATE payments SET status = 'refunded' WHERE payment_id = ?`,
+                [payment.payment_id]
+            );
+            await db.query(
+                `UPDATE appointments SET appointment_status = 'cancelled' WHERE appointment_id = ?`,
+                [payment.appointment_id]
             );
 
-            await logActivity(db, {
-                user_id:      req.user.user_id,
-                user_role:    req.user.role,
-                action:       'PAYMENT_REFUNDED',
-                target_table: 'payments',
-                target_id:    appointmentId,
-                notes:        `Refund processed for appointment #${appointmentId} (method: ${payment.method}).${reason ? ' Reason: ' + reason : ''}`,
-                ip_address:   getIp(req)
-            });
-
-            res.json({
-                message: payment.method === 'online'
-                    ? 'Refund submitted to PayMongo. It may take 5–10 business days to reflect.'
-                    : 'Payment marked as refunded. Please return the cash to the patient manually.'
-            });
-
-        } catch (err) {
-            console.error('Refund error:', err);
-            res.status(500).json({ message: 'Internal Server Error' });
+            return res.json({ success: true, status: 'refunded', message: 'In-clinic cash refund recorded successfully' });
         }
-    });
+
+
+        // Ensure we have a valid PayMongo Payment ID (starts with "pay_")
+        // Note: If you saved paymongo_session_id instead, you must retrieve the payment_id 
+        // from the PayMongo session or payment intent first.
+        const paymongoPaymentId = payment.paymongo_payment_id; 
+
+        if (!paymongoPaymentId) {
+            return res.status(400).json({ 
+                message: 'No valid PayMongo Payment ID found for this record. Cannot process automated refund.' 
+            });
+        }
+
+        // 2. Amount in centavos (e.g., 1500 PHP -> 150000 centavos)
+        const amountInCents = Math.round(Number(payment.amount) * 100);
+
+        // 3. Call PayMongo Refunds API
+        const response = await fetch('https://api.paymongo.com/v1/refunds', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Basic ${Buffer.from(process.env.PAYMONGO_SECRET_KEY + ':').toString('base64')}`
+            },
+            body: JSON.stringify({
+                data: {
+                    attributes: {
+                        amount: amountInCents,
+                        payment_id: paymongoPaymentId,
+                        reason: 'requested_by_customer',
+                        notes: `Refund for Appointment #${payment.appointment_id}`
+                    }
+                }
+            })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            console.error('PayMongo refund error:', data);
+            return res.status(502).json({ 
+                message: data.errors?.[0]?.detail || 'PayMongo refund failed', 
+                errors: data.errors 
+            });
+        }
+
+        // 4. Update Database on Success
+        await db.query(
+            `UPDATE payments SET status = 'refunded' WHERE payment_id = ?`,
+            [paymentId]
+        );
+        await db.query(
+            `UPDATE appointments SET appointment_status = 'cancelled' WHERE appointment_id = ?`,
+            [payment.appointment_id]
+        );
+
+        res.json({ success: true, message: 'Refund processed successfully', refund: data.data });
+
+    } catch (err) {
+        console.error('Refund processing exception:', err);
+        res.status(500).json({ message: 'Internal Server Error' });
+    }
+});
 
 
     // ── 5. GET /api/payments/:appointmentId ────────────────────────────────────
