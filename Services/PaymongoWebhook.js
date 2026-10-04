@@ -8,12 +8,13 @@
 
 const express = require('express');
 const { logActivity } = require('../Admin/auditLogRoutes');
-const { verifyWebhookSignature, BLOCKING_SQL } = require('./paymongo');
+const { verifyWebhookSignature, BLOCKING_SQL, getCheckoutSession } = require('./paymongo');
 const { sendAppointmentEmail } = require('../AppointmentEmails');
 
 async function handlePaid(db, session) {
     const match = /^APPT-(\d+)$/.exec(session.attributes?.reference_number || '');
-    if (!match) return; // not one of ours
+    // eli change: log instead of silently returning, so a skipped payment can be diagnosed
+    if (!match) { console.error('[paymongo] handlePaid: no APPT-<id> reference on session', session?.id); return; } // not one of ours
     const appointmentId = Number(match[1]);
 
     const payments = session.attributes?.payments || [];
@@ -42,7 +43,8 @@ async function handlePaid(db, session) {
             await conn.rollback(); return;
         }
         // Duplicate delivery / already handled -> no-op (idempotent).
-        if (row.payment_status !== 'pending') { await conn.rollback(); return; }
+        // eli change: log the skip (webhook + reconcile can both fire; this is the normal "already done" case)
+        if (row.payment_status !== 'pending') { console.log(`[paymongo] appointment ${appointmentId} already '${row.payment_status}', skipping`); await conn.rollback(); return; }
 
         // Never trust the amount blindly.
         const expected = Math.round(Number(row.amount) * 100);
@@ -104,6 +106,41 @@ async function handlePaid(db, session) {
     }
 }
 
+// eli change: self-healing sync. Asks PayMongo about online payments still marked 'pending'
+// and confirms the ones PayMongo reports as paid. This makes 'pending' -> 'paid' work even when
+// the webhook can't reach this server (localhost, expired ngrok URL, missed delivery).
+// It is called whenever the receptionist payments list or a patient's appointment list loads.
+// Safe to run repeatedly: handlePaid is idempotent and checks the amount + slot itself.
+async function syncPendingOnlinePayments(db, { patientId = null, limit = 10 } = {}) {
+    try {
+        const params = [];
+        let patientSql = '';
+        if (patientId) { patientSql = 'AND a.patient_id = ?'; params.push(patientId); }
+        params.push(limit);
+        const [rows] = await db.query(
+            `SELECT p.appointment_id, p.paymongo_session_id
+             FROM payments p
+             JOIN appointments a ON a.appointment_id = p.appointment_id
+             WHERE p.method = 'online' AND p.status = 'pending'
+               AND p.paymongo_session_id IS NOT NULL
+               AND a.created_at > NOW() - INTERVAL 2 DAY
+               ${patientSql}
+             ORDER BY p.payment_id DESC
+             LIMIT ?`,
+            params
+        );
+        await Promise.allSettled(rows.map(async r => {
+            const session = await getCheckoutSession(r.paymongo_session_id);
+            const payments = session?.attributes?.payments || [];
+            const isPaid = payments.some(p => (p.attributes?.status ?? p.status) === 'paid');
+            console.log(`[paymongo sync] appt ${r.appointment_id}: ${isPaid ? 'PAID at PayMongo' : 'not paid yet'}`);
+            if (isPaid) await handlePaid(db, session);
+        }));
+    } catch (err) {
+        console.error('[paymongo sync] failed:', err.details || err);
+    }
+}
+
 function registerPaymongoWebhook(app, db) {
     app.post('/api/webhooks/paymongo', express.raw({ type: '*/*', limit: '1mb' }), async (req, res) => {
         if (!Buffer.isBuffer(req.body)) {
@@ -143,3 +180,5 @@ function registerPaymongoWebhook(app, db) {
 module.exports = registerPaymongoWebhook;
 // Also used by the reconcile route in PaymentRoutes.js.
 module.exports.handlePaid = handlePaid;
+// eli change: exported so the payments list and the patient's appointment list can self-heal
+module.exports.syncPendingOnlinePayments = syncPendingOnlinePayments;

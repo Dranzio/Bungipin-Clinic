@@ -1,7 +1,7 @@
 const authenticateToken = require('../authMiddleware');
 const { logActivity } = require('../Admin/auditLogRoutes');
 const { sendAppointmentEmail } = require('../AppointmentEmails');
-const { refundAfterCancel } = require('../Services/Refund');
+const { syncPendingOnlinePayments } = require('../Services/PaymongoWebhook'); // eli change
 
 function getIp(req) {
     return req.ip || req.headers['x-forwarded-for'];
@@ -14,10 +14,13 @@ function registerHistoryRoutes(app, db, io) {
 
     // ── 1. GET /api/appointments/mine — Patient's personal appointment history ──
     app.get('/api/appointments/mine', authenticateToken, async (req, res) => {
-        await autoCancelExpiredAppointments(db, io);
         if (req.user.role !== 'patient') {
             return res.status(403).json({ message: 'Only patients can view their own appointment history' });
         }
+        // eli change: first confirm this patient's online payments that PayMongo already marked paid
+        // (so a paid booking is never auto-cancelled below), THEN run the auto-cancel.
+        await syncPendingOnlinePayments(db, { patientId: req.user.user_id });
+        await autoCancelExpiredAppointments(db, io);
 
         try {
             const [rows] = await db.query(
@@ -115,6 +118,11 @@ function registerHistoryRoutes(app, db, io) {
                 [appointmentId]
             );
 
+            // eli change: remember whether money was already paid, so the reply can tell the patient a refund was requested
+            const [payRows] = await connection.query("SELECT status FROM payments WHERE appointment_id = ?", [appointmentId]);
+            const payBefore = payRows[0];
+            const refundRequested = payBefore?.status === 'paid';
+
             await connection.query(
                 `UPDATE payments
                  SET status = CASE
@@ -157,18 +165,15 @@ function registerHistoryRoutes(app, db, io) {
 
             await sendAppointmentEmail(db, appointmentId, 'cancelled', { cancelledBy: 'customer', reason });
 
-            // Refund AFTER the cancellation is committed, so a PayMongo failure never undoes it.
-            const refund = await refundAfterCancel(db, appointmentId, {
-                userId: req.user.user_id, note: reason, ip: getIp(req)
-            });
-            if (refund.status !== 'none' && io) {
-                io.emit('appointment-updated', { appointment_id: Number(appointmentId) });
-            }
-
+            // eli change: NO automatic refund. Cancelling only flags the payment 'refund_pending' (done in the
+            // transaction above). The receptionist reviews it and presses Refund on the payments page; only then
+            // does the payment become 'refunded' (and, for online payments, PayMongo is called).
             res.json({
-                message: 'Appointment cancelled successfully.' + (refund.message ? ' ' + refund.message : ''),
+                message: 'Appointment cancelled successfully.' + (refundRequested
+                    ? ' Your refund request has been sent to the clinic. It will show as approved once the receptionist processes it.'
+                    : ''),
                 appointment_id: Number(appointmentId),
-                refund_status: refund.status
+                refund_status: refundRequested ? 'refund_pending' : 'none'
             });
 
         } catch (err) {
@@ -409,7 +414,22 @@ function registerHistoryRoutes(app, db, io) {
                     )
             `);
 
-            if (result.affectedRows > 0 && io) {
+            // eli change: an online booking whose 15-minute PayMongo hold ran out unpaid (patient closed
+            // the checkout or backed out) used to stay 'pending' forever and looked like a live booking.
+            // Mark it cancelled so it shows as Cancelled in My Appointments. If the patient pays late,
+            // handlePaid in PaymongoWebhook.js revives it (or flags a refund if the slot was taken).
+            const [holdResult] = await db.query(`
+                UPDATE appointments a
+                JOIN payments p ON p.appointment_id = a.appointment_id
+                SET a.appointment_status = 'cancelled',
+                    a.hold_expires_at = NULL,
+                    a.patient_note = CONCAT(COALESCE(a.patient_note, ''), ' [System: Online payment not completed in time]')
+                WHERE a.appointment_status = 'pending'
+                  AND p.method = 'online' AND p.status = 'pending'
+                  AND a.hold_expires_at IS NOT NULL AND a.hold_expires_at < NOW()
+            `);
+
+            if ((result.affectedRows > 0 || holdResult.affectedRows > 0) && io) {
                 io.emit('appointment-updated');
             }
         } catch (err) {

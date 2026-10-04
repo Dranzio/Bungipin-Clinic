@@ -83,7 +83,9 @@ registerPatientProfileRoute(app, db);
 registerBookingRoute(app, db);
 // [PAYMONGO PATCH] ADDED: registers GET /api/payments/:id, PATCH .../mark-paid, POST .../refund
 registerPaymentRoutes(app, db);
-registerHistoryRoutes(app, db);
+// eli change: registerHistoryRoutes(app, db, io) takes io as its 3rd argument but it was never passed,
+// so io was undefined there and 'appointment-updated' (cancel, refund, auto-cancel) never reached any page.
+registerHistoryRoutes(app, db, io);
 registerEmployeeProfileRoute(app, db);
 registerBookingRequestRoutes(app, db);
 registerQueueRoutes(app, db);

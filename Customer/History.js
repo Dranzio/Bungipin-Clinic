@@ -486,7 +486,7 @@ function renderTable() {
             if (paymentStatus === 'refund_pending') {
                 refundStatusHtml = `
                     <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] font-extrabold bg-blue-100 text-blue-800 border border-blue-300 uppercase tracking-wide">
-                        <i class="fa-solid fa-arrows-rotate fa-spin text-[8px] text-blue-600"></i> Refund Processing...
+                        <i class="fa-solid fa-hourglass-half text-[8px] text-blue-600"></i> Refund Pending Approval
                     </span>
                 `;
             } else if (paymentStatus === 'refunded') {
@@ -922,12 +922,12 @@ function openCancelModal(appointmentId) {
     const refundText = document.getElementById('cancelRefundNoticeText');
     const appt = allAppointments.find(a => Number(a.appointment_id) === Number(appointmentId));
     if (refundNotice && refundText) {
-        const paid = appt && ['paid', 'refund_pending', 'pending'].includes(String(appt.payment_status || '').toLowerCase());
+        const paid = appt && ['paid', 'refund_pending'].includes(String(appt.payment_status || '').toLowerCase()); // eli change: removed 'pending' (an unpaid booking has nothing to refund)
         if (paid) {
             const amt = Number(appt.amount || 0).toLocaleString('en-PH', { style: 'currency', currency: 'PHP' });
             refundText.textContent = String(appt.method).toLowerCase() === 'online'
-                ? `You paid ${amt} online. Cancelling will automatically process a refund to your account.`
-                : `You paid ${amt} at the clinic. Please visit the clinic to receive your cash refund.`;
+                ? `You paid ${amt} online. Cancelling sends a refund request to the clinic. The refund is only approved once the receptionist processes it.`
+                : `You paid ${amt} at the clinic. Cancelling sends a refund request to the clinic; the receptionist will approve it and hand back your cash.`;
             refundNotice.classList.remove('hidden');
         } else {
             refundNotice.classList.add('hidden');

@@ -259,7 +259,9 @@ function renderPayments() {
     } else if (paymentStatus === 'paid') {
       statusHtml = `<span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-extrabold bg-[#c2d09c] text-[#1a281b] border border-[#1a281b]/30"><span class="w-1.5 h-1.5 rounded-full bg-[#394a28] mr-1.5"></span>Paid</span>`;
     } else {
-      statusHtml = `<span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-extrabold bg-[#F1B770] text-[#2A1001] border border-[#2A1001]/20"><span class="w-1.5 h-1.5 rounded-full bg-[#6a5416] mr-1.5"></span>Pending</span>`;
+      // eli change: unpaid online payments are now listed too; label them so staff know PayMongo confirms them
+      const awaitingOnline = String(appt.method || '').toLowerCase() === 'online';
+      statusHtml = `<span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-extrabold bg-[#F1B770] text-[#2A1001] border border-[#2A1001]/20"><span class="w-1.5 h-1.5 rounded-full bg-[#6a5416] mr-1.5"></span>${awaitingOnline ? 'Awaiting PayMongo' : 'Pending'}</span>`;
     }
 
     // ⚡ Actions Button
@@ -267,6 +269,14 @@ function renderPayments() {
     if (paymentStatus === 'pending') {
       if (isCancelled) {
         actionsHtml = `<span class="text-gray-400 italic text-xs font-medium">—</span>`;
+      } else if (String(appt.method || '').toLowerCase() === 'online') {
+        // eli change: staff must not "Accept Payment" for an online booking (the server rejects it anyway).
+        // Offer a PayMongo re-check instead.
+        actionsHtml = `
+          <button onclick="checkPayMongo(${appt.appointment_id}, this)"
+            class="h-8 bg-[#1D4E9E] hover:bg-[#173f80] text-white font-bold px-4 rounded-full text-xs transition active:scale-95 inline-flex items-center justify-center gap-1.5 cursor-pointer shadow-sm whitespace-nowrap">
+            <i class="fa-solid fa-rotate"></i> Check PayMongo
+          </button>`;
       } else {
         actionsHtml = `
           <button onclick="openPaymentModal(${appt.appointment_id})"
@@ -417,6 +427,24 @@ window.openPaymentModal = function(appointmentId) {
   document.body.style.overflow = 'hidden';
 };
 
+// eli change: re-checks an online payment with PayMongo (server route /reconcile) and refreshes the list.
+async function checkPayMongo(appointmentId, btn) {
+  const token = localStorage.getItem('token') || localStorage.getItem('userToken');
+  if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Checking...'; }
+  try {
+    const res = await fetch(`/api/payments/${appointmentId}/reconcile`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) alert(data.message || 'Could not check with PayMongo right now.');
+    else if (data.status === 'pending') alert('PayMongo has not recorded a payment for this booking yet.');
+  } catch (err) {
+    alert('Could not reach the server.');
+  }
+  await fetchPayments();
+}
+
 async function processPayment(appt) {
   const confirmBtn = document.getElementById('confirmPayBtn');
   if (confirmBtn) {
@@ -507,6 +535,8 @@ function initRefundModal() {
         appt.payment_status = data.status || 'refunded';
         closeRefundModal();
         applyFilters();
+        // eli change: tell staff when PayMongo is still processing instead of looking like nothing happened
+        if (data.status === 'refund_pending') alert(data.message);
       } else {
         const data = await response.json().catch(() => ({}));
         alert(`Refund Error: ${data.message || 'Failed to refund'}`);

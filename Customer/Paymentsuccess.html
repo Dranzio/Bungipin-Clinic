@@ -99,7 +99,9 @@
 
             // Still pending after ~20s: ask the server to double-check with PayMongo
             // once, in case the webhook was delayed or missed.
-            if (attempt === 10) {
+            // eli change: was `attempt === 10` (one single check). Now re-checks every 3rd poll (~6s) so a
+            // payment PayMongo records a few seconds late still flips to paid. Reconcile is idempotent.
+            if (attempt >= 3 && attempt % 3 === 0) {
                 try {
                     await fetch(`/api/payments/${encodeURIComponent(appointmentId)}/reconcile`, {
                         method: 'POST',

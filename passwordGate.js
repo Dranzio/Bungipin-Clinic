@@ -61,7 +61,31 @@
         return gate;
     }
 
+    // eli change: true only when the visitor landed here DIRECTLY from login.html (they just typed
+    // their password there, so asking again is pointless). Any other way of reaching this page
+    // (clicking a link on another page, typing the URL, reloading, back/forward) still gets the gate.
+    function cameFromLogin() {
+        try {
+            const nav = performance.getEntriesByType('navigation')[0];
+            // A reload or back/forward keeps the old referrer, so don't let those skip the gate.
+            if (nav && nav.type !== 'navigate') return false;
+            if (!document.referrer) return false;
+            const ref = new URL(document.referrer);
+            return ref.origin === window.location.origin &&
+                /\/login\.html$/i.test(ref.pathname);
+        } catch (e) {
+            return false;
+        }
+    }
+
     async function initialize() {
+        // eli change: skip the password prompt right after a login (needs a token, otherwise fall through
+        // to the normal flow below, which sends tokenless visitors back to login).
+        if (cameFromLogin() && (localStorage.getItem('userToken') || localStorage.getItem('token'))) {
+            document.documentElement.classList.remove('password-gate-pending');
+            return;
+        }
+
         const gate = createGate();
         const form = document.getElementById('password-gate-form');
         const input = document.getElementById('password-gate-input');
@@ -71,7 +95,7 @@
         const cancelBtn = document.getElementById('password-gate-cancel');
         const token = localStorage.getItem('userToken') || localStorage.getItem('token');
 
-        // 🚫 Disable Paste, Copy, Cut, and Drag & Drop
+        // Disable Paste, Copy, Cut, and Drag & Drop
         if (input) {
             ['paste', 'copy', 'cut', 'drop'].forEach(eventType => {
                 input.addEventListener(eventType, (e) => e.preventDefault());
