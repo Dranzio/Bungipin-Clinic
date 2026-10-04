@@ -450,9 +450,9 @@
             const lName = document.getElementById('last_name').value.trim();
             const nameWarning = document.getElementById('nameWarning');
             let nameWarnMsg = "";
-            // 1. Check for minimum 5 characters
-            if ((fName.length > 0 && fName.length < 5) || (lName.length > 0 && lName.length < 5)) {
-                nameWarnMsg = "Names must be at least 5 characters long.";
+            // 1. Check for minimum 2 characters
+            if ((fName.length > 0 && fName.length < 2) || (lName.length > 0 && lName.length < 2)) {
+                nameWarnMsg = "Names must be at least 2 characters long.";
                 allRequiredFilled = false;
             } 
             // 2. Check for 3+ repeating identical characters (e.g. "aaa")
