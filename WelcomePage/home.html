@@ -5,6 +5,21 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Bungipin Dental Clinic</title>
   <link href="../output.css" rel="stylesheet">
+<style>
+  /* Flip cards for the services grid: click/tap a card to flip it and read the description */
+  .flip-card { display: flex; perspective: 1200px; cursor: pointer; outline: none; -webkit-tap-highlight-color: transparent; }
+  .flip-inner { flex: 1 1 auto; min-width: 0; display: grid; grid-template: 1fr / 1fr; position: relative; border-radius: 1.5rem; transform-style: preserve-3d; transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1); min-height: 17rem; }
+  .flip-card.is-flipped .flip-inner { transform: rotateY(180deg); }
+  .flip-face { grid-area: 1 / 1; display: flex; flex-direction: column; min-width: 0; padding: 1.5rem; border-radius: 1.5rem; border: 1px solid rgba(42, 16, 1, 0.08); background: #fff; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1); -webkit-backface-visibility: hidden; backface-visibility: hidden; }
+  .flip-back { background: #FDFCE9; transform: rotateY(180deg); }
+  .flip-desc { margin: 0; padding-right: 0.5rem; text-align: left; white-space: pre-line; overflow-y: auto; scrollbar-width: thin; max-height: 9rem; }
+  .flip-hint { display: flex; align-items: center; justify-content: center; gap: 0.375rem; font-size: 0.75rem; font-weight: 600; color: #667733; }
+  .flip-hint-front { margin-top: 0.25rem; }
+  .flip-hint-back { margin-top: auto; padding-top: 0.75rem; }
+  .flip-card:focus-visible .flip-inner { outline: 3px solid #667733; outline-offset: 3px; }
+  @media (hover: hover) { .flip-card { transition: transform 0.2s ease; } .flip-card:hover { transform: translateY(-4px); } }
+  @media (prefers-reduced-motion: reduce) { .flip-inner { transition: none; } }
+</style>
 </head>
 <body class="font-poppins bg-[#F5F1E7] text-[#2A1001] antialiased overflow-x-hidden">
 
@@ -14,7 +29,7 @@
     <nav class="bg-[#8A925F] rounded-[32px] md:rounded-[40px] w-full max-w-5xl flex flex-col md:flex-row items-center justify-between px-4 md:px-6 py-4 md:py-5 shadow-lg relative">
 
         <!-- Logo (on top for mobile, centered/absolute for desktop) -->
-        <div class="w-16 h-16 md:w-32 md:h-32 rounded-full flex items-center justify-center 
+        <div class="w-20 h-20 md:w-40 md:h-40 rounded-full flex items-center justify-center 
                     md:absolute md:left-1/2 md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:z-10 mb-2 md:mb-0">
             <img src="../assets/logowithtitle.png" alt="Bungipin Logo" class="w-full h-full object-contain drop-shadow-md" />
         </div>
@@ -84,7 +99,7 @@
     your teeth to their best form. Bringing back the smile and confidence that you deserve in every visit.
   </p>
     <a href="/aboutus.html"
-     class="inline-block border-2 border-[#D5C04D] text-[#D5C04D] hover:bg-yellow-400 hover:text-[#D5C04D] font-semibold px-10 py-3 rounded-md transition-colors text-base">
+     class="inline-block border-2 border-[#D5C04D] text-[#D5C04D] hover:bg-[#D5C04D] hover:text-[#2A1001] font-semibold px-10 py-3 rounded-md transition-colors text-base">
     Learn More
   </a>
 </div>
@@ -104,69 +119,46 @@
   </section>  
 
 
-<!-- ===== MOST REQUESTED SERVICES ===== -->
-<section class="bg-[#F3EFE4] pt-16 pb-0">
-  <div class="max-w-6xl mx-auto px-6 pb-10">
+<!-- ===== OUR SERVICES (all enabled services loaded from the database; the cards inside are a fallback) ===== -->
+<section class="bg-[#F3EFE4] py-16">
+  <div class="max-w-6xl mx-auto px-6">
     <h2 class="text-2xl md:text-3xl font-extrabold text-center text-[#2A1001] mb-10 tracking-wide">
-      MOST REQUESTED SERVICES
+      OUR SERVICES
     </h2>
-  </div>
 
-  <!-- Full-width band, breaking out of the max-w-6xl container -->
-  <div class="w-screen relative left-1/2 right-1/2 -mx-[50vw] bg-[#D7E3A5] pt-20 pb-12 px-6 md:px-16">
-    <div class="max-w-6xl mx-auto">
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-y-14 gap-x-8 -mt-28">
-
-        <!-- Cleaning -->
-        <div class="flex flex-col items-center text-center">
-          <div class="bg-[#D7E3A5] rounded-full w-36 h-36 md:w-44 md:h-44 flex items-center justify-center mb-5">
-            <img src="../assets/cleaning.png" alt="Cleaning" class="w-20 h-20 md:w-24 md:h-24 object-contain" />
-          </div>
-          <h3 class="font-bold text-[#2A1001] text-lg mb-2">Cleaning</h3>
-          <p class="text-[#2A1001]/80 text-sm leading-relaxed max-w-[240px]">
-            Get your teeth back to their whitest look! Our professional cleanup service ensures your teeth will get back to their best look.
-          </p>
+    <div id="services-grid" class="flex flex-wrap justify-center gap-6">
+      <div class="bg-white border border-[#2A1001]/5 rounded-3xl p-6 shadow-md overflow-hidden flex flex-col items-center text-center hover:-translate-y-1 hover:shadow-lg transition-all duration-200 w-full sm:w-[calc(50%-0.75rem)] lg:w-[calc(33.333%-1rem)] xl:w-[calc(25%-1.125rem)]">
+        <div class="bg-[#D7E3A5] rounded-full w-24 h-24 flex items-center justify-center mb-4 shrink-0">
+          <img src="../assets/cleaning.png" alt="Cleaning" class="w-14 h-14 object-contain" />
         </div>
-
-        <!-- Pasta -->
-        <div class="flex flex-col items-center text-center">
-          <div class="bg-[#D7E3A5] rounded-full w-36 h-36 md:w-44 md:h-44 flex items-center justify-center mb-5">
-            <img src="../assets/pasta.png" alt="Pasta" class="w-20 h-20 md:w-24 md:h-24 object-contain" />
-          </div>
-          <h3 class="font-bold text-[#2A1001] text-lg mb-2">Pasta</h3>
-          <p class="text-[#2A1001]/80 text-sm leading-relaxed max-w-[240px]">
-            Repair cavities and restore your teeth. Our high-quality fillings keep your smile complete and pain-free.
-          </p>
+        <h3 class="font-bold text-[#2A1001] text-lg mb-2 w-full break-words line-clamp-3">Cleaning</h3>
+        <p class="text-[#2A1001]/80 text-sm leading-relaxed w-full break-words line-clamp-4">Get your teeth back to their whitest look! Our professional cleanup service ensures your teeth will get back to their best look.</p>
+      </div>
+      <div class="bg-white border border-[#2A1001]/5 rounded-3xl p-6 shadow-md overflow-hidden flex flex-col items-center text-center hover:-translate-y-1 hover:shadow-lg transition-all duration-200 w-full sm:w-[calc(50%-0.75rem)] lg:w-[calc(33.333%-1rem)] xl:w-[calc(25%-1.125rem)]">
+        <div class="bg-[#D7E3A5] rounded-full w-24 h-24 flex items-center justify-center mb-4 shrink-0">
+          <img src="../assets/pasta.png" alt="Pasta" class="w-14 h-14 object-contain" />
         </div>
-
-        <!-- Whitening -->
-        <div class="flex flex-col items-center text-center">
-          <div class="bg-[#D7E3A5] rounded-full w-36 h-36 md:w-44 md:h-44 flex items-center justify-center mb-5">
-            <img src="../assets/whitening.png" alt="Whitening" class="w-20 h-20 md:w-24 md:h-24 object-contain" />
-          </div>
-          <h3 class="font-bold text-[#2A1001] text-lg mb-2">Whitening</h3>
-          <p class="text-[#2A1001]/80 text-sm leading-relaxed max-w-[240px]">
-            Our professional brightening treatments safely lift discoloration so that you can share your dazzling smile with confidence.
-          </p>
+        <h3 class="font-bold text-[#2A1001] text-lg mb-2 w-full break-words line-clamp-3">Pasta</h3>
+        <p class="text-[#2A1001]/80 text-sm leading-relaxed w-full break-words line-clamp-4">Repair cavities and restore your teeth. Our high-quality fillings keep your smile complete and pain-free.</p>
+      </div>
+      <div class="bg-white border border-[#2A1001]/5 rounded-3xl p-6 shadow-md overflow-hidden flex flex-col items-center text-center hover:-translate-y-1 hover:shadow-lg transition-all duration-200 w-full sm:w-[calc(50%-0.75rem)] lg:w-[calc(33.333%-1rem)] xl:w-[calc(25%-1.125rem)]">
+        <div class="bg-[#D7E3A5] rounded-full w-24 h-24 flex items-center justify-center mb-4 shrink-0">
+          <img src="../assets/whitening.png" alt="Whitening" class="w-14 h-14 object-contain" />
         </div>
-
-        <!-- Checkup -->
-        <div class="flex flex-col items-center text-center">
-          <div class="bg-[#D7E3A5] rounded-full w-36 h-36 md:w-44 md:h-44 flex items-center justify-center mb-5">
-            <img src="../assets/consultation.png" alt="Checkup" class="w-20 h-20 md:w-24 md:h-24 object-contain" />
-          </div>
-          <h3 class="font-bold text-[#2A1001] text-lg mb-2">Checkup</h3>
-          <p class="text-[#2A1001]/80 text-sm leading-relaxed max-w-[240px]">
-            Regular checkups with the dentists in Bungipin allows us to catch issues early, keeping your teeth healthy and keeping your mind at ease.
-          </p>
+        <h3 class="font-bold text-[#2A1001] text-lg mb-2 w-full break-words line-clamp-3">Whitening</h3>
+        <p class="text-[#2A1001]/80 text-sm leading-relaxed w-full break-words line-clamp-4">Our professional brightening treatments safely lift discoloration so that you can share your dazzling smile with confidence.</p>
+      </div>
+      <div class="bg-white border border-[#2A1001]/5 rounded-3xl p-6 shadow-md overflow-hidden flex flex-col items-center text-center hover:-translate-y-1 hover:shadow-lg transition-all duration-200 w-full sm:w-[calc(50%-0.75rem)] lg:w-[calc(33.333%-1rem)] xl:w-[calc(25%-1.125rem)]">
+        <div class="bg-[#D7E3A5] rounded-full w-24 h-24 flex items-center justify-center mb-4 shrink-0">
+          <img src="../assets/consultation.png" alt="Checkup" class="w-14 h-14 object-contain" />
         </div>
-
+        <h3 class="font-bold text-[#2A1001] text-lg mb-2 w-full break-words line-clamp-3">Checkup</h3>
+        <p class="text-[#2A1001]/80 text-sm leading-relaxed w-full break-words line-clamp-4">Regular checkups with the dentists in Bungipin allow us to catch issues early, keeping your teeth healthy and your mind at ease.</p>
       </div>
     </div>
   </div>
-
 </section>
-  <!-- ===== FAQs SECTION ===== -->
+<!-- ===== FAQs SECTION ===== -->
 
 <section class="bg-[#D3DCBE] py-16">
     <div class="max-w-4xl mx-auto px-6">
@@ -274,5 +266,142 @@
 
   </div>
 </footer>
+
+<script>
+  // Loads the services the admin has enabled in Service Management.
+  // If the request fails, the static cards already in the page stay as a fallback.
+  (function () {
+    const grid = document.getElementById('services-grid');
+    if (!grid) return;
+
+    const FALLBACK_ICON = '../assets/logowithtitle.png';
+    const FALLBACK_TEXT = 'Professional dental care from our clinic specialists.';
+
+    // ── Flip card: click/tap (or Enter/Space) flips the card to show the description ──
+    const FLIP_ICON = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992V4.356M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182"/></svg>';
+    const IS_TOUCH = !!(window.matchMedia && window.matchMedia('(hover: none)').matches);
+    const HINT_FRONT = IS_TOUCH ? 'Tap to view details' : 'Click to view details';
+    const HINT_BACK = IS_TOUCH ? 'Tap to flip back' : 'Click to flip back';
+
+    function makeHint(text, extraClass) {
+      const hint = document.createElement('p');
+      hint.className = 'flip-hint ' + extraClass;
+      hint.innerHTML = FLIP_ICON + '<span>' + text + '</span>'; // text is one of the constants above, never user data
+      return hint;
+    }
+
+    function setFlipped(card, flipped) {
+      card.classList.toggle('is-flipped', flipped);
+      card.setAttribute('aria-pressed', flipped ? 'true' : 'false');
+      card.querySelector('.flip-front').setAttribute('aria-hidden', flipped ? 'true' : 'false');
+      card.querySelector('.flip-back').setAttribute('aria-hidden', flipped ? 'false' : 'true');
+    }
+
+    function makeFlippable(card) {
+      setFlipped(card, false);
+      const toggle = function () { setFlipped(card, !card.classList.contains('is-flipped')); };
+      card.addEventListener('click', function () {
+        // Don't flip when the click just finished selecting text on the back
+        if (window.getSelection && String(window.getSelection()).length > 0) return;
+        toggle();
+      });
+      card.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); }
+      });
+    }
+
+    function safeIconSrc(icon) {
+      if (typeof icon !== 'string') return FALLBACK_ICON;
+      const v = icon.trim();
+      if (/^(\.\.\/assets\/|\/assets\/|\/uploads\/services\/)[\w.\-]+$/.test(v)) return v;
+      if (/^https:\/\/[^\s"'<>]+$/.test(v)) return v;
+      if (/^data:image\/(png|jpeg|webp|gif);base64,[A-Za-z0-9+/=]+$/.test(v)) return v;
+      return FALLBACK_ICON;
+    }
+
+    function buildCard(service) {
+      const card = document.createElement('div');
+      card.className = 'flip-card w-full sm:w-[calc(50%-0.75rem)] lg:w-[calc(33.333%-1rem)] xl:w-[calc(25%-1.125rem)]';
+      card.setAttribute('role', 'button');
+      card.tabIndex = 0;
+      card.setAttribute('aria-label', 'Show details for ' + String(service.label || 'this service'));
+
+      const inner = document.createElement('div');
+      inner.className = 'flip-inner';
+
+      // ── Front: icon, name, hint, price ──
+      const front = document.createElement('div');
+      front.className = 'flip-face flip-front items-center text-center';
+
+      const circle = document.createElement('div');
+      circle.className = 'bg-[#D7E3A5] rounded-full w-24 h-24 flex items-center justify-center mb-4 shrink-0';
+      const img = document.createElement('img');
+      img.src = safeIconSrc(service.icon);
+      img.alt = service.label;
+      img.className = 'w-14 h-14 object-contain';
+      img.onerror = function () { this.onerror = null; this.src = FALLBACK_ICON; };
+      circle.appendChild(img);
+
+      const title = document.createElement('h3');
+      title.className = 'font-bold text-[#2A1001] text-lg mb-2 w-full break-words line-clamp-3';
+      title.textContent = service.label;
+      title.title = service.label;
+
+      front.append(circle, title, makeHint(HINT_FRONT, 'flip-hint-front'));
+
+      // Price pill, pinned to the bottom so prices line up across cards
+      const priceNum = service.price === null || service.price === undefined ? NaN : Number(service.price);
+      if (isFinite(priceNum)) {
+        const priceWrap = document.createElement('div');
+        priceWrap.className = 'mt-auto pt-4 w-full';
+        const pill = document.createElement('span');
+        pill.className = 'inline-block max-w-full truncate bg-[#D7E3A5]/60 text-[#4a5c2f] font-bold text-sm rounded-full px-4 py-1';
+        pill.textContent = priceNum === 0
+          ? 'Free'
+          : '₱' + priceNum.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        priceWrap.appendChild(pill);
+        front.appendChild(priceWrap);
+      }
+
+      // ── Back: description (scrolls inside the card if it is very long) ──
+      const back = document.createElement('div');
+      back.className = 'flip-face flip-back';
+
+      const backTitle = document.createElement('h3');
+      backTitle.className = 'font-bold text-[#2A1001] text-base mb-2 w-full break-words line-clamp-2 text-center';
+      backTitle.textContent = service.label;
+
+      const desc = document.createElement('p');
+      desc.className = 'flip-desc text-[#2A1001]/80 text-sm leading-relaxed break-words';
+      desc.textContent = (service.description || '').trim() || FALLBACK_TEXT;
+
+      back.append(backTitle, desc, makeHint(HINT_BACK, 'flip-hint-back'));
+
+      inner.append(front, back);
+      card.appendChild(inner);
+      makeFlippable(card);
+      return card;
+    }
+
+    fetch('/api/public/services')
+      .then(function (res) { if (!res.ok) throw new Error('bad status'); return res.json(); })
+      .then(function (services) {
+        if (!Array.isArray(services)) throw new Error('bad data');
+        grid.innerHTML = '';
+        if (services.length === 0) {
+          grid.className = '';
+          const msg = document.createElement('p');
+          msg.className = 'text-center text-[#2A1001]/80 text-sm';
+          msg.textContent = 'Our services will be listed here soon.';
+          grid.appendChild(msg);
+          return;
+        }
+        // Flex layout so any number of services stays centered
+        grid.className = 'flex flex-wrap justify-center gap-6';
+        services.forEach(function (service) { grid.appendChild(buildCard(service)); });
+      })
+      .catch(function () { /* keep the static fallback cards */ });
+  })();
+</script>
 </body>
 </html>

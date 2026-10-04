@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en" class="overflow-x-hidden">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Page Not Found - Bungipin</title>
+  <!-- Relative paths (same folder as denied.html). If served by a server-wide 404 handler, switch to /output.css and /assets/... -->
+  <link href="./output.css" rel="stylesheet">
+</head>
+
+<body class="font-poppins bg-[#F5F1E7] text-[#2A1001] antialiased overflow-x-hidden min-h-screen flex flex-col">
+
+  <main class="flex-grow flex flex-col items-center justify-center relative px-6 text-center">
+
+    <div class="w-full max-w-3xl flex flex-col items-center z-10 mt-12">
+
+      <!-- Clinic logo -->
+      <img src="./assets/logowithtitle.png" alt="Bungipin Logo" class="h-32 w-32 md:h-40 md:w-40 mb-6 drop-shadow-sm object-contain" />
+
+      <!-- Headings -->
+      <h1 class="text-7xl md:text-9xl font-extrabold text-[#DC2626] mb-2 tracking-widest">404</h1>
+      <h2 class="text-3xl md:text-5xl font-extrabold text-[#2A1001] mb-4 tracking-wide uppercase">Page Not Found</h2>
+      <h3 class="text-xl md:text-2xl font-bold text-[#2A1001] mb-8">We couldn't find what you were looking for</h3>
+
+      <!-- Shows the path that was requested -->
+      <p class="text-base md:text-lg text-gray-700 mb-4 max-w-lg leading-relaxed font-medium">
+        The page you tried to open doesn't exist or may have been moved.
+      </p>
+      <p class="text-sm md:text-base text-gray-600 mb-10 max-w-lg break-all">
+        Requested: <code id="requested-path" class="font-mono bg-white/70 px-2 py-1 rounded"></code>
+      </p>
+
+      <!-- Buttons -->
+      <div class="flex flex-col sm:flex-row gap-4 mb-10">
+        <a id="home-btn" href="/"
+           class="inline-block bg-[#667733] hover:bg-[#4a5c2f] text-white font-bold py-4 px-10 rounded-full shadow-lg transition-all duration-200 hover:scale-105 active:scale-95 text-lg tracking-wide">
+          Back to Home
+        </a>
+        <a href="javascript:history.back()"
+           class="inline-block border-2 border-[#667733] text-[#4a5c2f] hover:bg-[#667733] hover:text-white font-bold py-4 px-10 rounded-full transition-all duration-200 hover:scale-105 active:scale-95 text-lg tracking-wide">
+          Go Back
+        </a>
+      </div>
+
+      <div class="text-sm md:text-base text-gray-600 space-y-2 leading-relaxed mb-16">
+        <p>Think this is a mistake? Let us know at <a href="mailto:dentalclinic@bungipin.com" class="font-bold text-[#4a5c2f] hover:underline break-all">dentalclinic@bungipin.com</a>.</p>
+      </div>
+
+    </div>
+  </main>
+
+  <footer class="w-full bg-[#8A925F] py-8 px-6 sm:px-12">
+    <div class="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6 md:gap-4">
+
+      <div class="flex flex-col sm:flex-row items-center gap-3 text-center sm:text-left">
+        <img src="./assets/logowithtitle.png" alt="Bungipin Logo" class="w-12 h-12 object-contain flex-shrink-0" />
+        <div>
+          <p class="text-white font-bold text-sm mb-1">Bungipin Dental Clinic</p>
+          <p class="text-gray-300 text-xs">© 2026 Makati City · All Rights Reserved</p>
+        </div>
+      </div>
+
+      <div class="text-center md:text-right">
+        <p class="text-white text-xs mb-1">Hotline: (02) 8123-4567</p>
+        <p class="text-white text-xs">
+          Email:
+          <a href="mailto:dentalclinic@bungipin.com" class="hover:text-yellow-300 transition-colors">
+            dentalclinic@bungipin.com
+          </a>
+        </p>
+      </div>
+
+    </div>
+  </footer>
+
+  <script>
+    // Show the broken URL (textContent, so it can't inject HTML)
+    document.getElementById('requested-path').textContent = window.location.pathname;
+  </script>
+
+</body>
+</html>

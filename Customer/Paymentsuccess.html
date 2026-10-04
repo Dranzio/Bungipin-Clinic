@@ -10,20 +10,23 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://kit.fontawesome.com/fc8c3f4103.js" crossorigin="anonymous"></script>
 </head>
-<body class="bg-[#F3EFE4] min-h-screen font-sans text-[#2A1001] antialiased flex items-center justify-center p-4">
+<body class="bg-[#615F5A] min-h-screen font-poppins text-[#2A1001] antialiased flex items-center justify-center p-4">
 
-<div class="bg-white rounded-3xl w-full max-w-md p-6 sm:p-8 flex flex-col items-center gap-3 text-center shadow-xl border-2 border-black/10">
-    <div id="status-icon" class="w-16 h-16 rounded-full bg-[#D7E3A5] flex items-center justify-center">
-        <i class="fa-solid fa-spinner fa-spin text-[#667733] text-3xl"></i>
+<div class="bg-[#F3EFE4] border border-[#2A1001]/20 rounded-3xl px-6 py-7 max-w-sm w-full shadow-2xl text-center flex flex-col items-center gap-3">
+    <div id="status-icon" class="w-14 h-14 rounded-full bg-[#D7E3A5] shadow-sm flex items-center justify-center shrink-0">
+        <i class="fa-solid fa-spinner fa-spin text-[#667733] text-2xl"></i>
     </div>
-    <h1 id="status-title" class="font-extrabold text-xl">Confirming your payment...</h1>
-    <p id="status-text" class="text-sm text-[#2A1001]/70 leading-relaxed">
-        Please wait a moment while we confirm your payment with PayMongo. Don't close this page.
-    </p>
 
-    <div id="status-details" class="hidden w-full bg-[#FDFCE9] border border-black/10 rounded-2xl p-4 text-sm text-left flex flex-col gap-1.5 mt-1"></div>
+    <div>
+        <h1 id="status-title" class="font-extrabold text-xl text-[#2A1001]">Confirming your payment...</h1>
+        <p id="status-text" class="mt-1 text-xs font-medium text-[#2A1001]/70 leading-snug">
+            Please wait a moment while we confirm your payment with PayMongo. Don't close this page.
+        </p>
+    </div>
 
-    <a id="status-btn" href="History.html" class="mt-2 w-full py-2.5 bg-[#667733] hover:bg-[#556022] text-white font-bold rounded-full shadow-md active:scale-95 transition text-sm">
+    <div id="status-details" class="hidden w-full bg-white border border-[#2A1001]/20 rounded-2xl p-4 text-xs text-left flex flex-col gap-1.5"></div>
+
+    <a id="status-btn" href="History.html" class="w-full h-11 flex items-center justify-center bg-[#667733] hover:bg-[#556022] text-white font-bold rounded-full shadow-md active:scale-95 transition text-[13px]">
         View my appointments
     </a>
 </div>
@@ -39,7 +42,7 @@
     const el = id => document.getElementById(id);
 
     function show({ icon, iconBg, title, text, details }) {
-        el('status-icon').className = `w-16 h-16 rounded-full ${iconBg} flex items-center justify-center`;
+        el('status-icon').className = `w-14 h-14 rounded-full ${iconBg} shadow-sm flex items-center justify-center shrink-0`;
         el('status-icon').innerHTML = icon;
         el('status-title').textContent = title;
         el('status-text').textContent = text;
@@ -73,7 +76,7 @@
 
             if (p.status === 'paid') {
                 show({
-                    icon: '<i class="fa-solid fa-check text-[#667733] text-3xl"></i>',
+                    icon: '<i class="fa-solid fa-check text-[#667733] text-2xl"></i>',
                     iconBg: 'bg-[#D7E3A5]',
                     title: 'Payment received!',
                     text: 'Your appointment is booked and now waiting for clinic approval. You can track it under your appointments.',
@@ -87,7 +90,7 @@
 
             if (p.status === 'refund_pending') {
                 show({
-                    icon: '<i class="fa-solid fa-triangle-exclamation text-amber-500 text-3xl"></i>',
+                    icon: '<i class="fa-solid fa-triangle-exclamation text-amber-500 text-2xl"></i>',
                     iconBg: 'bg-amber-50',
                     title: 'Your slot was no longer available',
                     text: 'Your payment went through, but the time slot was taken before it was confirmed. The clinic will refund you — please rebook another time.'
@@ -123,7 +126,7 @@
 
         // Gave up waiting — not an error, confirmation can lag.
         show({
-            icon: '<i class="fa-regular fa-clock text-amber-600 text-3xl"></i>',
+            icon: '<i class="fa-regular fa-clock text-amber-600 text-2xl"></i>',
             iconBg: 'bg-amber-50',
             title: 'Still confirming',
             text: "We haven't received PayMongo's confirmation yet. If you completed the payment, it will show under your appointments shortly. If you did not pay, your held slot will be released automatically."
@@ -132,7 +135,7 @@
 
     if (!appointmentId) {
         show({
-            icon: '<i class="fa-solid fa-circle-question text-amber-600 text-3xl"></i>',
+            icon: '<i class="fa-solid fa-circle-question text-amber-600 text-2xl"></i>',
             iconBg: 'bg-amber-50',
             title: 'Missing appointment',
             text: 'We could not tell which appointment this payment is for. Please check your appointments.'
