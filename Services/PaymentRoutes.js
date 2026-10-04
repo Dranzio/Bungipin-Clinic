@@ -358,16 +358,23 @@ function registerPaymentRoutes(app, db) {
 
         // eli refund: if cash / in-person payment, bypass PayMongo API call entirely
         if (!isOnline) {
+
+            // eli cash: if cash was never confirmed ('pending'), set status to 'cancelled'; if already paid, set to 'refunded'
+            const nextStatus = payment.status === 'pending' ? 'cancelled' : 'refunded';
+
+            // eli cash: update payment status in DB according to whether cash was actually collected
             await db.query(
-                `UPDATE payments SET status = 'refunded' WHERE payment_id = ?`,
-                [payment.payment_id]
+                `UPDATE payments SET status = ? WHERE payment_id = ?`,
+                [nextStatus, payment.payment_id]
             );
             await db.query(
                 `UPDATE appointments SET appointment_status = 'cancelled' WHERE appointment_id = ?`,
                 [payment.appointment_id]
             );
 
-            return res.json({ success: true, status: 'refunded', message: 'In-clinic cash refund recorded successfully' });
+
+            // eli cash: return response with the correct status ('cancelled' or 'refunded')
+            return res.json({ success: true, status: nextStatus, message: `In-clinic cash payment marked as ${nextStatus}` });
         }
 
 
@@ -417,14 +424,14 @@ function registerPaymentRoutes(app, db) {
         // 4. Update Database on Success
         await db.query(
             `UPDATE payments SET status = 'refunded' WHERE payment_id = ?`,
-            [paymentId]
+            [payment.payment_id]
         );
         await db.query(
             `UPDATE appointments SET appointment_status = 'cancelled' WHERE appointment_id = ?`,
             [payment.appointment_id]
         );
 
-        res.json({ success: true, message: 'Refund processed successfully', refund: data.data });
+        res.json({ success: true, status: 'refunded', message: 'Refund processed successfully', refund: data.data });
 
     } catch (err) {
         console.error('Refund processing exception:', err);

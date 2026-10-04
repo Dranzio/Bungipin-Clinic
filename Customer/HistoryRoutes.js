@@ -125,11 +125,12 @@ function registerHistoryRoutes(app, db, io) {
 
             await connection.query(
                 `UPDATE payments
-                 SET status = CASE
-                                  WHEN status = 'paid' THEN 'refund_pending'
-                                  ELSE status
-                     END
-                 WHERE appointment_id = ?`,
+                SET status = CASE
+                        WHEN status = 'paid' THEN 'refund_pending'
+                        WHEN status = 'pending' THEN 'cancelled'
+                        ELSE status
+                    END
+                WHERE appointment_id = ?`,
                 [appointmentId]
             );
 
