@@ -99,11 +99,126 @@ function renderThreads() {
     filtered.forEach(thread => {
         const statusClass = thread.has_unread ? 'bg-[#009B77]' : 'bg-gray-300';
 
-        const dateObj = new Date(thread.sent_at || Date.now()); // matched to messages.sent_at
+        const dateObj = new Date(thread.sent_at || Date.now()); 
         const timeStr = dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-        const contactId = thread.user_id || thread.contact_id; // matched to users.user_id
+        const contactId = thread.user_id || thread.contact_id; 
         const contactFullName = `${thread.first_name || ''} ${thread.last_name || ''}`.trim() || 'Unknown User';
+
+        // --- NEW SNIPPET LOGIC ---
+        // ─── Thread preview snippet ────────────────────────────────
+let snippet = thread.content || '';
+
+/*
+ * IMPORTANT:
+ * Use sender_id to determine whether the last message
+ * was sent by the other person or by the current user.
+ *
+ * Do NOT use has_unread for this because a received message
+ * can already be read.
+ */
+const isReceived =
+    thread.sender_id != null &&
+    String(thread.sender_id) === String(contactId);
+
+const prefix = isReceived
+    ? `${contactFullName} sent `
+    : 'Sent ';
+
+
+// ─── Detect attachments ──────────────────────────────────
+if (thread.file_url) {
+    try {
+        let urls = [];
+
+        // file_url is normally a JSON array
+        if (Array.isArray(thread.file_url)) {
+            urls = thread.file_url;
+        } else if (typeof thread.file_url === 'string') {
+            try {
+                urls = JSON.parse(thread.file_url);
+            } catch {
+                // In case backend returns a single URL instead
+                urls = [thread.file_url];
+            }
+        }
+
+        if (Array.isArray(urls) && urls.length > 0) {
+
+            const firstUrl = String(urls[0]).toLowerCase();
+
+            let type = 'an attachment';
+
+            // Images
+            if (/\.(jpg|jpeg|png|gif|webp|bmp|svg)$/i.test(firstUrl)) {
+                type = 'an image';
+            }
+
+            // Videos
+            else if (/\.(mp4|webm|ogg|mov|avi|mkv)$/i.test(firstUrl)) {
+                type = 'a video';
+            }
+
+            // Audio
+            else if (/\.(mp3|wav|ogg|m4a|aac|flac)$/i.test(firstUrl)) {
+                type = 'an audio clip';
+            }
+
+            // PDF
+            else if (/\.pdf$/i.test(firstUrl)) {
+                type = 'a PDF';
+            }
+
+            // Word documents
+            else if (/\.(doc|docx)$/i.test(firstUrl)) {
+                type = 'a document';
+            }
+
+            // Excel files
+            else if (/\.(xls|xlsx|csv)$/i.test(firstUrl)) {
+                type = 'a spreadsheet';
+            }
+
+            // PowerPoint
+            else if (/\.(ppt|pptx)$/i.test(firstUrl)) {
+                type = 'a presentation';
+            }
+
+            // Text files
+            else if (/\.txt$/i.test(firstUrl)) {
+                type = 'a text file';
+            }
+
+            // Generic file
+            else {
+                type = 'an attachment';
+            }
+
+            // Attachment preview takes priority
+            snippet = prefix + type;
+        }
+
+    } catch (e) {
+        console.error('Error parsing file_url in thread snippet:', e);
+    }
+}
+
+
+// ─── Detect links ─────────────────────────────────────────
+if (snippet === (thread.content || '')) {
+    const linkPattern = /\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g;
+
+    if (linkPattern.test(thread.content || '')) {
+        snippet = prefix + 'a link';
+    }
+}
+
+
+// ─── Fallback ─────────────────────────────────────────────
+if (!snippet) {
+    snippet = 'No messages yet';
+}
+        // -------------------------
 
         const card = document.createElement('div');
         card.className = "message-card relative overflow-hidden w-full h-[100px] bg-white border-1 border-black rounded-[8px] flex items-center justify-between cursor-pointer hover:bg-[#FDFCE9] transition-all";
@@ -119,7 +234,7 @@ function renderThreads() {
                 </div>
                 <div class="flex flex-col max-w-[200px] sm:max-w-[400px]">
                     <h1 class="font-bold text-2xl text-[#2c3e2b]">${escapeHtml(contactFullName)}</h1>
-                    <p class="text-sm text-gray-600 truncate">${escapeHtml(thread.content || 'No messages yet')}</p>
+                    <p class="text-sm text-gray-600 truncate">${escapeHtml(snippet)}</p>
                 </div>
             </div>
             <div class="text-sm font-semibold text-gray-600">
@@ -414,32 +529,49 @@ function insertCustomLink() {
     const warning = document.getElementById('linkModalWarning');
 
     if (!url) {
-        // Show inline warning instead of browser alert
         if (warning) warning.classList.remove('hidden');
         return;
     }
-
-    // Hide warning if it was showing
     if (warning) warning.classList.add('hidden');
 
     const chatInput = document.getElementById('chatInput');
-    const linkText = `[${title}](${url})`;
+    
+    // Insert an actual HTML link to show blue text in the box
+    const linkHtml = `<a href="${url}" data-url="${url}" class="text-blue-600 underline font-semibold" contenteditable="false">${title}</a>&nbsp;`;
 
-    if (chatInput.value) {
-        chatInput.value += ' ' + linkText;
-    } else {
-        chatInput.value = linkText;
-    }
+    chatInput.innerHTML += linkHtml;
 
     closeLinkModal();
     chatInput.focus();
+    
+    // Move the typing cursor to the end of the text
+    const range = document.createRange();
+    const sel = window.getSelection();
+    range.selectNodeContents(chatInput);
+    range.collapse(false);
+    sel.removeAllRanges();
+    sel.addRange(range);
 }
 
 // ─── Send message ───────────────────────────────────────────────
 async function sendMessage() {
     const token = localStorage.getItem('userToken');
     const input = document.getElementById('chatInput');
-    const content = input.value.trim();
+    
+    // 1. Create a temporary clone to extract our links safely
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = input.innerHTML;
+    
+    // 2. Convert the HTML <a> tags back to [Title](URL) markdown
+    const links = tempDiv.querySelectorAll('a');
+    links.forEach(a => {
+        const markdown = `[${a.textContent}](${a.getAttribute('data-url') || a.getAttribute('href')})`;
+        // Replace the node with plain text
+        a.replaceWith(document.createTextNode(markdown));
+    });
+    
+    // 3. Get the final clean text content
+    const content = tempDiv.innerText.trim();
 
     if (!token || !currentChatUserId) return;
     if (!content && selectedFiles.length === 0) return;
@@ -454,14 +586,13 @@ async function sendMessage() {
             formData.append('content', content);
 
             selectedFiles.forEach(file => {
-                formData.append('attachments', file); // Use 'attachments' or whatever backend expects
+                formData.append('attachments', file); 
             });
 
             response = await fetch('/api/messages/send', {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`
-                    // Do not set Content-Type for FormData, browser will set boundary automatically
                 },
                 body: formData
             });
@@ -481,7 +612,7 @@ async function sendMessage() {
         }
 
         if (response.ok) {
-            input.value = '';
+            input.innerHTML = ''; // Clears the contenteditable div
             selectedFiles = [];
             renderFilePreview();
 

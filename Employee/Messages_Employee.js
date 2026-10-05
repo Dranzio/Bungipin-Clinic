@@ -5,6 +5,22 @@ let currentChatUserName = '';
 // ─── Constants ──────────────────────────────────────────────────
 const MAX_FILE_SIZE = 70 * 1024 * 1024; // 70 MB
 
+// Allowed file types for the file upload button
+const ALLOWED_FILE_TYPES = [
+    'application/pdf',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'application/vnd.ms-excel',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    'application/vnd.ms-powerpoint',
+    'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+    'text/plain',
+    'text/csv',
+    'image/*',
+    'video/*',
+    'audio/*'
+].join(',');
+
 // ─── XSS safety ─────────────────────────────────────────────────
 // Escapes HTML-significant characters before any DB-sourced string is dropped
 // into an innerHTML template. This matters most for msg.content — raw chat
@@ -86,6 +102,85 @@ function renderThreads() {
         const contactId = thread.user_id || thread.contact_id; // matched to users.user_id
         const contactFullName = `${thread.first_name || ''} ${thread.last_name || ''}`.trim() || 'Unknown User';
 
+        // ─── Thread preview snippet ────────────────────────────────
+        let snippet = thread.content || '';
+
+        /*
+         * IMPORTANT:
+         * Use sender_id to determine whether the last message
+         * was sent by the other person or by the current user.
+         *
+         * Do NOT use has_unread for this because a received message
+         * can already be read.
+         */
+        const isReceived =
+            thread.sender_id != null &&
+            String(thread.sender_id) === String(contactId);
+
+        const prefix = isReceived
+            ? `${contactFullName} sent `
+            : 'Sent ';
+
+        // ─── Detect attachments ──────────────────────────────────
+        if (thread.file_url) {
+            try {
+                let urls = [];
+
+                // file_url is normally a JSON array
+                if (Array.isArray(thread.file_url)) {
+                    urls = thread.file_url;
+                } else if (typeof thread.file_url === 'string') {
+                    try {
+                        urls = JSON.parse(thread.file_url);
+                    } catch {
+                        // In case backend returns a single URL instead
+                        urls = [thread.file_url];
+                    }
+                }
+
+                if (Array.isArray(urls) && urls.length > 0) {
+                    const firstUrl = String(urls[0]).toLowerCase();
+                    let type = 'an attachment';
+
+                    if (/\.(jpg|jpeg|png|gif|webp|bmp|svg)$/i.test(firstUrl)) {
+                        type = 'an image';
+                    } else if (/\.(mp4|webm|ogg|mov|avi|mkv)$/i.test(firstUrl)) {
+                        type = 'a video';
+                    } else if (/\.(mp3|wav|ogg|m4a|aac|flac)$/i.test(firstUrl)) {
+                        type = 'an audio clip';
+                    } else if (/\.pdf$/i.test(firstUrl)) {
+                        type = 'a PDF';
+                    } else if (/\.(doc|docx)$/i.test(firstUrl)) {
+                        type = 'a document';
+                    } else if (/\.(xls|xlsx|csv)$/i.test(firstUrl)) {
+                        type = 'a spreadsheet';
+                    } else if (/\.(ppt|pptx)$/i.test(firstUrl)) {
+                        type = 'a presentation';
+                    } else if (/\.txt$/i.test(firstUrl)) {
+                        type = 'a text file';
+                    }
+
+                    // Attachment preview takes priority
+                    snippet = prefix + type;
+                }
+            } catch (e) {
+                console.error('Error parsing file_url in thread snippet:', e);
+            }
+        }
+
+        // ─── Detect links ─────────────────────────────────────────
+        if (snippet === (thread.content || '')) {
+            const linkPattern = /\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g;
+            if (linkPattern.test(thread.content || '')) {
+                snippet = prefix + 'a link';
+            }
+        }
+
+        // ─── Fallback ─────────────────────────────────────────────
+        if (!snippet) {
+            snippet = 'No messages yet';
+        }
+
         const card = document.createElement('div');
         card.className = "message-card relative overflow-hidden w-full h-[100px] bg-white border-1 border-black rounded-[8px] flex items-center justify-between cursor-pointer hover:bg-[#FDFCE9] transition-all";
         card.style.paddingLeft = "3rem";
@@ -100,7 +195,7 @@ function renderThreads() {
                 </div>
                 <div class="flex flex-col max-w-[200px] sm:max-w-[400px]">
                     <h1 class="font-bold text-2xl text-[#2c3e2b]">${escHtml(contactFullName)}</h1>
-                    <p class="text-sm text-gray-600 truncate">${escHtml(thread.content) || 'No messages yet'}</p>
+                    <p class="text-sm text-gray-600 truncate">${escHtml(snippet)}</p>
                 </div>
             </div>
             <div class="text-sm font-semibold text-gray-600">
@@ -404,23 +499,43 @@ function insertCustomLink() {
     if (warning) warning.classList.add('hidden');
 
     const chatInput = document.getElementById('chatInput');
-    const linkText = `[${title}](${url})`;
 
-    if (chatInput.value) {
-        chatInput.value += ' ' + linkText;
-    } else {
-        chatInput.value = linkText;
-    }
+    // Insert an actual HTML link to show blue text in the box
+    const linkHtml = `<a href="${escHtml(url)}" data-url="${escHtml(url)}" class="text-blue-600 underline font-semibold" contenteditable="false">${escHtml(title)}</a>&nbsp;`;
+
+    chatInput.innerHTML += linkHtml;
 
     closeLinkModal();
     chatInput.focus();
+
+    // Move the typing cursor to the end of the text
+    const range = document.createRange();
+    const sel = window.getSelection();
+    range.selectNodeContents(chatInput);
+    range.collapse(false);
+    sel.removeAllRanges();
+    sel.addRange(range);
 }
 
 // ─── Send message ───────────────────────────────────────────────
 async function sendMessage() {
     const token = localStorage.getItem('userToken');
     const input = document.getElementById('chatInput');
-    const content = input.value.trim();
+
+    // 1. Create a temporary clone to extract our links safely
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = input.innerHTML;
+
+    // 2. Convert the HTML <a> tags back to [Title](URL) markdown
+    const links = tempDiv.querySelectorAll('a');
+    links.forEach(a => {
+        const markdown = `[${a.textContent}](${a.getAttribute('data-url') || a.getAttribute('href')})`;
+        // Replace the node with plain text
+        a.replaceWith(document.createTextNode(markdown));
+    });
+
+    // 3. Get the final clean text content
+    const content = tempDiv.innerText.trim();
 
     if (!token || !currentChatUserId) return;
     if (!content && selectedFiles.length === 0) return;
@@ -462,7 +577,7 @@ async function sendMessage() {
         }
 
         if (response.ok) {
-            input.value = '';
+            input.innerHTML = ''; // Clears the contenteditable div
             selectedFiles = [];
             renderFilePreview();
 
