@@ -585,7 +585,12 @@ ALTER TABLE payments ADD COLUMN paymongo_refund_id  VARCHAR(100) NULL;
 ALTER TABLE payments ADD COLUMN refunded_at         DATETIME     NULL;
 
 
-select * from password_history;
-select * from users;
+-- ADD SUPER ADMIN ACCOUNT IN admin_profiles
+CALL sp_register_user('Super', 'Admin', 'sadmin@gmail.com', '09173123321', '$2b$10$UjUhQk0oMn655t5aBJ5Phelmc2y4QV6hiEnFvZR.dunHcTCaWWF6G', 'M', 'admin', @uid);
+UPDATE admin_profiles SET permission_level = 'super_admin' WHERE admin_id = @uid;
 
+
+select * from admin_profiles;
+select * from employee_profiles;
+select * from users;
 select * from payments;

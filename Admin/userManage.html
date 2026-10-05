@@ -828,7 +828,13 @@
                 </div>
 
                 <!-- Action Buttons -->
-                <div class="flex flex-wrap items-center gap-2 shrink-0 pt-2 lg:pt-0 border-t lg:border-t-0 border-gray-100">
+                <!-- eli change: when can_manage is false (an admin account viewed by a regular admin) the buttons are
+                     hidden and a note is shown. The server also rejects these actions, this is only for clarity. -->
+                ${u.can_manage === false ? `
+                <div class="flex items-center gap-2 shrink-0 pt-2 lg:pt-0 border-t lg:border-t-0 border-gray-100 text-xs font-bold text-[#2A1001]/50">
+                    <i class="fa-solid fa-lock"></i> Super admin only
+                </div>` : ''}
+                <div class="${u.can_manage === false ? 'hidden' : 'flex'} flex-wrap items-center gap-2 shrink-0 pt-2 lg:pt-0 border-t lg:border-t-0 border-gray-100">
                     ${isDentist ? `
                     <button class="scheduleBtn w-9 h-9 flex items-center justify-center rounded-lg bg-[#667733] hover:bg-[#556022] transition text-white shadow-sm cursor-pointer" data-id="${cleanId}" title="Manage Doctor Schedule">
                         <i class="fa-solid fa-calendar-days text-sm"></i>
@@ -1739,6 +1745,17 @@
         currentRole = this.value;
         renderUsers();
     });
+
+    // eli change: only a super admin may create admin accounts, so remove that choice for regular admins.
+    (async () => {
+        try {
+            const r = await fetch('/api/admin-profile', { headers: { 'Authorization': `Bearer ${localStorage.getItem('userToken')}` } });
+            const me = r.ok ? await r.json() : {};
+            if (me.permission_level !== 'super_admin') {
+                document.querySelector('#newRole option[value="admin"]')?.remove();
+            }
+        } catch (e) { /* the server still blocks it */ }
+    })();
 
     (async () => {
         try {

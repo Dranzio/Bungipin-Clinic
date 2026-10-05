@@ -51,7 +51,8 @@ async function logActivity(db, {
 function registerActivityLogRoutes(app, db) {
 
     // GET /api/activity-logs (Admin only, converted to Philippine Time UTC+8)
-    app.get('/api/activity-logs', authenticateToken, requireAdmin, async (req, res) => {
+    // eli change: audit logs are now SUPER ADMIN ONLY (regular admins are the ones being audited)
+    app.get('/api/activity-logs', authenticateToken, requireAdmin, authenticateToken.requireSuperAdmin, async (req, res) => {
         try {
             const {
                 role = 'all',

@@ -123,10 +123,9 @@ function validateUserInput(body, isCreate = false) {
         }
     }
 
-    // 6. Permission Level (for admin - always standard 'Admin')
-    if (body.permission_level !== undefined || clean.role === 'admin') {
-        clean.permission_level = 'Admin';
-    }
+    // 6. Permission Level
+    // eli change: removed the block that forced clean.permission_level = 'Admin'. The level is no longer
+    // taken from the request body, and editing an admin must never overwrite it (that would demote a super admin).
 
     return { data: clean };
 }
@@ -147,11 +146,38 @@ async function fetchUser(conn, userId) {
 
 function registerUserManagementRoutes(app, db) {
 
+    // eli change: guard for every route that acts on ANOTHER account (:id).
+    // If the target account is an admin (or super admin), only a super admin may continue.
+    // Looks the target up in the DB, so it cannot be bypassed by editing the request.
+    // Self-delete / self-disable are already blocked in their own routes, so at least one super admin always remains.
+    async function guardAdminTarget(req, res, next) {
+        try {
+            const targetId = Number(req.params.id);
+            if (!Number.isInteger(targetId) || targetId <= 0) return next(); // the route reports the bad id
+            const [rows] = await db.query('SELECT role FROM users WHERE user_id = ?', [targetId]);
+            if (rows.length === 0) return next(); // the route reports 404
+            if (rows[0].role === 'admin' && !authenticateToken.isSuperAdmin(req.user)) {
+                return res.status(403).json({ message: 'Only a super admin can manage admin accounts.' });
+            }
+            next();
+        } catch (err) {
+            console.error('guardAdminTarget error:', err);
+            res.status(500).json({ message: 'Internal Server Error' });
+        }
+    }
+
     // GET /api/users — powers User Management list
     app.get('/api/users', authenticateToken, requireAdmin, async (req, res) => {
         try {
             const [users] = await db.query(`${USER_SELECT} ORDER BY u.user_id DESC`);
-            res.json(users.map(u => ({ ...u, is_locked: Boolean(u.is_locked) })));
+            // eli change: can_manage tells the page whether to show action buttons for each row
+            // (admin accounts can only be managed by a super admin). The server enforces this too.
+            const callerIsSuper = authenticateToken.isSuperAdmin(req.user);
+            res.json(users.map(u => ({
+                ...u,
+                is_locked: Boolean(u.is_locked),
+                can_manage: u.role !== 'admin' || callerIsSuper
+            })));
         } catch (err) {
             console.error('Error fetching users:', err);
             res.status(500).json({ message: 'Internal Server Error' });
@@ -159,7 +185,7 @@ function registerUserManagementRoutes(app, db) {
     });
 
     // POST /api/users/:id/reset-login-lock — Clear login session lock
-    app.post('/api/users/:id/reset-login-lock', authenticateToken, requireAdmin, async (req, res) => {
+    app.post('/api/users/:id/reset-login-lock', authenticateToken, requireAdmin, guardAdminTarget, async (req, res) => { // eli change: guardAdminTarget
         const userId = Number(req.params.id);
         if (!Number.isInteger(userId) || userId <= 0) {
             return res.status(400).json({ message: 'Invalid user id' });
@@ -198,6 +224,11 @@ function registerUserManagementRoutes(app, db) {
 
         const { first_name, last_name, email, phone, sex, role, position, specialization } = validation.data;
 
+        // eli change: only a super admin may create another admin account (admins can still create employees)
+        if (role === 'admin' && !authenticateToken.isSuperAdmin(req.user)) {
+            return res.status(403).json({ message: 'Only a super admin can create admin accounts.' });
+        }
+
         const connection = await db.getConnection();
 
         try {
@@ -223,6 +254,7 @@ function registerUserManagementRoutes(app, db) {
                     [position, specialization || null, created.public_id, newUserId]
                 );
             } else if (role === 'admin') {
+                // eli change: a NEW admin starts at the standard 'Admin' level (never super admin from the UI)
                 await connection.query(
                     'UPDATE admin_profiles SET permission_level = ? WHERE admin_id = ?',
                     ['Admin', newUserId]
@@ -265,7 +297,7 @@ function registerUserManagementRoutes(app, db) {
     });
 
     // PATCH /api/users/:id — Edit account details
-    app.patch('/api/users/:id', authenticateToken, requireAdmin, async (req, res) => {
+    app.patch('/api/users/:id', authenticateToken, requireAdmin, guardAdminTarget, async (req, res) => { // eli change: guardAdminTarget
         const userId = Number(req.params.id);
         if (!Number.isInteger(userId) || userId <= 0) {
             return res.status(400).json({ message: 'Invalid user id' });
@@ -300,12 +332,9 @@ function registerUserManagementRoutes(app, db) {
                     'UPDATE employee_profiles SET position = ?, specialization = ? WHERE employee_id = ?',
                     [position, specialization || null, userId]
                 );
-            } else if (existing.role === 'admin') {
-                await connection.query(
-                    'UPDATE admin_profiles SET permission_level = ? WHERE admin_id = ?',
-                    ['Admin', userId]
-                );
             }
+            // eli change: removed the `else if (existing.role === 'admin')` branch that reset permission_level
+            // to 'Admin' on every edit. It would have silently demoted the super admin.
 
             await connection.commit();
 
@@ -334,7 +363,7 @@ function registerUserManagementRoutes(app, db) {
     });
 
     // PATCH /api/users/:id/status — Disable / Re-enable
-    app.patch('/api/users/:id/status', authenticateToken, requireAdmin, async (req, res) => {
+    app.patch('/api/users/:id/status', authenticateToken, requireAdmin, guardAdminTarget, async (req, res) => { // eli change: guardAdminTarget
         const userId = Number(req.params.id);
         const { account_status } = req.body;
 
@@ -411,11 +440,12 @@ function registerUserManagementRoutes(app, db) {
         }
     };
 
-    app.patch('/api/users/:id/reset-password', authenticateToken, requireAdmin, handlePasswordReset);
-    app.post('/api/users/:id/reset-password', authenticateToken, requireAdmin, handlePasswordReset);
+    // eli change: guardAdminTarget added to both reset-password routes
+    app.patch('/api/users/:id/reset-password', authenticateToken, requireAdmin, guardAdminTarget, handlePasswordReset);
+    app.post('/api/users/:id/reset-password', authenticateToken, requireAdmin, guardAdminTarget, handlePasswordReset);
 
     // DELETE /api/users/:id
-    app.delete('/api/users/:id', authenticateToken, requireAdmin, async (req, res) => {
+    app.delete('/api/users/:id', authenticateToken, requireAdmin, guardAdminTarget, async (req, res) => { // eli change: guardAdminTarget
         const userId = Number(req.params.id);
         if (!Number.isInteger(userId) || userId <= 0) {
             return res.status(400).json({ message: 'Invalid user id' });
@@ -588,7 +618,7 @@ function registerUserManagementRoutes(app, db) {
     });
 
     // POST /api/users/:id/send-credentials
-    app.post('/api/users/:id/send-credentials', authenticateToken, requireAdmin, async (req, res) => {
+    app.post('/api/users/:id/send-credentials', authenticateToken, requireAdmin, guardAdminTarget, async (req, res) => { // eli change: guardAdminTarget
         const userId = Number(req.params.id);
         const { temp_password } = req.body;
 

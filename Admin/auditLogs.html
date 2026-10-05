@@ -398,6 +398,8 @@
                 headers: authHeaders()
             });
 
+            // eli change: a regular admin who opens this page directly is sent to the access-denied page
+            if (response.status === 403) { window.location.href = '/denied.html'; return []; }
             if (!response.ok) throw new Error(`Server returned ${response.status}`);
             const result = await response.json();
             return result.data || [];

@@ -56,7 +56,11 @@ async function authenticateToken(req, res, next) {
         // naturally expires.
         try {
             const [rows] = await db.query(
-                'SELECT role, public_id, account_status, is_locked FROM users WHERE user_id = ?',
+                // eli change: also load the admin's permission_level (live from the DB, never from the token)
+                `SELECT u.role, u.public_id, u.account_status, u.is_locked, ap.permission_level
+                 FROM users u
+                 LEFT JOIN admin_profiles ap ON ap.admin_id = u.user_id
+                 WHERE u.user_id = ?`,
                 [decoded.user_id]
             );
             const user = rows[0];
@@ -74,7 +78,8 @@ async function authenticateToken(req, res, next) {
             // Use the live role/public_id from the DB rather than the
             // token's original claims, in case an admin changed the
             // user's role after this token was issued.
-            req.user = { user_id: decoded.user_id, role: user.role, public_id: user.public_id };
+            // eli change: permission_level added ('super_admin' for the owner account, otherwise 'Admin' / null)
+            req.user = { user_id: decoded.user_id, role: user.role, public_id: user.public_id, permission_level: user.permission_level };
             next();
         } catch (dbErr) {
             console.error('authenticateToken DB check failed:', dbErr);
@@ -86,3 +91,17 @@ async function authenticateToken(req, res, next) {
 module.exports = authenticateToken;
 module.exports.clearAuthCookie = clearAuthCookie;
 module.exports.extractToken = extractToken;
+
+// eli change: shared helpers for the super admin tier. A super admin is an admin whose
+// admin_profiles.permission_level is 'super_admin'. Use AFTER authenticateToken.
+function isSuperAdmin(user) {
+    return !!user && user.role === 'admin' && user.permission_level === 'super_admin';
+}
+function requireSuperAdmin(req, res, next) {
+    if (!isSuperAdmin(req.user)) {
+        return res.status(403).json({ message: 'Super admin only' });
+    }
+    next();
+}
+module.exports.isSuperAdmin = isSuperAdmin;
+module.exports.requireSuperAdmin = requireSuperAdmin;

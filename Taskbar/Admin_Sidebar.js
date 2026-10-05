@@ -135,6 +135,12 @@ async function _loadSidebarUser() {
             nameEl.textContent  = `${data.first_name || ''} ${data.last_name || ''}`.trim() || 'Admin';
             emailEl.textContent = data.email || '';
 
+            // eli change: Activity Logs is super admin only, so hide the link for regular admins
+            if (data.permission_level !== 'super_admin') {
+                const logsLink = document.querySelector('a[href$="auditLogs.html"]');
+                if (logsLink) logsLink.style.display = 'none';
+            }
+
             // Handle Profile Picture
             const avatarImg     = document.getElementById('sidebar-user-avatar');
             const defaultAvatar = document.getElementById('sidebar-default-avatar');

@@ -8,7 +8,7 @@
         "includeFiles": [
           "Admin/**", "Customer/**", "Employee/**", "LogInRegister/**",
           "WelcomePage/**", "Taskbar/**", "assets/**", "images/**",
-          "output.css", "pageProtection.js", "denied.html"
+          "output.css", "pageProtection.js", "denied.html", "missingPageError.html"
         ]
       }
     }
