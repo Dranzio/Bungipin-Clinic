@@ -69,11 +69,14 @@ function registerQueueRoutes(app, db, io = null) {
                      u.phone,
                      s.label,
                      COALESCE(a.queue_status, 'pending') AS queue_status,
-                     a.appointment_status
+                     a.appointment_status,
+                     doc.first_name AS dentist_first_name,
+                     doc.last_name  AS dentist_last_name
                  FROM appointments a
                           JOIN users u ON a.patient_id = u.user_id
                           JOIN services s ON a.service_id = s.service_id
                           LEFT JOIN patient_profiles pp ON a.patient_id = pp.patient_id
+                          LEFT JOIN users doc ON a.employee_id = doc.user_id
                  WHERE a.appointment_status IN ('approved', 'completed')
                    AND ${dateCondition}
                  ORDER BY a.appointment_date ASC, (a.queue_status = 'completed') ASC, a.time_slot ASC`,
