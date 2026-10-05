@@ -1,6 +1,7 @@
 /**
  * ============================================================================
  * ACTIVITY LOG ROUTES & AUDIT LOGGER HELPER
+ * (Enforces Philippine Standard Time UTC+8 on Vercel/Cloud MySQL)
  * ============================================================================
  */
 
@@ -49,7 +50,7 @@ async function logActivity(db, {
 
 function registerActivityLogRoutes(app, db) {
 
-    // GET /api/activity-logs (Admin only, newest logs first)
+    // GET /api/activity-logs (Admin only, converted to Philippine Time UTC+8)
     app.get('/api/activity-logs', authenticateToken, requireAdmin, async (req, res) => {
         try {
             const {
@@ -75,14 +76,14 @@ function registerActivityLogRoutes(app, db) {
                 params.push(action);
             }
 
-            // 3. Date Range Filter
+            // 3. Date Range Filter (Evaluated against PH Time UTC+8)
             const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
             if (startDate && dateRegex.test(startDate)) {
-                conditions.push('l.created_at >= ?');
+                conditions.push("CONVERT_TZ(l.created_at, '+00:00', '+08:00') >= ?");
                 params.push(`${startDate} 00:00:00`);
             }
             if (endDate && dateRegex.test(endDate)) {
-                conditions.push('l.created_at <= ?');
+                conditions.push("CONVERT_TZ(l.created_at, '+00:00', '+08:00') <= ?");
                 params.push(`${endDate} 23:59:59`);
             }
 
@@ -103,7 +104,7 @@ function registerActivityLogRoutes(app, db) {
 
             const whereClause = conditions.join(' AND ');
 
-            // Retrieve records ordered by timestamp (newest first)
+            // Retrieve records with created_at explicitly converted to PH Time (+08:00)
             const [rows] = await db.query(
                 `SELECT 
                     l.log_id,
@@ -116,7 +117,7 @@ function registerActivityLogRoutes(app, db) {
                     l.target_id,
                     l.notes,
                     l.ip_address,
-                    l.created_at
+                    CONVERT_TZ(l.created_at, '+00:00', '+08:00') AS created_at
                  FROM activity_logs l
                  LEFT JOIN users u ON l.user_id = u.user_id
                  WHERE ${whereClause}

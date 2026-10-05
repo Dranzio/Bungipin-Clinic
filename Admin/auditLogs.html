@@ -100,7 +100,7 @@
     <div class="w-full md:w-[94%] lg:w-[92%] mx-auto px-3 sm:px-6 mb-6">
         <div class="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 border border-[#2A1001]/15 shadow-sm">
             
-            <!-- Row 1: Search Box + Quick Date Presets -->
+            <!-- Row 1: Search Box + Quick Date Presets (Asia/Manila Aware) -->
             <div class="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 mb-4">
                 
                 <div class="relative w-full lg:max-w-md flex items-center">
@@ -113,7 +113,7 @@
                     />
                 </div>
 
-                <!-- Quick Date Presets & Reset Button (Responsive Wrapping) -->
+                <!-- Quick Date Presets & Reset Button -->
                 <div class="flex flex-wrap items-center gap-1.5 sm:gap-2 w-full lg:w-auto justify-start lg:justify-end">
                     <span class="text-[11px] sm:text-xs font-bold text-[#2A1001]/60 mr-1 hidden sm:inline">Presets:</span>
                     <button type="button" class="date-preset-btn px-3 py-1.5 rounded-full border border-gray-200 text-[11px] sm:text-xs font-bold text-[#2A1001] hover:bg-[#FDFCE9] active:scale-95 transition cursor-pointer" data-range="today">
@@ -132,7 +132,7 @@
 
             </div>
 
-            <!-- Row 2: Responsive Filter Selectors (1 col on mobile, 2 on tablet, 4 on desktop) -->
+            <!-- Row 2: Responsive Filter Selectors -->
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-3 border-t border-gray-100">
                 
                 <!-- Role Filter -->
@@ -230,7 +230,7 @@
             <table class="w-full min-w-[760px] border-collapse text-left">
                 <thead>
                     <tr class="bg-[#667733] text-white text-xs sm:text-sm uppercase tracking-wider font-extrabold">
-                        <th class="py-3.5 sm:py-4 px-3.5 sm:px-6 w-[20%] whitespace-nowrap rounded-tl-2xl">Date &amp; Time</th>
+                        <th class="py-3.5 sm:py-4 px-3.5 sm:px-6 w-[20%] whitespace-nowrap rounded-tl-2xl">Date &amp; Time (PHT)</th>
                         <th class="py-3.5 sm:py-4 px-3.5 sm:px-6 w-[24%]">User Account</th>
                         <th class="py-3.5 sm:py-4 px-3.5 sm:px-6 text-center w-24 sm:w-28">Role</th>
                         <th class="py-3.5 sm:py-4 px-3.5 sm:px-6 w-[36%]">Activity &amp; Details</th>
@@ -256,7 +256,7 @@
 
 </div>
 
-<!-- ================= LOG INSPECTION MODAL (Fully Responsive) ================= -->
+<!-- ================= LOG INSPECTION MODAL ================= -->
 <div id="logDetailModal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
     <div class="bg-white rounded-3xl w-full max-w-lg p-5 sm:p-7 relative shadow-2xl border border-[#2A1001]/20 max-h-[92vh] overflow-y-auto my-auto custom-scrollbar">
         <button id="closeDetailModal" type="button" class="absolute top-4 right-5 text-2xl font-bold text-[#2A1001]/60 hover:text-[#2A1001] cursor-pointer">&times;</button>
@@ -272,25 +272,25 @@
         </div>
 
         <div class="flex flex-col gap-3 text-xs sm:text-sm">
-            <div class="bg-[#ECF5E2] p-3.5 sm:p-4 rounded-2xl border border-[#2A1001]/10 shadow-inner">
+            <div class="bg-[#ECF5E2] p-3.5 sm:p-4 rounded-2xl border border-[#2A1001]/10 shadow-inner min-w-0">
                 <span class="block text-[10px] font-bold uppercase tracking-wider text-[#2A1001]/60 mb-1">User Account</span>
-                <p class="font-extrabold text-[#2A1001] text-xs sm:text-sm" id="detailModalUser">—</p>
-                <p class="text-[11px] sm:text-xs text-[#2A1001]/70 font-medium truncate" id="detailModalEmail">—</p>
+                <p class="font-extrabold text-[#2A1001] text-xs sm:text-sm break-words" id="detailModalUser">—</p>
+                <p class="text-[11px] sm:text-xs text-[#2A1001]/70 font-medium truncate break-all" id="detailModalEmail">—</p>
                 <div class="mt-2 flex flex-wrap items-center gap-2">
                     <span id="detailModalRoleText" class="font-bold text-[11px] sm:text-xs capitalize text-[#2A1001]"></span>
                     <span class="text-[11px] sm:text-xs text-gray-500 font-mono" id="detailModalIp"></span>
                 </div>
             </div>
 
-            <div class="bg-[#ECF5E2] p-3.5 sm:p-4 rounded-2xl border border-[#2A1001]/10 shadow-inner">
+            <div class="bg-[#ECF5E2] p-3.5 sm:p-4 rounded-2xl border border-[#2A1001]/10 shadow-inner min-w-0">
                 <span class="block text-[10px] font-bold uppercase tracking-wider text-[#2A1001]/60 mb-1">Action Performed</span>
                 <div id="detailModalActionBadge" class="mb-1"></div>
-                <p class="text-xs font-mono text-[#2A1001]/70" id="detailModalTarget">—</p>
+                <p class="text-xs font-mono text-[#2A1001]/70 break-all" id="detailModalTarget">—</p>
             </div>
 
-            <div class="bg-[#ECF5E2] p-3.5 sm:p-4 rounded-2xl border border-[#2A1001]/10 shadow-inner">
+            <div class="bg-[#ECF5E2] p-3.5 sm:p-4 rounded-2xl border border-[#2A1001]/10 shadow-inner min-w-0">
                 <span class="block text-[10px] font-bold uppercase tracking-wider text-[#2A1001]/60 mb-1">Detailed Remarks &amp; Audit Output</span>
-                <p class="text-xs text-[#2A1001] font-medium leading-relaxed whitespace-pre-wrap break-words" id="detailModalNotes">—</p>
+                <p class="text-xs text-[#2A1001] font-medium leading-relaxed whitespace-pre-wrap break-words [overflow-wrap:anywhere]" id="detailModalNotes">—</p>
             </div>
         </div>
 
@@ -331,33 +331,43 @@
             .replace(/'/g, '&#39;');
     }
 
+    // ── STRICT PHILIPPINE STANDARD TIME (UTC+8 / Asia/Manila) FORMATTER ──
     function formatTimestamp(raw) {
         if (!raw) return 'N/A';
-        const pad = (n) => String(n).padStart(2, '0');
 
+        let dateObj;
         if (typeof raw === 'string') {
-            const match = raw.match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2}):(\d{2})/);
-            if (match && !raw.includes('Z') && !raw.includes('+')) {
-                const [, year, month, day, hours, minutes] = match;
-                let h = parseInt(hours, 10);
-                const ampm = h >= 12 ? 'PM' : 'AM';
-                h = h % 12 || 12;
-                return `${month}/${day}/${year}, ${pad(h)}:${minutes} ${ampm}`;
-            }
+            dateObj = new Date(raw.includes('T') || raw.includes('Z') ? raw : raw.replace(' ', 'T') + '+08:00');
+        } else {
+            dateObj = new Date(raw);
         }
 
-        const d = new Date(raw);
-        if (isNaN(d.getTime())) return String(raw);
+        if (isNaN(dateObj.getTime())) return String(raw);
 
-        const month = pad(d.getMonth() + 1);
-        const day = pad(d.getDate());
-        const year = d.getFullYear();
-        let hours = d.getHours();
-        const minutes = pad(d.getMinutes());
-        const ampm = hours >= 12 ? 'PM' : 'AM';
-        hours = hours % 12 || 12;
+        return new Intl.DateTimeFormat('en-US', {
+            timeZone: 'Asia/Manila',
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: true
+        }).format(dateObj);
+    }
 
-        return `${month}/${day}/${year}, ${pad(hours)}:${minutes} ${ampm}`;
+    // Helper to calculate YYYY-MM-DD in Asia/Manila for Quick Presets
+    function getManilaDateString(offsetDays = 0) {
+        const now = new Date();
+        if (offsetDays !== 0) {
+            now.setDate(now.getDate() + offsetDays);
+        }
+        return new Intl.DateTimeFormat('en-CA', {
+            timeZone: 'Asia/Manila',
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit'
+        }).format(now);
     }
 
     function formatActionDetails(action) {
@@ -475,7 +485,7 @@
 
                 <!-- 2. User Account -->
                 <td class="py-3.5 sm:py-4 px-3.5 sm:px-6">
-                    <div class="font-extrabold text-[#2A1001] text-xs sm:text-sm">${escapeHtml(item.user_full_name)}</div>
+                    <div class="font-extrabold text-[#2A1001] text-xs sm:text-sm break-words">${escapeHtml(item.user_full_name)}</div>
                     <div class="text-[11px] sm:text-xs text-[#2A1001]/60 font-normal truncate max-w-xs">${escapeHtml(item.email)}</div>
                 </td>
 
@@ -492,7 +502,7 @@
                             ${escapeHtml(item.target_table || 'system')}
                         </span>
                     </div>
-                    <p class="text-[11px] sm:text-xs text-[#2A1001]/80 font-medium leading-relaxed line-clamp-2">
+                    <p class="text-[11px] sm:text-xs text-[#2A1001]/80 font-medium leading-relaxed line-clamp-2 break-words [overflow-wrap:anywhere]">
                         ${escapeHtml(summaryText)}
                     </p>
                 </td>
@@ -562,26 +572,18 @@
         }
     }
 
-    // ── QUICK DATE PRESET BUTTONS ──
+    // ── QUICK DATE PRESET BUTTONS (Asia/Manila PHT Aware) ──
     document.querySelectorAll('.date-preset-btn').forEach(btn => {
         btn.addEventListener('click', async function () {
             const range = this.dataset.range;
-            const now = new Date();
-            const pad = (n) => String(n).padStart(2, '0');
-            const toDateString = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-
-            endDate = toDateString(now);
+            endDate = getManilaDateString(0);
 
             if (range === 'today') {
-                startDate = toDateString(now);
+                startDate = getManilaDateString(0);
             } else if (range === '7days') {
-                const past = new Date();
-                past.setDate(past.getDate() - 7);
-                startDate = toDateString(past);
+                startDate = getManilaDateString(-7);
             } else if (range === '30days') {
-                const past = new Date();
-                past.setDate(past.getDate() - 30);
-                startDate = toDateString(past);
+                startDate = getManilaDateString(-30);
             }
 
             document.getElementById('startDateFilter').value = startDate;
@@ -708,7 +710,7 @@
         renderTable();
     });
 
-    // Initialize
+    // Initialize on page load
     (async function init() {
         allLogs = await getLogs();
         updateActiveChips();
