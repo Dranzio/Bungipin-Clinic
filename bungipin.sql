@@ -68,6 +68,7 @@ CREATE TABLE employee_profiles (
 CREATE TABLE admin_profiles (
        admin_id          INT PRIMARY KEY,
        permission_level  VARCHAR(30),
+       birthday          DATE,
        FOREIGN KEY (admin_id) REFERENCES users(user_id) ON DELETE CASCADE
 );
 

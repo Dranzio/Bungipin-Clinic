@@ -138,26 +138,43 @@
                         <h2 id="chatDocName" class="font-extrabold text-2xl text-[#2c3e2b]">Select a patient</h2>
                     </div>
 
+                    <div id="fileErrorBanner" class="hidden bg-red-100 border-l-4 border-red-500 text-red-700 p-3 mx-4 mt-4 relative rounded shadow-sm z-20 flex justify-between items-start">
+                        <div class="flex flex-col">
+                            <span id="fileErrorMessage" class="text-sm font-bold whitespace-pre-line"></span>
+                        </div>
+                        <button onclick="closeFileErrorBanner()" class="text-red-700 hover:text-red-900 cursor-pointer ml-4">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                    </div>
+
                     <!-- Chat Messages Area (Scrollable) -->
                     <div id="chatMessagesArea" class="flex-1 p-6 overflow-y-auto flex flex-col gap-6 bg-[#F9F7F1] break-words">
                         <!-- Dynamic chat messages will be injected here -->
                     </div>
 
-                    <!-- Chat Input & Attachment Area -->
-                    <div class="border-t-4 border-black bg-white flex flex-col relative">
+                    <!-- Chat Input & Attachment Area — wrapped for drag-and-drop -->
+                    <div id="chatDropZone" class="border-t-4 border-black bg-white flex flex-col relative transition-all duration-200 border-2 border-transparent">
                         <!-- File Preview Area -->
                         <div id="filePreviewArea" class="hidden w-full max-h-24 overflow-y-auto bg-gray-50 border-b-2 border-black flex flex-wrap gap-2 p-2 absolute bottom-full left-0"></div>
 
                         <!-- Attachment Icons Toolbar -->
-                        <div class="px-4 py-2 border-b-2 border-black flex gap-4 text-gray-700 bg-[#F4F1EA]">
-                            <input type="file" id="fileUploadInput" class="hidden" multiple onchange="handleFileSelect(event)">
-                            <button onclick="document.getElementById('fileUploadInput').click()" class="hover:text-black cursor-pointer" title="Attach file"><i class="fa-solid fa-paperclip"></i></button>
-                            <button onclick="document.getElementById('fileUploadInput').setAttribute('accept', 'image/*,video/*'); document.getElementById('fileUploadInput').click()" class="hover:text-black cursor-pointer" title="Attach media"><i class="fa-solid fa-image"></i></button>
+                        <div class="px-4 py-2 border-b-2 border-black flex gap-4 items-center text-gray-700 bg-[#F4F1EA]">
+                            <!-- 1st button: Files, PDFs, docs, media, images, video, audio ONLY -->
+                            <input type="file" id="fileUploadInput" class="hidden" multiple
+                                accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,image/*,video/*,audio/*"
+                                onchange="handleFileSelect(event)">
+                            <button onclick="document.getElementById('fileUploadInput').click()" class="hover:text-black cursor-pointer" title="Attach file (PDF, docs, images, video, audio — max 100 MB)"><i class="fa-solid fa-paperclip text-lg"></i></button>
+
+                            <!-- 2nd button: Insert link modal -->
+                            <button type="button" onclick="openLinkModal()" class="hover:text-black cursor-pointer" title="Insert a link"><i class="fa-solid fa-link text-lg"></i></button>
+
+                            <!-- File size hint -->
+                            <span class="ml-auto text-xs text-gray-400 select-none">Max 100 MB per file</span>
                         </div>
-
+                        
                         <!-- Textarea Box -->
-                        <textarea id="chatInput" placeholder="Type a message..." class="w-full h-28 p-4 outline-none resize-none text-sm bg-white"></textarea>
-
+                        <textarea id="chatInput" placeholder="Type a message... (drag & drop or Ctrl+V to attach files)" class="w-full h-28 p-4 outline-none resize-none text-sm bg-white"></textarea>
+                        
                         <!-- Send Button Row -->
                         <div class="px-4 py-2 bg-[#F4F1EA] border-t-2 border-black flex justify-end">
                             <button id="sendBtn" onclick="sendMessage()" class="font-extrabold text-black hover:underline cursor-pointer text-sm">
@@ -166,6 +183,27 @@
                         </div>
                     </div>
 
+                </div>
+            </div>
+
+            <!-- Link Modal -->
+            <div id="linkModal" class="hidden fixed inset-0 bg-black-900/60 backdrop-blur-md flex justify-center items-center z-[60]" onclick="if(event.target===this) closeLinkModal()">
+                <div class="bg-[#F4F1EA] border-2 border-black rounded-xl p-6 w-full max-w-md shadow-2xl flex flex-col gap-4">
+                    <h3 class="text-xl font-extrabold text-[#2B0F01]">Insert Link</h3>
+                    <!-- Inline warning message (hidden by default) -->
+                    <p id="linkModalWarning" class="hidden text-red-600 text-xs font-bold bg-red-50 border border-red-300 rounded px-3 py-2"><i class="fa-solid fa-triangle-exclamation mr-1"></i>Please enter a link URL before inserting.</p>
+                    <div class="flex flex-col gap-1">
+                        <label class="text-xs font-bold uppercase text-[#2B0F01]">Link URL:</label>
+                        <input type="url" id="linkModalUrl" placeholder="https://example.com" class="w-full px-3 py-2 rounded border border-black text-sm bg-white outline-none">
+                    </div>
+                    <div class="flex flex-col gap-1">
+                        <label class="text-xs font-bold uppercase text-[#2B0F01]">Link Title / Display Name:</label>
+                        <input type="text" id="linkModalTitle" placeholder="My Website Document" class="w-full px-3 py-2 rounded border border-black text-sm bg-white outline-none">
+                    </div>
+                    <div class="flex justify-end gap-3 mt-2">
+                        <button type="button" onclick="closeLinkModal()" class="px-4 py-2 bg-[#D7E3A5] text-[#2B0F01] font-bold text-sm rounded-full cursor-pointer border border-black">Cancel</button>
+                        <button type="button" onclick="insertCustomLink()" class="px-4 py-2 bg-[#667733] text-[#ECF5E2] font-bold text-sm rounded-full cursor-pointer border border-black">Insert</button>
+                    </div>
                 </div>
             </div>
 

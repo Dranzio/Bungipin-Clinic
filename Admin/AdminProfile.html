@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- DENIED DIRECT PAGE ACCESS VIA URL -->
+  <script src="../pageProtection.js"></script>
+  <script src="/passwordGate.js"></script>
+  <link href="/output.css" rel="stylesheet">
+  <title>Admin Profile - Profile</title>
+  <script src="https://kit.fontawesome.com/fc8c3f4103.js" crossorigin="anonymous"></script>
+  <script src="../Taskbar/Admin_Sidebar.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
+    .font-poppins { font-family: 'Poppins', sans-serif; }
+  </style>
+</head>
+
+<body class="min-h-screen bg-[#F3EFE4] relative flex flex-col md:flex-row antialiased font-poppins">
+
+  <!-- SIDEBAR -->
+  <div id="sidebar-placeholder"></div>
+  <script>
+    function syncContentOffset() {
+      const placeholder = document.getElementById('sidebar-placeholder');
+      const sidebar = Array.from(placeholder?.children || [])
+        .find(el => !['SCRIPT', 'STYLE', 'LINK'].includes(el.tagName));
+      if (!sidebar) return;
+
+      const set = (el, prop, value) => { if (el.style[prop] !== value) el.style[prop] = value; };
+
+      const apply = () => {
+        const desktop = window.innerWidth >= 768;
+        set(placeholder, 'flexShrink', '0');
+        set(sidebar, 'position', desktop ? 'sticky' : 'relative');  
+        set(sidebar, 'top', desktop ? '0px' : 'auto');
+        set(sidebar, 'height', desktop ? '100vh' : '');
+        set(sidebar, 'overflowY', desktop ? 'auto' : '');           
+      };
+
+      window.addEventListener('resize', apply);
+      apply();
+    }
+
+    (async () => {
+        try {
+            // Retrieve the user's role and position saved during login
+            let userRole = localStorage.getItem('userRole') || 'employee'; 
+            let userPosition = localStorage.getItem('userPosition');
+
+            // If userPosition is missing, fetch it from the API
+            if (!userPosition) {
+                const token = localStorage.getItem('userToken');
+                if (token) {
+                    try {
+                        const profileRes = await fetch('/api/admin-profile', {
+                            headers: { 'Authorization': `Bearer ${token}` }
+                        });
+                        if (profileRes.ok) {
+                            const profileData = await profileRes.json();
+                            if (profileData.position) {
+                                userPosition = profileData.position.toLowerCase();
+                                localStorage.setItem('userPosition', userPosition);
+                            }
+                        }
+                    } catch (e) {
+                        console.error('Failed to fetch position', e);
+                    }
+                }
+            }
+            
+            userPosition = userPosition || 'receptionist';
+            
+            let taskbarFile = '/Taskbar/Admin_Task.html';
+            
+            if (userRole === 'admin') {
+                taskbarFile = '/Taskbar/Admin_Task.html';
+            } else if (userRole === 'employee' || userRole === 'receptionist' || userRole === 'dentist') {
+                if (userPosition === 'dentist' || userRole === 'dentist') {
+                    taskbarFile = '/Taskbar/Dentist_Task.html';
+                } else {
+                    taskbarFile = '/Taskbar/Receptionist_Task.html';
+                }
+            }
+
+            // Fetch the assigned taskbar
+            let response = await fetch(taskbarFile);
+            
+            if (response.ok) {
+                const data = await response.text();
+                document.getElementById('sidebar-placeholder').innerHTML = data;
+                
+                // Highlight the active page in the sidebar
+                const currentPage = window.location.pathname.split("/").pop();
+                document.querySelectorAll('.nav-link').forEach(link => {
+                    if (link.getAttribute('data-page') === currentPage) {
+                        link.classList.add('bg-[#FDFCE9]');
+                    }
+                });
+                
+                if (typeof initSidebar === 'function') {
+                    initSidebar();
+                }
+                syncContentOffset();
+            } else {
+                console.warn(`Failed to load taskbar: ${taskbarFile}`);
+            }
+        } catch (error) {
+            console.log('Sidebar fallback:', error);
+        }
+    })();
+  </script>
+
+  <!-- CONTENT WRAPPER -->
+  <div id="main-content" class="flex-1 min-w-0 min-h-0 overflow-y-auto">
+
+    <div class="flex justify-between items-start pt-5 pl-6 pr-4 md:pl-24 md:pr-8">
+      <h1 class="text-2xl sm:text-3xl md:text-5xl 2xl:text-[73px] pt-5 font-bold text-[#2A1001] font-['Poppins']">
+        Admin Profile
+      </h1>
+      <img
+        src="../assets/logowithtitle.png"
+        class="w-20 sm:w-24 md:w-28 h-auto object-contain shrink-0"
+        onerror="this.style.display='none'"
+        alt="Logo"/>
+    </div>
+    <hr class="border-t border-[#2A1001] mt-2 mb-6" />
+
+    <!-- MAIN CONTENT -->
+    <main class="w-full max-w-4xl mx-auto py-8 px-6 md:px-12">
+
+      <!-- PROFILE FORM -->
+      <form id="admin_profile" class="flex flex-col items-center gap-12 w-full">
+
+        <!-- Section 1: Basic Information -->
+        <div class="relative w-full bg-[#D7E3A5] rounded-2xl p-7 pt-9 shadow-sm">
+          <span class="absolute -top-3.5 left-6 bg-[#667733] text-white text-xs font-bold px-4 py-1.5 rounded-full tracking-wider uppercase shadow-sm">
+            Basic Information
+          </span>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-5">
+
+            <!-- First Name (READONLY) -->
+            <div class="flex flex-col gap-1.5">
+              <label for="first_name" class="text-[11px] font-extrabold tracking-wider text-[#2A1001] uppercase">First Name:</label>
+              <input type="text" id="first_name" name="first_name" readonly
+                     class="w-full px-4 py-2.5 rounded-full bg-[#dedede] text-[#2A1001]/70 font-semibold text-sm outline-none shadow-inner cursor-not-allowed border border-black/10">
+            </div>
+
+            <!-- Last Name (READONLY) -->
+            <div class="flex flex-col gap-1.5">
+              <label for="last_name" class="text-[11px] font-extrabold tracking-wider text-[#2A1001] uppercase">Last Name:</label>
+              <input type="text" id="last_name" name="last_name" readonly
+                     class="w-full px-4 py-2.5 rounded-full bg-[#dedede] text-[#2A1001]/70 font-semibold text-sm outline-none shadow-inner cursor-not-allowed border border-black/10">
+            </div>
+
+            <!-- Employee ID / Staff Code (READONLY) -->
+            <div class="flex flex-col gap-1.5">
+              <label for="staff_code" class="text-[11px] font-extrabold tracking-wider text-[#2A1001] uppercase">Employee ID:</label>
+              <input type="text" id="staff_code" name="staff_code" readonly
+                     class="w-full px-4 py-2.5 rounded-full bg-[#dedede] text-[#2A1001]/70 font-semibold text-sm outline-none shadow-inner cursor-not-allowed border border-black/10">
+            </div>
+
+            <!-- Birthday (EDITABLE) -->
+            <div class="flex flex-col gap-1.5">
+              <label for="birthday" class="text-[11px] font-extrabold tracking-wider text-[#2A1001] uppercase">Birthday:</label>
+              <input type="date" id="birthday" name="birthday"
+                     class="w-full px-4 py-2.5 rounded-full bg-white text-[#2A1001] font-medium text-sm outline-none shadow-inner focus:ring-2 focus:ring-[#556b2f]/50">
+            </div>
+
+            <!-- Sex (READONLY) -->
+            <div class="flex flex-col gap-1.5">
+              <label for="sex" class="text-[11px] font-extrabold tracking-wider text-[#2A1001] uppercase">Sex:</label>
+              <input type="text" id="sex" name="sex" readonly
+                     class="w-full px-4 py-2.5 rounded-full bg-[#dedede] text-[#2A1001]/70 font-semibold text-sm outline-none shadow-inner cursor-not-allowed border border-black/10">
+            </div>
+
+            <!-- Position (READONLY) -->
+            <div class="flex flex-col gap-1.5">
+              <label for="position" class="text-[11px] font-extrabold tracking-wider text-[#2A1001] uppercase">Position:</label>
+              <input type="text" id="position" name="position" readonly
+                     class="w-full px-4 py-2.5 rounded-full bg-[#dedede] text-[#2A1001]/70 font-semibold text-sm outline-none shadow-inner cursor-not-allowed border border-black/10">
+            </div>
+
+            <div id="specializationWrapper" class="hidden flex-col gap-1.5 md:col-span-2 mt-1">
+              <label class="text-[11px] font-extrabold tracking-wider text-[#2A1001] uppercase">Specialization(s):</label>
+              <div id="specializationList" class="flex flex-wrap gap-2 mt-1"></div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Section 2: Contact Information -->
+        <div class="relative w-full bg-[#D7E3A5] rounded-2xl p-7 pt-9 shadow-sm">
+          <span class="absolute -top-3.5 left-6 bg-[#667733] text-white text-xs font-bold px-4 py-1.5 rounded-full tracking-wider uppercase shadow-sm">
+            Contact Information
+          </span>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-5">
+
+            <!-- Primary Email (READONLY) -->
+            <div class="flex flex-col gap-1.5">
+              <label for="email" class="text-[11px] font-extrabold tracking-wider text-[#2A1001] uppercase">Primary Email:</label>
+              <input type="email" id="email" name="email" readonly
+                     class="w-full px-4 py-2.5 rounded-full bg-[#dedede] text-[#2A1001]/70 font-semibold text-sm outline-none shadow-inner cursor-not-allowed border border-black/10">
+            </div>
+
+            <!-- Phone Number (EDITABLE) -->
+            <div class="flex flex-col gap-1.5">
+              <label for="phone" class="text-[11px] font-extrabold tracking-wider text-[#2A1001] uppercase">Phone Number:</label>
+              <input type="tel" id="phone" name="phone" placeholder="09XXXXXXXXX" maxlength="11"
+                     class="w-full px-4 py-2.5 rounded-full bg-white text-[#2A1001] font-medium text-sm outline-none shadow-inner focus:ring-2 focus:ring-[#556b2f]/50">
+            </div>
+          </div>
+        </div>
+
+        <!-- Section 3: Change Password -->
+        <div class="relative w-full bg-[#D7E3A5] rounded-2xl p-7 pt-9 shadow-sm">
+          <span class="absolute -top-3.5 left-6 bg-[#667733] text-white text-xs font-bold px-4 py-1.5 rounded-full tracking-wider uppercase shadow-sm">
+            Change Password
+          </span>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-5">
+            <div class="flex flex-col gap-1.5">
+              <label for="new_password" class="text-[11px] font-extrabold tracking-wider text-[#2A1001] uppercase">New Account Password:</label>
+              
+              <div class="relative w-full">
+                <input type="password" id="new_password" name="new_password" placeholder="Enter New Password" maxlength="25"
+                       class="w-full px-4 py-2.5 pr-16 rounded-full bg-white text-[#2A1001] font-medium text-sm outline-none shadow-inner focus:ring-2 focus:ring-[#556b2f]/50">
+                <button type="button" id="ShowPass" aria-label="Show Password"
+                  class="absolute inset-y-0 right-4 flex items-center cursor-pointer text-sm text-gray-500 hover:text-gray-700 font-medium">Show</button>
+              </div>
+
+              <div class="w-full mt-2 mb-2">
+                <div id="StrengthBars" class="flex gap-2 mb-1.5 w-[95%] mx-auto">
+                    <div class="StrengthCap flex-1 h-[8px] rounded-[99px] bg-[#808a92]" id="Weak"></div>
+                    <div class="StrengthCap flex-1 h-[8px] rounded-[99px] bg-[#808a92]" id="Medium"></div>
+                    <div class="StrengthCap flex-1 h-[8px] rounded-[99px] bg-[#808a92]" id="Good"></div>
+                    <div class="StrengthCap flex-1 h-[8px] rounded-[99px] bg-[#808a92]" id="Strong"></div>
+                </div>
+                <p class="text-xs text-[#2A1001] mb-3">
+                    Strength: <span id="PassStrength" class="font-bold"></span>
+                </p>
+                
+                <!-- Password Criteria Checklist -->
+                <div id="passwordCriteria" class="pl-1 mb-4">
+                    <p class="text-sm md:text-base font-bold text-[#2A1001] font-poppins mb-2">Password Criteria:</p>
+                    <ul class="list-disc pl-5 text-xs md:text-sm font-poppins space-y-1">
+                        <li id="req-length" class="text-gray-500 transition-colors duration-200">Must exceed 8 characters</li>
+                        <li id="req-case" class="text-gray-500 transition-colors duration-200">Must have Upper and Lower case</li>
+                        <li id="req-num" class="text-gray-500 transition-colors duration-200">Must have numbers</li>
+                        <li id="req-spec" class="text-gray-500 transition-colors duration-200">Must have special characters</li>
+                    </ul>
+                </div>
+              </div>
+              <div id="passwordWarning" class="text-red-700 text-xs font-semibold hidden mb-2"></div>
+            </div>
+
+            <div class="flex flex-col gap-1.5">
+              <label for="confirm_password" class="text-[11px] font-extrabold tracking-wider text-[#2A1001] uppercase">Confirm Account Password:</label>
+              <div class="relative w-full">
+                <input type="password" id="confirm_password" name="confirm_password" placeholder="Re-enter new password" maxlength="25"
+                       class="w-full px-4 py-2.5 pr-16 rounded-full bg-white text-[#2A1001] font-medium text-sm outline-none shadow-inner focus:ring-2 focus:ring-[#556b2f]/50">
+                <button type="button" id="ConShowEye" aria-label="Show Password"
+                  class="absolute inset-y-0 right-4 flex items-center cursor-pointer text-sm text-gray-500 hover:text-gray-700 font-medium">Show</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Save / Cancel buttons -->
+        <div id="submitGroup" class="flex flex-wrap gap-3 items-center justify-center">
+          <button type="submit" id="submitBtn" class="z-10 bg-[#D5C04D] hover:bg-[#F6F2DB] text-[#2A1001] font-black text-xl px-12 py-3 rounded-full shadow-md active:scale-95 transition transform cursor-pointer">
+            Save Profile
+          </button>
+          <button type="button" id="cancelBtn"
+                  class="hidden z-10 bg-[#D9534F] hover:bg-[#c9302c] text-white font-black text-xl px-10 py-3 rounded-full shadow-md active:scale-95 transition transform cursor-pointer">
+            Cancel
+          </button>
+        </div>
+
+        <!-- Edit button -->
+        <button type="button" id="editBtn" class="hidden z-10 bg-[#667733] hover:bg-[#556022] text-white font-black text-xl px-12 py-3 rounded-full shadow-md active:scale-95 transition transform cursor-pointer">
+          Edit Profile
+        </button>
+      </form>
+
+      <!-- Success Message -->
+      <div id="successMessage"
+           class="hidden text-center mt-6 p-4 bg-green-100 border border-green-400 text-green-800 rounded-2xl font-poppins shadow-sm transition-opacity duration-300">
+        Profile Changes Updated Successfully!
+      </div>
+    </main>
+  </div>
+
+  <!-- JAVASCRIPT LOGIC -->
+  <script>
+    const form            = document.getElementById('admin_profile');
+    const submitBtn       = document.getElementById('submitBtn');
+    const cancelBtn       = document.getElementById('cancelBtn');
+    const editBtn         = document.getElementById('editBtn');
+    const submitGroup     = document.getElementById('submitGroup');
+    const newPassword     = document.getElementById('new_password');
+    const confirmPassword = document.getElementById('confirm_password');
+    const phoneInput      = document.getElementById('phone');
+    const successMessage  = document.getElementById('successMessage');
+
+    const ShowEye = document.getElementById('ShowPass');
+    const ConShowEye = document.getElementById('ConShowEye');
+    const weakBar = document.getElementById('Weak');
+    const mediumBar = document.getElementById('Medium');
+    const goodBar = document.getElementById('Good');
+    const strongBar = document.getElementById('Strong');
+    const passStrength = document.getElementById('PassStrength');
+    const passwordWarning = document.getElementById('passwordWarning');
+
+    const birthdayInput = document.getElementById('birthday');
+    const today = new Date();
+    if (birthdayInput) {
+      birthdayInput.max = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    }
+
+    function sanitizeInput(str, maxLen = 100) {
+      return String(str ?? '').trim().replace(/[<>]/g, '').slice(0, maxLen);
+    }
+    function isValidPHMobile(value) {
+      return /^09\d{9}$/.test(value.replace(/\s|-/g, ''));
+    }
+
+    if (phoneInput) {
+      phoneInput.addEventListener('input', function () {
+        this.value = this.value.replace(/\D/g, '').slice(0, 11);
+      });
+    }
+
+    if (ShowEye && newPassword) {
+        ShowEye.addEventListener('click', () => {
+            if (newPassword.type === 'password') {
+                newPassword.type = 'text';
+                ShowEye.textContent = 'Hide';
+            } else {
+                newPassword.type = 'password';
+                ShowEye.textContent = 'Show';
+            }
+        });
+    }
+
+    if (ConShowEye && confirmPassword) {
+        ConShowEye.addEventListener('click', () => {
+            if (confirmPassword.type === 'password') {
+                confirmPassword.type = 'text';
+                ConShowEye.textContent = 'Hide';
+            } else {
+                confirmPassword.type = 'password';
+                ConShowEye.textContent = 'Show';
+            }
+        });
+    }
+
+    function updatePasswordStrength() {
+        if (!newPassword) return;
+        const value = newPassword.value;
+        const bars = [weakBar, mediumBar, goodBar, strongBar];
+        let strengthColor = '#808a92';
+
+        bars.forEach(bar => { if (bar) bar.style.background = '#808A92'; });
+        if (passStrength) passStrength.textContent = '';
+
+        if (value === '') {
+            if (passwordWarning) passwordWarning.classList.add('hidden');
+            if (submitBtn) submitBtn.disabled = false;
+            return;
+        }
+
+        let strength = 0;
+        if (value.length >= 8) strength++;
+        if (/\d/.test(value)) strength++;
+        if (/[^A-Za-z0-9\s]/.test(value)) strength++;
+        if (/[A-Z]/.test(value) && /[a-z]/.test(value)) strength++;
+
+        if (strength === 1) { if(passStrength) passStrength.textContent = 'Weak'; strengthColor = '#EF4444'; }
+        else if (strength === 2) { if(passStrength) passStrength.textContent = 'Medium'; strengthColor = '#F59E0B'; }
+        else if (strength === 3) { if(passStrength) passStrength.textContent = 'Good'; strengthColor = '#EAB308'; }
+        else if (strength === 4) { if(passStrength) passStrength.textContent = 'Strong'; strengthColor = '#22C55E'; }
+
+        for (let i = 0; i < strength; i++) {
+            if (bars[i]) bars[i].style.backgroundColor = strengthColor;
+        }
+    }
+
+    function checkPasswordRequirements() {
+        if (!newPassword || !confirmPassword) return;
+        const passwordValue = newPassword.value;
+        const confirmValue = confirmPassword.value;
+        
+        // Grab checklist items
+        const reqLength = document.getElementById('req-length');
+        const reqCase = document.getElementById('req-case');
+        const reqNum = document.getElementById('req-num');
+        const reqSpec = document.getElementById('req-spec');
+
+        if (passwordValue === '') {
+            if (passwordWarning) passwordWarning.classList.add('hidden');
+            if (submitBtn) submitBtn.disabled = false;
+            
+            // Reset checklist colors when empty
+            if (reqLength) reqLength.className = 'text-gray-500 transition-colors duration-200';
+            if (reqCase) reqCase.className = 'text-gray-500 transition-colors duration-200';
+            if (reqNum) reqNum.className = 'text-gray-500 transition-colors duration-200';
+            if (reqSpec) reqSpec.className = 'text-gray-500 transition-colors duration-200';
+            return;
+        }
+
+        const hasMinLength = passwordValue.length >= 8;
+        const hasNumber = /\d/.test(passwordValue);
+        const hasSpace = passwordValue.includes(' ');
+        const hasSpecialChar = /[^A-Za-z0-9\s]/.test(passwordValue);
+        const hasUpperLower = /[A-Z]/.test(passwordValue) && /[a-z]/.test(passwordValue);
+        const passwordsMatch = (passwordValue === confirmValue) && passwordValue !== '';
+        
+        // Repetition checks
+        const hasRepeatChar = /(.)\1{2,}/.test(passwordValue);
+        const hasRepeatPattern = /(.{2,})\1{2,}/.test(passwordValue);
+
+        // Update Criteria Checklist Colors
+        if (reqLength) reqLength.className = hasMinLength ? 'text-green-600 transition-colors duration-200' : 'text-gray-500 transition-colors duration-200';
+        if (reqCase) reqCase.className = hasUpperLower ? 'text-green-600 transition-colors duration-200' : 'text-gray-500 transition-colors duration-200';
+        if (reqNum) reqNum.className = hasNumber ? 'text-green-600 transition-colors duration-200' : 'text-gray-500 transition-colors duration-200';
+        if (reqSpec) reqSpec.className = hasSpecialChar ? 'text-green-600 transition-colors duration-200' : 'text-gray-500 transition-colors duration-200';
+
+        let strength = 0;
+        if (hasMinLength) strength++;
+        if (hasNumber) strength++;
+        if (hasSpecialChar) strength++;
+        if (hasUpperLower) strength++;
+
+        let warningMessage = "";
+        let isValid = true;
+
+        if (passwordValue !== "" && hasSpace) {
+            warningMessage = "Password should not contain spaces.";
+            isValid = false;
+        } else if (passwordValue !== "" && hasRepeatChar) {
+            warningMessage = "Password should not have repetitive characters.";
+            isValid = false;
+        } else if (passwordValue !== "" && hasRepeatPattern) {
+            warningMessage = "Password should not have repetitive patterns.";
+            isValid = false;
+        } else if (passwordValue !== "" && !hasMinLength) {
+            isValid = false;
+        } else if (passwordValue !== "" && !hasNumber) {
+            isValid = false;
+        } else if (passwordValue !== "" && !hasSpecialChar) {
+            isValid = false;
+        } else if (passwordValue !== "" && !hasUpperLower) {
+            isValid = false;
+        } else if (confirmValue !== "" && !passwordsMatch) {
+            warningMessage = "Passwords do not match.";
+            isValid = false;
+        }
+
+        if (passwordWarning) {
+            if (warningMessage !== "") {
+                passwordWarning.textContent = warningMessage;
+                passwordWarning.classList.remove('hidden');
+            } else {
+                passwordWarning.textContent = "";
+                passwordWarning.classList.add('hidden');
+            }
+        }
+
+        if (submitBtn) submitBtn.disabled = !isValid || strength < 3;
+    }
+
+    if (newPassword) {
+        newPassword.addEventListener('input', () => {
+            updatePasswordStrength();
+            checkPasswordRequirements();
+        });
+    }
+    if (confirmPassword) {
+        confirmPassword.addEventListener('input', checkPasswordRequirements);
+    }
+
+    // ── Prevent Copy & Paste in Password Fields ──
+    if (newPassword) {
+      newPassword.addEventListener('paste', (event) => event.preventDefault());
+      newPassword.addEventListener('copy', (event) => event.preventDefault());
+    }
+    if (confirmPassword) {
+      confirmPassword.addEventListener('paste', (event) => event.preventDefault());
+      confirmPassword.addEventListener('copy', (event) => event.preventDefault());
+    }
+    // ---------------------------------------------
+
+    // ── SNAPSHOT STATE ──
+    let formSnapshot = null;
+
+    function takeSnapshot() {
+      formSnapshot = {
+        birthday: document.getElementById('birthday')?.value || '',
+        phone: phoneInput?.value || '',
+      };
+    }
+
+    function restoreSnapshot() {
+      if (!formSnapshot) return;
+      if (document.getElementById('birthday')) document.getElementById('birthday').value = formSnapshot.birthday;
+      if (phoneInput) phoneInput.value = formSnapshot.phone;
+      if (newPassword) newPassword.value = '';
+      if (confirmPassword) confirmPassword.value = '';
+    }
+
+    // ── FORM LOCK / UNLOCK ──
+    function setFormLocked(locked) {
+      ['birthday', 'phone', 'new_password', 'confirm_password'].forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        if (locked) {
+          el.setAttribute('readonly', true);
+        } else {
+          el.removeAttribute('readonly');
+        }
+        el.classList.toggle('opacity-60', locked);
+        el.classList.toggle('pointer-events-none', locked);
+        el.classList.toggle('cursor-not-allowed', locked);
+      });
+
+      if (ShowEye) ShowEye.classList.toggle('hidden', locked);
+      if (ConShowEye) ConShowEye.classList.toggle('hidden', locked);
+      
+      const sBars = document.getElementById('StrengthBars');
+      if (sBars) sBars.classList.toggle('hidden', locked);
+      
+      if (passStrength && passStrength.parentElement) {
+          passStrength.parentElement.classList.toggle('hidden', locked);
+      }
+      if (locked && passwordWarning) {
+          passwordWarning.classList.add('hidden');
+      }
+
+      submitGroup?.classList.toggle('hidden', locked);
+      editBtn?.classList.toggle('hidden', !locked);
+      cancelBtn?.classList.toggle('hidden', locked || !formSnapshot);
+    }
+
+    editBtn?.addEventListener('click', () => {
+      takeSnapshot();
+      setFormLocked(false);
+      if (submitBtn) submitBtn.textContent = 'Update Changes';
+    });
+
+    cancelBtn?.addEventListener('click', () => {
+      restoreSnapshot();
+      setFormLocked(true);
+      if (submitBtn) submitBtn.textContent = 'Save Profile';
+    });
+
+function escapeHtml(str) {
+      return String(str ?? '').replace(/[&<>"']/g, ch => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+      }[ch]));
+    }
+
+    // ── LOAD PROFILE FROM DATABASE ──
+    async function loadProfileFromDatabase() {
+      try {
+        const token = localStorage.getItem('userToken');
+        if (!token) {
+          console.warn('No userToken found in localStorage.');
+          return;
+        }
+
+        const response = await fetch('/api/admin-profile', {
+          method: 'GET',
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (!response.ok) throw new Error(`Server error: ${response.status}`);
+
+        const data = await response.json();
+
+        // Readonly fields
+        if (document.getElementById('first_name')) document.getElementById('first_name').value = data.first_name || '';
+        if (document.getElementById('last_name')) document.getElementById('last_name').value = data.last_name || '';
+        if (document.getElementById('staff_code')) document.getElementById('staff_code').value = data.staff_code || data.public_id || '';
+        if (document.getElementById('position')) document.getElementById('position').value = 'Admin';
+        if (document.getElementById('email')) document.getElementById('email').value = data.email || '';
+        if (document.getElementById('sex')) document.getElementById('sex').value = data.sex === 'M' ? 'Male' : (data.sex === 'F' ? 'Female' : (data.sex || ''));
+
+        // Dynamic Specialization Capsules for Dentists (Unlikely for Admin, but kept for consistency)
+        const specWrapper = document.getElementById('specializationWrapper');
+        const specList = document.getElementById('specializationList');
+
+        if (data.position === 'Dentist' && data.specialization) {
+          let specs = typeof data.specialization === 'string' 
+            ? data.specialization.split(',').map(s => s.trim()).filter(Boolean)
+            : (Array.isArray(data.specialization) ? data.specialization : [data.specialization]);
+
+          if (specs.length > 0 && specWrapper && specList) {
+            specList.innerHTML = specs.map(spec => `
+              <span class="inline-flex items-center gap-2 bg-white border border-[#c1ccab] rounded-full px-4 py-1.5 text-sm text-[#2A1001] font-medium shadow-inner">
+                ${escapeHtml(spec)}
+              </span>
+            `).join('');
+            specWrapper.classList.remove('hidden');
+            specWrapper.classList.add('flex');
+          } else {
+            if (specWrapper) specWrapper.classList.add('hidden');
+          }
+        } else {
+          if (specWrapper) specWrapper.classList.add('hidden');
+        }
+
+        // Editable fields
+        if (data.birthday && document.getElementById('birthday')) {
+          document.getElementById('birthday').value = data.birthday.split('T')[0];
+        }
+        if (phoneInput) phoneInput.value = data.phone || '';
+
+        takeSnapshot();
+        setFormLocked(true);
+
+      } catch (error) {
+        console.error('Failed to load profile:', error);
+      }
+    }
+
+    // ── SUBMIT UPDATES ──
+    form?.addEventListener('submit', async function (e) {
+      e.preventDefault();
+
+      // Repetitive spam check (omits password fields)
+      const textInputs = form.querySelectorAll('input[type="text"]:not([readonly]), input[type="email"]:not([readonly])');
+      for (const input of textInputs) {
+          const val = input.value.trim();
+          if (val) {
+              const hasRepeatChar = /(.)\1{2,}/.test(val);
+              const hasRepeatPattern = /(.{2,})\1{2,}/.test(val);
+              if (hasRepeatChar || hasRepeatPattern) {
+                  alert('Inputs with highly repetitive characters (e.g. "aaaa", "ababab") are not allowed.');
+                  input.focus();
+                  input.classList.add('border-red-500', 'bg-red-50');
+                  return;
+              } else {
+                  input.classList.remove('border-red-500', 'bg-red-50');
+              }
+          }
+      }
+
+      const birthdayValue = document.getElementById('birthday')?.value;
+      if (birthdayValue) {
+        const selectedBirthday = new Date(`${birthdayValue}T00:00:00`);
+        const curDate = new Date();
+        curDate.setHours(0, 0, 0, 0);
+        if (selectedBirthday > curDate) {
+          alert('Birthday cannot be a future date.');
+          return;
+        }
+      }
+
+      const phoneValue = sanitizeInput(phoneInput?.value, 11);
+      if (phoneValue && !isValidPHMobile(phoneValue)) {
+        alert('Please enter a valid PH mobile number (e.g. 09171234567).');
+        return;
+      }
+
+      if (newPassword?.value && newPassword.value !== confirmPassword?.value) {
+        confirmPassword.setCustomValidity('Passwords do not match.');
+        confirmPassword.reportValidity();
+        return;
+      }
+
+      const payload = {
+        birthday: birthdayValue || null,
+        phone: phoneValue
+      };
+
+      if (newPassword?.value) {
+        payload.new_password = newPassword.value;
+      }
+
+      try {
+        const token = localStorage.getItem('userToken');
+
+        const response = await fetch('/api/admin-profile', {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+          const errData = await response.json().catch(() => ({}));
+          throw new Error(errData.message || 'Failed to update profile');
+        }
+
+        if (newPassword) newPassword.value = '';
+        if (confirmPassword) confirmPassword.value = '';
+
+        takeSnapshot();
+        setFormLocked(true);
+
+        if (successMessage) {
+          successMessage.classList.remove('hidden');
+          successMessage.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          setTimeout(() => successMessage.classList.add('hidden'), 4000);
+        }
+
+      } catch (error) {
+        console.error('Error saving profile:', error);
+        alert('Could not update profile: ' + error.message);
+      }
+    });
+
+    document.addEventListener('DOMContentLoaded', loadProfileFromDatabase);
+  </script>
+
+</body>
+</html>

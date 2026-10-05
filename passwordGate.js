@@ -34,7 +34,7 @@
                     
                     <!-- Standard Design Text Box with Clean Non-Bold Green Show Toggle -->
                     <div style="position: relative !important; width: 100% !important; display: block !important; box-sizing: border-box !important; margin: 4px 0 !important;">
-                        <input id="password-gate-input" type="password" autocomplete="current-password" required placeholder="Enter your password..."
+                        <input id="password-gate-input" type="password" autocomplete="current-password" required placeholder="Enter your password..." maxlength="75"
                                style="width: 100% !important; min-width: 100% !important; height: 44px !important; padding-left: 18px !important; padding-right: 65px !important; text-align: left !important; border-radius: 9999px !important; border: 1px solid rgba(42, 16, 1, 0.2) !important; background-color: #ffffff !important; outline: none !important; font-size: 13px !important; color: #2A1001 !important; font-family: 'Poppins', sans-serif !important; box-sizing: border-box !important; font-weight: 400 !important; display: block !important; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important;">
                         
                         <button type="button" id="password-gate-toggle" aria-label="Show Password" 

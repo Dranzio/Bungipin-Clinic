@@ -2,6 +2,10 @@ let allThreads = [];
 let currentChatUserId = null;
 let currentChatUserName = '';
 
+// ─── Constants ──────────────────────────────────────────────────
+const MAX_FILE_SIZE = 70 * 1024 * 1024; // 70 MB
+
+// ─── XSS safety ─────────────────────────────────────────────────
 // Escapes HTML-significant characters before any DB-sourced string is dropped
 // into an innerHTML template. This matters most for msg.content — raw chat
 // text a patient or employee types — without this, a malicious message body
@@ -9,6 +13,20 @@ let currentChatUserName = '';
 const escHtml = s => String(s ?? '').replace(/[&<>"']/g, c =>
     ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
+/**
+ * Converts markdown-style [link text](url) into clickable <a> tags.
+ * MUST be called AFTER escHtml so the content is already safe.
+ * Only allows http:// and https:// URLs to prevent javascript: injection.
+ */
+function renderLinks(escapedText) {
+    return escapedText.replace(/\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g,
+        (match, text, url) => {
+            return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="text-blue-600 underline hover:text-blue-800 font-semibold">${text}</a>`;
+        }
+    );
+}
+
+// ─── Thread fetching & rendering ────────────────────────────────
 async function fetchThreads() {
     const token = localStorage.getItem('userToken');
     if (!token) {
@@ -93,11 +111,18 @@ function renderThreads() {
     });
 }
 
+// ─── Chat open / close ──────────────────────────────────────────
 async function openChat(contactId, contactName) {
     currentChatUserId = contactId;
     currentChatUserName = contactName;
     document.getElementById("chatDocName").innerText = contactName;
     document.getElementById("chatModal").classList.remove("hidden");
+
+    closeFileErrorBanner();
+
+    // Reset files when opening a new chat
+    selectedFiles = [];
+    renderFilePreview();
 
     await loadChatMessages(contactId);
 }
@@ -107,6 +132,7 @@ function closeChat() {
     currentChatUserId = null;
 }
 
+// ─── Chat message loading & rendering ───────────────────────────
 async function loadChatMessages(contactId) {
     const token = localStorage.getItem('userToken');
     const chatArea = document.getElementById('chatMessagesArea');
@@ -171,7 +197,7 @@ function renderChatMessages(messages, contactId) {
             }
         }
 
-        const contentHtml = msg.content ? `<div>${escHtml(msg.content)}</div>` : '';
+        const contentHtml = msg.content ? `<div>${renderLinks(escHtml(msg.content))}</div>` : '';
 
         if (isReceived) {
             chatArea.innerHTML += `
@@ -201,11 +227,47 @@ function renderChatMessages(messages, contactId) {
     chatArea.scrollTop = chatArea.scrollHeight;
 }
 
+// ─── File handling ──────────────────────────────────────────────
 let selectedFiles = [];
+
+function showFileErrorBanner(message) {
+    const banner = document.getElementById('fileErrorBanner');
+    const messageEl = document.getElementById('fileErrorMessage');
+
+    if (banner && messageEl) {
+        messageEl.innerText = message;
+        banner.classList.remove('hidden');
+        setTimeout(closeFileErrorBanner, 4500);
+    }
+}
+
+function closeFileErrorBanner() {
+    const banner = document.getElementById('fileErrorBanner');
+    if (banner) {
+        banner.classList.add('hidden');
+    }
+}
+
+/**
+ * Validates a list of File objects against the 100 MB limit.
+ * Returns only the valid files; shows an alert for each rejected file.
+ */
+function validateFiles(files) {
+    const valid = [];
+    files.forEach(file => {
+        if (file.size > MAX_FILE_SIZE) {
+            showFileErrorBanner(`⚠️ "${file.name}" is too large (${(file.size / 1024 / 1024).toFixed(1)} MB).\n\nMaximum file size allowed is 70 MB. Please choose a smaller file.`);
+        } else {
+            valid.push(file);
+        }
+    });
+    return valid;
+}
 
 function handleFileSelect(event) {
     const files = Array.from(event.target.files);
-    selectedFiles = selectedFiles.concat(files);
+    const valid = validateFiles(files);
+    selectedFiles = selectedFiles.concat(valid);
     renderFilePreview();
     // Reset input so the same file can be selected again if needed
     event.target.value = '';
@@ -218,33 +280,143 @@ function removeFile(index) {
 
 function renderFilePreview() {
     const previewArea = document.getElementById('filePreviewArea');
+    if (!previewArea) return;
+
     if (selectedFiles.length === 0) {
         previewArea.classList.add('hidden');
         previewArea.innerHTML = '';
         return;
     }
-    
+
     previewArea.classList.remove('hidden');
     previewArea.innerHTML = '';
-    
+
     selectedFiles.forEach((file, index) => {
         const fileDiv = document.createElement('div');
         fileDiv.className = 'flex items-center gap-2 bg-white border border-gray-300 rounded px-2 py-1 text-xs';
-        
+
         let icon = '<i class="fa-solid fa-file"></i>';
         if (file.type.startsWith('image/')) icon = '<i class="fa-solid fa-image"></i>';
         else if (file.type.startsWith('video/')) icon = '<i class="fa-solid fa-video"></i>';
+        else if (file.type.startsWith('audio/')) icon = '<i class="fa-solid fa-music"></i>';
         else if (file.type === 'application/pdf') icon = '<i class="fa-solid fa-file-pdf"></i>';
-        
+
+        const sizeMB = (file.size / 1024 / 1024).toFixed(1);
+
         fileDiv.innerHTML = `
             ${icon}
-            <span class="max-w-[100px] truncate" title="${file.name}">${file.name}</span>
-            <button onclick="removeFile(${index})" class="text-red-500 hover:text-red-700 ml-1"><i class="fa-solid fa-times"></i></button>
+            <span class="max-w-[100px] truncate" title="${escHtml(file.name)}">${escHtml(file.name)}</span>
+            <span class="text-gray-400">${sizeMB} MB</span>
+            <button onclick="removeFile(${index})" class="text-red-500 hover:text-red-700 ml-1 cursor-pointer"><i class="fa-solid fa-times"></i></button>
         `;
         previewArea.appendChild(fileDiv);
     });
 }
 
+// ─── Ctrl + V paste files into chat ─────────────────────────────
+function handlePaste(event) {
+    const clipboardData = event.clipboardData || event.originalEvent.clipboardData;
+    if (!clipboardData) return;
+
+    const files = [];
+    for (const item of clipboardData.items) {
+        if (item.kind === 'file') {
+            const file = item.getAsFile();
+            if (file) files.push(file);
+        }
+    }
+
+    if (files.length > 0) {
+        const valid = validateFiles(files);
+        selectedFiles = selectedFiles.concat(valid);
+        renderFilePreview();
+        event.preventDefault(); // prevent pasting binary data as text
+    }
+}
+
+// ─── Drag & drop files into chat ────────────────────────────────
+function handleDragOver(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    const dropZone = document.getElementById('chatDropZone');
+    if (dropZone) {
+        dropZone.classList.add('!border-green-500', '!bg-green-50');
+    }
+}
+
+function handleDragLeave(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    const dropZone = document.getElementById('chatDropZone');
+    if (dropZone) {
+        dropZone.classList.remove('!border-green-500', '!bg-green-50');
+    }
+}
+
+function handleDrop(event) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    const files = Array.from(event.dataTransfer.files);
+    if (files.length > 0) {
+        const valid = validateFiles(files);
+        selectedFiles = selectedFiles.concat(valid);
+        renderFilePreview();
+    }
+
+    // Remove green highlight
+    handleDragLeave(event);
+}
+
+// ─── Link modal ─────────────────────────────────────────────────
+function openLinkModal() {
+    const modal = document.getElementById('linkModal');
+    if (!modal) return;
+    modal.classList.remove('hidden');
+    // Clear previous values and warning
+    document.getElementById('linkModalUrl').value = '';
+    document.getElementById('linkModalTitle').value = '';
+    const warning = document.getElementById('linkModalWarning');
+    if (warning) warning.classList.add('hidden');
+    document.getElementById('linkModalUrl').focus();
+}
+
+function closeLinkModal() {
+    const modal = document.getElementById('linkModal');
+    if (modal) modal.classList.add('hidden');
+    // Hide warning when closing
+    const warning = document.getElementById('linkModalWarning');
+    if (warning) warning.classList.add('hidden');
+}
+
+function insertCustomLink() {
+    const url = document.getElementById('linkModalUrl').value.trim();
+    const title = document.getElementById('linkModalTitle').value.trim() || url;
+    const warning = document.getElementById('linkModalWarning');
+
+    if (!url) {
+        // Show inline warning instead of browser alert
+        if (warning) warning.classList.remove('hidden');
+        return;
+    }
+
+    // Hide warning if it was showing
+    if (warning) warning.classList.add('hidden');
+
+    const chatInput = document.getElementById('chatInput');
+    const linkText = `[${title}](${url})`;
+
+    if (chatInput.value) {
+        chatInput.value += ' ' + linkText;
+    } else {
+        chatInput.value = linkText;
+    }
+
+    closeLinkModal();
+    chatInput.focus();
+}
+
+// ─── Send message ───────────────────────────────────────────────
 async function sendMessage() {
     const token = localStorage.getItem('userToken');
     const input = document.getElementById('chatInput');
@@ -255,17 +427,17 @@ async function sendMessage() {
 
     try {
         let response;
-        
+
         // If there are files, use FormData (multipart/form-data)
         if (selectedFiles.length > 0) {
             const formData = new FormData();
             formData.append('receiver_id', currentChatUserId);
             formData.append('content', content);
-            
+
             selectedFiles.forEach(file => {
                 formData.append('attachments', file); // Use 'attachments' or whatever backend expects
             });
-            
+
             response = await fetch('/api/messages/send', {
                 method: 'POST',
                 headers: {
@@ -293,7 +465,7 @@ async function sendMessage() {
             input.value = '';
             selectedFiles = [];
             renderFilePreview();
-            
+
             // Reload the specific chat to show the new message
             await loadChatMessages(currentChatUserId);
             // Refresh the threads in the background to update the snippet and timestamp
@@ -307,11 +479,11 @@ async function sendMessage() {
     }
 }
 
+// ─── DOMContentLoaded — wire up all event listeners ─────────────
 document.addEventListener('DOMContentLoaded', () => {
     const searchInput = document.getElementById('searchInput');
     const filterSelect = document.getElementById('filterSelect');
-    const chatInput = document.getElementById('chatInput');
-    
+
     if (searchInput) {
         searchInput.addEventListener('input', renderThreads);
     }
@@ -320,13 +492,26 @@ document.addEventListener('DOMContentLoaded', () => {
         filterSelect.addEventListener('change', renderThreads);
     }
 
+    const chatInput = document.getElementById('chatInput');
     if (chatInput) {
+        // Enter to send
         chatInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
                 sendMessage();
             }
         });
+
+        // Ctrl+V paste files
+        chatInput.addEventListener('paste', handlePaste);
+    }
+
+    // Drag & drop on the chat input area (uses a wrapper div "chatDropZone")
+    const dropZone = document.getElementById('chatDropZone');
+    if (dropZone) {
+        dropZone.addEventListener('dragover', handleDragOver);
+        dropZone.addEventListener('dragleave', handleDragLeave);
+        dropZone.addEventListener('drop', handleDrop);
     }
 
     // Automatically load messages when the page opens
