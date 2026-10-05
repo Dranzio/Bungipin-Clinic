@@ -1,6 +1,12 @@
 const jwt = require('jsonwebtoken');
 const db = require('./db');
 
+// Active session: a session ends after this long with no activity. Keep it a
+// little LONGER than the browser-side warning in InactivityTimer.js (13 min + 15 s).
+const IDLE_SECONDS = 15 * 60;
+// Only write last_active_at when it is at least this stale, to avoid a DB write per request.
+const TOUCH_AFTER_SECONDS = 60;
+
 // Clears the httpOnly auth cookie. Attributes must match exactly what
 // setAuthCookie in auth.js used to set it, or the browser won't recognize
 // it as the same cookie and won't actually remove it.
@@ -57,7 +63,10 @@ async function authenticateToken(req, res, next) {
         try {
             const [rows] = await db.query(
                 // eli change: also load the admin's permission_level (live from the DB, never from the token)
-                `SELECT u.role, u.public_id, u.account_status, u.is_locked, ap.permission_level
+                `SELECT u.role, u.public_id, u.account_status, u.is_locked, ap.permission_level,
+                        u.current_session_id,
+                        (u.session_expires_at < NOW()) AS session_expired,
+                        TIMESTAMPDIFF(SECOND, u.last_active_at, NOW()) AS idle_seconds
                  FROM users u
                  LEFT JOIN admin_profiles ap ON ap.admin_id = u.user_id
                  WHERE u.user_id = ?`,
@@ -73,6 +82,24 @@ async function authenticateToken(req, res, next) {
             }
             if (user.is_locked) {
                 return denyPageAccess(429, 'Please contact an administrator to reset your session.');
+            }
+
+            // Active session check. The token must carry the user's CURRENT session id
+            // (a newer login, a logout, a password reset or a suspension changes/clears it),
+            // and the session must be neither past its absolute expiry nor idle too long.
+            // Tokens issued before this feature existed have no sid and must log in again.
+            if (!decoded.sid
+                || user.current_session_id !== decoded.sid
+                || user.session_expired
+                || user.idle_seconds === null
+                || user.idle_seconds > IDLE_SECONDS) {
+                return denyPageAccess(401, 'Your session has ended. Please log in again.');
+            }
+
+            // Awaited on purpose: on Vercel the function can be frozen right after the
+            // response goes out, which would silently drop a fire-and-forget write.
+            if (user.idle_seconds >= TOUCH_AFTER_SECONDS) {
+                await db.query('UPDATE users SET last_active_at = NOW() WHERE user_id = ?', [decoded.user_id]);
             }
 
             // Use the live role/public_id from the DB rather than the

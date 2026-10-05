@@ -589,6 +589,16 @@ ALTER TABLE payments ADD COLUMN refunded_at         DATETIME     NULL;
 CALL sp_register_user('Super', 'Admin', 'sadmin@gmail.com', '09173123321', '$2b$10$UjUhQk0oMn655t5aBJ5Phelmc2y4QV6hiEnFvZR.dunHcTCaWWF6G', 'M', 'admin', @uid);
 UPDATE admin_profiles SET permission_level = 'super_admin' WHERE admin_id = @uid;
 
+CALL sp_register_user('Mr', 'Receptionist', 'receptionist@gmail.com', '09171321321', '$2b$10$PFUiFjV7FngVMIZ2u/chOOV3l.cVQ84nz4Os8DipZlw72yiqAKKJi', 'M', 'employee', @uid);
+UPDATE admin_profiles SET permission_level = 'super_admin' WHERE admin_id = @uid;
+
+
+-- ALTER TABLE users FOR ACTIVE SESSION
+ALTER TABLE users
+  ADD COLUMN current_session_id CHAR(36) NULL,
+  ADD COLUMN session_expires_at DATETIME NULL,
+  ADD COLUMN last_active_at     DATETIME NULL;
+
 
 select * from admin_profiles;
 select * from employee_profiles;

@@ -14,7 +14,9 @@ const { isPasswordReused, REUSE_MESSAGE } = require('./Utils/passwordHistory'); 
 const SALT_ROUNDS = 10;
 const RESET_TOKEN_TTL_MINUTES = 30;
 const VERIFY_TOKEN_TTL_HOURS = 24;
-const TOKEN_TTL_SECONDS = 7 * 24 * 60 * 60; // 7d — must match jwt.sign's expiresIn below
+// Absolute session lifetime. The idle timeout (IDLE_SECONDS) lives in authMiddleware.js.
+const SESSION_HOURS = 12;
+const TOKEN_TTL_SECONDS = SESSION_HOURS * 60 * 60; // must match jwt.sign's expiresIn below
 // Failed logins allowed before the account locks. Matches login.html, which
 // locks its form on the 4th failed attempt (failedAttempts > 3).
 const MAX_LOGIN_ATTEMPTS = 4;
@@ -378,10 +380,23 @@ router.post('/login', async (req, res) => {
             await db.query('UPDATE users SET login_attempts = 0 WHERE user_id = ?', [user.user_id]);
         }
 
+        // Active session: one session per user. Writing a fresh session id here
+        // invalidates any token issued by an earlier login (other device/browser).
+        // NOW() is the DB clock, so serverless instances can't disagree about time.
+        const sid = crypto.randomUUID();
+        await db.query(
+            `UPDATE users
+             SET current_session_id = ?,
+                 session_expires_at = NOW() + INTERVAL ${SESSION_HOURS} HOUR,
+                 last_active_at = NOW()
+             WHERE user_id = ?`,
+            [sid, user.user_id]
+        );
+
         const token = jwt.sign(
-            { user_id: user.user_id, role: user.role, public_id: user.public_id },
+            { user_id: user.user_id, role: user.role, public_id: user.public_id, sid },
             process.env.JWT_SECRET,
-            { expiresIn: '7d' }
+            { expiresIn: `${SESSION_HOURS}h` }
         );
 
         setAuthCookie(res, token);
@@ -522,7 +537,11 @@ router.post('/reset-password', async (req, res) => {
 
         const password_hash = await bcrypt.hash(password, SALT_ROUNDS);
 
-        await db.query('UPDATE users SET password_hash = ? WHERE user_id = ?', [password_hash, user_id]);
+        // Also end any active session: whoever held the old password shouldn't stay logged in.
+        await db.query(
+            'UPDATE users SET password_hash = ?, current_session_id = NULL, session_expires_at = NULL WHERE user_id = ?',
+            [password_hash, user_id]
+        );
         // Mark used rather than delete — keeps a record that the token
         // was consumed, and a second submit with the same token still
         // correctly fails the "used = FALSE" check above.
@@ -561,6 +580,14 @@ router.get('/me', authenticateToken, (req, res) => {
     });
 });
 
+// POST /api/auth/ping
+// Heartbeat from InactivityTimer.js. authenticateToken does the real work: it
+// validates the session and bumps last_active_at. This lets the server's idle
+// clock follow real user activity (typing in a form makes no API calls).
+router.post('/ping', authenticateToken, (req, res) => {
+    res.json({ ok: true });
+});
+
 // POST /api/auth/logout
 // Called by pageProtection.js's window.logout(). Must clear the httpOnly
 // cookie server-side — clearing localStorage alone leaves the cookie
@@ -572,18 +599,32 @@ router.post('/logout', async (req, res) => {
     const token = extractToken(req);
 
     if (token) {
-        jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
-            if (!err && decoded) {
-                logActivity(db, {
-                    user_id: decoded.user_id,
-                    user_role: decoded.role,
-                    action: 'LOGOUT',
-                    target_table: 'users',
-                    target_id: decoded.user_id,
-                    ip_address: getIp(req)
-                }).catch(() => {});
+        try {
+            const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+            // End the session server-side. Only if it is still THIS token's
+            // session, so a stale tab on an old device can't log out the
+            // newer session. Awaited: on Vercel, work left running after the
+            // response is sent can be frozen mid-query.
+            if (decoded.sid) {
+                await db.query(
+                    `UPDATE users SET current_session_id = NULL, session_expires_at = NULL
+                     WHERE user_id = ? AND current_session_id = ?`,
+                    [decoded.user_id, decoded.sid]
+                );
             }
-        });
+
+            await logActivity(db, {
+                user_id: decoded.user_id,
+                user_role: decoded.role,
+                action: 'LOGOUT',
+                target_table: 'users',
+                target_id: decoded.user_id,
+                ip_address: getIp(req)
+            }).catch(() => {});
+        } catch (err) {
+            // Expired/invalid token: nothing to revoke. Still clear the cookie below.
+        }
     }
 
     clearAuthCookie(res);

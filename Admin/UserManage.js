@@ -384,6 +384,14 @@ function registerUserManagementRoutes(app, db) {
             );
             if (result.affectedRows === 0) return res.status(404).json({ message: 'User not found' });
 
+            // A suspended account is logged out right away.
+            if (account_status === 'suspended') {
+                await db.query(
+                    'UPDATE users SET current_session_id = NULL, session_expires_at = NULL WHERE user_id = ?',
+                    [userId]
+                );
+            }
+
             await logActivity(db, {
                 user_id: req.user.user_id,
                 user_role: req.user.role,
@@ -413,7 +421,7 @@ function registerUserManagementRoutes(app, db) {
             const passwordHash = await bcrypt.hash(tempPassword, SALT_ROUNDS);
 
             const [result] = await db.query(
-                'UPDATE users SET password_hash = ?, is_locked = FALSE, login_attempts = 0 WHERE user_id = ?',
+                'UPDATE users SET password_hash = ?, is_locked = FALSE, login_attempts = 0, current_session_id = NULL, session_expires_at = NULL WHERE user_id = ?',
                 [passwordHash, userId]
             );
 
