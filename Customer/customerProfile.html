@@ -15,7 +15,7 @@
     @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
     .font-poppins { font-family: 'Poppins', sans-serif; }
 
-    /* Only highlight the actual input box */
+    /* Highlight invalid input box */
     .input-error {
       border-color: #ef4444 !important;
       background-color: #fef2f2 !important;
@@ -220,6 +220,7 @@
               <label class="checkbox-chip flex items-center gap-2 bg-white border border-[#c1ccab] rounded-full px-4 py-2 text-sm text-[#2c3e2b] font-medium cursor-pointer shadow-inner min-w-0 transition"><input type="checkbox" class="healthConditionCheckbox accent-[#667733] shrink-0" value="Hepatitis"> <span class="break-words">Hepatitis</span></label>
               <label class="checkbox-chip flex items-center gap-2 bg-white border border-[#c1ccab] rounded-full px-4 py-2 text-sm text-[#2c3e2b] font-medium cursor-pointer shadow-inner min-w-0 transition"><input type="checkbox" class="healthConditionCheckbox accent-[#667733] shrink-0" value="Bleeding Disorder"> <span class="break-words">Bleeding Disorder</span></label>
               <label class="checkbox-chip flex items-center gap-2 bg-white border border-[#c1ccab] rounded-full px-4 py-2 text-sm text-[#2c3e2b] font-medium cursor-pointer shadow-inner min-w-0 transition"><input type="checkbox" class="healthConditionCheckbox accent-[#667733] shrink-0" value="Epilepsy"> <span class="break-words">Epilepsy</span></label>
+              <label class="checkbox-chip flex items-center gap-2 bg-white border border-[#c1ccab] rounded-full px-4 py-2 text-sm text-[#2c3e2b] font-medium cursor-pointer shadow-inner min-w-0 transition"><input type="checkbox" class="healthConditionCheckbox accent-[#667733] shrink-0" value="HIV"> <span class="break-words">HIV</span></label>
               <label class="checkbox-chip flex items-center gap-2 bg-white border border-[#c1ccab] rounded-full px-4 py-2 text-sm text-[#2c3e2b] font-medium cursor-pointer shadow-inner min-w-0 transition"><input type="checkbox" id="healthConditionNoneCheckbox" class="accent-[#667733] shrink-0"> <span class="break-words font-bold">None</span></label>
             </div>
 
@@ -423,6 +424,7 @@
             
             <div class="relative w-full">
               <input type="password" id="new-password" name="new_password" placeholder="Enter New Password" maxlength="25"
+                     oncopy="return false" onpaste="return false" oncut="return false" ondrop="return false" autocomplete="off"
                      class="w-full px-4 py-2.5 pr-16 rounded-full bg-white text-[#2c3e2b] font-medium text-sm outline-none shadow-inner border border-[#c1ccab] focus:ring-2 focus:ring-[#4a5e3b]/50">
               
               <button type="button" id="ShowPass" aria-label="Show Password"
@@ -440,8 +442,8 @@
                 Strength: <span id="PassStrength" class="font-bold"></span>
               </p>
               
-              <!-- NEW: Password Criteria Checklist -->
-              <div id="passwordCriteria" class="pl-1 mb-4">
+              <!-- Password Criteria Checklist -->
+              <div id="passwordCriteria" class="pl-1 mb-2 hidden">
                   <p class="text-sm md:text-base font-bold text-[#2A1001] font-poppins mb-2">Password Criteria:</p>
                   <ul class="list-disc pl-5 text-xs md:text-sm font-poppins space-y-1">
                       <li id="req-length" class="text-gray-500 transition-colors duration-200">Must exceed 8 characters</li>
@@ -451,7 +453,7 @@
                   </ul>
               </div>
             </div>
-            <div id="passwordWarning" class="text-red-700 text-xs font-semibold hidden mb-2"></div>
+            <div id="passwordWarning" class="text-red-700 text-xs font-semibold hidden mb-2 px-1"></div>
           </div>
           
           <!-- Confirm Account Password -->
@@ -459,9 +461,9 @@
             <label for="confirm-password" class="text-[11px] font-extrabold tracking-wider text-[#2A1001] uppercase">Confirm Account Password:</label>
             <div class="relative w-full">
               <input type="password" id="confirm-password" name="confirm_password" placeholder="Re-enter new password" maxlength="25"
+                     oncopy="return false" onpaste="return false" oncut="return false" ondrop="return false" autocomplete="off"
                      class="w-full px-4 py-2.5 pr-16 rounded-full bg-white text-[#2c3e2b] font-medium text-sm outline-none shadow-inner border border-[#c1ccab] focus:ring-2 focus:ring-[#4a5e3b]/50">
               
-              <!-- Updated Button -->
               <button type="button" id="ConShowEye" aria-label="Show Password"
                       class="absolute inset-y-0 right-4 flex items-center cursor-pointer text-sm text-gray-500 hover:text-gray-700 font-medium">Show</button>
             </div>
@@ -535,6 +537,7 @@
   const strongBar = document.getElementById('Strong');
   const passStrength = document.getElementById('PassStrength');
   const passwordWarning = document.getElementById('passwordWarning');
+  const passwordCriteriaEl = document.getElementById('passwordCriteria');
 
   ShowEye.addEventListener('click', () => {
     if (newPassword.type === 'password') {
@@ -566,7 +569,6 @@
 
     if (value === '') {
       passwordWarning.classList.add('hidden');
-      submitBtn.disabled = false;
       return;
     }
 
@@ -587,25 +589,28 @@
   }
 
 function checkPasswordRequirements() {
+    if (!newPassword || !confirmPassword) return;
     const passwordValue = newPassword.value;
     const confirmValue = confirmPassword.value;
     
-    // Grab checklist items
     const reqLength = document.getElementById('req-length');
     const reqCase = document.getElementById('req-case');
     const reqNum = document.getElementById('req-num');
     const reqSpec = document.getElementById('req-spec');
 
-    if (passwordValue === '') {
-      passwordWarning.classList.add('hidden');
-      submitBtn.disabled = false;
-      
-      // Reset checklist colors when empty
-      if (reqLength) reqLength.className = 'text-gray-500 transition-colors duration-200';
-      if (reqCase) reqCase.className = 'text-gray-500 transition-colors duration-200';
-      if (reqNum) reqNum.className = 'text-gray-500 transition-colors duration-200';
-      if (reqSpec) reqSpec.className = 'text-gray-500 transition-colors duration-200';
-      return;
+    if (passwordValue === '' && confirmValue === '') {
+        if (passwordWarning) {
+            passwordWarning.textContent = '';
+            passwordWarning.classList.add('hidden');
+        }
+        newPassword.classList.remove('input-error');
+        confirmPassword.classList.remove('input-error');
+        
+        if (reqLength) reqLength.className = 'text-gray-500 transition-colors duration-200';
+        if (reqCase) reqCase.className = 'text-gray-500 transition-colors duration-200';
+        if (reqNum) reqNum.className = 'text-gray-500 transition-colors duration-200';
+        if (reqSpec) reqSpec.className = 'text-gray-500 transition-colors duration-200';
+        return;
     }
 
     const hasMinLength = passwordValue.length >= 8;
@@ -613,59 +618,44 @@ function checkPasswordRequirements() {
     const hasSpace = passwordValue.includes(' ');
     const hasSpecialChar = /[^A-Za-z0-9\s]/.test(passwordValue);
     const hasUpperLower = /[A-Z]/.test(passwordValue) && /[a-z]/.test(passwordValue);
-    const passwordsMatch = (passwordValue === confirmValue) && passwordValue !== '';
-    
-    // New repetition checks
     const hasRepeatChar = /(.)\1{2,}/.test(passwordValue);
     const hasRepeatPattern = /(.{2,})\1{2,}/.test(passwordValue);
 
-    // Update Criteria Checklist Colors
-    if (reqLength) reqLength.className = hasMinLength ? 'text-[#2A1001] transition-colors duration-200' : 'text-gray-500 transition-colors duration-200';
-    if (reqCase) reqCase.className = hasUpperLower ? 'text-[#2A1001] transition-colors duration-200' : 'text-gray-500 transition-colors duration-200';
-    if (reqNum) reqNum.className = hasNumber ? 'text-[#2A1001] transition-colors duration-200' : 'text-gray-500 transition-colors duration-200';
-    if (reqSpec) reqSpec.className = hasSpecialChar ? 'text-[#2A1001] transition-colors duration-200' : 'text-gray-500 transition-colors duration-200';
-
-    let strength = 0;
-    if (hasMinLength) strength++;
-    if (hasNumber) strength++;
-    if (hasSpecialChar) strength++;
-    if (hasUpperLower) strength++;
+    // 🟢 Green when met, gray when not met
+    if (reqLength) reqLength.className = hasMinLength ? 'text-green-600 font-bold transition-colors duration-200' : 'text-gray-500 transition-colors duration-200';
+    if (reqCase) reqCase.className = hasUpperLower ? 'text-green-600 font-bold transition-colors duration-200' : 'text-gray-500 transition-colors duration-200';
+    if (reqNum) reqNum.className = hasNumber ? 'text-green-600 font-bold transition-colors duration-200' : 'text-gray-500 transition-colors duration-200';
+    if (reqSpec) reqSpec.className = hasSpecialChar ? 'text-green-600 font-bold transition-colors duration-200' : 'text-gray-500 transition-colors duration-200';
 
     let warningMessage = "";
-    let isValid = true;
 
     if (passwordValue !== "" && hasSpace) {
-      warningMessage = "Password should not contain spaces.";
-      isValid = false;
+        warningMessage = "Password should not contain spaces.";
     } else if (passwordValue !== "" && hasRepeatChar) {
-      warningMessage = "Password should not have repetitive characters.";
-      isValid = false;
+        warningMessage = "Password should not have repetitive characters.";
     } else if (passwordValue !== "" && hasRepeatPattern) {
-      warningMessage = "Password should not have repetitive patterns.";
-      isValid = false;
-    } else if (passwordValue !== "" && !hasMinLength) {
-      isValid = false;
-    } else if (passwordValue !== "" && !hasNumber) {
-      isValid = false;
-    } else if (passwordValue !== "" && !hasSpecialChar) {
-      isValid = false;
-    } else if (passwordValue !== "" && !hasUpperLower) {
-      isValid = false;
-    } else if (confirmValue !== "" && !passwordsMatch) {
-      warningMessage = "Passwords do not match.";
-      isValid = false;
+        warningMessage = "Password should not have repetitive patterns.";
     }
 
-    if (warningMessage !== "") {
-      passwordWarning.textContent = warningMessage;
-      passwordWarning.classList.remove('hidden');
+    // ── Real-time match check ──
+    const passwordsMatch = (passwordValue === confirmValue) && passwordValue !== '';
+    if (confirmValue !== '' && !passwordsMatch) {
+        warningMessage = "Passwords do not match.";
+        confirmPassword.classList.add('input-error');
     } else {
-      passwordWarning.textContent = "";
-      passwordWarning.classList.add('hidden');
+        confirmPassword.classList.remove('input-error');
     }
 
-    submitBtn.disabled = !isValid || strength < 3;
-  }
+    if (passwordWarning) {
+        if (warningMessage !== "") {
+            passwordWarning.textContent = warningMessage;
+            passwordWarning.classList.remove('hidden');
+        } else {
+            passwordWarning.textContent = "";
+            passwordWarning.classList.add('hidden');
+        }
+    }
+}
 
   newPassword.addEventListener('input', () => {
     updatePasswordStrength();
@@ -673,6 +663,18 @@ function checkPasswordRequirements() {
   });
 
   confirmPassword.addEventListener('input', checkPasswordRequirements);
+
+  // ── STRICT BLOCK: Copy, Paste, Cut, Drop on Password Inputs ──
+  ['copy', 'paste', 'cut', 'drop'].forEach(eventType => {
+    newPassword?.addEventListener(eventType, e => {
+      e.preventDefault();
+      e.stopPropagation();
+    });
+    confirmPassword?.addEventListener(eventType, e => {
+      e.preventDefault();
+      e.stopPropagation();
+    });
+  });
 
   let isFormCurrentlyLocked = false;
 
@@ -807,6 +809,15 @@ function checkPasswordRequirements() {
 
     document.querySelectorAll('.input-error').forEach(el => el.classList.remove('input-error'));
     document.querySelectorAll('[id$="Error"]').forEach(el => el.classList.add('hidden'));
+    
+    // Reset password checklist on cancel
+    ['req-length', 'req-case', 'req-num', 'req-spec'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.className = 'text-gray-500 transition-colors duration-200';
+    });
+    [weakBar, mediumBar, goodBar, strongBar].forEach(b => { if (b) b.style.background = '#808A92'; });
+    if (passStrength) passStrength.textContent = '';
+    passwordWarning?.classList.add('hidden');
   }
 
   // ══════════════════════════════════════════════════════
@@ -979,8 +990,20 @@ function checkPasswordRequirements() {
     if (passStrength && passStrength.parentElement) {
       passStrength.parentElement.classList.toggle('hidden', locked);
     }
-    if (locked && passwordWarning) {
-      passwordWarning.classList.add('hidden');
+    
+    // Toggle Password Criteria section visibility
+    if (passwordCriteriaEl) {
+      passwordCriteriaEl.classList.toggle('hidden', locked);
+    }
+
+    if (locked) {
+      if (passwordWarning) passwordWarning.classList.add('hidden');
+      ['req-length', 'req-case', 'req-num', 'req-spec'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.className = 'text-gray-500 transition-colors duration-200';
+      });
+      [weakBar, mediumBar, goodBar, strongBar].forEach(b => { if (b) b.style.background = '#808A92'; });
+      if (passStrength) passStrength.textContent = '';
     }
 
     ['pregnancy-status','dosageInput'].forEach(id => {
@@ -1043,7 +1066,6 @@ function checkPasswordRequirements() {
       pdfZone.classList.toggle('hidden', locked);
     }
 
-    // Re-render PDF list to toggle remove buttons while keeping View links active
     renderPdfList();
 
     submitGroup.classList.toggle('hidden', locked);
@@ -1298,14 +1320,16 @@ function checkPasswordRequirements() {
   });
 
   newPassword.addEventListener('input', function() {
-    setFieldError(this, document.getElementById('passwordError'), '');
-    if (confirmPassword.value) {
-      if (this.value === confirmPassword.value) setFieldError(confirmPassword, document.getElementById('confirmPasswordError'), '');
+    setFieldError(this, document.getElementById('passwordWarning'), '');
+    if (confirmPassword.value && this.value === confirmPassword.value) {
+      setFieldError(confirmPassword, document.getElementById('passwordWarning'), '');
     }
   });
 
   confirmPassword.addEventListener('input', function() {
-    setFieldError(this, document.getElementById('confirmPasswordError'), '');
+    if (newPassword.value && this.value === newPassword.value) {
+      setFieldError(this, document.getElementById('passwordWarning'), '');
+    }
   });
 
   document.getElementById('allergenInput').addEventListener('input', function() {
@@ -1660,7 +1684,7 @@ function checkPasswordRequirements() {
   }
 
   // ══════════════════════════════════════════════════════
-  //  STRICT VALIDATION (Only highlight input boxes)
+  //  STRICT VALIDATION (Highlights with .input-error)
   // ══════════════════════════════════════════════════════
   function validateCompleteForm() {
     let isValid = true;
@@ -1707,22 +1731,46 @@ function checkPasswordRequirements() {
       }
     }
 
-    // 4. Password (8-64 characters if entered)
-    if (newPassword.value) {
-      if (newPassword.value.length < 8) {
-        check(newPassword, document.getElementById('passwordError'), 'Password must be at least 8 characters.');
-      } else if (newPassword.value.length > 64) {
-        check(newPassword, document.getElementById('passwordError'), 'Password cannot exceed 64 characters.');
-      } else {
-        setFieldError(newPassword, document.getElementById('passwordError'), '');
-      }
+    // 4. Password Criteria Check & Highlighting
+// 4. Password Criteria Check & Highlighting on Submit
+if (newPassword.value) {
+  const pw = newPassword.value;
+  const conf = confirmPassword.value;
+  let pwError = null;
 
-      if (newPassword.value !== confirmPassword.value) {
-        check(confirmPassword, document.getElementById('confirmPasswordError'), 'Passwords do not match.');
-      } else {
-        setFieldError(confirmPassword, document.getElementById('confirmPasswordError'), '');
-      }
-    }
+  if (pw.includes(' ')) {
+    pwError = 'Password should not contain spaces.';
+  } else if (/(.)\1{2,}/.test(pw)) {
+    pwError = 'Password should not have repetitive characters (e.g. "aaa").';
+  } else if (/(.{2,})\1{2,}/.test(pw)) {
+    pwError = 'Password should not have repetitive patterns (e.g. "ababab").';
+  } else if (pw.length < 8) {
+    pwError = 'Password must exceed 8 characters.';
+  } else if (pw.length > 25) {
+    pwError = 'Password cannot exceed 25 characters.';
+  } else if (!/[A-Z]/.test(pw) || !/[a-z]/.test(pw)) {
+    pwError = 'Password must have Upper and Lower case.';
+  } else if (!/\d/.test(pw)) {
+    pwError = 'Password must have numbers.';
+  } else if (!/[^A-Za-z0-9\s]/.test(pw)) {
+    pwError = 'Password must have special characters.';
+  }
+
+  if (pwError) {
+    check(newPassword, passwordWarning, pwError);
+  } else {
+    setFieldError(newPassword, passwordWarning, '');
+  }
+
+  if (pw !== conf) {
+    check(confirmPassword, passwordWarning, 'Passwords do not match.');
+  } else {
+    if (!pwError) setFieldError(confirmPassword, passwordWarning, '');
+  }
+} else {
+  setFieldError(newPassword, passwordWarning, '');
+  setFieldError(confirmPassword, passwordWarning, '');
+}
 
     // 5. Pre-existing Health Conditions
     const hcCount = document.querySelectorAll('.healthConditionCheckbox:checked').length;
@@ -1777,7 +1825,7 @@ function checkPasswordRequirements() {
       }
     }
 
-    // 9. Check if user typed into medication or allergen inputs without clicking "+ Add"
+    // 9. Unadded Prescriptions/Allergens
     const pendingMed = sanitizeInput(document.getElementById('medicationNameInput').value);
     if (pendingMed) {
       check(document.getElementById('medicationNameInput'), document.getElementById('prescriptionError'), 'Please click "+ Add" to save this prescription or clear the box.');
@@ -1823,7 +1871,7 @@ function checkPasswordRequirements() {
     }
 
     if (!validateCompleteForm()) {
-      showNotification('error', 'Please answer all required medical sections and resolve highlighted inputs before saving.');
+      showNotification('error', 'Please resolve the highlighted inputs before saving your profile.');
       return;
     }
 
@@ -1859,9 +1907,9 @@ function checkPasswordRequirements() {
         new Promise(r => setTimeout(r, 600))
       ]);
 
+      const resData = await res.json().catch(() => ({}));
       if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.message || 'Failed to update profile');
+        throw new Error(resData.message || 'Failed to update profile');
       }
 
       newPassword.value = ''; confirmPassword.value = '';
@@ -1878,6 +1926,14 @@ function checkPasswordRequirements() {
     } catch(err) {
       console.error('Error updating profile:', err);
       showNotification('error', err.message || 'Could not update profile. Please try again.');
+      
+      // Highlight password box if backend rejected it (e.g. cooldown or password reuse)
+      if (err.message && err.message.toLowerCase().includes('password')) {
+        newPassword.classList.add('input-error');
+        passwordWarning.textContent = err.message;
+        passwordWarning.classList.remove('hidden');
+        newPassword.focus();
+      }
     } finally {
       submitBtn.disabled = false;
       submitBtn.classList.remove('opacity-75', 'cursor-not-allowed');
@@ -1894,22 +1950,6 @@ function checkPasswordRequirements() {
 
   document.addEventListener('keydown', e => {
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') { e.preventDefault(); form.requestSubmit(); }
-  });
-
-  newPassword.addEventListener('paste', (event) => {
-    event.preventDefault();
-  });
-
-  newPassword.addEventListener('copy', (event) => {
-    event.preventDefault();
-  });
-
-  confirmPassword.addEventListener('paste', (event) => {
-    event.preventDefault();
-  });
-
-  confirmPassword.addEventListener('copy', (event) => {
-    event.preventDefault();
   });
 </script>
 

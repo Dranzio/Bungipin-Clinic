@@ -1,6 +1,7 @@
 const bcrypt = require('bcrypt');
 const authenticateToken = require('../authMiddleware');
 const { logActivity } = require('../Admin/auditLogRoutes');
+const { isPasswordReused, REUSE_MESSAGE } = require('../Utils/passwordHistory');
 
 const SALT_ROUNDS = 10;
 
@@ -14,6 +15,10 @@ function requireAdmin(req, res, next) {
     }
     next();
 }
+
+// ⏱️ 5-Minute Password Cooldown Tracker (5 mins = 300,000 ms)
+const PASSWORD_COOLDOWN_MS = 5 * 60 * 1000;
+const adminPasswordCooldowns = new Map();
 
 function registerAdminProfileRoute(app, db) {
 
@@ -51,11 +56,29 @@ function registerAdminProfileRoute(app, db) {
             await connection.beginTransaction();
 
             if (new_password) {
+                // ⏱️ 5-Minute Cooldown Check
+                const lastChanged = adminPasswordCooldowns.get(adminId);
+                if (lastChanged && (Date.now() - lastChanged < PASSWORD_COOLDOWN_MS)) {
+                    const remainingMins = Math.ceil((PASSWORD_COOLDOWN_MS - (Date.now() - lastChanged)) / 60000);
+                    await connection.rollback();
+                    return res.status(429).json({
+                        message: `You recently changed your password. For security, please wait ${remainingMins} minute(s) before changing it again.`
+                    });
+                }
+
+                // Block the new password if it matches the current one
+                if (await isPasswordReused(connection, adminId, new_password)) {
+                    await connection.rollback();
+                    return res.status(400).json({ message: REUSE_MESSAGE });
+                }
+
                 const password_hash = await bcrypt.hash(new_password, SALT_ROUNDS);
                 await connection.query(
                     'UPDATE users SET phone = ?, password_hash = ? WHERE user_id = ?',
                     [phone, password_hash, adminId]
                 );
+
+                adminPasswordCooldowns.set(adminId, Date.now());
             } else {
                 await connection.query(
                     'UPDATE users SET phone = ? WHERE user_id = ?',
@@ -87,7 +110,7 @@ function registerAdminProfileRoute(app, db) {
         } catch (err) {
             await connection.rollback();
             console.error('Admin profile update error:', err);
-            res.status(500).json({ message: 'Internal Server Error' });
+            res.status(500).json({ message: err.message || 'Internal Server Error' });
         } finally {
             connection.release();
         }
