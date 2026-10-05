@@ -330,20 +330,6 @@
 
       front.append(circle, title, makeHint(HINT_FRONT, 'flip-hint-front'));
 
-      // Price pill, pinned to the bottom so prices line up across cards in a row
-      const priceNum = s.price === null || s.price === undefined ? NaN : Number(s.price);
-      if (isFinite(priceNum)) {
-        const priceWrap = document.createElement('div');
-        priceWrap.className = 'mt-auto pt-4 w-full';
-        const pill = document.createElement('span');
-        pill.className = 'inline-block max-w-full truncate bg-[#D7E3A5]/60 text-[#4a5c2f] font-bold text-sm rounded-full px-4 py-1';
-        pill.textContent = priceNum === 0
-          ? 'Free'
-          : '₱' + priceNum.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-        priceWrap.appendChild(pill);
-        front.appendChild(priceWrap);
-      }
-
       // ── Back: description (scrolls inside the card if it is very long) ──
       const back = document.createElement('div');
       back.className = 'flip-face flip-back';

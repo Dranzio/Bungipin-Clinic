@@ -99,7 +99,7 @@
     your teeth to their best form. Bringing back the smile and confidence that you deserve in every visit.
   </p>
     <a href="/aboutus.html"
-     class="inline-block border-2 border-[#D5C04D] text-[#D5C04D] hover:bg-[#D5C04D] hover:text-[#2A1001] font-semibold px-10 py-3 rounded-md transition-colors text-base">
+     class="inline-block border-2 border-[#D5C04D] text-[#D5C04D] hover:bg-yellow-400 hover:text-[#2A1001] font-semibold px-10 py-3 rounded-md transition-colors text-base">
     Learn More
   </a>
 </div>
@@ -348,20 +348,6 @@
       title.title = service.label;
 
       front.append(circle, title, makeHint(HINT_FRONT, 'flip-hint-front'));
-
-      // Price pill, pinned to the bottom so prices line up across cards
-      const priceNum = service.price === null || service.price === undefined ? NaN : Number(service.price);
-      if (isFinite(priceNum)) {
-        const priceWrap = document.createElement('div');
-        priceWrap.className = 'mt-auto pt-4 w-full';
-        const pill = document.createElement('span');
-        pill.className = 'inline-block max-w-full truncate bg-[#D7E3A5]/60 text-[#4a5c2f] font-bold text-sm rounded-full px-4 py-1';
-        pill.textContent = priceNum === 0
-          ? 'Free'
-          : '₱' + priceNum.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-        priceWrap.appendChild(pill);
-        front.appendChild(priceWrap);
-      }
 
       // ── Back: description (scrolls inside the card if it is very long) ──
       const back = document.createElement('div');
