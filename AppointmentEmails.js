@@ -36,7 +36,23 @@ function viewUrl() {
  *   reason         shown in cancelled/rescheduled emails
  *   cancelledBy    'customer' | 'clinic'
  *   declined       true when staff declined a still-pending request
+ *   slotLost       true when a paid booking lost its slot (cancelled email, slot-lost wording)
  */
+// Payment details that get folded into the booking / cancellation emails, based on
+// the payment's state at send time (these emails are sent AFTER the change commits):
+//   booked    + payment 'paid'           -> payment receipt inside the booking email
+//   cancelled + payment 'refund_pending' -> "refund requested" notice
+function paymentExtras(kind, r) {
+    if (kind === 'booked' && r.pay_status === 'paid') {
+        // Sent right after the payment, so "now" is the paid time (avoids DB timezone drift).
+        return { payment: { amount: r.pay_amount, method: r.pay_method, paidAt: new Date() } };
+    }
+    if (kind === 'cancelled' && r.pay_status === 'refund_pending') {
+        return { refund: { amount: r.pay_amount, method: r.pay_method } };
+    }
+    return {};
+}
+
 async function sendAppointmentEmail(db, appointmentId, kind, extra = {}) {
     try {
         const build = KINDS[kind];
@@ -47,11 +63,13 @@ async function sendAppointmentEmail(db, appointmentId, kind, extra = {}) {
             `SELECT a.appointment_id, a.appointment_date, a.time_slot,
                     p.email AS patient_email, p.first_name AS patient_first, p.last_name AS patient_last,
                     s.label AS service_label,
+                    pay.amount AS pay_amount, pay.method AS pay_method, pay.status AS pay_status,
                     CASE WHEN d.user_id IS NULL THEN NULL
                          ELSE CONCAT('Dr. ', d.first_name, ' ', d.last_name) END AS dentist_name
              FROM appointments a
                       JOIN users p ON a.patient_id = p.user_id
                       LEFT JOIN services s ON a.service_id = s.service_id
+                      LEFT JOIN payments pay ON pay.appointment_id = a.appointment_id
                       LEFT JOIN users d ON a.employee_id = d.user_id
              WHERE a.appointment_id = ?`,
             [appointmentId]
@@ -68,6 +86,7 @@ async function sendAppointmentEmail(db, appointmentId, kind, extra = {}) {
             date: r.appointment_date,
             time: r.time_slot,
             viewUrl: viewUrl(),
+            ...paymentExtras(kind, r),
             ...extra
         };
 

@@ -33,6 +33,8 @@ const BADGES = {
     cancelled: { label: 'Cancelled',        bg: '#F8D9D6', fg: '#8A1F17' },
     declined:  { label: 'Declined',         bg: '#F8D9D6', fg: '#8A1F17' },
     changed:   { label: 'Rescheduled',      bg: '#E3E8F7', fg: '#26407A' },
+    paid:      { label: 'Paid',             bg: '#DDEFD3', fg: '#245018' },
+    refunded:  { label: 'Refunded',         bg: '#E3E8F7', fg: '#26407A' },
     info:      { label: '',                 bg: '#EEE',    fg: '#333' }
 };
 
@@ -76,6 +78,32 @@ function formatTime(value) {
     const suffix = h >= 12 ? 'PM' : 'AM';
     h = h % 12 || 12;
     return `${h}:${match[2]} ${suffix}`;
+}
+
+// 1500 -> "₱1,500.00". mysql2 returns DECIMAL columns as strings, so coerce first.
+function formatMoney(value) {
+    const n = Number(value);
+    if (!isFinite(n)) return '';
+    return n.toLocaleString('en-PH', { style: 'currency', currency: 'PHP' });
+}
+
+// Date + time in Manila time, e.g. "October 5, 2026, 2:30 PM".
+function formatStamp(value) {
+    if (!value) return '';
+    const d = new Date(value);
+    if (isNaN(d)) return String(value);
+    return d.toLocaleString('en-PH', {
+        year: 'numeric', month: 'long', day: 'numeric',
+        hour: 'numeric', minute: '2-digit', timeZone: 'Asia/Manila'
+    });
+}
+
+function methodLabel(method) {
+    const m = String(method || '').toLowerCase();
+    if (['online', 'paymongo', 'mongo'].includes(m)) return 'Online (PayMongo)';
+    if (m === 'cash') return 'Cash (at the clinic)';
+    if (m === 'card') return 'Card (at the clinic)';
+    return method ? String(method) : '';
 }
 
 function when(date, time) {
@@ -182,17 +210,40 @@ function viewButton(a) {
 //   { patientName, reference, service, dentist, date, time, viewUrl?,
 //     previousDate?, previousTime?, reason? }
 
-// 1. Customer just submitted a booking (awaiting approval)
+// 1. Customer just submitted a booking (awaiting approval).
+//    When a.payment is present (an online booking that was already paid through
+//    PayMongo) the payment receipt is folded into this same email instead of
+//    sending a second one. a.payment = { amount, method, paidAt }
 function appointmentBooked(a) {
+    const p = a.payment;
+    const ref = a.reference ? ` (#${a.reference})` : '';
     return compose({
-        subject: `We received your appointment request${a.reference ? ` (#${a.reference})` : ''}`,
-        preheader: 'Your request is in. We will email you once it is approved.',
+        subject: p ? `We received your appointment request and payment${ref}` : `We received your appointment request${ref}`,
+        preheader: p
+            ? `Payment of ${formatMoney(p.amount)} received. We will email you once the appointment is approved.`
+            : 'Your request is in. We will email you once it is approved.',
         badge: 'pending',
-        heading: 'Appointment booked!',
+        heading: p ? 'Appointment booked and paid!' : 'Appointment booked!',
         greeting: `Hi ${a.patientName || 'there'},`,
-        paragraphs: ['Thanks for booking with us. Your request has been received and is waiting for the clinic to confirm it.'],
-        rows: apptRows(a),
-        callout: { text: 'Your slot is not final yet. We will send another email as soon as the clinic approves it.', tone: 'warn' },
+        paragraphs: [
+            p
+                ? 'Thanks for booking with us. Your payment went through and your request is waiting for the clinic to confirm it.'
+                : 'Thanks for booking with us. Your request has been received and is waiting for the clinic to confirm it.'
+        ],
+        rows: [
+            ...apptRows(a),
+            ...(p ? [
+                ['Amount paid', formatMoney(p.amount)],
+                ['Payment method', methodLabel(p.method)],
+                ['Paid on', formatStamp(p.paidAt)]
+            ] : [])
+        ],
+        callout: {
+            text: p
+                ? 'Your slot is not final yet. We will send another email as soon as the clinic approves it. Please keep this email as your payment receipt.'
+                : 'Your slot is not final yet. We will send another email as soon as the clinic approves it.',
+            tone: 'warn'
+        },
         button: viewButton(a)
     });
 }
@@ -212,11 +263,45 @@ function appointmentApproved(a) {
     });
 }
 
-// 3. Appointment cancelled by the customer, cancelled by staff, or a pending
-//    request that staff declined (a.declined = true)
+// 3. Appointment cancelled by the customer, cancelled by staff, a pending
+//    request that staff declined (a.declined = true), or a paid booking whose slot
+//    was taken before the payment came in (a.slotLost = true).
+//    If the appointment was already paid, a.refund = { amount, method } folds the
+//    "refund requested" notice into this email (AppointmentEmails.js sets it
+//    automatically when the payment is 'refund_pending').
+function refundNotice(a) {
+    if (!a.refund) return { paragraphs: [], rows: [] };
+    const amount = formatMoney(a.refund.amount);
+    return {
+        paragraphs: [`Because you had already paid, a refund of ${amount} has been requested. The clinic will review and process it, and we will email you again once it has been sent.`],
+        rows: [
+            ['Refund requested', amount],
+            ['Refund status', 'Waiting for the clinic to process it']
+        ]
+    };
+}
+
 function appointmentCancelled(a) {
     const byCustomer = a.cancelledBy === 'customer';
     const ref = a.reference ? ` (#${a.reference})` : '';
+    const refund = refundNotice(a);
+
+    if (a.slotLost) {
+        return compose({
+            subject: `We couldn't keep your appointment slot${ref}`,
+            preheader: 'Your payment was received, but the time slot is no longer available.',
+            badge: 'cancelled',
+            heading: "We couldn't keep your slot",
+            greeting: `Hi ${a.patientName || 'there'},`,
+            paragraphs: [
+                'Your payment went through, but the hold on your time slot had expired and another booking took it before your payment was completed. We are very sorry, your appointment has been cancelled.',
+                ...refund.paragraphs
+            ],
+            rows: [...apptRows(a), ...refund.rows],
+            callout: { text: `Questions? Please contact ${clinicContact()}. You are welcome to book a new appointment any time.` },
+            button: viewButton(a)
+        });
+    }
 
     if (a.declined) {
         return compose({
@@ -225,8 +310,11 @@ function appointmentCancelled(a) {
             badge: 'declined',
             heading: 'Your appointment request was declined',
             greeting: `Hi ${a.patientName || 'there'},`,
-            paragraphs: ['Sorry, the clinic could not accept your appointment request. You are welcome to pick a different date or time.'],
-            rows: apptRows(a),
+            paragraphs: [
+                'Sorry, the clinic could not accept your appointment request. You are welcome to pick a different date or time.',
+                ...refund.paragraphs
+            ],
+            rows: [...apptRows(a), ...refund.rows],
             callout: { text: `Questions? Please contact ${clinicContact()}.` },
             button: viewButton(a)
         });
@@ -241,9 +329,10 @@ function appointmentCancelled(a) {
         paragraphs: [
             byCustomer
                 ? 'This confirms that your appointment has been cancelled.'
-                : 'We are sorry, but your appointment has been cancelled by the clinic.'
+                : 'We are sorry, but your appointment has been cancelled by the clinic.',
+            ...refund.paragraphs
         ],
-        rows: [...apptRows(a), ['Reason', a.reason]],
+        rows: [...apptRows(a), ['Reason', a.reason], ...refund.rows],
         callout: { text: `Questions? Please contact ${clinicContact()}. You are welcome to book a new appointment any time.` },
         button: viewButton(a)
     });
@@ -287,6 +376,69 @@ function rescheduleRequestApproved(a) {
             ['Previous schedule', when(a.previousDate, a.previousTime)],
             ['New schedule', when(a.date, a.time)]
         ],
+        button: viewButton(a)
+    });
+}
+
+// ---------- customer: payments ----------
+// payment object shape used by both of these:
+//   { patientName, reference, service, dentist, date, time, amount, method,
+//     paidAt?, refundedAt?, refundRef?, viewUrl? }
+
+// 6. A payment for the appointment was received (PayMongo checkout or cash/card at the clinic)
+function paymentReceived(a) {
+    return compose({
+        subject: `Payment received${a.reference ? ` (#${a.reference})` : ''}`,
+        preheader: `We received your payment of ${formatMoney(a.amount)}.`,
+        badge: 'paid',
+        heading: 'Payment received',
+        greeting: `Hi ${a.patientName || 'there'},`,
+        paragraphs: ['Thank you! We have received your payment for the appointment below.'],
+        rows: [
+            ['Reference no.', a.reference],
+            ['Service', a.service],
+            ['Amount paid', formatMoney(a.amount)],
+            ['Payment method', methodLabel(a.method)],
+            ['Paid on', formatStamp(a.paidAt)],
+            ['Dentist', a.dentist],
+            ['Appointment', when(a.date, a.time)]
+        ],
+        callout: { text: 'Please keep this email as your payment receipt.' },
+        button: viewButton(a)
+    });
+}
+
+// 7. The clinic refunded the payment (the appointment is cancelled as part of the refund)
+function paymentRefunded(a) {
+    const online = ['online', 'paymongo', 'mongo'].includes(String(a.method || '').toLowerCase());
+    return compose({
+        subject: `Your refund has been processed${a.reference ? ` (#${a.reference})` : ''}`,
+        preheader: `${formatMoney(a.amount)} is being returned to you.`,
+        badge: 'refunded',
+        heading: 'Refund processed',
+        greeting: `Hi ${a.patientName || 'there'},`,
+        paragraphs: [
+            a.afterCancellation
+                ? 'The clinic has processed the refund for your cancelled appointment.'
+                : 'The clinic has refunded your payment, and the appointment below has been cancelled.',
+            online
+                ? 'The money is being returned to the payment method you used at checkout. Depending on your bank or e-wallet, it can take several business days to appear.'
+                : 'Your in-clinic payment has been marked as refunded.'
+        ],
+        rows: [
+            ['Reference no.', a.reference],
+            ['Service', a.service],
+            ['Refund amount', formatMoney(a.amount)],
+            ['Original payment', methodLabel(a.method)],
+            ['Refund reference', a.refundRef],
+            ['Refunded on', formatStamp(a.refundedAt)],
+            ['Appointment', when(a.date, a.time)]
+        ],
+        callout: {
+            text: online
+                ? `If the refund has not appeared after 10 business days, please contact ${clinicContact()}.`
+                : `If you have not received your money back, please contact ${clinicContact()}.`
+        },
         button: viewButton(a)
     });
 }
@@ -383,6 +535,8 @@ module.exports = {
     appointmentCancelled,
     appointmentRescheduled,
     rescheduleRequestApproved,
+    paymentReceived,
+    paymentRefunded,
     staffAccountCreated,
     passwordReset,
     verifyRegistration,
