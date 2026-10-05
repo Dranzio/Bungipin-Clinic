@@ -26,6 +26,9 @@
             background: rgba(102, 119, 51, 0.3);
             border-radius: 9999px;
         }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: rgba(102, 119, 51, 0.6);
+        }
     </style>
 </head>
 
@@ -108,7 +111,7 @@
                     <input
                         type="text"
                         id="searchInput"
-                        placeholder="Search patient ID, name, phone, or service..."
+                        placeholder="Search patient ID, name, phone, service, or dentist..."
                         class="h-10 sm:h-11 w-full pl-10 pr-4 rounded-full border border-[#2A1001]/20 bg-gray-50/50 outline-none shadow-xs text-xs sm:text-sm text-[#2A1001] placeholder:text-gray-400 focus:bg-white focus:border-[#667733] transition"
                     />
                 </div>
@@ -187,30 +190,23 @@
             </button>
         </div>
 
-        <!-- ── DESKTOP TABLE VIEW ── -->
-        <div class="hidden md:block overflow-hidden rounded-3xl shadow-xl border border-[#2A1001]/10 bg-[#ECF5E2]">
-            <div class="overflow-x-auto custom-scrollbar">
-                <table class="w-full border-collapse text-left">
-                    <thead>
-                        <tr class="bg-[#667733] text-white text-xs sm:text-sm uppercase tracking-wider font-extrabold">
-                            <th class="py-4 px-4 text-center w-[22%]">Scheduled Date &amp; Time</th>
-                            <th class="py-4 px-3 text-center w-[13%]">Patient ID</th>
-                            <th class="py-4 px-4 text-center w-[20%]">Patient Name</th>
-                            <th class="py-4 px-3 text-center w-[15%]">Phone Number</th>
-                            <th class="py-4 px-3 text-center w-[16%]">Service</th>
-                            <th class="py-4 px-3 text-center w-[14%]">Queue Status</th>
-                        </tr>
-                    </thead>
-                    <tbody id="tableBody" class="divide-y divide-[#2A1001]/10 text-xs sm:text-sm font-medium">
-                        <!-- rows injected by JS -->
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- ── MOBILE & TABLET CARD VIEW ── -->
-        <div id="mobileCardsContainer" class="block md:hidden space-y-3.5 w-full">
-            <!-- cards injected by JS -->
+        <!-- ── UNIFIED RESPONSIVE TABLE VIEW (Mobile + Tablet + Desktop) ── -->
+        <div class="overflow-x-auto custom-scrollbar rounded-2xl sm:rounded-3xl w-full shadow-lg border border-[#2A1001]/10 bg-[#ECF5E2]">
+            <table class="w-full min-w-[820px] border-collapse text-left">
+                <thead>
+                    <tr class="bg-[#667733] text-white text-xs sm:text-sm uppercase tracking-wider font-extrabold">
+                        <th class="py-3.5 sm:py-4 px-3 sm:px-4 text-center w-[20%] whitespace-nowrap rounded-tl-2xl">Scheduled Date &amp; Time</th>
+                        <th class="py-3.5 sm:py-4 px-3 text-center w-[12%] whitespace-nowrap">Patient ID</th>
+                        <th class="py-3.5 sm:py-4 px-3.5 text-center w-[18%] whitespace-nowrap">Patient Name</th>
+                        <th class="py-3.5 sm:py-4 px-3.5 text-center w-[18%] whitespace-nowrap">Attending Dentist</th>
+                        <th class="py-3.5 sm:py-4 px-3 text-center w-[17%] whitespace-nowrap">Service</th>
+                        <th class="py-3.5 sm:py-4 px-3 text-center w-[15%] whitespace-nowrap rounded-tr-2xl">Queue Status</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody" class="divide-y divide-[#2A1001]/10 text-xs sm:text-sm font-medium">
+                    <!-- rows injected by JS -->
+                </tbody>
+            </table>
         </div>
 
         <!-- ── EMPTY STATE ── -->
@@ -221,7 +217,7 @@
         </div>
 
         <!-- PAGINATION -->
-        <div class="flex justify-center gap-2 mt-4 mb-8" id="pagination"></div>
+        <div class="flex flex-wrap justify-center items-center gap-1.5 sm:gap-2 my-6 sm:my-8" id="pagination"></div>
 
     </main>
 
@@ -432,11 +428,14 @@
         let list = appointments.filter(a => {
             const matchesFilter = currentFilter === "All" || a.queue_status === currentFilter;
             const searchLower = currentSearch.toLowerCase().trim();
+            const dentistName = `${a.dentist_first_name || ''} ${a.dentist_last_name || ''}`.toLowerCase();
+
             const matchesSearch = !searchLower ||
                                   (a.public_id || '').toLowerCase().includes(searchLower) ||
                                   `${a.first_name || ''} ${a.last_name || ''}`.toLowerCase().includes(searchLower) ||
                                   `${a.phone || ''}`.includes(searchLower) ||
-                                  `${a.label || ''}`.toLowerCase().includes(searchLower);
+                                  `${a.label || ''}`.toLowerCase().includes(searchLower) ||
+                                  dentistName.includes(searchLower);
             return matchesFilter && matchesSearch;
         });
 
@@ -483,11 +482,9 @@
         const pageItems = filtered.slice(start, start + rowsPerPage);
 
         const tbody = document.getElementById('tableBody');
-        const mobileContainer = document.getElementById('mobileCardsContainer');
         const emptyState = document.getElementById('emptyState');
 
         tbody.innerHTML = '';
-        mobileContainer.innerHTML = '';
 
         if (pageItems.length === 0) {
             if (emptyState) emptyState.classList.remove('hidden');
@@ -502,22 +499,24 @@
             const timeRangeFormatted = getFormattedTimeRange(item.time_slot, item.end_time, item.label);
             const isToday = isAppointmentToday(item.appointment_date);
 
+            // 👨‍⚕️ Selected Attending Dentist
+            const docFullName = (item.dentist_first_name || item.dentist_last_name)
+                ? `Dr. ${item.dentist_first_name || ''} ${item.dentist_last_name || ''}`.trim()
+                : 'Dr. Ramon Cruz';
+
+            const dentistBadge = `
+                <div class="font-extrabold text-[#2A1001] flex items-center justify-center gap-1.5 whitespace-nowrap">
+                    <i class="fa-solid fa-user-doctor text-[#667733]"></i>
+                    <span class="text-xs sm:text-sm">${escapeHtml(docFullName)}</span>
+                </div>
+            `;
+
             // Interactive dropdown for TODAY, Locked badge for FUTURE dates
-            let statusControlDesktop = '';
-            let statusControlMobile = '';
+            let statusControl = '';
 
             if (isToday) {
-                statusControlDesktop = `
-                    <select class="statusSelect ${statusColors[item.queue_status] || 'bg-gray-200'} font-bold text-xs sm:text-sm text-[#2A1001] rounded-full px-3 py-1.5 outline-none cursor-pointer shadow-sm border border-black/10 transition active:scale-95" data-id="${item.appointment_id}">
-                        ${Object.keys(statusLabels).map(key => `
-                            <option value="${key}" class="bg-white text-[#2A1001] font-medium" ${item.queue_status === key ? "selected" : ""}>
-                                ${statusLabels[key]}
-                            </option>
-                        `).join('')}
-                    </select>
-                `;
-                statusControlMobile = `
-                    <select class="statusSelect ${statusColors[item.queue_status] || 'bg-gray-200'} font-bold text-xs text-[#2A1001] rounded-full px-3 py-1.5 outline-none cursor-pointer shadow-sm border border-black/10 transition active:scale-95" data-id="${item.appointment_id}">
+                statusControl = `
+                    <select class="statusSelect ${statusColors[item.queue_status] || 'bg-gray-200'} font-bold text-xs sm:text-sm text-[#2A1001] rounded-full px-3 py-1.5 outline-none cursor-pointer shadow-xs border border-black/10 transition active:scale-95 whitespace-nowrap" data-id="${item.appointment_id}">
                         ${Object.keys(statusLabels).map(key => `
                             <option value="${key}" class="bg-white text-[#2A1001] font-medium" ${item.queue_status === key ? "selected" : ""}>
                                 ${statusLabels[key]}
@@ -526,66 +525,50 @@
                     </select>
                 `;
             } else {
-                statusControlDesktop = `
-                    <div class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-extrabold ${statusColors[item.queue_status] || 'bg-gray-100'} text-[#2A1001] border border-black/10 cursor-not-allowed opacity-85 select-none shadow-xs" title="Queue progression is locked until scheduled date (${formattedDate})">
+                statusControl = `
+                    <div class="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-extrabold ${statusColors[item.queue_status] || 'bg-gray-100'} text-[#2A1001] border border-black/10 cursor-not-allowed opacity-85 select-none shadow-xs whitespace-nowrap" title="Queue progression is locked until scheduled date (${formattedDate})">
                         <i class="fa-solid fa-lock text-[10px] opacity-70"></i>
-                        <span>${statusLabels[item.queue_status] || 'Scheduled'}</span>
-                    </div>
-                `;
-                statusControlMobile = `
-                    <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-extrabold ${statusColors[item.queue_status] || 'bg-gray-100'} text-[#2A1001] border border-black/10 cursor-not-allowed opacity-85 select-none shadow-xs" title="Queue progression is locked until scheduled date (${formattedDate})">
-                        <i class="fa-solid fa-lock text-[9px] opacity-70"></i>
                         <span>${statusLabels[item.queue_status] || 'Scheduled'}</span>
                     </div>
                 `;
             }
 
-            // Desktop Table Row
             const row = document.createElement('tr');
-            row.className = "hover:bg-[#FDFCE9]/60 transition";
+            row.className = "hover:bg-[#FDFCE9]/60 transition border-b border-[#2A1001]/10";
             row.innerHTML = `
-                <td class="py-3.5 px-4 text-center whitespace-nowrap">
+                <!-- 1. Scheduled Date & Time -->
+                <td class="py-3.5 px-3 sm:px-4 text-center whitespace-nowrap">
                     <span class="font-extrabold text-[#2A1001] block text-xs sm:text-sm">${escapeHtml(formattedDate)}</span>
                     <span class="text-[11px] text-[#667733] font-bold"><i class="fa-regular fa-clock mr-1"></i>${escapeHtml(timeRangeFormatted)}</span>
                 </td>
-                <td class="py-3.5 px-3 text-center font-bold text-[#2A1001]">${escapeHtml(item.public_id || 'N/A')}</td>
-                <td class="py-3.5 px-4 text-center font-bold text-[#2A1001]">${escapeHtml(item.first_name)} ${escapeHtml(item.last_name)}</td>
-                <td class="py-3.5 px-3 text-center font-medium text-[#2A1001]">${escapeHtml(item.phone || 'N/A')}</td>
-                <td class="py-3.5 px-3 text-center font-bold text-[#2A1001]">${escapeHtml(item.label)}</td>
+
+                <!-- 2. Patient ID (Exact Patient Record styling) -->
+                <td class="py-3.5 px-3 text-center font-bold text-[#2A1001] whitespace-nowrap">
+                    ${escapeHtml(item.public_id || 'N/A')}
+                </td>
+
+                <!-- 3. Patient Name & Phone -->
                 <td class="py-3.5 px-3 text-center">
-                    ${statusControlDesktop}
+                    <div class="font-bold text-xs sm:text-sm text-[#2A1001] whitespace-nowrap">${escapeHtml(item.first_name)} ${escapeHtml(item.last_name)}</div>
+                    <div class="text-[11px] text-gray-500 font-medium whitespace-nowrap mt-0.5"><i class="fa-solid fa-phone text-[9px] text-gray-400 mr-1"></i>${escapeHtml(item.phone || 'N/A')}</div>
+                </td>
+
+                <!-- 4. Selected Attending Dentist -->
+                <td class="py-3.5 px-3 text-center">
+                    ${dentistBadge}
+                </td>
+
+                <!-- 5. Service Treatment -->
+                <td class="py-3.5 px-3 text-center font-bold text-xs sm:text-sm text-[#2A1001]">
+                    <span class="break-words">${escapeHtml(item.label)}</span>
+                </td>
+
+                <!-- 6. Queue Status Action -->
+                <td class="py-3.5 px-3 text-center whitespace-nowrap">
+                    ${statusControl}
                 </td>
             `;
             tbody.appendChild(row);
-
-            // Mobile Card View
-            const card = document.createElement('div');
-            card.className = "bg-white border border-[#2A1001]/10 rounded-2xl p-4 shadow-sm flex flex-col gap-2.5";
-            card.innerHTML = `
-                <div class="flex items-center justify-between gap-2">
-                    <div class="flex items-center gap-1.5 flex-wrap">
-                        <span class="text-xs font-extrabold text-[#667733] bg-[#ECF5E2] px-2.5 py-0.5 rounded-full border border-[#667733]/30">
-                            ${escapeHtml(item.public_id || 'N/A')}
-                        </span>
-                        <span class="text-[11px] font-bold text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
-                            <i class="fa-regular fa-calendar mr-1"></i>${escapeHtml(formattedDate)} • ${escapeHtml(timeRangeFormatted)}
-                        </span>
-                    </div>
-                    ${statusControlMobile}
-                </div>
-                <div>
-                    <h3 class="text-base font-bold text-[#2A1001]">
-                        ${escapeHtml(item.first_name)} ${escapeHtml(item.last_name)}
-                    </h3>
-                    <p class="text-xs sm:text-sm text-[#667733] font-bold mt-0.5">
-                        <i class="fa-solid fa-tooth mr-1"></i>${escapeHtml(item.label)}
-                    </p>
-                    <p class="text-xs text-gray-500 font-medium mt-1">
-                        <i class="fa-solid fa-phone text-[10px] mr-1 text-gray-400"></i>${escapeHtml(item.phone || 'N/A')}
-                    </p>
-                </div>
-            `;
-            mobileContainer.appendChild(card);
         });
 
         renderPagination(filtered.length);
@@ -623,7 +606,7 @@
         if (batchStart > 1) {
             const prevBtn = document.createElement('button');
             prevBtn.textContent = '‹';
-            prevBtn.className = "w-9 h-9 rounded-full font-bold text-[#2A1001] bg-transparent border border-[#2A1001]/30 hover:bg-[#2A1001]/10 transition flex items-center justify-center cursor-pointer";
+            prevBtn.className = "w-8 h-8 sm:w-9 sm:h-9 rounded-full font-bold text-[#2A1001] bg-white border border-[#2A1001]/20 hover:bg-[#2A1001]/10 transition flex items-center justify-center cursor-pointer text-xs sm:text-sm";
             prevBtn.addEventListener('click', () => {
                 currentPage = batchStart - 1;
                 renderTable();
@@ -634,7 +617,7 @@
         for (let i = batchStart; i <= batchEnd; i++) {
             const btn = document.createElement('button');
             btn.textContent = i;
-            btn.className = `w-9 h-9 rounded-full font-semibold cursor-pointer transition ${
+            btn.className = `w-8 h-8 sm:w-9 sm:h-9 rounded-full font-semibold cursor-pointer transition text-xs sm:text-sm ${
                 i === currentPage
                     ? 'bg-[#667733] text-white shadow-sm'
                     : 'bg-white text-[#2A1001] border border-[#2A1001]/20 hover:bg-gray-50'
@@ -649,7 +632,7 @@
         if (batchEnd < totalPages) {
             const nextBtn = document.createElement('button');
             nextBtn.textContent = '›';
-            nextBtn.className = "w-9 h-9 rounded-full font-bold text-[#2A1001] bg-transparent border border-[#2A1001]/30 hover:bg-[#2A1001]/10 transition flex items-center justify-center cursor-pointer";
+            nextBtn.className = "w-8 h-8 sm:w-9 sm:h-9 rounded-full font-bold text-[#2A1001] bg-white border border-[#2A1001]/20 hover:bg-[#2A1001]/10 transition flex items-center justify-center cursor-pointer text-xs sm:text-sm";
             nextBtn.addEventListener('click', () => {
                 currentPage = batchEnd + 1;
                 renderTable();
@@ -686,7 +669,6 @@
     document.getElementById('customDateInput').addEventListener('change', async function () {
         if (!this.value) return;
 
-        // Verify within 6-month limit
         const pickedDate = new Date(this.value + 'T00:00:00');
         const today = new Date();
         today.setHours(0, 0, 0, 0);

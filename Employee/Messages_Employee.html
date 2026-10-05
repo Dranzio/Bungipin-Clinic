@@ -173,7 +173,10 @@
                         </div>
                         
                         <!-- Textarea Box -->
-                        <textarea id="chatInput" placeholder="Type a message... (drag & drop or Ctrl+V to attach files)" class="w-full h-28 p-4 outline-none resize-none text-sm bg-white"></textarea>
+                        <div id="chatInput" contenteditable="true" 
+                            data-placeholder="Type a message... (drag & drop or Ctrl+V to attach files)" 
+                            class="w-full h-28 p-4 outline-none overflow-y-auto text-sm bg-white empty:before:content-[attr(data-placeholder)] empty:before:text-gray-400">
+                        </div>
                         
                         <!-- Send Button Row -->
                         <div class="px-4 py-2 bg-[#F4F1EA] border-t-2 border-black flex justify-end">

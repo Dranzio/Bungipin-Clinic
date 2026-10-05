@@ -229,7 +229,7 @@ function registerHistoryRoutes(app, db, io) {
         }
 
         // ⚠️ Enforce future date and max advance booking limit (6 months)
-        const reschedDateTime = new Date(`${requested_date}T${requested_time}`);
+        const reschedDateTime = new Date(`${requested_date}T${requested_time}+08:00`);
         if (Number.isNaN(reschedDateTime.getTime()) || reschedDateTime <= new Date()) {
             return res.status(400).json({ message: 'Rescheduled appointments must be set for a future date and time' });
         }

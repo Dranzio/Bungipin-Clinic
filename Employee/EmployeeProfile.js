@@ -1,13 +1,17 @@
 const bcrypt = require('bcrypt');
 const authenticateToken = require('../authMiddleware');
 const { logActivity } = require('../Admin/auditLogRoutes');
-const { isPasswordReused, REUSE_MESSAGE } = require('../Utils/passwordHistory'); // eli change
+const { isPasswordReused, REUSE_MESSAGE } = require('../Utils/passwordHistory');
 
 function getIp(req) {
     return req.ip || req.headers['x-forwarded-for'];
 }
 
 const SALT_ROUNDS = 10;
+
+// ⏱️ 5-Minute Password Cooldown Tracker (5 mins = 300,000 ms)
+const PASSWORD_COOLDOWN_MS = 5 * 60 * 1000;
+const employeePasswordCooldowns = new Map();
 
 function registerEmployeeProfileRoute(app, db) {
 
@@ -45,16 +49,29 @@ function registerEmployeeProfileRoute(app, db) {
             await connection.beginTransaction();
 
             if (new_password) {
-                // eli change: block the new password if it matches the current one
+                // ⏱️ 5-Minute Cooldown Check
+                const lastChanged = employeePasswordCooldowns.get(employeeId);
+                if (lastChanged && (Date.now() - lastChanged < PASSWORD_COOLDOWN_MS)) {
+                    const remainingMins = Math.ceil((PASSWORD_COOLDOWN_MS - (Date.now() - lastChanged)) / 60000);
+                    await connection.rollback();
+                    return res.status(429).json({
+                        message: `You recently changed your password. For security, please wait ${remainingMins} minute(s) before changing it again.`
+                    });
+                }
+
+                // Block the new password if it matches the current one
                 if (await isPasswordReused(connection, employeeId, new_password)) {
                     await connection.rollback();
                     return res.status(400).json({ message: REUSE_MESSAGE });
                 }
+
                 const password_hash = await bcrypt.hash(new_password, SALT_ROUNDS);
                 await connection.query(
                     'UPDATE users SET phone = ?, password_hash = ? WHERE user_id = ?',
                     [phone, password_hash, employeeId]
                 );
+
+                employeePasswordCooldowns.set(employeeId, Date.now());
             } else {
                 await connection.query(
                     'UPDATE users SET phone = ? WHERE user_id = ?',
@@ -85,7 +102,7 @@ function registerEmployeeProfileRoute(app, db) {
         } catch (err) {
             await connection.rollback();
             console.error('Profile update error:', err);
-            res.status(500).json({ message: 'Internal Server Error' });
+            res.status(500).json({ message: err.message || 'Internal Server Error' });
         } finally {
             connection.release();
         }

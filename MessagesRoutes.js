@@ -53,9 +53,9 @@ module.exports = function registerMessagesRoutes(app, db) {
                 if (!contact) return null;
 
                 const [lastMsgRows] = await db.query(
-                    `SELECT content, sent_at FROM messages
-                     WHERE (sender_id = ? AND receiver_id = ?) OR (sender_id = ? AND receiver_id = ?)
-                     ORDER BY sent_at DESC LIMIT 1`,
+                    `SELECT content, sender_id, file_url, sent_at FROM messages
+                    WHERE (sender_id = ? AND receiver_id = ?) OR (sender_id = ? AND receiver_id = ?)
+                    ORDER BY sent_at DESC LIMIT 1`,
                     [user_id, contactId, contactId, user_id]
                 );
                 const lastMsg = lastMsgRows[0];
@@ -72,6 +72,8 @@ module.exports = function registerMessagesRoutes(app, db) {
                     first_name: contact.first_name,
                     last_name: contact.last_name,
                     content: lastMsg ? lastMsg.content : null,
+                    sender_id: lastMsg ? lastMsg.sender_id : null,
+                    file_url: lastMsg ? lastMsg.file_url : null,
                     sent_at: lastMsg ? lastMsg.sent_at : null,
                     has_unread: unreadRows[0].unread_count > 0
                 };

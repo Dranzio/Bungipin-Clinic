@@ -7,12 +7,20 @@
   <script src="../pageProtection.js"></script>
   <script src="/passwordGate.js"></script>
   <link href="/output.css" rel="stylesheet">
-  <title>Admin Profile - Profile</title>
+  <title>Admin Dashboard - Profile</title>
+  <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://kit.fontawesome.com/fc8c3f4103.js" crossorigin="anonymous"></script>
   <script src="../Taskbar/Admin_Sidebar.js"></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
     .font-poppins { font-family: 'Poppins', sans-serif; }
+
+    /* Highlight invalid input box */
+    .input-error {
+      border-color: #ef4444 !important;
+      background-color: #fef2f2 !important;
+      box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.25) !important;
+    }
   </style>
 </head>
 
@@ -44,11 +52,9 @@
 
     (async () => {
         try {
-            // Retrieve the user's role and position saved during login
-            let userRole = localStorage.getItem('userRole') || 'employee'; 
+            let userRole = localStorage.getItem('userRole') || 'admin'; 
             let userPosition = localStorage.getItem('userPosition');
 
-            // If userPosition is missing, fetch it from the API
             if (!userPosition) {
                 const token = localStorage.getItem('userToken');
                 if (token) {
@@ -69,8 +75,7 @@
                 }
             }
             
-            userPosition = userPosition || 'receptionist';
-            
+            userPosition = userPosition || 'admin';
             let taskbarFile = '/Taskbar/Admin_Task.html';
             
             if (userRole === 'admin') {
@@ -83,14 +88,12 @@
                 }
             }
 
-            // Fetch the assigned taskbar
             let response = await fetch(taskbarFile);
             
             if (response.ok) {
                 const data = await response.text();
                 document.getElementById('sidebar-placeholder').innerHTML = data;
                 
-                // Highlight the active page in the sidebar
                 const currentPage = window.location.pathname.split("/").pop();
                 document.querySelectorAll('.nav-link').forEach(link => {
                     if (link.getAttribute('data-page') === currentPage) {
@@ -129,8 +132,18 @@
     <!-- MAIN CONTENT -->
     <main class="w-full max-w-4xl mx-auto py-8 px-6 md:px-12">
 
+      <!-- Success & Error Banners -->
+      <div id="successMessage"
+           class="hidden text-center mb-6 p-4 bg-green-100 border border-green-400 text-green-800 rounded-2xl font-poppins shadow-sm transition-all duration-300">
+        Profile Changes Updated Successfully!
+      </div>
+
+      <div id="errorMessage"
+           class="hidden text-center mb-6 p-4 bg-red-100 border border-red-400 text-red-800 rounded-2xl font-poppins shadow-sm transition-all duration-300">
+      </div>
+
       <!-- PROFILE FORM -->
-      <form id="admin_profile" class="flex flex-col items-center gap-12 w-full">
+      <form id="admin_profile" class="flex flex-col items-center gap-10 w-full" novalidate>
 
         <!-- Section 1: Basic Information -->
         <div class="relative w-full bg-[#D7E3A5] rounded-2xl p-7 pt-9 shadow-sm">
@@ -223,6 +236,7 @@
               
               <div class="relative w-full">
                 <input type="password" id="new_password" name="new_password" placeholder="Enter New Password" maxlength="25"
+                       oncopy="return false" onpaste="return false" oncut="return false" ondrop="return false" autocomplete="off"
                        class="w-full px-4 py-2.5 pr-16 rounded-full bg-white text-[#2A1001] font-medium text-sm outline-none shadow-inner focus:ring-2 focus:ring-[#556b2f]/50">
                 <button type="button" id="ShowPass" aria-label="Show Password"
                   class="absolute inset-y-0 right-4 flex items-center cursor-pointer text-sm text-gray-500 hover:text-gray-700 font-medium">Show</button>
@@ -240,7 +254,7 @@
                 </p>
                 
                 <!-- Password Criteria Checklist -->
-                <div id="passwordCriteria" class="pl-1 mb-4">
+                <div id="passwordCriteria" class="pl-1 mb-2 hidden">
                     <p class="text-sm md:text-base font-bold text-[#2A1001] font-poppins mb-2">Password Criteria:</p>
                     <ul class="list-disc pl-5 text-xs md:text-sm font-poppins space-y-1">
                         <li id="req-length" class="text-gray-500 transition-colors duration-200">Must exceed 8 characters</li>
@@ -250,13 +264,14 @@
                     </ul>
                 </div>
               </div>
-              <div id="passwordWarning" class="text-red-700 text-xs font-semibold hidden mb-2"></div>
+              <div id="passwordWarning" class="text-red-700 text-xs font-semibold hidden mb-2 px-1"></div>
             </div>
 
             <div class="flex flex-col gap-1.5">
               <label for="confirm_password" class="text-[11px] font-extrabold tracking-wider text-[#2A1001] uppercase">Confirm Account Password:</label>
               <div class="relative w-full">
                 <input type="password" id="confirm_password" name="confirm_password" placeholder="Re-enter new password" maxlength="25"
+                       oncopy="return false" onpaste="return false" oncut="return false" ondrop="return false" autocomplete="off"
                        class="w-full px-4 py-2.5 pr-16 rounded-full bg-white text-[#2A1001] font-medium text-sm outline-none shadow-inner focus:ring-2 focus:ring-[#556b2f]/50">
                 <button type="button" id="ConShowEye" aria-label="Show Password"
                   class="absolute inset-y-0 right-4 flex items-center cursor-pointer text-sm text-gray-500 hover:text-gray-700 font-medium">Show</button>
@@ -281,12 +296,6 @@
           Edit Profile
         </button>
       </form>
-
-      <!-- Success Message -->
-      <div id="successMessage"
-           class="hidden text-center mt-6 p-4 bg-green-100 border border-green-400 text-green-800 rounded-2xl font-poppins shadow-sm transition-opacity duration-300">
-        Profile Changes Updated Successfully!
-      </div>
     </main>
   </div>
 
@@ -301,6 +310,7 @@
     const confirmPassword = document.getElementById('confirm_password');
     const phoneInput      = document.getElementById('phone');
     const successMessage  = document.getElementById('successMessage');
+    const errorMessage    = document.getElementById('errorMessage');
 
     const ShowEye = document.getElementById('ShowPass');
     const ConShowEye = document.getElementById('ConShowEye');
@@ -310,6 +320,7 @@
     const strongBar = document.getElementById('Strong');
     const passStrength = document.getElementById('PassStrength');
     const passwordWarning = document.getElementById('passwordWarning');
+    const passwordCriteriaEl = document.getElementById('passwordCriteria');
 
     const birthdayInput = document.getElementById('birthday');
     const today = new Date();
@@ -366,7 +377,6 @@
 
         if (value === '') {
             if (passwordWarning) passwordWarning.classList.add('hidden');
-            if (submitBtn) submitBtn.disabled = false;
             return;
         }
 
@@ -397,11 +407,15 @@
         const reqNum = document.getElementById('req-num');
         const reqSpec = document.getElementById('req-spec');
 
-        if (passwordValue === '') {
-            if (passwordWarning) passwordWarning.classList.add('hidden');
-            if (submitBtn) submitBtn.disabled = false;
+        // Reset when both are empty
+        if (passwordValue === '' && confirmValue === '') {
+            if (passwordWarning) {
+                passwordWarning.textContent = '';
+                passwordWarning.classList.add('hidden');
+            }
+            newPassword.classList.remove('input-error');
+            confirmPassword.classList.remove('input-error');
             
-            // Reset checklist colors when empty
             if (reqLength) reqLength.className = 'text-gray-500 transition-colors duration-200';
             if (reqCase) reqCase.className = 'text-gray-500 transition-colors duration-200';
             if (reqNum) reqNum.className = 'text-gray-500 transition-colors duration-200';
@@ -414,49 +428,36 @@
         const hasSpace = passwordValue.includes(' ');
         const hasSpecialChar = /[^A-Za-z0-9\s]/.test(passwordValue);
         const hasUpperLower = /[A-Z]/.test(passwordValue) && /[a-z]/.test(passwordValue);
-        const passwordsMatch = (passwordValue === confirmValue) && passwordValue !== '';
-        
-        // Repetition checks
         const hasRepeatChar = /(.)\1{2,}/.test(passwordValue);
         const hasRepeatPattern = /(.{2,})\1{2,}/.test(passwordValue);
 
-        // Update Criteria Checklist Colors
-        if (reqLength) reqLength.className = hasMinLength ? 'text-green-600 transition-colors duration-200' : 'text-gray-500 transition-colors duration-200';
-        if (reqCase) reqCase.className = hasUpperLower ? 'text-green-600 transition-colors duration-200' : 'text-gray-500 transition-colors duration-200';
-        if (reqNum) reqNum.className = hasNumber ? 'text-green-600 transition-colors duration-200' : 'text-gray-500 transition-colors duration-200';
-        if (reqSpec) reqSpec.className = hasSpecialChar ? 'text-green-600 transition-colors duration-200' : 'text-gray-500 transition-colors duration-200';
-
-        let strength = 0;
-        if (hasMinLength) strength++;
-        if (hasNumber) strength++;
-        if (hasSpecialChar) strength++;
-        if (hasUpperLower) strength++;
+        // 🟢 Update Criteria Checklist Colors to Green when met
+        if (reqLength) reqLength.className = hasMinLength ? 'text-green-600 font-bold transition-colors duration-200' : 'text-gray-500 transition-colors duration-200';
+        if (reqCase) reqCase.className = hasUpperLower ? 'text-green-600 font-bold transition-colors duration-200' : 'text-gray-500 transition-colors duration-200';
+        if (reqNum) reqNum.className = hasNumber ? 'text-green-600 font-bold transition-colors duration-200' : 'text-gray-500 transition-colors duration-200';
+        if (reqSpec) reqSpec.className = hasSpecialChar ? 'text-green-600 font-bold transition-colors duration-200' : 'text-gray-500 transition-colors duration-200';
 
         let warningMessage = "";
-        let isValid = true;
 
+        // Pattern & spacing rules
         if (passwordValue !== "" && hasSpace) {
             warningMessage = "Password should not contain spaces.";
-            isValid = false;
         } else if (passwordValue !== "" && hasRepeatChar) {
             warningMessage = "Password should not have repetitive characters.";
-            isValid = false;
         } else if (passwordValue !== "" && hasRepeatPattern) {
             warningMessage = "Password should not have repetitive patterns.";
-            isValid = false;
-        } else if (passwordValue !== "" && !hasMinLength) {
-            isValid = false;
-        } else if (passwordValue !== "" && !hasNumber) {
-            isValid = false;
-        } else if (passwordValue !== "" && !hasSpecialChar) {
-            isValid = false;
-        } else if (passwordValue !== "" && !hasUpperLower) {
-            isValid = false;
-        } else if (confirmValue !== "" && !passwordsMatch) {
-            warningMessage = "Passwords do not match.";
-            isValid = false;
         }
 
+        // ── REAL-TIME MATCH CHECK (Runs independently) ──
+        const passwordsMatch = (passwordValue === confirmValue) && passwordValue !== '';
+        if (confirmValue !== '' && !passwordsMatch) {
+            warningMessage = "Passwords do not match.";
+            confirmPassword.classList.add('input-error');
+        } else {
+            confirmPassword.classList.remove('input-error');
+        }
+
+        // Update warning display
         if (passwordWarning) {
             if (warningMessage !== "") {
                 passwordWarning.textContent = warningMessage;
@@ -466,8 +467,6 @@
                 passwordWarning.classList.add('hidden');
             }
         }
-
-        if (submitBtn) submitBtn.disabled = !isValid || strength < 3;
     }
 
     if (newPassword) {
@@ -480,16 +479,17 @@
         confirmPassword.addEventListener('input', checkPasswordRequirements);
     }
 
-    // ── Prevent Copy & Paste in Password Fields ──
-    if (newPassword) {
-      newPassword.addEventListener('paste', (event) => event.preventDefault());
-      newPassword.addEventListener('copy', (event) => event.preventDefault());
-    }
-    if (confirmPassword) {
-      confirmPassword.addEventListener('paste', (event) => event.preventDefault());
-      confirmPassword.addEventListener('copy', (event) => event.preventDefault());
-    }
-    // ---------------------------------------------
+    // ── STRICT BLOCK: Copy, Paste, Cut, Drop on Password Inputs ──
+    ['copy', 'paste', 'cut', 'drop'].forEach(eventType => {
+        newPassword?.addEventListener(eventType, e => {
+            e.preventDefault();
+            e.stopPropagation();
+        });
+        confirmPassword?.addEventListener(eventType, e => {
+            e.preventDefault();
+            e.stopPropagation();
+        });
+    });
 
     // ── SNAPSHOT STATE ──
     let formSnapshot = null;
@@ -507,6 +507,16 @@
       if (phoneInput) phoneInput.value = formSnapshot.phone;
       if (newPassword) newPassword.value = '';
       if (confirmPassword) confirmPassword.value = '';
+      newPassword?.classList.remove('input-error');
+      confirmPassword?.classList.remove('input-error');
+      passwordWarning?.classList.add('hidden');
+      
+      ['req-length', 'req-case', 'req-num', 'req-spec'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.className = 'text-gray-500 transition-colors duration-200';
+      });
+      [weakBar, mediumBar, goodBar, strongBar].forEach(b => { if (b) b.style.background = '#808A92'; });
+      if (passStrength) passStrength.textContent = '';
     }
 
     // ── FORM LOCK / UNLOCK ──
@@ -533,8 +543,19 @@
       if (passStrength && passStrength.parentElement) {
           passStrength.parentElement.classList.toggle('hidden', locked);
       }
-      if (locked && passwordWarning) {
-          passwordWarning.classList.add('hidden');
+      
+      if (passwordCriteriaEl) {
+          passwordCriteriaEl.classList.toggle('hidden', locked);
+      }
+
+      if (locked) {
+          if (passwordWarning) passwordWarning.classList.add('hidden');
+          ['req-length', 'req-case', 'req-num', 'req-spec'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.className = 'text-gray-500 transition-colors duration-200';
+          });
+          [weakBar, mediumBar, goodBar, strongBar].forEach(b => { if (b) b.style.background = '#808A92'; });
+          if (passStrength) passStrength.textContent = '';
       }
 
       submitGroup?.classList.toggle('hidden', locked);
@@ -554,7 +575,7 @@
       if (submitBtn) submitBtn.textContent = 'Save Profile';
     });
 
-function escapeHtml(str) {
+    function escapeHtml(str) {
       return String(str ?? '').replace(/[&<>"']/g, ch => ({
         '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
       }[ch]));
@@ -586,7 +607,6 @@ function escapeHtml(str) {
         if (document.getElementById('email')) document.getElementById('email').value = data.email || '';
         if (document.getElementById('sex')) document.getElementById('sex').value = data.sex === 'M' ? 'Male' : (data.sex === 'F' ? 'Female' : (data.sex || ''));
 
-        // Dynamic Specialization Capsules for Dentists (Unlikely for Admin, but kept for consistency)
         const specWrapper = document.getElementById('specializationWrapper');
         const specList = document.getElementById('specializationList');
 
@@ -628,6 +648,9 @@ function escapeHtml(str) {
     form?.addEventListener('submit', async function (e) {
       e.preventDefault();
 
+      if (successMessage) successMessage.classList.add('hidden');
+      if (errorMessage) errorMessage.classList.add('hidden');
+
       // Repetitive spam check (omits password fields)
       const textInputs = form.querySelectorAll('input[type="text"]:not([readonly]), input[type="email"]:not([readonly])');
       for (const input of textInputs) {
@@ -636,12 +659,12 @@ function escapeHtml(str) {
               const hasRepeatChar = /(.)\1{2,}/.test(val);
               const hasRepeatPattern = /(.{2,})\1{2,}/.test(val);
               if (hasRepeatChar || hasRepeatPattern) {
-                  alert('Inputs with highly repetitive characters (e.g. "aaaa", "ababab") are not allowed.');
+                  showNotification('error', 'Inputs with highly repetitive characters (e.g. "aaaa", "ababab") are not allowed.');
                   input.focus();
-                  input.classList.add('border-red-500', 'bg-red-50');
+                  input.classList.add('input-error');
                   return;
               } else {
-                  input.classList.remove('border-red-500', 'bg-red-50');
+                  input.classList.remove('input-error');
               }
           }
       }
@@ -652,21 +675,73 @@ function escapeHtml(str) {
         const curDate = new Date();
         curDate.setHours(0, 0, 0, 0);
         if (selectedBirthday > curDate) {
-          alert('Birthday cannot be a future date.');
+          showNotification('error', 'Birthday cannot be a future date.');
           return;
         }
       }
 
       const phoneValue = sanitizeInput(phoneInput?.value, 11);
       if (phoneValue && !isValidPHMobile(phoneValue)) {
-        alert('Please enter a valid PH mobile number (e.g. 09171234567).');
+        showNotification('error', 'Please enter a valid PH mobile number (e.g. 09171234567).');
+        phoneInput.focus();
+        phoneInput.classList.add('input-error');
         return;
+      } else {
+        phoneInput?.classList.remove('input-error');
       }
 
-      if (newPassword?.value && newPassword.value !== confirmPassword?.value) {
-        confirmPassword.setCustomValidity('Passwords do not match.');
-        confirmPassword.reportValidity();
-        return;
+      // Password Validation on Submit
+      if (newPassword?.value) {
+        const pw = newPassword.value;
+        const conf = confirmPassword?.value || '';
+        let pwError = null;
+
+        if (pw.includes(' ')) {
+          pwError = 'Password should not contain spaces.';
+        } else if (/(.)\1{2,}/.test(pw)) {
+          pwError = 'Password should not have repetitive characters (e.g. "aaa").';
+        } else if (/(.{2,})\1{2,}/.test(pw)) {
+          pwError = 'Password should not have repetitive patterns (e.g. "ababab").';
+        } else if (pw.length < 8) {
+          pwError = 'Password must exceed 8 characters.';
+        } else if (pw.length > 25) {
+          pwError = 'Password cannot exceed 25 characters.';
+        } else if (!/[A-Z]/.test(pw) || !/[a-z]/.test(pw)) {
+          pwError = 'Password must have Upper and Lower case.';
+        } else if (!/\d/.test(pw)) {
+          pwError = 'Password must have numbers.';
+        } else if (!/[^A-Za-z0-9\s]/.test(pw)) {
+          pwError = 'Password must have special characters.';
+        }
+
+        if (pwError) {
+          newPassword.classList.add('input-error');
+          if (passwordWarning) {
+            passwordWarning.textContent = pwError;
+            passwordWarning.classList.remove('hidden');
+          }
+          showNotification('error', pwError);
+          newPassword.focus();
+          newPassword.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          return;
+        } else {
+          newPassword.classList.remove('input-error');
+          if (passwordWarning) passwordWarning.classList.add('hidden');
+        }
+
+        if (pw !== conf) {
+          confirmPassword?.classList.add('input-error');
+          if (passwordWarning) {
+            passwordWarning.textContent = 'Passwords do not match.';
+            passwordWarning.classList.remove('hidden');
+          }
+          showNotification('error', 'Passwords do not match.');
+          confirmPassword?.focus();
+          confirmPassword?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          return;
+        } else {
+          confirmPassword?.classList.remove('input-error');
+        }
       }
 
       const payload = {
@@ -690,9 +765,9 @@ function escapeHtml(str) {
           body: JSON.stringify(payload)
         });
 
+        const resData = await response.json().catch(() => ({}));
         if (!response.ok) {
-          const errData = await response.json().catch(() => ({}));
-          throw new Error(errData.message || 'Failed to update profile');
+          throw new Error(resData.message || 'Failed to update profile');
         }
 
         if (newPassword) newPassword.value = '';
@@ -700,21 +775,36 @@ function escapeHtml(str) {
 
         takeSnapshot();
         setFormLocked(true);
-
-        if (successMessage) {
-          successMessage.classList.remove('hidden');
-          successMessage.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          setTimeout(() => successMessage.classList.add('hidden'), 4000);
-        }
+        showNotification('success', 'Profile Changes Updated Successfully!');
 
       } catch (error) {
         console.error('Error saving profile:', error);
-        alert('Could not update profile: ' + error.message);
+        showNotification('error', error.message || 'Could not update profile.');
+        if (error.message && error.message.toLowerCase().includes('password')) {
+          newPassword?.classList.add('input-error');
+          if (passwordWarning) {
+            passwordWarning.textContent = error.message;
+            passwordWarning.classList.remove('hidden');
+          }
+          newPassword?.focus();
+        }
       }
     });
 
+    function showNotification(type, text) {
+      if (successMessage) successMessage.classList.add('hidden');
+      if (errorMessage) errorMessage.classList.add('hidden');
+      const target = type === 'success' ? successMessage : errorMessage;
+      if (target) {
+        target.textContent = text;
+        target.classList.remove('hidden');
+        target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        setTimeout(() => target.classList.add('hidden'), 4000);
+      }
+    }
+
     document.addEventListener('DOMContentLoaded', loadProfileFromDatabase);
   </script>
-
+  <script src="/InactivityTimer/InactivityTimer.js"></script>
 </body>
 </html>

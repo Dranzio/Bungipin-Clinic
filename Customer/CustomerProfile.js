@@ -5,7 +5,7 @@ const path = require('path');
 const fs = require('fs');
 const { put, del } = require('@vercel/blob');
 const { logActivity } = require('../Admin/auditLogRoutes');
-const { isPasswordReused, REUSE_MESSAGE } = require('../Utils/passwordHistory'); // eli change
+const { isPasswordReused, REUSE_MESSAGE } = require('../Utils/passwordHistory');
 
 function getIp(req) {
     return req.ip || req.headers['x-forwarded-for'];
@@ -14,6 +14,10 @@ function getIp(req) {
 const SALT_ROUNDS = 10;
 const uploadDir = path.join(__dirname, '..', 'uploads', 'medical-pdfs');
 const isVercel = process.env.VERCEL === '1' || !!process.env.BLOB_READ_WRITE_TOKEN;
+
+// ⏱️ 5-Minute Password Cooldown Tracker (5 mins = 300,000 ms)
+const PASSWORD_COOLDOWN_MS = 5 * 60 * 1000;
+const patientPasswordCooldowns = new Map();
 
 const storage = multer.memoryStorage();
 
@@ -182,18 +186,29 @@ function registerPatientProfileRoute(app, db) {
         try {
             await connection.beginTransaction();
 
-            // 1. Password Update
+            // 1. Password Update with 5-Minute Cooldown & Reuse Check
             if (new_password) {
-                // eli change: block the new password if it matches the current one
+                const lastChanged = patientPasswordCooldowns.get(patient_id);
+                if (lastChanged && (Date.now() - lastChanged < PASSWORD_COOLDOWN_MS)) {
+                    const remainingMins = Math.ceil((PASSWORD_COOLDOWN_MS - (Date.now() - lastChanged)) / 60000);
+                    await connection.rollback();
+                    return res.status(429).json({
+                        message: `You recently changed your password. For security, please wait ${remainingMins} minute(s) before changing it again.`
+                    });
+                }
+
                 if (await isPasswordReused(connection, patient_id, new_password)) {
                     await connection.rollback();
                     return res.status(400).json({ message: REUSE_MESSAGE });
                 }
+
                 const password_hash = await bcrypt.hash(new_password, SALT_ROUNDS);
                 await connection.query(
                     `UPDATE users SET password_hash = ? WHERE user_id = ?`,
                     [password_hash, patient_id]
                 );
+
+                patientPasswordCooldowns.set(patient_id, Date.now());
             }
 
             // 2. Profile Details Update

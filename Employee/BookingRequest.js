@@ -411,7 +411,7 @@ function registerBookingRequestRoutes(app, db, io) {
             return res.status(400).json({ message: 'appointment_date and time_slot are required' });
         }
 
-        const reschedDateTime = new Date(`${appointment_date}T${time_slot}`);
+        const reschedDateTime = new Date(`${appointment_date}T${time_slot}+08:00`);
         const maxAllowedDate = new Date();
         maxAllowedDate.setMonth(maxAllowedDate.getMonth() + MAX_ADVANCE_MONTHS);
         maxAllowedDate.setHours(23, 59, 59, 999);
