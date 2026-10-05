@@ -315,6 +315,7 @@
     const today = new Date();
     if (birthdayInput) {
       birthdayInput.max = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+      birthdayInput.min = '1900-01-01';
     }
 
     function sanitizeInput(str, maxLen = 100) {

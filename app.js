@@ -126,6 +126,7 @@ app.get('/passwordGate.js', (req, res) => {
 
 app.use('/LogInRegister', express.static(path.join(__dirname, 'LogInRegister')));
 app.use('/WelcomePage', express.static(path.join(__dirname, 'WelcomePage')));
+app.use('/InactivityTimer', express.static(path.join(__dirname, 'InactivityTimer')));
 
 app.use('/Admin', authenticateToken, requirePageRole('admin'), express.static(path.join(__dirname, 'Admin')));
 app.use('/Employee', authenticateToken, requirePageRole('employee'), express.static(path.join(__dirname, 'Employee')));
