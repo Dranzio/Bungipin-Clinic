@@ -17,8 +17,7 @@
              class="lg:hidden w-[45%] max-w-[220px] mt-4 mb-2 animate-slideInLeft" />
     </div>
 
-    <div
-            class="hidden lg:flex absolute right-0 top-0 h-full w-[40%] flex-col items-center justify-center z-20 gap-8">
+    <div class="hidden lg:flex absolute right-0 top-0 h-full w-[40%] flex-col items-center justify-center z-20 gap-8">
         <img src="../assets/logowithtitle.png"
              class="w-[70%] max-w-[500px] pointer-events-none select-none drop-shadow-xl animate-slideInLeft" />
     </div>
@@ -36,78 +35,91 @@
 
         <form id="registerForm" action="#" method="POST">
 
-            <h1
-                    class="text-2xl sm:text-3xl md:text-5xl 2xl:text-[73px] font-bold text-[#2A1001] font-['Poppins'] text-left">
-                REGISTER</h1>
+            <h1 class="text-2xl sm:text-3xl md:text-5xl 2xl:text-[73px] font-bold text-[#2A1001] font-['Poppins'] text-left">
+                REGISTER
+            </h1>
 
             <p class="mt-3 text-sm text-left text-[#2A1001] font-['Poppins'] pb-6 md:pb-10">
                 Let’s get you all set up to begin your journey with Bungipin Dental Clinic!
             </p>
 
-<div class="flex flex-col sm:flex-row gap-4">
-    <div class="flex-1">
-        <label class="text-sm md:text-[20px] block font-semibold text-[#2A1001] font-poppins mb-2">
-            First Name: <span class="text-red-500">*</span>
-        </label>
-        <input type="text" id="first_name" name="first_name" required minlength="5"
-               pattern="[a-zA-Z\u00C0-\u017F\s'\\-.]{5,50}"
-               title="Letters, spaces, hyphens, apostrophes, and periods only (Min. 5 characters)"
-               class="w-full h-8 md:h-11 px-4 bg-white outline-none rounded-[30px] border border-gray-200 mb-4 md:mb-6" maxlength="150"
-               placeholder="Bungie" maxlength="50" />
-    </div>
-
-    <div class="flex-1">
-        <label class="text-sm md:text-[20px] block font-semibold text-[#2A1001] font-poppins mb-2">
-            Last Name: <span class="text-red-500">*</span>
-        </label>
-        <input type="text" id="last_name" name="last_name" required minlength="5"
-               pattern="[a-zA-Z\u00C0-\u017F\s'\\-.]{5,50}"
-               title="Letters, spaces, hyphens, apostrophes, and periods only (Min. 5 characters)"
-               class="w-full h-8 md:h-11 px-4 bg-white outline-none rounded-[30px] border border-gray-200 mb-4 md:mb-6" maxlength="150"
-               placeholder="Holmes" maxlength="50" />
-    </div>
-</div>
-
-<!-- Warning message container for Name Fields -->
-<div id="nameWarning" class="text-red-700 text-xs md:text-sm font-poppins font-semibold mb-6 md:mb-8 hidden"></div>
-
-            <!-- NEW: Warning message container for Name Fields -->
-            <div id="nameWarning" class="text-red-700 text-xs md:text-sm font-poppins font-semibold mb-6 md:mb-8 hidden"></div>
-
+            <!-- Names Container -->
             <div class="flex flex-col sm:flex-row gap-4">
-                <div class="flex-1">
-                    <label
-                            class="text-sm md:text-[20px] block font-semibold text-[#2A1001] font-poppins mb-2">
-                        Email: <span class="text-red-500">*</span>
-                    </label>
+                <!-- First Name -->
+                <div class="flex-1 relative">
+                    <div class="flex justify-between items-baseline mb-2">
+                        <label for="first_name" class="text-sm md:text-[20px] font-semibold text-[#2A1001] font-poppins">
+                            First Name: <span class="text-red-500">*</span>
+                        </label>
+                        <span id="firstNameError" class="text-[10px] md:text-xs text-red-600 font-bold hidden"></span>
+                    </div>
+                    <input type="text" id="first_name" name="first_name" required minlength="2"
+                           pattern="[a-zA-Z\u00C0-\u017F\s'\-.]{2,50}"
+                           title="Letters, spaces, hyphens, apostrophes, and periods only (Min. 2 characters)"
+                           class="w-full h-8 md:h-11 px-4 bg-white outline-none rounded-[30px] border border-gray-200 mb-4 md:mb-6 transition-colors" maxlength="50"
+                           placeholder="Bungie" />
+                </div>
 
+                <!-- Last Name -->
+                <div class="flex-1 relative">
+                    <div class="flex justify-between items-baseline mb-2">
+                        <label for="last_name" class="text-sm md:text-[20px] font-semibold text-[#2A1001] font-poppins">
+                            Last Name: <span class="text-red-500">*</span>
+                        </label>
+                        <span id="lastNameError" class="text-[10px] md:text-xs text-red-600 font-bold hidden"></span>
+                    </div>
+                    <input type="text" id="last_name" name="last_name" required minlength="2"
+                           pattern="[a-zA-Z\u00C0-\u017F\s'\-.]{2,50}"
+                           title="Letters, spaces, hyphens, apostrophes, and periods only (Min. 2 characters)"
+                           class="w-full h-8 md:h-11 px-4 bg-white outline-none rounded-[30px] border border-gray-200 mb-4 md:mb-6 transition-colors" maxlength="50"
+                           placeholder="Holmes" />
+                </div>
+            </div>
+
+            <!-- Contact Container -->
+            <div class="flex flex-col sm:flex-row gap-4">
+                <!-- Email -->
+                <div class="flex-1 relative">
+                    <div class="flex justify-between items-baseline mb-2">
+                        <label for="email" class="text-sm md:text-[20px] font-semibold text-[#2A1001] font-poppins">
+                            Email: <span class="text-red-500">*</span>
+                        </label>
+                        <span id="emailError" class="text-[10px] md:text-xs text-red-600 font-bold hidden"></span>
+                    </div>
                     <input type="email" id="email" name="email" required
-                           class="w-full h-8 md:h-11 px-4 bg-white outline-none rounded-[30px] border border-gray-200 mb-4 md:mb-12" maxlength="150"
+                           class="w-full h-8 md:h-11 px-4 bg-white outline-none rounded-[30px] border border-gray-200 mb-4 md:mb-12 transition-colors" maxlength="150"
                            placeholder="bungipin123@gmail.com" />
                 </div>
 
-                <div class="flex-1">
-                    <label class="text-sm md:text-[20px] block font-semibold text-[#2A1001] font-poppins mb-2">
-                        Phone Number: <span class="text-red-500">*</span>
-                    </label>
-
-                    <input type="tel" id="phone" name="phone" pattern="^09\d{9}$" maxlength="11"
-                           oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 11);" required
-                           class="w-full h-8 md:h-11 px-4 bg-white outline-none rounded-[30px] border border-gray-200 mb-4 md:mb-12"
+                <!-- Phone Number -->
+                <div class="flex-1 relative">
+                    <div class="flex justify-between items-baseline mb-2">
+                        <label for="phone" class="text-sm md:text-[20px] font-semibold text-[#2A1001] font-poppins">
+                            Phone Number: <span class="text-red-500">*</span>
+                        </label>
+                        <span id="phoneError" class="text-[10px] md:text-xs text-red-600 font-bold hidden"></span>
+                    </div>
+                    <input type="tel" id="phone" name="phone" pattern="^09\d{9}$" maxlength="11" required
+                           oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 11);"
+                           class="w-full h-8 md:h-11 px-4 bg-white outline-none rounded-[30px] border border-gray-200 mb-4 md:mb-12 transition-colors"
                            placeholder="09171234567" />
                 </div>
             </div>
 
+            <!-- Passwords Container -->
             <div class="flex flex-col sm:flex-row gap-4">
-                <div class="flex-1">
-                    <label class="text-sm md:text-[20px] block font-semibold text-[#2A1001] font-poppins mb-2">
-                        Password: <span class="text-red-500">*</span>
-                    </label>
+                <!-- Password -->
+                <div class="flex-1 relative">
+                    <div class="flex justify-between items-baseline mb-2">
+                        <label for="password_hash" class="text-sm md:text-[20px] font-semibold text-[#2A1001] font-poppins">
+                            Password: <span class="text-red-500">*</span>
+                        </label>
+                        <span id="passwordError" class="text-[10px] md:text-xs text-red-600 font-bold hidden"></span>
+                    </div>
 
-                    <!-- Reduced mb-12 to mb-8 to make room for the checklist -->
                     <div class="relative w-full mb-8">
                         <input type="password" id="password_hash" name="password_hash" required minlength="8" maxlength="25"
-                            class="w-full h-8 md:h-11 px-4 pr-16 bg-white outline-none rounded-[30px] border border-gray-200"
+                            class="w-full h-8 md:h-11 px-4 pr-16 bg-white outline-none rounded-[30px] border border-gray-200 transition-colors"
                             placeholder="12345678" />
 
                         <button type="button" id="ShowPass" aria-label="Show Password"
@@ -128,7 +140,7 @@
                         </p>
                     </div>
 
-                    <!-- NEW: Password Criteria Checklist -->
+                    <!-- Password Criteria Checklist -->
                     <div id="passwordCriteria" class="mt-8 mb-6 md:mb-10 pl-2">
                         <p class="text-sm md:text-base font-bold text-[#2A1001] font-poppins mb-2">Password Criteria:</p>
                         <ul class="list-disc pl-5 text-xs md:text-sm font-poppins space-y-1">
@@ -140,13 +152,18 @@
                     </div>
                 </div>
 
-                <div class="flex-1">
-                    <label class="text-sm md:text-[20px] block font-semibold text-[#2A1001] font-poppins mb-2">
-                        Confirm Password: <span class="text-red-500">*</span>
-                    </label>
+                <!-- Confirm Password -->
+                <div class="flex-1 relative">
+                    <div class="flex justify-between items-baseline mb-2">
+                        <label for="confirm_password" class="text-sm md:text-[20px] font-semibold text-[#2A1001] font-poppins">
+                            Confirm Password: <span class="text-red-500">*</span>
+                        </label>
+                        <span id="confirmError" class="text-[10px] md:text-xs text-red-600 font-bold hidden"></span>
+                    </div>
+                    
                     <div class="relative w-full mb-4 md:mb-12">
                         <input type="password" id="confirm_password" name="confirm_password" required minlength="8" maxlength="25"
-                               class="w-full h-8 md:h-11 px-4 pr-16 bg-white outline-none rounded-[30px] border border-gray-200"
+                               class="w-full h-8 md:h-11 px-4 pr-16 bg-white outline-none rounded-[30px] border border-gray-200 transition-colors"
                                placeholder="Confirm Password"
                                oninput="this.setCustomValidity(this.value !== document.getElementById('password_hash').value ? 'Passwords do not match.' : '')" />
 
@@ -154,38 +171,42 @@
                                 class="absolute right-4 top-1/2 -translate-y-1/2 cursor-pointer text-sm text-gray-500 hover:text-gray-700 font-medium">Show</button>
                     </div>
 
-                    <div id="passwordWarning"
-                        class="text-red-700 text-xs md:text-sm font-poppins font-semibold mb-6 md:mb-12 hidden">
-                    </div>
-
-                    <div class="w-full flex justify-end">
-                        <div class="g-recaptcha" data-sitekey="6Le1oNotAAAAAMjJoXpkHuKwitySmmIIfWV2g-Mm"></div>
+                    <div class="w-full flex justify-end mt-6 md:mt-12">
+                        <div>
+                            <div class="g-recaptcha"
+                                 data-sitekey="6Le1oNotAAAAAMjJoXpkHuKwitySmmIIfWV2g-Mm"
+                                 data-callback="captchaCompleted"
+                                 data-expired-callback="captchaExpired"
+                                 data-error-callback="captchaExpired"></div>
+                            <p id="captchaWarning" class="text-red-700 text-xs md:text-sm font-poppins font-semibold mt-2 hidden">
+                                Please complete the CAPTCHA.
+                            </p>
+                        </div>
                     </div>
                 </div>
             </div>
 
+            <!-- Sex & Terms -->
             <div class="flex items-center gap-6 mb-6 md:mb-12">
-                <label
-                        class="text-sm md:text-[20px] font-semibold text-[#2A1001] font-poppins whitespace-nowrap">
+                <label class="text-sm md:text-[20px] font-semibold text-[#2A1001] font-poppins whitespace-nowrap">
                     Sex: <span class="text-red-500">*</span>
                 </label>
 
                 <div class="flex items-center gap-6">
-                    <label
-                            class="flex items-center gap-2 text-sm md:text-base text-[#2A1001] font-poppins cursor-pointer">
-                        <input type="radio" id="male" name="sex" value="M" required
-                               class="w-4 h-4 accent-[#2A1001]" />
+                    <label class="flex items-center gap-2 text-sm md:text-base text-[#2A1001] font-poppins cursor-pointer">
+                        <input type="radio" id="male" name="sex" value="M" required class="w-4 h-4 accent-[#2A1001]" />
                         Male
                     </label>
 
-                    <label
-                            class="flex items-center gap-2 text-sm md:text-base text-[#2A1001] font-poppins cursor-pointer">
-                        <input type="radio" id="female" name="sex" value="F"
-                               class="w-4 h-4 accent-[#2A1001]" />
+                    <label class="flex items-center gap-2 text-sm md:text-base text-[#2A1001] font-poppins cursor-pointer">
+                        <input type="radio" id="female" name="sex" value="F" class="w-4 h-4 accent-[#2A1001]" />
                         Female
                     </label>
                 </div>
             </div>
+            <p id="sexWarning" class="text-red-700 text-xs md:text-sm font-poppins font-semibold -mt-4 mb-6 md:mb-10 hidden">
+                Please select your sex.
+            </p>
 
             <div class="flex items-center justify-center gap-2 mt-6 mb-6 md:mb-8">
                 <input type="checkbox" id="terms" required disabled
@@ -198,15 +219,11 @@
                         I agree to the
                     </label>
 
-                    <span id="termsLink"
-                          class="text-blue-500 hover:underline cursor-pointer">
+                    <span id="termsLink" class="text-blue-500 hover:underline cursor-pointer">
                         Terms and Conditions
                     </span>
-
                     and
-
-                    <span id="privacyLink"
-                          class="text-blue-500 hover:underline cursor-pointer">
+                    <span id="privacyLink" class="text-blue-500 hover:underline cursor-pointer">
                         Privacy Policy
                     </span>
 
@@ -216,8 +233,8 @@
                 </div>
             </div>
 
+            <!-- Buttons -->
             <div class="flex justify-center gap-5">
-
                 <button type="submit" id="createAccountBtn" disabled
                         class="w-1/2 sm:w-[220px] text-sm md:text-[20px] font-bold py-2 px-4 rounded-full transition-all duration-200 ease-in-out text-center
                         disabled:bg-[#808a92] disabled:text-[#2A1001] disabled:cursor-not-allowed disabled:shadow-none disabled:hover:scale-100 disabled:active:scale-100
@@ -238,7 +255,6 @@
                         bg-[#D5C04D] text-[#FDFCE9] shadow-lg hover:scale-105 hover:bg-[#FDFCE9] cursor-pointer hover:text-[#2A1001] hover:shadow-xl active:scale-95 active:bg-[#c2ae3b]">
                     Save Draft
                 </button>
-
             </div>
 
             <div class="text-center mt-2 mb-4 md:mb-8 text-sm md:text-base text-[#2A1001] font-poppins">
@@ -249,14 +265,13 @@
             </div>
 
         </form>
-
     </div>
 
+    <!-- Modals (Terms & Privacy) -->
     <div id="policyModal"
          class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4 transition-opacity duration-300">
 
-        <div
-                class="bg-[#F2F0EF] rounded-[30px] w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl relative p-6 md:p-8">
+        <div class="bg-[#F2F0EF] rounded-[30px] w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl relative p-6 md:p-8">
 
             <button id="closeServiceModal"
                     class="absolute top-5 right-6 text-3xl font-extrabold text-[#382414] hover:opacity-60 transition leading-none">
@@ -264,12 +279,8 @@
             </button>
 
             <div class="flex items-center justify-center gap-3 mt-2 mb-6 border-b border-gray-100 pb-4">
-                <img src="../assets/logowithtitle.png"
-                     class="w-10 h-10 object-contain shrink-0"
-                     alt="Logo" />
-
-                <h2 id="modalTitle"
-                    class="text-2xl md:text-3xl font-extrabold text-[#2A1001] font-poppins text-center">
+                <img src="../assets/logowithtitle.png" class="w-10 h-10 object-contain shrink-0" alt="Logo" />
+                <h2 id="modalTitle" class="text-2xl md:text-3xl font-extrabold text-[#2A1001] font-poppins text-center">
                     Terms & Conditions
                 </h2>
             </div>
@@ -288,16 +299,35 @@
     </div>
 
     <script>
+        // Form & Button Elements
         const form = document.getElementById('registerForm');
-        const password = document.getElementById('password_hash');
-        const confirmPassword = document.getElementById('confirm_password');
-        const successMessage = document.getElementById('successMessage');
         const clearBtn = document.getElementById('clearBtn');
         const draftBtn = document.getElementById('DraftBtn');
+        const createAccountBtn = document.getElementById('createAccountBtn');
         const allInputs = form.querySelectorAll('input');
         const termsCheckbox = document.getElementById('terms');
-        const createAccountBtn = document.getElementById('createAccountBtn');
-        const passwordWarning = document.getElementById('passwordWarning');
+        
+        // Input Fields
+        const fNameInput = document.getElementById('first_name');
+        const lNameInput = document.getElementById('last_name');
+        const emailInput = document.getElementById('email');
+        const phoneInput = document.getElementById('phone');
+        const password = document.getElementById('password_hash');
+        const confirmPassword = document.getElementById('confirm_password');
+        
+        // Error Spans
+        const firstNameError = document.getElementById('firstNameError');
+        const lastNameError = document.getElementById('lastNameError');
+        const emailError = document.getElementById('emailError');
+        const phoneError = document.getElementById('phoneError');
+        const passError = document.getElementById('passwordError');
+        const confirmError = document.getElementById('confirmError');
+        const sexWarning = document.getElementById('sexWarning');
+        const sexRadios = document.querySelectorAll('input[name="sex"]');
+        let sexTouched = false;
+
+        // UI & Modals Elements
+        const successMessage = document.getElementById('successMessage');
         const ShowEye = document.getElementById('ShowPass');
         const ConShowEye = document.getElementById('ConShowEye');
         const weakBar = document.getElementById('Weak');
@@ -305,12 +335,12 @@
         const goodBar = document.getElementById('Good');
         const strongBar = document.getElementById('Strong');
         const passStrength = document.getElementById('PassStrength');
-
+        
         const policyModal = document.getElementById('policyModal');
         const termsLink = document.getElementById('termsLink');
         const privacyLink = document.getElementById('privacyLink');
         const closeModalBtn = document.getElementById('closeModalBtn');
-        const closeModalIcon = document.getElementById('closeModalIcon');
+        const closeServiceModal = document.getElementById('closeServiceModal');
         const modalTitle = document.getElementById('modalTitle');
         const modalContent = document.getElementById('modalContent');
         const statusBanner = document.getElementById('statusBanner');
@@ -318,6 +348,146 @@
         const bannerText = document.getElementById('bannerText');
         const termsHint = document.getElementById('termsHint');
 
+        // ==========================================
+        // 1. MODULAR BLUR VALIDATION SYSTEM
+        // ==========================================
+        const validateNameField = (value, isBlur) => {
+            if (value === '') return isBlur ? 'Please input a name' : null;
+            
+            // Real-time checks (Triggers immediately while typing)
+            if (/[^a-zA-Z\u00C0-\u017F\s'\-.]/.test(value)) return 'Special characters and numbers not accepted';
+            if (/(.)\1{2,}/.test(value)) return 'Cannot contain 3 repeating characters';
+            if (/(.{2,})\1{2,}/.test(value)) return 'Cannot contain repetitive patterns';
+            
+            // Blur checks (Only triggers when leaving the field)
+            if (isBlur && value.length < 2) return 'Must be at least 2 characters';
+            return null;
+        };
+
+        const validateEmail = (value, isBlur) => {
+            if (value === '') return isBlur ? 'Please enter an email address' : null;
+            // Only check format on blur so we don't yell at them while they type "a@g.c"
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (isBlur && !emailRegex.test(value)) return 'Please enter a valid email address.';
+            return null;
+        };
+
+        const validatePhone = (value, isBlur) => {
+            if (value === '') return isBlur ? 'Please enter a phone number' : null;
+            // Only check length on blur
+            if (isBlur && !/^09\d{9}$/.test(value)) return 'Must be 11 digits starting with 09';
+            return null;
+        };
+
+        const validatePass = (value, isBlur) => {
+            if (value === '') return isBlur ? 'Password is required' : null;
+            
+            // Real-time checks
+            if (value.includes(' ')) return 'Cannot contain spaces';
+            if (/(.)\1{2,}/.test(value)) return 'Cannot have repetitive characters (e.g. aaa)';
+            if (/(.{2,})\1{2,}/.test(value)) return 'Cannot have repetitive patterns (e.g. ababab)';
+            
+            // Blur checks (We let the checklist handle these visually while typing)
+            if (isBlur) {
+                if (value.length < 8) return 'Must be at least 8 characters';
+                if (!/\d/.test(value)) return 'Must contain a number';
+                if (!/[^A-Za-z0-9\s]/.test(value)) return 'Must contain a special character';
+                if (!/[A-Z]/.test(value) || !/[a-z]/.test(value)) return 'Must contain uppercase and lowercase';
+            }
+            return null;
+        };
+
+        const validateConfirm = (value, isBlur) => {
+            if (value === '') return isBlur ? 'Please confirm your password' : null;
+            if (value !== password.value) {
+                // Show real-time error only if they've typed enough characters to match, otherwise wait for blur
+                if (isBlur || value.length >= password.value.length) {
+                    return 'Passwords do not match';
+                }
+            }
+            return null;
+        };
+
+        function applyDynamicValidation(inputElement, errorElement, validatorFn) {
+            
+            // Central function to handle the styling
+            function executeValidation(isBlur) {
+                let errorMsg = validatorFn(inputElement.value.trim(), isBlur);
+                const value = inputElement.value.trim();
+
+                // Custom empty-field messages requested for the registration form.
+                if (isBlur && value === '') {
+                    const emptyMessages = {
+                        first_name: 'Please enter your first name.',
+                        last_name: 'Please enter your last name.',
+                        email: 'Please enter your email.',
+                        phone: 'Please enter your phone number.',
+                        password_hash: 'Please enter your password.',
+                        confirm_password: 'Please confirm your password.'
+                    };
+                    errorMsg = emptyMessages[inputElement.id] || errorMsg;
+                }
+
+                if (errorMsg) {
+                    inputElement.classList.remove('border-gray-200');
+                    inputElement.classList.add('border-red-500', 'bg-red-50');
+                    errorElement.textContent = errorMsg;
+                    errorElement.classList.remove('hidden');
+                } else {
+                    inputElement.classList.add('border-gray-200');
+                    inputElement.classList.remove('border-red-500', 'bg-red-50');
+                    errorElement.classList.add('hidden');
+                }
+            }
+
+            // 1. Triggers every time a key is pressed
+            inputElement.addEventListener('input', () => executeValidation(false));
+            
+            // 2. Triggers when tabbing away
+            inputElement.addEventListener('blur', () => executeValidation(true));
+            
+            // 3. Clears the red box if they click back into an empty field to fix it
+            inputElement.addEventListener('focus', function() {
+                if (this.value.trim() === '') {
+                    this.classList.add('border-gray-200');
+                    this.classList.remove('border-red-500', 'bg-red-50');
+                    errorElement.classList.add('hidden');
+                }
+            });
+        }
+
+        applyDynamicValidation(fNameInput, firstNameError, validateNameField);
+        applyDynamicValidation(lNameInput, lastNameError, validateNameField);
+        applyDynamicValidation(emailInput, emailError, validateEmail);
+        applyDynamicValidation(phoneInput, phoneError, validatePhone);
+        applyDynamicValidation(password, passError, validatePass);
+        applyDynamicValidation(confirmPassword, confirmError, validateConfirm);
+
+        // Sex warning: do not show anything on page load. Show it only after
+        // the user leaves the sex controls without selecting Male/Female.
+        sexRadios.forEach(radio => {
+            radio.addEventListener('blur', () => {
+                sexTouched = true;
+                const sexSelected = document.querySelector('input[name="sex"]:checked');
+
+                if (!sexSelected) {
+                    sexWarning.textContent = 'Please select your sex.';
+                    sexWarning.classList.remove('hidden');
+                }
+            });
+
+            radio.addEventListener('change', () => {
+                sexTouched = true;
+                sexWarning.textContent = '';
+                sexWarning.classList.add('hidden');
+                checkForm();
+            });
+        });
+
+
+        // ==========================================
+        // 2. UI HELPERS & CHECKLISTS
+        // ==========================================
         function showStatusBanner (message, isLoading = false) {
             bannerText.textContent = message;
 
@@ -332,7 +502,6 @@
             }
 
             statusBanner.classList.remove('hidden');
-
             statusBanner.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
 
@@ -358,139 +527,74 @@
 
         function updatePasswordStrength() {
             const value = password.value;
-
             const bars = [weakBar, mediumBar, goodBar, strongBar];
-
             let strengthColor = '#808a92';
 
-            bars.forEach(bar => {
-                bar.style.background = '#808A92';
-            });
-
+            bars.forEach(bar => { bar.style.background = '#808A92'; });
             passStrength.textContent = '';
 
-            if (value === '') {
-                return;
-            }
+            if (value === '') return;
 
             let strength = 0;
+            if (value.length >= 8) strength++;
+            if (/\d/.test(value)) strength++;
+            if (/[^A-Za-z0-9\s]/.test(value)) strength++;
+            if (/[A-Z]/.test(value) && /[a-z]/.test(value)) strength++;
 
-            if (value.length >= 8) {
-                strength++;
-            }
-
-            if (/\d/.test(value)) {
-                strength++;
-            }
-
-            // 3. Contains a special character
-            if (/[^A-Za-z0-9\s]/.test(value)) {
-                strength++;
-            }
-
-            if (/[A-Z]/.test(value) && /[a-z]/.test(value)) {
-                strength++
-            }
-
-            // Strength text
-            if (strength === 1) {
-                passStrength.textContent = 'Weak';
-                strengthColor = '#EF4444';
-            } else if (strength === 2) {
-                passStrength.textContent = 'Medium';
-                strengthColor = '#F59E0B';
-            } else if (strength === 3) {
-                passStrength.textContent = 'Good';
-                strengthColor = '#EAB308';
-            } else if (strength === 4) {
-                passStrength.textContent = 'Strong';
-                strengthColor = '#22C55E';
-            }
+            if (strength === 1) { passStrength.textContent = 'Weak'; strengthColor = '#EF4444'; } 
+            else if (strength === 2) { passStrength.textContent = 'Medium'; strengthColor = '#F59E0B'; } 
+            else if (strength === 3) { passStrength.textContent = 'Good'; strengthColor = '#EAB308'; } 
+            else if (strength === 4) { passStrength.textContent = 'Strong'; strengthColor = '#22C55E'; }
 
             for (let i = 0; i < strength; i++) {
                 bars[i].style.backgroundColor = strengthColor;
             }
         }
-
         password.addEventListener('input', updatePasswordStrength);
 
+        // ==========================================
+        // 3. MASTER FORM CHECK
+        // ==========================================
         function checkForm() {
             let hasAnyInput = false;
             let allRequiredFilled = true;
-            let warningMessage = "";
 
             allInputs.forEach(input => {
-
                 if ((input.type === 'checkbox' || input.type === 'radio') && input.checked) {
                     hasAnyInput = true;
-                } else if (
-                    input.type !== 'checkbox' &&
-                    input.type !== 'radio' &&
-                    input.value.trim() !== ''
-                ) {
+                } else if (input.type !== 'checkbox' && input.type !== 'radio' && input.value.trim() !== '') {
                     hasAnyInput = true;
                 }
 
                 if (input.hasAttribute('required')) {
-
                     if (input.type === 'checkbox' && !input.checked) {
                         allRequiredFilled = false;
-
-                    } else if (
-                        input.type !== 'radio' &&
-                        input.type !== 'checkbox' &&
-                        input.value.trim() === ''
-                    ) {
+                    } else if (input.type !== 'radio' && input.type !== 'checkbox' && input.value.trim() === '') {
                         allRequiredFilled = false;
                     }
                 }
             });
 
-            const fName = document.getElementById('first_name').value.trim();
-            const lName = document.getElementById('last_name').value.trim();
-            const nameWarning = document.getElementById('nameWarning');
-            let nameWarnMsg = "";
-            // 1. Check for minimum 2 characters
-            if ((fName.length > 0 && fName.length < 2) || (lName.length > 0 && lName.length < 2)) {
-                nameWarnMsg = "Names must be at least 2 characters long.";
-                allRequiredFilled = false;
-            } 
-            // 2. Check for 3+ repeating identical characters (e.g. "aaa")
-            else if (/(.)\1{2,}/.test(fName) || /(.)\1{2,}/.test(lName)) {
-                nameWarnMsg = "Names cannot contain 3 or more repeating characters (e.g., 'aaa').";
-                allRequiredFilled = false;
-            } 
-            // 3. Check for repetitive sequential patterns (e.g. "ababab")
-            else if (/(.{2,})\1{2,}/.test(fName) || /(.{2,})\1{2,}/.test(lName)) {
-                nameWarnMsg = "Names cannot contain repetitive patterns (e.g., 'ababab').";
-                allRequiredFilled = false;
-            }
+            // Logical Name checks (no UI updates here)
+            const fName = fNameInput.value.trim();
+            const lName = lNameInput.value.trim();
+            if ((fName.length > 0 && fName.length < 2) || (lName.length > 0 && lName.length < 2)) allRequiredFilled = false;
+            if (/(.)\1{2,}/.test(fName) || /(.)\1{2,}/.test(lName)) allRequiredFilled = false;
+            if (/(.{2,})\1{2,}/.test(fName) || /(.{2,})\1{2,}/.test(lName)) allRequiredFilled = false;
 
-            // Display or hide the warning message
-            if (nameWarnMsg !== "") {
-                nameWarning.textContent = nameWarnMsg;
-                nameWarning.classList.remove('hidden');
-            } else {
-                nameWarning.textContent = "";
-                nameWarning.classList.add('hidden');
-            }
-
+            // Logical Sex check
             const sexSelected = document.querySelector('input[name="sex"]:checked');
+            if (!sexSelected) allRequiredFilled = false;
 
-            if (!sexSelected) {
-                allRequiredFilled = false;
-            }
-
+            // Logical Password checks & Checklist UI
             const passwordValue = password.value;
             const confirmValue = confirmPassword.value;
-
             const hasMinLength = passwordValue.length >= 8;
             const hasNumber = /\d/.test(passwordValue);
             const hasSpace = passwordValue.includes(' ');
             const hasSpecialChar = /[^A-Za-z0-9\s]/.test(passwordValue);
             const hasUpperLower = /[A-Z]/.test(passwordValue) && /[a-z]/.test(passwordValue);
             const passwordsMatch = (passwordValue === confirmValue) && passwordValue !== '';
-
             const hasRepeatChar = /(.)\1{2,}/.test(passwordValue);
             const hasRepeatPattern = /(.{2,})\1{2,}/.test(passwordValue);
             
@@ -505,325 +609,266 @@
             if (reqSpec) reqSpec.className = hasSpecialChar ? 'text-green-600 transition-colors' : 'text-gray-500 transition-colors';
 
             let strength = 0;
+            if (hasMinLength) strength++;
+            if (hasNumber) strength++;
+            if (hasSpecialChar) strength++;
+            if (hasUpperLower) strength++;
 
-            if (hasMinLength){
-                strength++;
-            }
-
-            if (hasNumber) {
-                strength++;
-            }
-
-            if (hasSpecialChar) {
-                strength++;
-            }
-
-            if (hasUpperLower) {
-                strength++;
-            }
-
-            if (passwordValue !== "" && hasSpace) {
-                warningMessage = "Password should not contain spaces.";
-                allRequiredFilled = false;
-
-            } else if (passwordValue !== "" && hasRepeatChar){
-                warningMessage = "Password should not have repetitive characters";  
-                allRequiredFilled = false;
-            } else if (passwordValue !== "" && hasRepeatPattern){
-                warningMessage = "Password should not have repetitive patterns";
-                allRequiredFilled = false;
-            } else if (passwordValue !== "" && !hasMinLength) {
-                allRequiredFilled = false;
-
-            } else if (passwordValue !== "" && !hasNumber) {
-                allRequiredFilled = false;
-
-            }  else if (passwordValue !== "" && !hasSpecialChar) {
-                allRequiredFilled = false;
-
-            }   else if (passwordValue !== "" && !hasUpperLower) {
-                allRequiredFilled = false;
-
-            }   else if (confirmValue !== "" && !passwordsMatch) {
-                warningMessage = "Passwords do not match.";
-                allRequiredFilled = false;
-
-            } else {
-                warningMessage = "";
-            }
-
-            if (warningMessage !== "" && (passwordValue !== "" || confirmValue !== "")) {
-                passwordWarning.textContent = warningMessage;
-                passwordWarning.classList.remove('hidden');
-
-            } else {
-                passwordWarning.textContent = "";
-                passwordWarning.classList.add('hidden');
-            }
+            if (passwordValue !== "" && hasSpace) allRequiredFilled = false;
+            else if (passwordValue !== "" && hasRepeatChar) allRequiredFilled = false;
+            else if (passwordValue !== "" && hasRepeatPattern) allRequiredFilled = false;
+            else if (passwordValue !== "" && !hasMinLength) allRequiredFilled = false;
+            else if (passwordValue !== "" && !hasNumber) allRequiredFilled = false;
+            else if (passwordValue !== "" && !hasSpecialChar) allRequiredFilled = false;
+            else if (passwordValue !== "" && !hasUpperLower) allRequiredFilled = false;
+            else if (confirmValue !== "" && !passwordsMatch) allRequiredFilled = false;
 
             clearBtn.disabled = !hasAnyInput;
             draftBtn.disabled = !hasAnyInput;
-            createAccountBtn.disabled = !allRequiredFilled || strength < 3;
+
+            // Create Account stays disabled until every required field is valid
+            // AND the CAPTCHA has been completed.
+            // The extra checks here prevent the CAPTCHA API from ever stopping
+            // the rest of the registration page JavaScript from running.
+            let captchaCompletedValue = false;
+            try {
+                captchaCompletedValue =
+                    typeof grecaptcha !== 'undefined' &&
+                    typeof grecaptcha.getResponse === 'function' &&
+                    grecaptcha.getResponse().length > 0;
+            } catch (error) {
+                captchaCompletedValue = false;
+            }
+
+            createAccountBtn.disabled =
+                !allRequiredFilled ||
+                strength < 3 ||
+                !captchaCompletedValue;
         }
+
+        // Called automatically by Google reCAPTCHA when the user completes it.
+        window.captchaCompleted = function () {
+            const captchaWarning = document.getElementById('captchaWarning');
+            if (captchaWarning) {
+                captchaWarning.textContent = '';
+                captchaWarning.classList.add('hidden');
+            }
+            checkForm();
+        };
+
+        // Called when the CAPTCHA expires or encounters an error.
+        window.captchaExpired = function () {
+            checkForm();
+        };
 
         allInputs.forEach(input => {
             input.addEventListener('input', checkForm);
             input.addEventListener('change', checkForm);
         });
 
+        // ==========================================
+        // 4. LOCAL STORAGE & DRAFT SAVING
+        // ==========================================
         function saveRegistrationDraft() {
-
             const draft = {
-                first_name: document.getElementById('first_name').value,
-                last_name: document.getElementById('last_name').value,
-                email: document.getElementById('email').value,
-                phone: document.getElementById('phone').value,
-                password: document.getElementById('password_hash').value,
-                confirm_password: document.getElementById('confirm_password').value,
+                first_name: fNameInput.value,
+                last_name: lNameInput.value,
+                email: emailInput.value,
+                phone: phoneInput.value,
+                password: password.value,
+                confirm_password: confirmPassword.value,
                 sex: document.querySelector('input[name="sex"]:checked')?.value || '',
-                terms: document.getElementById('terms').checked
+                terms: termsCheckbox.checked
             };
-
-            localStorage.setItem(
-                'registrationDraft',
-                JSON.stringify(draft)
-            );
-
+            localStorage.setItem('registrationDraft', JSON.stringify(draft));
             alert('Registration draft saved.');
         }
 
         function loadRegistrationDraft() {
-
             const savedDraft = localStorage.getItem('registrationDraft');
-
-            if (!savedDraft) {
-                return;
-            }
+            if (!savedDraft) return;
 
             try {
-
                 const draft = JSON.parse(savedDraft);
-
-                document.getElementById('first_name').value =
-                    draft.first_name || '';
-
-                document.getElementById('last_name').value =
-                    draft.last_name || '';
-
-                document.getElementById('email').value =
-                    draft.email || '';
-
-                document.getElementById('phone').value =
-                    draft.phone || '';
-
-                document.getElementById('password_hash').value =
-                    draft.password || '';
-
-                document.getElementById('confirm_password').value =
-                    draft.confirm_password || '';
+                fNameInput.value = draft.first_name || '';
+                lNameInput.value = draft.last_name || '';
+                emailInput.value = draft.email || '';
+                phoneInput.value = draft.phone || '';
+                password.value = draft.password || '';
+                confirmPassword.value = draft.confirm_password || '';
 
                 if (draft.sex) {
-
-                    const sexRadio = document.querySelector(
-                        `input[name="sex"][value="${draft.sex}"]`
-                    );
-
-                    if (sexRadio) {
-                        sexRadio.checked = true;
-                    }
+                    const sexRadio = document.querySelector(`input[name="sex"][value="${draft.sex}"]`);
+                    if (sexRadio) sexRadio.checked = true;
                 }
-
-                document.getElementById('terms').checked =
-                    draft.terms || false;
-
+                termsCheckbox.checked = draft.terms || false;
                 checkForm();
-
             } catch (error) {
-
-                console.error(
-                    'Failed to load registration draft:',
-                    error
-                );
-
+                console.error('Failed to load registration draft:', error);
                 localStorage.removeItem('registrationDraft');
             }
         }
 
         draftBtn.addEventListener('click', saveRegistrationDraft);
-
         checkForm();
-
         loadRegistrationDraft();
 
         form.addEventListener('reset', () => {
+            // Clear all custom error UI
+            const errorSpans = [firstNameError, lastNameError, emailError, phoneError, passError, confirmError];
+            const inputs = [fNameInput, lNameInput, emailInput, phoneInput, password, confirmPassword];
 
-            passwordWarning.textContent = "";
-            passwordWarning.classList.add('hidden');
+            errorSpans.forEach(span => { span.textContent = ""; span.classList.add('hidden'); });
+            inputs.forEach(input => { input.classList.add('border-gray-200'); input.classList.remove('border-red-500', 'bg-red-50'); });
+
+            sexTouched = false;
+            sexWarning.textContent = '';
+            sexWarning.classList.add('hidden');
+
+            const captchaWarning = document.getElementById('captchaWarning');
+            if (captchaWarning) {
+                captchaWarning.textContent = '';
+                captchaWarning.classList.add('hidden');
+            }
+
+            // Reset the CAPTCHA too, so Create Account cannot stay enabled.
+            if (typeof grecaptcha !== 'undefined') {
+                grecaptcha.reset();
+            }
 
             setTimeout(checkForm, 10);
         });
 
+        // ==========================================
+        // 5. MODALS & POLICIES
+        // ==========================================
         const termsText = `
-<div class="font-poppins text-[#2A1001] text-sm md:text-base pl-4 md:pl-6">
-    <ol class="list-decimal list-outside pl-6 space-y-4">
-
-        <li>
-            <strong>The Use of Our Website:</strong>
-            You may use our website and online tools to request appointments, complete forms, and communicate with our dentists. By using this website, you agree to use these services only for lawful purposes and in a way that does not interfere with operation, security, or integrity of our systems.
-        </li>
-
-        <li>
-            <strong>Accuracy of Information:</strong>
-            You agree to provide accurate, current, and complete information when submitting forms, requesting appointments, or communicating with our dentists. You are responsible for updating your contact information so we can reach you about appointments, treatment coordination, billing, and other patient support matters.
-        </li>
-
-        <li>
-            <strong>Appointment Requests and Scheduling:</strong>
-            Submitting an appointment request through our website does not guarantee appointment availability or confirmation. All appointments are subject to review, provider availability, and practice policies.
-        </li>
-
-        <li>
-            <strong>Consent to Email and Text Communications:</strong>
-            By providing your email address or mobile phone number to Bungipin, you consent to receive service-related communications from us. These communications may include appointment reminders, rescheduling notices, and treatment coordination. Patients opt in to receive messages by providing consent. Consent is not a condition of receiving dental treatment.
-        </li>
-
-        <li>
-            <strong>Intellectual Property:</strong>
-            All content on this website, including text, graphics, logos, and other materials, is owned or used with permission by Bungipin. You may not copy, reproduce, distribute, or exploit website content.
-        </li>
-
-        <li>
-            <strong>Website Availability:</strong>
-            We work to keep our website and related services accurate and available, but we do not guarantee uninterrupted access, error-free performance, or that all information is always current.
-        </li>
-
-        <li>
-            <strong>Limitation of Liability:</strong>
-            Bungipin is not liable for indirect, incidental, consequential, special, or punitive damages arising out of or related to your use of our website, scheduling tools, or communication terms.
-        </li>
-
-        <li>
-            <strong>Prohibited Use:</strong>
-            You agree not to:
-
-            <ul class="list-disc pl-5 mt-2 space-y-2">
-                <li>Use the website or related services for unlawful, fraudulent, abusive, or disruptive purposes;</li>
-                <li>Attempt to gain unauthorized access to systems, accounts, or data;</li>
-                <li>Upload or transmit harmful code or malicious content; or</li>
-                <li>Misuse our communication tools in a way that interferes with patient care or office operations.</li>
-            </ul>
-        </li>
-
-        <li>
-            <strong>Changes to These Terms:</strong>
-            We may update these Terms from time to time by posting a revised version of this page. Your continued use of the website or related digital services after updated Terms are posted means you accept the revised Terms.
-        </li>
-
-        <li>
-            <strong>Bungipin Dentist Support Messages:</strong>
-            The Bungipin Dentist Support Messages allows direct dentists and patients to send direct messages to each other. Messages may include appointment reminders, appointment confirmations, scheduling updates, treatment coordination, and other office support communications.
-        </li>
-
-    </ol>
-</div>
-`;
+        <div class="font-poppins text-[#2A1001] text-sm md:text-base pl-4 md:pl-6">
+            <ol class="list-decimal list-outside pl-6 space-y-4">
+                <li>
+                    <strong>The Use of Our Website:</strong>
+                    You may use our website and online tools to request appointments, complete forms, and communicate with our dentists. By using this website, you agree to use these services only for lawful purposes and in a way that does not interfere with operation, security, or integrity of our systems.
+                </li>
+                <li>
+                    <strong>Accuracy of Information:</strong>
+                    You agree to provide accurate, current, and complete information when submitting forms, requesting appointments, or communicating with our dentists. You are responsible for updating your contact information so we can reach you about appointments, treatment coordination, billing, and other patient support matters.
+                </li>
+                <li>
+                    <strong>Appointment Requests and Scheduling:</strong>
+                    Submitting an appointment request through our website does not guarantee appointment availability or confirmation. All appointments are subject to review, provider availability, and practice policies.
+                </li>
+                <li>
+                    <strong>Consent to Email and Text Communications:</strong>
+                    By providing your email address or mobile phone number to Bungipin, you consent to receive service-related communications from us. These communications may include appointment reminders, rescheduling notices, and treatment coordination. Patients opt in to receive messages by providing consent. Consent is not a condition of receiving dental treatment.
+                </li>
+                <li>
+                    <strong>Intellectual Property:</strong>
+                    All content on this website, including text, graphics, logos, and other materials, is owned or used with permission by Bungipin. You may not copy, reproduce, distribute, or exploit website content.
+                </li>
+                <li>
+                    <strong>Website Availability:</strong>
+                    We work to keep our website and related services accurate and available, but we do not guarantee uninterrupted access, error-free performance, or that all information is always current.
+                </li>
+                <li>
+                    <strong>Limitation of Liability:</strong>
+                    Bungipin is not liable for indirect, incidental, consequential, special, or punitive damages arising out of or related to your use of our website, scheduling tools, or communication terms.
+                </li>
+                <li>
+                    <strong>Prohibited Use:</strong>
+                    You agree not to:
+                    <ul class="list-disc pl-5 mt-2 space-y-2">
+                        <li>Use the website or related services for unlawful, fraudulent, abusive, or disruptive purposes;</li>
+                        <li>Attempt to gain unauthorized access to systems, accounts, or data;</li>
+                        <li>Upload or transmit harmful code or malicious content; or</li>
+                        <li>Misuse our communication tools in a way that interferes with patient care or office operations.</li>
+                    </ul>
+                </li>
+                <li>
+                    <strong>Changes to These Terms:</strong>
+                    We may update these Terms from time to time by posting a revised version of this page. Your continued use of the website or related digital services after updated Terms are posted means you accept the revised Terms.
+                </li>
+                <li>
+                    <strong>Bungipin Dentist Support Messages:</strong>
+                    The Bungipin Dentist Support Messages allows direct dentists and patients to send direct messages to each other. Messages may include appointment reminders, appointment confirmations, scheduling updates, treatment coordination, and other office support communications.
+                </li>
+            </ol>
+        </div>
+        `;
 
         const privacyText = `
-<div class="font-poppins text-[#2A1001]">
-
-    <p class="mb-4 text-sm md:text-base">
-        Bungipin respects your privacy. This Privacy Policy explains how we collect, use, disclose, and protect
-        information when you visit our website, request or manage appointments, and communicate with our dentists.
-    </p>
-
-    <div class="pl-4 md:pl-6 text-sm md:text-base">
-
-        <ol class="list-decimal space-y-4">
-
-            <li>
-                <strong>Scope of This Privacy Policy</strong>
-
-                <div class="ml-4 md:ml-8 mt-1">
-                    This Privacy Policy applies to information collected through:
-
-                    <ul class="list-none ml-4 mt-1 space-y-1">
-                        <li>- &nbsp; Our website and online forms;</li>
-                        <li>- &nbsp; Appointment requests and scheduling tools;</li>
-                        <li>- &nbsp; Email, phone, and text communications with our dentists</li>
-                    </ul>
-                </div>
-            </li>
-
-            <li>
-                <strong>Information We Collect</strong>
-
-                <div class="ml-4 md:ml-8 mt-1">
-                    Depending on how you interact with us, we may collect:
-
-                    <ul class="list-none ml-4 mt-1 space-y-1">
-                        <li>- &nbsp; Your name, phone number, and email address;</li>
-                        <li>- &nbsp; Appointment-related information such as requested dates, appointment history, reminders, confirmations, and scheduling notes;</li>
-                        <li>- &nbsp; Information you submit through forms, messages, or patient communications;</li>
-                        <li>- &nbsp; Records of communications with our dentists.</li>
-                    </ul>
-                </div>
-            </li>
-
-            <li>
-                <strong>How We Collect Information</strong>
-
-                <div class="ml-4 md:ml-8 mt-1">
-                    We collect information:
-
-                    <ul class="list-none ml-4 mt-1 space-y-1">
-                        <li>- &nbsp; Directly from you when you contact us, submit a form, request an appointment, or communicate with our dentists.</li>
-                    </ul>
-                </div>
-            </li>
-
-            <li>
-                <strong>How We Use Information</strong>
-
-                <div class="ml-4 md:ml-8 mt-1">
-                    We may use information we collect to:
-
-                    <ul class="list-none ml-4 mt-1 space-y-1">
-                        <li>- &nbsp; Operate, maintain, and improve our website and patient communication processes;</li>
-                        <li>- &nbsp; Schedule, confirm, remind, reschedule, and manage appointments;</li>
-                        <li>- &nbsp; Respond to your inquiries;</li>
-                        <li>- &nbsp; Send service-related text messages about appointments, patient support, treatment coordination;</li>
-                        <li>- &nbsp; Document communications sent;</li>
-                        <li>- &nbsp; Protect the safety, security, and integrity of our systems and services.</li>
-                    </ul>
-                </div>
-            </li>
-
-            <li>
-                <strong>Your Choices</strong>
-
-                <div class="ml-4 md:ml-8 mt-1">
-                    You may contact us to:
-
-                    <ul class="list-none ml-4 mt-1 space-y-1">
-                        <li>- &nbsp; Update or correct your contact information;</li>
-                        <li>- &nbsp; Ask questions about our privacy practices;</li>
-                    </ul>
-                </div>
-            </li>
-
-            <li>
-                <strong>Changes To This Privacy Policy</strong>
-
-                <div class="ml-4 md:ml-8 mt-1">
-                    We may update this Privacy Policy from time to time. If we do, we will post the revised version on this page.
-                </div>
-            </li>
-
-        </ol>
-
-    </div>
-</div>
-`;
+        <div class="font-poppins text-[#2A1001]">
+            <p class="mb-4 text-sm md:text-base">
+                Bungipin respects your privacy. This Privacy Policy explains how we collect, use, disclose, and protect
+                information when you visit our website, request or manage appointments, and communicate with our dentists.
+            </p>
+            <div class="pl-4 md:pl-6 text-sm md:text-base">
+                <ol class="list-decimal space-y-4">
+                    <li>
+                        <strong>Scope of This Privacy Policy</strong>
+                        <div class="ml-4 md:ml-8 mt-1">
+                            This Privacy Policy applies to information collected through:
+                            <ul class="list-none ml-4 mt-1 space-y-1">
+                                <li>- &nbsp; Our website and online forms;</li>
+                                <li>- &nbsp; Appointment requests and scheduling tools;</li>
+                                <li>- &nbsp; Email, phone, and text communications with our dentists</li>
+                            </ul>
+                        </div>
+                    </li>
+                    <li>
+                        <strong>Information We Collect</strong>
+                        <div class="ml-4 md:ml-8 mt-1">
+                            Depending on how you interact with us, we may collect:
+                            <ul class="list-none ml-4 mt-1 space-y-1">
+                                <li>- &nbsp; Your name, phone number, and email address;</li>
+                                <li>- &nbsp; Appointment-related information such as requested dates, appointment history, reminders, confirmations, and scheduling notes;</li>
+                                <li>- &nbsp; Information you submit through forms, messages, or patient communications;</li>
+                                <li>- &nbsp; Records of communications with our dentists.</li>
+                            </ul>
+                        </div>
+                    </li>
+                    <li>
+                        <strong>How We Collect Information</strong>
+                        <div class="ml-4 md:ml-8 mt-1">
+                            We collect information:
+                            <ul class="list-none ml-4 mt-1 space-y-1">
+                                <li>- &nbsp; Directly from you when you contact us, submit a form, request an appointment, or communicate with our dentists.</li>
+                            </ul>
+                        </div>
+                    </li>
+                    <li>
+                        <strong>How We Use Information</strong>
+                        <div class="ml-4 md:ml-8 mt-1">
+                            We may use information we collect to:
+                            <ul class="list-none ml-4 mt-1 space-y-1">
+                                <li>- &nbsp; Operate, maintain, and improve our website and patient communication processes;</li>
+                                <li>- &nbsp; Schedule, confirm, remind, reschedule, and manage appointments;</li>
+                                <li>- &nbsp; Respond to your inquiries;</li>
+                                <li>- &nbsp; Send service-related text messages about appointments, patient support, treatment coordination;</li>
+                                <li>- &nbsp; Document communications sent;</li>
+                                <li>- &nbsp; Protect the safety, security, and integrity of our systems and services.</li>
+                            </ul>
+                        </div>
+                    </li>
+                    <li>
+                        <strong>Your Choices</strong>
+                        <div class="ml-4 md:ml-8 mt-1">
+                            You may contact us to:
+                            <ul class="list-none ml-4 mt-1 space-y-1">
+                                <li>- &nbsp; Update or correct your contact information;</li>
+                                <li>- &nbsp; Ask questions about our privacy practices;</li>
+                            </ul>
+                        </div>
+                    </li>
+                    <li>
+                        <strong>Changes To This Privacy Policy</strong>
+                        <div class="ml-4 md:ml-8 mt-1">
+                            We may update this Privacy Policy from time to time. If we do, we will post the revised version on this page.
+                        </div>
+                    </li>
+                </ol>
+            </div>
+        </div>
+        `;
 
         function openModal(title, content) {
             modalTitle.innerText = title;
@@ -831,8 +876,6 @@
             policyModal.classList.remove('hidden');
             document.body.style.overflow = 'hidden';
             modalContent.scrollTop = 0;
-            // If the text is short enough to fit without scrolling, no scroll
-            // event will ever fire, so check once the modal has been laid out.
             requestAnimationFrame(checkReadProgress);
         }
 
@@ -844,9 +887,6 @@
         let termsRead = false;
         let privRead = false;
 
-        // Marks the open document as read once its end is visible. Runs on scroll
-        // AND right after the modal opens: a short document fits on screen with
-        // nothing to scroll, so no scroll event would ever unlock the checkbox.
         function checkReadProgress() {
             const threshold = 10;
             const isAtBottom = modalContent.scrollHeight - modalContent.scrollTop - modalContent.clientHeight <= threshold;
@@ -869,11 +909,8 @@
 
         modalContent.addEventListener('scroll', checkReadProgress);
 
-
-
         termsLink.addEventListener('click', () => {
             openModal('Terms & Conditions', termsText);
-
             if (!termsRead || !privRead) {
                 termsCheckbox.disabled = true;
                 termsCheckbox.checked = false;
@@ -883,7 +920,6 @@
 
         privacyLink.addEventListener('click', () => {
             openModal('Privacy Policy', privacyText);
-
             if (!termsRead || !privRead) {
                 termsCheckbox.disabled = true;
                 termsCheckbox.checked = false;
@@ -895,147 +931,102 @@
         closeServiceModal.addEventListener('click', closeModal);
 
         policyModal.addEventListener('click', (e) => {
-
             if (e.target === policyModal) {
                 closeModal();
             }
-
         });
 
+        // ==========================================
+        // 6. FORM SUBMISSION
+        // ==========================================
         form.addEventListener('submit', async function (e) {
-
             e.preventDefault();
 
             if (password.value !== confirmPassword.value) {
-
-                confirmPassword.setCustomValidity(
-                    'Passwords do not match.'
-                );
-
+                confirmPassword.setCustomValidity('Passwords do not match.');
                 confirmPassword.reportValidity();
-
                 return;
-
             } else {
-
                 confirmPassword.setCustomValidity('');
             }
 
+            const captchaWarning = document.getElementById('captchaWarning');
+
             if (typeof grecaptcha === 'undefined') {
-                alert('The captcha could not load. Please refresh the page and try again.');
-                return;
-            }
-            const captchaToken = grecaptcha.getResponse();
-            if (!captchaToken) {
-                alert('Please tick "I\'m not a robot" first.');
+                captchaWarning.textContent = 'Please complete the CAPTCHA.';
+                captchaWarning.classList.remove('hidden');
                 return;
             }
 
-            const sexValue =
-                document.querySelector('input[name="sex"]:checked')?.value;
+            let captchaToken = '';
+            try {
+                if (typeof grecaptcha !== 'undefined' && typeof grecaptcha.getResponse === 'function') {
+                    captchaToken = grecaptcha.getResponse();
+                }
+            } catch (error) {
+                captchaToken = '';
+            }
+
+            if (!captchaToken) {
+                captchaWarning.textContent = 'Please complete the CAPTCHA.';
+                captchaWarning.classList.remove('hidden');
+                return;
+            }
+
+            captchaWarning.textContent = '';
+            captchaWarning.classList.add('hidden');
+
+            const sexValue = document.querySelector('input[name="sex"]:checked')?.value;
 
             const payload = {
-                first_name: document.getElementById('first_name').value.trim(),
-                last_name: document.getElementById('last_name').value.trim(),
-                email: document.getElementById('email').value.trim(),
-                phone: document.getElementById('phone').value.trim(),
+                first_name: fNameInput.value.trim(),
+                last_name: lNameInput.value.trim(),
+                email: emailInput.value.trim(),
+                phone: phoneInput.value.trim(),
                 password: password.value,
                 sex: sexValue,
-                captcha_token: captchaToken
+                captcha: captchaToken
             };
 
             showStatusBanner('Account is being made...', true);
 
             try {
-
-                const response = await fetch(
-                    '/api/auth/register',
-                    {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify(payload)
-                    }
-                );
+                const response = await fetch('/api/auth/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
 
                 const data = await response.json();
 
-                if (!response.ok) {
-                    throw new Error(
-                        data.error || 'Registration failed'
-                    );
-                }
+                if (!response.ok) throw new Error(data.error || 'Registration failed');
 
-                // Account isn't created yet: the server emailed a
-                // confirmation link, and the account is made when it's opened.
-                // (No token is returned, so nothing goes into localStorage.)
-                localStorage.removeItem(
-                    'registrationDraft'
-                );
-
+                localStorage.removeItem('registrationDraft');
                 form.reset();
                 if (typeof grecaptcha !== 'undefined') grecaptcha.reset();
 
-                showStatusBanner(
-                    data.message || 'Check your email to finish creating your account.',
-                    false
-                );
+                showStatusBanner(data.message || 'Check your email to finish creating your account.', false);
 
             } catch (error) {
-
-                console.error(
-                    'Registration error:',
-                    error
-                );
-
+                console.error('Registration error:', error);
                 statusBanner.classList.add('hidden');
-                // Captcha tokens are single-use, so a fresh one is needed for the retry.
                 if (typeof grecaptcha !== 'undefined') grecaptcha.reset();
                 alert(error.message);
             }
         });
 
-        document.getElementById('phone').addEventListener(
-            'input',
-            function () {
+        // Prevention of copy-pasting passwords
+        confirmPassword.addEventListener('paste', (event) => { event.preventDefault(); });
+        confirmPassword.addEventListener('copy', (event) => { event.preventDefault(); });
+        password.addEventListener('paste', (event) => { event.preventDefault(); });
+        password.addEventListener('copy', (event) => { event.preventDefault(); });
 
-                this.value = this.value
-                    .replace(/\D/g, '')
-                    .slice(0, 11);
-
+        confirmPassword.addEventListener('input', function () {
+            if (password.value === confirmPassword.value) {
+                confirmPassword.setCustomValidity('');
             }
-        );
-
-        confirmPassword.addEventListener('paste', (event) => {
-            event.preventDefault();
         });
-
-        confirmPassword.addEventListener('copy', (event) => {
-            event.preventDefault();
-        });
-
-        password.addEventListener('paste', (event) => {
-            event.preventDefault();
-        });
-
-        password.addEventListener('copy', (event) => {
-            event.preventDefault();
-        });
-
-        confirmPassword.addEventListener(
-            'input',
-            function () {
-
-                if (password.value === confirmPassword.value) {
-                    confirmPassword.setCustomValidity('');
-                }
-
-            }
-        );
     </script>
-
 </div>
 </body>
-
 </html>
