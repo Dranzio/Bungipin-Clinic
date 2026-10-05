@@ -87,7 +87,7 @@ registerPaymentRoutes(app, db);
 // so io was undefined there and 'appointment-updated' (cancel, refund, auto-cancel) never reached any page.
 registerHistoryRoutes(app, db, io);
 registerEmployeeProfileRoute(app, db);
-registerBookingRequestRoutes(app, db);
+registerBookingRequestRoutes(app, db, io);
 registerQueueRoutes(app, db);
 registerPatientRecordsRoutes(app, db);
 registerMessagesRoutes(app, db);
@@ -95,7 +95,7 @@ registerServiceRoutes(app, db);
 registerUserManagementRoutes(app, db);
 registerAdminProfileRoute(app, db);
 registerDashboardRoutes(app, db);
-registerDoctorScheduleRoutes(app, db);
+registerDoctorScheduleRoutes(app, db, io);
 registerActivityLogRoutes(app, db);
 
 // DENIES DIRECT PAGE VIA URL

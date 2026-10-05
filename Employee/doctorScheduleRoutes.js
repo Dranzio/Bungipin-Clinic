@@ -178,15 +178,15 @@ function registerDoctorScheduleRoutes(app, db, io) {
         }
     });
 
-    // ── 5. GET /api/doctors/:id/appointments — Today & Future approved customer bookings ──
+    // ── 5. GET /api/doctor-schedule/:id/appointments — Today & Future patient bookings ──
     app.get('/api/doctor-schedule/:id/appointments', authenticateToken, async (req, res) => {
         const employeeId = Number(req.params.id);
 
         try {
-            // Checks if user is admin (can view all) or specific doctor
-            const isAdmin = req.user.role === 'admin';
-
-            let sql = `
+            // Any authenticated employee or admin can view appointments for the specified doctor ID.
+            // We filter by the doctor's employee_id from the URL param — no isAdmin distinction needed
+            // since the DoctorSchedule page always views ONE specific doctor at a time.
+            const sql = `
                 SELECT 
                     a.appointment_id,
                     DATE_FORMAT(a.appointment_date, '%Y-%m-%d') AS appointment_date,
@@ -214,13 +214,13 @@ function registerDoctorScheduleRoutes(app, db, io) {
                 JOIN users p ON p.user_id = a.patient_id
                 JOIN services s ON s.service_id = a.service_id
                 LEFT JOIN payments pay ON pay.appointment_id = a.appointment_id
-                WHERE (a.employee_id = ? OR a.employee_id IS NULL OR ? = 1)
-                  AND a.appointment_status IN ('approved', 'completed')
+                WHERE a.employee_id = ?
+                  AND a.appointment_status IN ('pending', 'approved', 'completed')
                   AND a.appointment_date >= CURDATE()
                 ORDER BY a.appointment_date ASC, a.time_slot ASC
             `;
 
-            const [appointments] = await db.query(sql, [employeeId, isAdmin ? 1 : 0]);
+            const [appointments] = await db.query(sql, [employeeId]);
             res.json(appointments);
 
         } catch (err) {

@@ -93,7 +93,7 @@ function initSocketEvents() {
         loadDoctorAppointments(currentDoctor?.user_id);
     });
 
-    socket.on('queue-updated', () => {
+    socket.on('queue_updated', () => {
         loadDoctorAppointments(currentDoctor?.user_id);
     });
 
@@ -617,7 +617,15 @@ function renderPatientAppointments() {
 
     filteredAppointments.forEach(appt => {
         const card = document.createElement('div');
-        card.className = "bg-white rounded-2xl p-4 sm:p-5 border border-[#2A1001]/15 shadow-sm hover:shadow-md transition-all flex flex-col lg:flex-row lg:items-center justify-between gap-4";
+        const apptStatusRaw = (appt.appointment_status || '').toLowerCase();
+        const isPending   = apptStatusRaw === 'pending';
+        const isApproved  = apptStatusRaw === 'approved';
+        const isCompleted = apptStatusRaw === 'completed';
+
+        // Pending cards get a subtle amber left border to differentiate from approved
+        card.className = isPending
+            ? "bg-amber-50/60 rounded-2xl p-4 sm:p-5 border border-amber-200 border-l-4 border-l-amber-400 shadow-sm hover:shadow-md transition-all flex flex-col lg:flex-row lg:items-center justify-between gap-4"
+            : "bg-white rounded-2xl p-4 sm:p-5 border border-[#2A1001]/15 shadow-sm hover:shadow-md transition-all flex flex-col lg:flex-row lg:items-center justify-between gap-4";
 
         const scheduledDate = appt.appointment_date
             ? new Date(appt.appointment_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
@@ -638,15 +646,23 @@ function renderPatientAppointments() {
             paymentBadge = `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-gray-100 text-gray-700 border border-gray-300"><i class="fa-solid fa-coins mr-1 text-amber-600"></i>CASH IN CLINIC</span>`;
         }
 
-        const isCompleted = (appt.appointment_status || '').toLowerCase() === 'completed';
+        // Appointment status badge
+        let statusBadge = '';
+        if (isPending) {
+            statusBadge = `<span class="text-[10px] bg-amber-100 text-amber-800 font-extrabold px-2.5 py-0.5 rounded-full border border-amber-300 flex items-center gap-1"><i class="fa-solid fa-hourglass-half"></i>AWAITING APPROVAL</span>`;
+        } else if (isCompleted) {
+            statusBadge = `<span class="text-[10px] bg-green-100 text-green-800 font-extrabold px-2.5 py-0.5 rounded-full border border-green-300"><i class="fa-solid fa-check mr-1"></i>COMPLETED</span>`;
+        }
 
-        // Queue status indicator badge
-        const queueStatus = (appt.queue_status || 'waiting').toLowerCase();
+        // Queue status indicator badge (only for approved/ongoing)
+        const queueStatus = (appt.queue_status || '').toLowerCase();
         let queueBadge = '';
-        if (queueStatus === 'in_chair') {
-            queueBadge = `<span class="text-[10px] bg-amber-100 text-amber-800 font-extrabold px-2 py-0.5 rounded-full border border-amber-300 animate-pulse"><i class="fa-solid fa-chair mr-1"></i>IN CHAIR</span>`;
-        } else if (queueStatus === 'waiting') {
-            queueBadge = `<span class="text-[10px] bg-blue-50 text-blue-700 font-bold px-2 py-0.5 rounded-full border border-blue-200">WAITING</span>`;
+        if (!isPending) {
+            if (queueStatus === 'in_chair') {
+                queueBadge = `<span class="text-[10px] bg-amber-100 text-amber-800 font-extrabold px-2 py-0.5 rounded-full border border-amber-300 animate-pulse"><i class="fa-solid fa-chair mr-1"></i>IN CHAIR</span>`;
+            } else if (queueStatus === 'waiting' || queueStatus === 'pending') {
+                queueBadge = `<span class="text-[10px] bg-blue-50 text-blue-700 font-bold px-2 py-0.5 rounded-full border border-blue-200">WAITING</span>`;
+            }
         }
 
         card.innerHTML = `
@@ -658,7 +674,7 @@ function renderPatientAppointments() {
                     <span class="text-xs text-[#2A1001]/60 font-bold">&bull; ${scheduledDate}</span>
                     ${paymentBadge}
                     ${queueBadge}
-                    ${isCompleted ? '<span class="text-[10px] bg-green-100 text-green-800 font-extrabold px-2.5 py-0.5 rounded-full border border-green-300"><i class="fa-solid fa-check mr-1"></i>COMPLETED</span>' : ''}
+                    ${statusBadge}
                 </div>
 
                 <div class="flex flex-wrap items-center gap-2">
@@ -689,17 +705,19 @@ function renderPatientAppointments() {
             </div>
 
             <div class="flex items-center gap-2 flex-wrap sm:flex-nowrap shrink-0 justify-end pt-2 lg:pt-0 border-t lg:border-t-0 border-[#2A1001]/10">
-                ${!isCompleted ? `
+                ${isApproved ? `
                     <button onclick="openCompleteModal(${appt.appointment_id})"
                             class="bg-[#667733] hover:bg-[#556022] text-white text-xs font-bold px-4 py-2 rounded-full transition shadow-sm cursor-pointer active:scale-95 flex items-center gap-1.5 whitespace-nowrap">
                         <i class="fa-solid fa-circle-check text-xs"></i> Mark as Completed
                     </button>
                 ` : ''}
 
-                <button onclick="openReceiptModalById(${appt.appointment_id})"
-                        class="bg-white hover:bg-gray-100 text-[#2A1001] border border-[#2A1001]/20 text-xs font-bold px-3.5 py-2 rounded-full transition shadow-sm cursor-pointer active:scale-95 flex items-center gap-1.5 whitespace-nowrap">
-                    <i class="fa-solid fa-receipt text-xs"></i> Receipt &amp; Details
-                </button>
+                ${!isPending ? `
+                    <button onclick="openReceiptModalById(${appt.appointment_id})"
+                            class="bg-white hover:bg-gray-100 text-[#2A1001] border border-[#2A1001]/20 text-xs font-bold px-3.5 py-2 rounded-full transition shadow-sm cursor-pointer active:scale-95 flex items-center gap-1.5 whitespace-nowrap">
+                        <i class="fa-solid fa-receipt text-xs"></i> Receipt &amp; Details
+                    </button>
+                ` : ''}
             </div>
         `;
 
