@@ -75,7 +75,9 @@
 
   <script>
     // Show the broken URL (textContent, so it can't inject HTML)
-    document.getElementById('requested-path').textContent = window.location.pathname;
+    // eli change: after the server redirect the address bar shows /missingPageError.html, so read the original URL from ?from=
+    document.getElementById('requested-path').textContent =
+      new URLSearchParams(window.location.search).get('from') || window.location.pathname;
   </script>
 
 </body>

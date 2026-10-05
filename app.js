@@ -131,6 +131,10 @@ app.use('/Admin', authenticateToken, requirePageRole('admin'), express.static(pa
 app.use('/Employee', authenticateToken, requirePageRole('employee'), express.static(path.join(__dirname, 'Employee')));
 app.use('/Customer', authenticateToken, requirePageRole('patient'), express.static(path.join(__dirname, 'Customer')));
 app.use('/Taskbar', authenticateToken, express.static(path.join(__dirname, 'Taskbar')));
+// eli change: the page shown for unknown URLs (served at a fixed root URL so its relative CSS/images load)
+app.get('/missingPageError.html', (req, res) => {
+    res.sendFile(path.join(__dirname, 'missingPageError.html'));
+});
 app.get('/denied.html', (req, res) => {
     res.sendFile(path.join(__dirname, 'denied.html'));
 });
@@ -201,6 +205,17 @@ app.get('/api/patients/:id', authenticateToken, async (req, res) => {
         console.error('Databse Error', err);
         res.status(500).json({error: "Internal Server Error"});
     }
+});
+
+// eli change: catch-all for anything no route above handled (this is what used to print "Cannot GET /xyz").
+// Browser page requests are redirected to missingPageError.html; API / fetch calls still get JSON, so the
+// frontend code that reads error responses keeps working.
+app.use((req, res) => {
+    const isPageRequest = req.method === 'GET' && !req.path.startsWith('/api') && req.accepts('html');
+    if (isPageRequest) {
+        return res.redirect('/missingPageError.html?from=' + encodeURIComponent(req.originalUrl));
+    }
+    res.status(404).json({ message: 'Not found' });
 });
 
 // send help : global error handling middleware

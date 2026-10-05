@@ -5,6 +5,7 @@ const path = require('path');
 const fs = require('fs');
 const { put, del } = require('@vercel/blob');
 const { logActivity } = require('../Admin/auditLogRoutes');
+const { isPasswordReused, REUSE_MESSAGE } = require('../Utils/passwordHistory'); // eli change
 
 function getIp(req) {
     return req.ip || req.headers['x-forwarded-for'];
@@ -183,6 +184,11 @@ function registerPatientProfileRoute(app, db) {
 
             // 1. Password Update
             if (new_password) {
+                // eli change: block the new password if it matches the current one
+                if (await isPasswordReused(connection, patient_id, new_password)) {
+                    await connection.rollback();
+                    return res.status(400).json({ message: REUSE_MESSAGE });
+                }
                 const password_hash = await bcrypt.hash(new_password, SALT_ROUNDS);
                 await connection.query(
                     `UPDATE users SET password_hash = ? WHERE user_id = ?`,

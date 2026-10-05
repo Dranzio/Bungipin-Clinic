@@ -9,6 +9,7 @@ const { passwordReset, verifyRegistration } = require('./EmailTemplates');
 const authenticateToken = require('./authMiddleware');
 const { clearAuthCookie, extractToken } = authenticateToken;
 const { logActivity } = require('./Admin/auditLogRoutes');
+const { isPasswordReused, REUSE_MESSAGE } = require('./Utils/passwordHistory'); // eli change
 
 const SALT_ROUNDS = 10;
 const RESET_TOKEN_TTL_MINUTES = 30;
@@ -512,6 +513,13 @@ router.post('/reset-password', async (req, res) => {
         }
 
         const { reset_id, user_id } = rows[0];
+
+        // eli change: reject the same password as the current one BEFORE the token is consumed, so the emailed
+        // link stays valid and the person can simply try again with a different password.
+        if (await isPasswordReused(db, user_id, password)) {
+            return res.status(400).json({ error: REUSE_MESSAGE });
+        }
+
         const password_hash = await bcrypt.hash(password, SALT_ROUNDS);
 
         await db.query('UPDATE users SET password_hash = ? WHERE user_id = ?', [password_hash, user_id]);
