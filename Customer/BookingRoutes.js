@@ -7,6 +7,17 @@ const MAX_ADVANCE_MONTHS = 6;
 function getIp(req) {
     return req.ip || req.headers['x-forwarded-for'];
 }
+
+function format12Hour(timeStr) {
+    if (!timeStr) return '';
+    const [hStr, mStr] = String(timeStr).split(':');
+    let h = parseInt(hStr, 10);
+    const m = mStr || '00';
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    h = h % 12 || 12;
+    return `${h}:${m} ${ampm}`;
+}
+
 function getNow(tz = process.env.CLINIC_TIMEZONE || 'Asia/Manila') {
     const now = new Date(new Date().toLocaleString('en-US', { timeZone: tz }));
     const yyyy = now.getFullYear();
@@ -146,7 +157,7 @@ function registerBookingRoute(app, db) {
                     isAvailable = false;
                     reason = 'Exceeds Dentist Shift'; 
                 }
-                // 5. Already booked
+                // 5. Already booked by another patient
                 else if (bookedIntervals.some(b => sM < b.end && b.start < eM)) {
                     isAvailable = false;
                     reason = 'Already Booked';
@@ -214,6 +225,7 @@ function registerBookingRoute(app, db) {
         try {
             await connection.beginTransaction();
 
+            // 1. Max active booking limit check
             const [activeRows] = await connection.query(
                 `SELECT COUNT(*) AS active_count
                  FROM appointments a
@@ -229,6 +241,7 @@ function registerBookingRoute(app, db) {
                 });
             }
 
+            // 2. Services verification
             const [serviceRows] = await connection.query(
                 'SELECT service_id, label, price, duration_minutes, is_available FROM services WHERE service_id IN (?)',
                 [allServiceIds]
@@ -247,6 +260,7 @@ function registerBookingRoute(app, db) {
             const totalPrice = serviceRows.reduce((sum, s) => sum + Number(s.price), 0);
             const totalDuration = serviceRows.reduce((sum, s) => sum + Number(s.duration_minutes || 30), 0);
 
+            // 3. Doctor verification
             const [doctorRows] = await connection.query(
                 `SELECT ep.employee_id
                  FROM employee_profiles ep
@@ -267,6 +281,28 @@ function registerBookingRoute(app, db) {
             const endM = totalEndMins % 60;
             const endTime = `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}:00`;
 
+            // 🛑 4. CRITICAL: PATIENT OVERLAP CHECK (Blocks patient from booking overlapping slots across ANY doctor)
+            const [patientClashRows] = await connection.query(
+                `SELECT a.appointment_id, a.time_slot, a.end_time, s.label, CONCAT('Dr. ', doc.first_name, ' ', doc.last_name) AS doctor_name
+                 FROM appointments a
+                 JOIN services s ON a.service_id = s.service_id
+                 LEFT JOIN users doc ON a.employee_id = doc.user_id
+                 WHERE a.patient_id = ? AND a.appointment_date = ?
+                   AND ${BLOCKING_SQL}
+                   AND a.time_slot < ? AND ? < a.end_time
+                 FOR UPDATE`,
+                [patientId, appointment_date, endTime, time_slot]
+            );
+
+            if (patientClashRows.length > 0) {
+                await connection.rollback();
+                const clash = patientClashRows[0];
+                return res.status(409).json({
+                    message: `You already have an appointment on ${appointment_date} at ${format12Hour(clash.time_slot)} – ${format12Hour(clash.end_time)} (${clash.doctor_name || 'Attending Dentist'}). You cannot book overlapping appointments at the same time.`
+                });
+            }
+
+            // 🛑 5. DOCTOR OVERLAP CHECK (Blocks doctor from being double-booked by another patient)
             const [clashRows] = await connection.query(
                 `SELECT a.appointment_id FROM appointments a
                  WHERE a.employee_id = ? AND a.appointment_date = ?
@@ -280,6 +316,7 @@ function registerBookingRoute(app, db) {
                 return res.status(409).json({ message: 'This time slot has just been reserved by another patient. Please choose a different slot.' });
             }
 
+            // 6. Insert new booking
             const [result] = await connection.query(
                 `INSERT INTO appointments
                  (patient_id, employee_id, service_id, appointment_date, time_slot, end_time, appointment_status, hold_expires_at, queue_status, reschedule_status, reschedule_count, patient_note)
@@ -295,7 +332,7 @@ function registerBookingRoute(app, db) {
 
             await connection.query(
                 `INSERT INTO payments (appointment_id, amount, payment_date, method, status)
-                 VALUES (?, ?, CURDATE(), ?, 'pending')`,
+                 VALUES (?, ?, DATE(CONVERT_TZ(NOW(), '+00:00', '+08:00')), ?, 'pending')`,
                 [appointmentId, totalPrice, methodEnum]
             );
 
@@ -356,7 +393,7 @@ function registerBookingRoute(app, db) {
         } catch (err) {
             await connection.rollback();
             console.error('Booking error:', err);
-            res.status(500).json({ message: 'Internal Server Error' });
+            res.status(500).json({ message: err.message || 'Internal Server Error' });
         } finally {
             connection.release();
         }
@@ -370,9 +407,9 @@ function registerBookingRoute(app, db) {
                     patient_note = CONCAT(COALESCE(patient_note, ''), ' [System: Auto-cancelled due to expired schedule]')
                 WHERE appointment_status = 'pending'
                   AND (
-                    appointment_date < CURDATE()
-                        OR (appointment_date = CURDATE() AND end_time < CURTIME())
-                    )
+                    appointment_date < DATE(CONVERT_TZ(NOW(), '+00:00', '+08:00'))
+                    OR (appointment_date = DATE(CONVERT_TZ(NOW(), '+00:00', '+08:00')) AND end_time < TIME(CONVERT_TZ(NOW(), '+00:00', '+08:00')))
+                  )
             `);
 
             if (result.affectedRows > 0 && io) {
