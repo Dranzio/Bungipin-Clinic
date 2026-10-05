@@ -200,7 +200,7 @@ function registerBookingRoute(app, db) {
             return res.status(400).json({ message: 'Invalid doctor selected' });
         }
 
-        const appointmentDateTime = new Date(`${appointment_date}T${time_slot}`);
+        const appointmentDateTime = new Date(`${appointment_date}T${time_slot}+08:00`);
         if (Number.isNaN(appointmentDateTime.getTime()) || appointmentDateTime <= new Date()) {
             return res.status(400).json({ message: 'Appointments must be scheduled for a future date and time' });
         }

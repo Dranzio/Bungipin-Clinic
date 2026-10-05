@@ -11,19 +11,6 @@ const { logActivity } = require('../Admin/auditLogRoutes');
 const { verifyWebhookSignature, BLOCKING_SQL, getCheckoutSession } = require('./paymongo');
 const { sendAppointmentEmail } = require('../AppointmentEmails');
 
-// PaymongoWebhook.js
-// POST /api/webhooks/paymongo  — PayMongo calls this when a checkout is paid.
-// This is the ONLY place an online payment becomes 'paid'. The browser
-// redirect to success_url is just a UX hint and is never trusted.
-//
-// IMPORTANT: register this BEFORE app.use(express.json()) in your server file,
-// because signature checking needs the raw, unparsed body.
-
-const express = require('express');
-const { logActivity } = require('../Admin/auditLogRoutes');
-const { verifyWebhookSignature, BLOCKING_SQL, getCheckoutSession } = require('./paymongo');
-const { sendAppointmentEmail } = require('../AppointmentEmails');
-
 async function handlePaid(db, session) {
     const match = /^APPT-(\d+)$/.exec(session.attributes?.reference_number || '');
     // eli change: log instead of silently returning, so a skipped payment can be diagnosed

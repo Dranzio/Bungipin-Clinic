@@ -10,7 +10,14 @@ const mysqlPool = mysql.createPool({
     waitForConnections: true,
     connectionLimit: 10,
     queueLimit: 0,
-    dateStrings: true
+    dateStrings: true,
+    timezone: '+08:00'
+});
+
+mysqlPool.on('connection', (conn) => {
+    conn.query("SET time_zone = '+08:00'", (err) => {
+        if (err) console.error('Could not set session time zone:', err.message);
+    });
 });
 
 const promisePool = mysqlPool.promise();
