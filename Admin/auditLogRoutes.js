@@ -80,11 +80,11 @@ function registerActivityLogRoutes(app, db) {
             // 3. Date Range Filter (Evaluated against PH Time UTC+8)
             const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
             if (startDate && dateRegex.test(startDate)) {
-                conditions.push("CONVERT_TZ(l.created_at, '+00:00', '+08:00') >= ?");
+                conditions.push("CONVERT_TZ(l.created_at, '+00:00') >= ?");
                 params.push(`${startDate} 00:00:00`);
             }
             if (endDate && dateRegex.test(endDate)) {
-                conditions.push("CONVERT_TZ(l.created_at, '+00:00', '+08:00') <= ?");
+                conditions.push("CONVERT_TZ(l.created_at, '+00:00') <= ?");
                 params.push(`${endDate} 23:59:59`);
             }
 
