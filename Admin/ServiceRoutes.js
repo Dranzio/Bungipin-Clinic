@@ -13,7 +13,7 @@ const path = require('path');
 const crypto = require('crypto');
 const multer = require('multer');
 const { put, del } = require('@vercel/blob');
-const authenticateToken = require('./authMiddleware');
+const authenticateToken = require('../authMiddleware');
 
 const isVercel = process.env.VERCEL === '1' || !!process.env.BLOB_READ_WRITE_TOKEN;
 const uploadDir = path.join(__dirname, 'uploads'); // local development only
