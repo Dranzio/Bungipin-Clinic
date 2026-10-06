@@ -95,6 +95,11 @@
                     <input
                         type="text"
                         id="searchInput"
+                        name="user-list-search"
+                        autocomplete="off"
+                        data-lpignore="true"
+                        data-1p-ignore
+                        data-form-type="other"
                         placeholder="Search name, email, specialization, or ID..."
                         class="w-full h-11 pl-11 pr-4 rounded-full border border-[#2A1001]/20 bg-white outline-none shadow-sm text-sm focus:ring-2 focus:ring-[#667733]/40 transition"
                     />
@@ -143,22 +148,26 @@
                     <div>
                         <label class="block text-xs font-bold text-[#2A1001] uppercase mb-1">First Name</label>
                         <input type="text" id="editFirstName" readonly required maxlength="50" class="name-sanitized w-full h-10 px-4 rounded-full border border-[#2A1001]/20 outline-none bg-[#dedede] text-[#2c3e2b]/70 font-semibold text-sm transition cursor-not-allowed shadow-inner" />
+                    <span id="editFirstNameError" class="text-[10px] text-red-600 font-bold block mt-1 hidden" role="alert"></span>
                     </div>
                     <div>
                         <label class="block text-xs font-bold text-[#2A1001] uppercase mb-1">Last Name</label>
                         <input type="text" id="editLastName" readonly required maxlength="50" class="name-sanitized w-full h-10 px-4 rounded-full border border-[#2A1001]/20 outline-none bg-[#dedede] text-[#2c3e2b]/70 font-semibold text-sm transition cursor-not-allowed shadow-inner" />
+                    <span id="editLastNameError" class="text-[10px] text-red-600 font-bold block mt-1 hidden" role="alert"></span>
                     </div>
                 </div>
 
                 <div class="mb-4">
                     <label class="block text-xs font-bold text-[#2A1001] uppercase mb-1">Email</label>
                     <input type="email" id="editEmail" readonly required maxlength="100" class="w-full h-10 px-4 rounded-full border border-[#2A1001]/20 outline-none bg-[#dedede] text-[#2c3e2b]/70 font-semibold text-sm transition cursor-not-allowed shadow-inner" />
+                    <span id="editEmailError" class="text-[10px] text-red-600 font-bold block mt-1 hidden" role="alert"></span>
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                     <div>
                         <label class="block text-xs font-bold text-[#2A1001] uppercase mb-1">Phone</label>
-                        <input type="tel" id="editPhone" pattern="^09\d{9}$" maxlength="11" readonly required class="w-full h-10 px-4 rounded-full border border-[#2A1001]/20 outline-none bg-[#dedede] text-[#2c3e2b]/70 font-semibold text-sm transition cursor-not-allowed shadow-inner" placeholder="09171234567" />
+                        <input type="tel" id="editPhone" inputmode="numeric" autocomplete="off" maxlength="11" readonly required class="w-full h-10 px-4 rounded-full border border-[#2A1001]/20 outline-none bg-[#dedede] text-[#2c3e2b]/70 font-semibold text-sm transition cursor-not-allowed shadow-inner" placeholder="09171234567" />
+                    <span id="editPhoneError" class="text-[10px] text-red-600 font-bold block mt-1 hidden" role="alert"></span>
                     </div>
                     <div>
                         <label class="block text-xs font-bold text-[#2A1001] uppercase mb-1">Sex</label>
@@ -267,7 +276,7 @@
     <div id="passResultModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
         <div class="bg-white rounded-[28px] w-full max-w-sm p-7 text-center shadow-2xl border-2 border-black/10">
             <div class="w-14 h-14 mx-auto mb-3.5 rounded-full bg-green-100 text-green-700 flex items-center justify-center text-2xl">
-                <i class="fa-solid fa-shield-check"></i>
+                <i class="fa-solid fa-shield-halved"></i>
             </div>
             <h2 class="text-xl font-bold text-[#2A1001] mb-1.5" id="passResultTitle">Password Generated</h2>
             <p class="text-xs text-[#2A1001]/70 mb-1">Temporary password generated for account.</p>
@@ -338,10 +347,20 @@
                 <i class="fa-solid fa-user-gear"></i>
             </div>
             <h2 class="text-xl font-bold text-[#2A1001] mb-2" id="statusModalTitle">Disable Account?</h2>
-            <p class="text-xs sm:text-sm text-[#2A1001]/70 mb-6 leading-relaxed" id="statusModalText"></p>
+            <p class="text-xs sm:text-sm text-[#2A1001]/70 mb-4 leading-relaxed" id="statusModalText"></p>
+            <div id="statusPasswordWrapper" class="mb-6 text-left">
+                <label for="statusPasswordInput" class="block text-xs font-bold text-[#2A1001] uppercase mb-1">Enter your password to confirm</label>
+                <div class="relative">
+                    <input type="password" id="statusPasswordInput" autocomplete="new-password" maxlength="25" class="w-full h-10 pl-4 pr-11 rounded-full border border-[#2A1001]/20 bg-white outline-none text-sm font-semibold shadow-inner focus:ring-2 focus:ring-[#667733]/40" />
+                    <button type="button" class="togglePasswordBtn absolute inset-y-0 right-0 w-11 flex items-center justify-center text-[#2A1001]/50 hover:text-[#2A1001] cursor-pointer" data-target="statusPasswordInput" title="Show password" aria-label="Show password">
+                        <i class="fa-solid fa-eye text-sm leading-none"></i>
+                    </button>
+                </div>
+                <span id="statusPasswordError" class="text-[10px] text-red-600 font-bold block mt-1 hidden" role="alert"></span>
+            </div>
             <div class="flex justify-center gap-3">
                 <button id="cancelStatusBtn" class="flex-1 py-2.5 rounded-full font-bold text-sm text-[#2A1001] bg-gray-100 hover:bg-gray-200 transition cursor-pointer">Cancel</button>
-                <button id="confirmStatusBtn" class="flex-1 py-2.5 rounded-full font-bold text-sm text-white bg-[#D9534F] hover:bg-[#c9302c] transition cursor-pointer shadow-md flex items-center justify-center gap-2">Confirm</button>
+                <button id="confirmStatusBtn" disabled class="flex-1 py-2.5 rounded-full font-bold text-sm text-white bg-[#D9534F] hover:bg-[#c9302c] transition cursor-pointer shadow-md flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-[#9e9e9e]">Confirm</button>
             </div>
         </div>
     </div>
@@ -353,10 +372,20 @@
                 <i class="fa-solid fa-triangle-exclamation"></i>
             </div>
             <h2 class="text-xl font-bold text-[#2A1001] mb-2">Delete Account?</h2>
-            <p class="text-xs sm:text-sm text-[#2A1001]/70 mb-6 leading-relaxed" id="deleteModalText"></p>
+            <p class="text-xs sm:text-sm text-[#2A1001]/70 mb-4 leading-relaxed" id="deleteModalText"></p>
+            <div id="deletePasswordWrapper" class="mb-6 text-left">
+                <label for="deletePasswordInput" class="block text-xs font-bold text-[#2A1001] uppercase mb-1">Enter your password to confirm</label>
+                <div class="relative">
+                    <input type="password" id="deletePasswordInput" autocomplete="new-password" maxlength="25" class="w-full h-10 pl-4 pr-11 rounded-full border border-[#2A1001]/20 bg-white outline-none text-sm font-semibold shadow-inner focus:ring-2 focus:ring-[#667733]/40" />
+                    <button type="button" class="togglePasswordBtn absolute inset-y-0 right-0 w-11 flex items-center justify-center text-[#2A1001]/50 hover:text-[#2A1001] cursor-pointer" data-target="deletePasswordInput" title="Show password" aria-label="Show password">
+                        <i class="fa-solid fa-eye text-sm leading-none"></i>
+                    </button>
+                </div>
+                <span id="deletePasswordError" class="text-[10px] text-red-600 font-bold block mt-1 hidden" role="alert"></span>
+            </div>
             <div class="flex justify-center gap-3">
                 <button id="cancelDeleteBtn" class="flex-1 py-2.5 rounded-full font-bold text-sm text-[#2A1001] bg-gray-100 hover:bg-gray-200 transition cursor-pointer">Cancel</button>
-                <button id="confirmDeleteBtn" class="flex-1 py-2.5 rounded-full font-bold text-sm text-white bg-[#D9534F] hover:bg-[#c9302c] transition cursor-pointer shadow-md flex items-center justify-center gap-2">Yes, Delete</button>
+                <button id="confirmDeleteBtn" disabled class="flex-1 py-2.5 rounded-full font-bold text-sm text-white bg-[#D9534F] hover:bg-[#c9302c] transition cursor-pointer shadow-md flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-[#9e9e9e]">Yes, Delete</button>
             </div>
         </div>
     </div>
@@ -367,26 +396,30 @@
             <button id="closeCreateModal" type="button" class="absolute top-4 right-5 text-2xl font-bold text-[#2A1001]/60 hover:text-[#2A1001] cursor-pointer">&times;</button>
             <h2 class="text-xl font-bold text-[#2A1001] mb-6">Create New Account</h2>
 
-            <form id="createAccountForm">
+            <form id="createAccountForm" novalidate>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                     <div>
                         <label class="block text-xs font-bold text-[#2A1001] uppercase mb-1">First Name</label>
                         <input type="text" id="newFirstName" required maxlength="50" class="name-sanitized w-full h-10 px-4 rounded-full border border-[#2A1001]/20 bg-white outline-none text-sm font-semibold shadow-inner focus:ring-2 focus:ring-[#667733]/40" />
+                        <span id="newFirstNameError" class="text-[10px] text-red-600 font-bold block mt-1 hidden"></span>
                     </div>
                     <div>
                         <label class="block text-xs font-bold text-[#2A1001] uppercase mb-1">Last Name</label>
                         <input type="text" id="newLastName" required maxlength="50" class="name-sanitized w-full h-10 px-4 rounded-full border border-[#2A1001]/20 bg-white outline-none text-sm font-semibold shadow-inner focus:ring-2 focus:ring-[#667733]/40" />
+                        <span id="newLastNameError" class="text-[10px] text-red-600 font-bold block mt-1 hidden"></span>
                     </div>
                 </div>
 
                 <div class="mb-4">
                     <label class="block text-xs font-bold text-[#2A1001] uppercase mb-1">Email</label>
                     <input type="email" id="newEmail" required maxlength="100" class="w-full h-10 px-4 rounded-full border border-[#2A1001]/20 bg-white outline-none text-sm font-semibold shadow-inner focus:ring-2 focus:ring-[#667733]/40" />
+                    <span id="newEmailError" class="text-[10px] text-red-600 font-bold block mt-1 hidden" role="alert"></span>
                 </div>
 
                 <div class="mb-4">
                     <label class="block text-xs font-bold text-[#2A1001] uppercase mb-1">Phone</label>
-                    <input type="tel" id="newPhone" pattern="^09\d{9}$" maxlength="11" required class="w-full h-10 px-4 rounded-full border border-[#2A1001]/20 bg-white outline-none text-sm font-semibold shadow-inner focus:ring-2 focus:ring-[#667733]/40" placeholder="09171234567" />
+                    <input type="tel" id="newPhone" inputmode="numeric" autocomplete="off" maxlength="11" required class="w-full h-10 px-4 rounded-full border border-[#2A1001]/20 bg-white outline-none text-sm font-semibold shadow-inner focus:ring-2 focus:ring-[#667733]/40" placeholder="09171234567" />
+                    <span id="newPhoneError" class="text-[10px] text-red-600 font-bold block mt-1 hidden" role="alert"></span>
                 </div>
 
                 <div class="grid grid-cols-2 gap-4 mb-4">
@@ -508,7 +541,7 @@
             .replace(/'/g, '&#39;');
     }
 
-    function showAlert(title, message, type = 'info') {
+    function showAlert(title, message, type = 'info', allowHtml = false) {
         const modal = document.getElementById('appAlertModal');
         const titleEl = document.getElementById('alertModalTitle');
         const msgEl = document.getElementById('alertModalMessage');
@@ -517,7 +550,11 @@
         const btn = document.getElementById('alertModalOkBtn');
 
         titleEl.textContent = String(title || 'Notification');
-        msgEl.innerHTML = String(message || '');
+        if (allowHtml) {
+            msgEl.innerHTML = String(message || '');
+        } else {
+            msgEl.textContent = String(message || '');
+        }
 
         if (type === 'error') {
             iconContainer.className = 'w-14 h-14 mx-auto mb-3.5 rounded-full flex items-center justify-center bg-red-100 text-red-600';
@@ -557,10 +594,33 @@
         });
     }
 
-    // Real-Time Sanitizers for Name inputs
+    // ================= FIELD VALIDATION =================
+    const NAME_RE = /^[A-Za-zÀ-ÖØ-öø-ÿ]+([ '-][A-Za-zÀ-ÖØ-öø-ÿ]+)*$/;
+    const EMAIL_RE = /^[A-Za-z0-9._%+-]+@(?:[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?\.)+[A-Za-z]{2,}$/;
+    const PHONE_RE = /^09\d{9}$/;
+    const NAME_CHARS_MSG = 'Letters, spaces, hyphens and apostrophes only.';
+
+    function isValidEmail(value) {
+        if (value.length > 100 || value.includes('..') || !EMAIL_RE.test(value)) return false;
+        const local = value.split('@')[0];
+        return local.length <= 64 && !local.startsWith('.') && !local.endsWith('.');
+    }
+
+    // Real-time sanitizers for name inputs.
+    // Removes illegal characters, collapses repeated symbols (keeping the first one) and
+    // drops leading symbols. Also converts the curly apostrophe phone keyboards produce.
     document.querySelectorAll('.name-sanitized').forEach(input => {
-        input.addEventListener('input', function() {
-            this.value = this.value.replace(/[^A-Za-zÀ-ÖØ-öø-ÿ\s'-]/g, '').replace(/([ '-]){2,}/g, '$1');
+        input.addEventListener('input', function () {
+            const before = this.value.replace(/[\u2018\u2019]/g, "'");
+            const after = before
+                .replace(/[^A-Za-zÀ-ÖØ-öø-ÿ '-]/g, '')
+                .replace(/([ '-])[ '-]+/g, '$1')
+                .replace(/^[ '-]+/, '');
+
+            if (after !== this.value) this.value = after;
+            if (after.length !== before.length) {
+                this.dataset.strippedMsg = /[^A-Za-zÀ-ÖØ-öø-ÿ '-]/.test(before) ? NAME_CHARS_MSG : 'Invalid symbol arrangement.';
+            }
         });
     });
 
@@ -568,10 +628,204 @@
     ['newPhone', 'editPhone'].forEach(id => {
         const el = document.getElementById(id);
         if (el) {
-            el.addEventListener('input', function() {
-                this.value = this.value.replace(/\D/g, '').slice(0, 11);
+            el.addEventListener('input', function () {
+                const digits = this.value.replace(/\D/g, '');
+                if (digits.length !== this.value.length) this.dataset.strippedMsg = 'Digits only.';
+                this.value = digits.slice(0, 11);
             });
         }
+    });
+
+    // Validators: return an error message, or null when the value is fine.
+    // isFinal = false while typing (only flag things that can never become valid),
+    // isFinal = true on blur / submit (full check).
+    function validateNameField(value, label, isFinal) {
+        if (value === '') return isFinal ? `${label} is required.` : null;
+
+        if (/[^A-Za-zÀ-ÖØ-öø-ÿ '-]/.test(value)) return NAME_CHARS_MSG;
+        if (/[ '-]{2,}/.test(value)) return 'Invalid symbol arrangement.';
+        if (/(.)\1{2,}/i.test(value)) return 'Cannot contain 3 repeating characters.';
+        if (/(.{2,})\1{2,}/i.test(value)) return 'Cannot contain repetitive patterns.';
+
+        if (isFinal) {
+            if (value.length < 2) return 'Must be at least 2 characters.';
+            if (!NAME_RE.test(value)) return 'Must start and end with a letter.';
+        }
+        return null;
+    }
+
+    function validateEmailField(value, isFinal) {
+        if (value === '') return isFinal ? 'Email is required.' : null;
+        if (/\s/.test(value)) return 'Email cannot contain spaces.';
+        if (isFinal && !isValidEmail(value)) return 'Enter a valid email address (e.g. name@example.com).';
+        return null;
+    }
+
+    function validatePhoneField(value, isFinal) {
+        if (value === '') return isFinal ? 'Phone number is required.' : null;
+        if (!value.startsWith('09'.slice(0, value.length))) return 'Must start with 09.';
+        if (isFinal && !PHONE_RE.test(value)) return 'Must be exactly 11 digits starting with 09.';
+        return null;
+    }
+
+    // Inline error display (inline styles so they always win over the bg-white / bg-[#dedede] toggles)
+    function setFieldError(inputEl, errorEl, message) {
+        if (message) {
+            inputEl.style.borderColor = '#ef4444';
+            inputEl.style.backgroundColor = '#fef2f2';
+            errorEl.textContent = message;
+            errorEl.classList.remove('hidden');
+        } else {
+            inputEl.style.borderColor = '';
+            inputEl.style.backgroundColor = '';
+            errorEl.textContent = '';
+            errorEl.classList.add('hidden');
+        }
+    }
+
+    const fieldRules = {};
+
+    function attachFieldValidation(inputId, errorId, validator) {
+        const inputEl = document.getElementById(inputId);
+        const errorEl = document.getElementById(errorId);
+        if (!inputEl || !errorEl) return;
+
+        fieldRules[inputId] = { inputEl, errorEl, validator };
+
+        inputEl.addEventListener('input', () => {
+            const stripped = inputEl.dataset.strippedMsg;
+            delete inputEl.dataset.strippedMsg;
+            setFieldError(inputEl, errorEl, validator(inputEl.value.trim(), false) || stripped || null);
+        });
+
+        inputEl.addEventListener('blur', () => {
+            if (inputEl.readOnly) return;
+            const trimmed = inputEl.value.trim();
+            if (trimmed !== inputEl.value) inputEl.value = trimmed;
+            setFieldError(inputEl, errorEl, validator(trimmed, true));
+        });
+
+        inputEl.addEventListener('focus', () => {
+            if (inputEl.value.trim() === '') setFieldError(inputEl, errorEl, null);
+        });
+    }
+
+    // Runs the full check for one field and shows the result inline.
+    function validateFieldNow(inputId) {
+        const rule = fieldRules[inputId];
+        if (!rule) return null;
+        const message = rule.validator(rule.inputEl.value.trim(), true);
+        setFieldError(rule.inputEl, rule.errorEl, message);
+        return message;
+    }
+
+    // Checks several fields, focuses the first invalid one, returns its id (or null when all are valid).
+    function validateFieldsNow(ids) {
+        let firstInvalid = null;
+        ids.forEach(id => {
+            if (validateFieldNow(id) && !firstInvalid) firstInvalid = id;
+        });
+        if (firstInvalid) fieldRules[firstInvalid].inputEl.focus();
+        return firstInvalid;
+    }
+
+    function clearFieldErrors(ids) {
+        ids.forEach(id => {
+            const rule = fieldRules[id];
+            if (rule) setFieldError(rule.inputEl, rule.errorEl, null);
+        });
+    }
+
+    const CREATE_FIELD_IDS = ['newFirstName', 'newLastName', 'newEmail', 'newPhone'];
+    const EDIT_FIELD_IDS = ['editFirstName', 'editLastName', 'editEmail', 'editPhone'];
+
+    ['new', 'edit'].forEach(prefix => {
+        attachFieldValidation(`${prefix}FirstName`, `${prefix}FirstNameError`, (v, f) => validateNameField(v, 'First name', f));
+        attachFieldValidation(`${prefix}LastName`, `${prefix}LastNameError`, (v, f) => validateNameField(v, 'Last name', f));
+        attachFieldValidation(`${prefix}Email`, `${prefix}EmailError`, validateEmailField);
+        attachFieldValidation(`${prefix}Phone`, `${prefix}PhoneError`, validatePhoneField);
+    });
+
+    // ================= PASSWORD CONFIRMATION (disable / delete) =================
+    const PASSWORD_ERROR_CODES = ['INVALID_PASSWORD', 'PASSWORD_REQUIRED', 'TOO_MANY_ATTEMPTS'];
+
+    // Which confirm button each password field controls.
+    const CONFIRM_BUTTON_FOR = {
+        statusPasswordInput: 'confirmStatusBtn',
+        deletePasswordInput: 'confirmDeleteBtn'
+    };
+
+    // Confirm is enabled only once a password has been typed (or when the modal doesn't ask for one, e.g. re-enabling).
+    function syncConfirmButton(inputId) {
+        const btn = document.getElementById(CONFIRM_BUTTON_FOR[inputId]);
+        const inputEl = document.getElementById(inputId);
+        if (!btn || !inputEl) return;
+        const wrapper = inputEl.closest('[id$="PasswordWrapper"]');
+        const passwordRequired = !wrapper || !wrapper.classList.contains('hidden');
+        btn.disabled = passwordRequired && inputEl.value.length === 0;
+    }
+
+    function setPasswordError(inputId, errorId, message) {
+        const inputEl = document.getElementById(inputId);
+        const errorEl = document.getElementById(errorId);
+        if (message) {
+            inputEl.style.borderColor = '#ef4444';
+            inputEl.style.backgroundColor = '#fef2f2';
+            errorEl.textContent = message;
+            errorEl.classList.remove('hidden');
+        } else {
+            inputEl.style.borderColor = '';
+            inputEl.style.backgroundColor = '';
+            errorEl.textContent = '';
+            errorEl.classList.add('hidden');
+        }
+    }
+
+    // Empties the field, hides the text again and clears any error (so a password never lingers in the page).
+    function resetPasswordField(inputId, errorId) {
+        const inputEl = document.getElementById(inputId);
+        inputEl.value = '';
+        inputEl.type = 'password';
+        setPasswordError(inputId, errorId, null);
+        syncConfirmButton(inputId);
+
+        const toggle = document.querySelector(`.togglePasswordBtn[data-target="${inputId}"]`);
+        if (toggle) {
+            toggle.innerHTML = '<i class="fa-solid fa-eye text-sm leading-none"></i>';
+            toggle.title = 'Show password';
+            toggle.setAttribute('aria-label', 'Show password');
+        }
+    }
+
+    // Enter submits, typing clears the error.
+    function wirePasswordInput(inputId, errorId, onSubmit) {
+        const inputEl = document.getElementById(inputId);
+        inputEl.addEventListener('input', () => {
+            setPasswordError(inputId, errorId, null);
+            syncConfirmButton(inputId);
+        });
+        inputEl.addEventListener('keydown', e => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                onSubmit();
+            }
+        });
+    }
+
+    // Show / hide password eye buttons
+    document.addEventListener('click', function (e) {
+        const btn = e.target.closest('.togglePasswordBtn');
+        if (!btn) return;
+
+        const input = document.getElementById(btn.dataset.target);
+        if (!input) return;
+
+        const reveal = input.type === 'password';
+        input.type = reveal ? 'text' : 'password';
+        btn.innerHTML = `<i class="fa-solid ${reveal ? 'fa-eye-slash' : 'fa-eye'} text-sm leading-none"></i>`;
+        btn.title = reveal ? 'Hide password' : 'Show password';
+        btn.setAttribute('aria-label', btn.title);
+        input.focus();
     });
 
     let users = [];
@@ -638,12 +892,23 @@
         return result;
     }
 
-    async function toggleAccountStatus(userId) {
+    function buildApiError(response, result) {
+        const error = new Error(result.message || result.error || `Server error: ${response.status}`);
+        error.status = response.status;
+        error.code = result.code;
+        return error;
+    }
+
+    // `password` is the logged-in admin's own password. The server requires it when DISABLING (not when re-enabling).
+    async function toggleAccountStatus(userId, password) {
         const user = users.find(u => Number(u.user_id) === Number(userId));
         if (!user) throw new Error('User not found');
 
         const newStatus = user.account_status === 'active' ? 'suspended' : 'active';
         const token = localStorage.getItem('userToken');
+
+        const body = { account_status: newStatus };
+        if (newStatus === 'suspended') body.password = password;
 
         const response = await fetch(`/api/users/${encodeURIComponent(userId)}/status`, {
             method: 'PATCH',
@@ -651,7 +916,7 @@
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${token}`
             },
-            body: JSON.stringify({ account_status: newStatus })
+            body: JSON.stringify(body)
         });
 
         const contentType = response.headers.get('content-type') || '';
@@ -660,19 +925,23 @@
             : { message: await response.text() };
 
         if (!response.ok) {
-            throw new Error(result.message || result.error || `Server error: ${response.status}`);
+            throw buildApiError(response, result);
         }
 
         user.account_status = result.account_status;
         return result;
     }
 
-    async function deleteUser(userId) {
+    async function deleteUser(userId, password) {
         const token = localStorage.getItem('userToken');
 
         const response = await fetch(`/api/users/${encodeURIComponent(userId)}`, {
             method: 'DELETE',
-            headers: { 'Authorization': `Bearer ${token}` }
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ password })
         });
 
         const contentType = response.headers.get('content-type') || '';
@@ -681,7 +950,7 @@
             : { message: await response.text() };
 
         if (!response.ok) {
-            throw new Error(result.message || result.error || `Server error: ${response.status}`);
+            throw buildApiError(response, result);
         }
 
         users = users.filter(u => Number(u.user_id) !== Number(userId));
@@ -747,7 +1016,9 @@
             throw new Error(result.message || result.error || `Server error: ${response.status}`);
         }
 
-        users.unshift(result);
+        // keep the one-time temp password out of the in-memory list
+        const { temp_password, email_sent, ...listUser } = result;
+        users.unshift(listUser);
         return result;
     }
 
@@ -765,8 +1036,9 @@
     function renderUsers() {
         const container = document.getElementById('user-container');
 
+        const searchTerm = currentSearch.trim().toLowerCase();
+
         const filteredUsers = users.filter(u => {
-            const searchTerm = currentSearch.toLowerCase();
 
             const matchesSearch =
                 `${u.first_name} ${u.last_name}`.toLowerCase().includes(searchTerm) ||
@@ -893,6 +1165,7 @@
 
         const btn = this;
         const originalText = btn.innerHTML;
+        let sent = false;
         btn.disabled = true;
         btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Sending Email...';
 
@@ -917,21 +1190,18 @@
                 : { message: await response.text() };
 
             if (!response.ok) {
-                if (response.status === 404 || response.status === 501) {
-                    showAlert('Backend Ready', `Email dispatch request was prepared for <strong>${escapeHtml(currentCredentials.email)}</strong>. (Connect your SMTP / mail service on the server).`, 'info');
-                    return;
-                }
-                throw new Error(result.message || 'Failed to send credentials email');
+                throw new Error(result.message || `Failed to send credentials email (${response.status})`);
             }
 
+            sent = true;
             btn.innerHTML = '<i class="fa-solid fa-check"></i> Email Sent!';
-            showAlert('Email Dispatched', `Temporary password has been sent to <strong>${escapeHtml(currentCredentials.email)}</strong>.`, 'success');
+            showAlert('Email Dispatched', `Temporary password has been sent to <strong>${escapeHtml(currentCredentials.email)}</strong>.`, 'success', true);
         } catch (error) {
             console.error('Email sending error:', error);
             showAlert('Dispatch Failed', error.message, 'error');
-            btn.innerHTML = originalText;
         } finally {
             btn.disabled = false;
+            if (!sent) btn.innerHTML = originalText;
         }
     });
 
@@ -961,7 +1231,13 @@
 
             document.getElementById('statusModalTitle').textContent = willDisable ? 'Disable Account?' : 'Enable Account?';
             document.getElementById('statusModalText').textContent = `Are you sure you want to ${willDisable ? 'disable' : 're-enable'} ${u.first_name} ${u.last_name}'s account?`;
+
+            // Only disabling needs the password; re-enabling does not.
+            document.getElementById('statusPasswordWrapper').classList.toggle('hidden', !willDisable);
+            resetPasswordField('statusPasswordInput', 'statusPasswordError');
+
             document.getElementById('statusModal').classList.remove('hidden');
+            if (willDisable) document.getElementById('statusPasswordInput').focus();
             return;
         }
 
@@ -971,7 +1247,9 @@
 
             pendingDeleteId = id;
             document.getElementById('deleteModalText').textContent = `Are you sure you want to permanently delete ${u.first_name} ${u.last_name}'s account? This cannot be undone.`;
+            resetPasswordField('deletePasswordInput', 'deletePasswordError');
             document.getElementById('deleteModal').classList.remove('hidden');
+            document.getElementById('deletePasswordInput').focus();
             return;
         }
 
@@ -1084,7 +1362,12 @@
             const res = await fetch(`/api/doctors/${doctorId}/schedule`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
-            const existingSchedules = res.ok ? await res.json() : [];
+            if (!res.ok) {
+                let message = `Could not load the schedule (error ${res.status}).`;
+                try { message = (await res.json()).message || message; } catch (_) { /* keep default */ }
+                throw new Error(message);
+            }
+            const existingSchedules = await res.json();
             const daysOrder = [1, 2, 3, 4, 5, 6, 0];
 
             rowsContainer.innerHTML = daysOrder.map(dayIdx => {
@@ -1097,7 +1380,7 @@
                     is_active: dayIdx !== 0 ? 1 : 0
                 };
 
-                const isActive = sched.is_active === 1 || sched.is_active === true;
+                const isActive = Number(sched.is_active) === 1 || sched.is_active === true;
 
                 return `
                 <div class="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center p-3 rounded-2xl border transition-all ${isActive ? 'bg-[#F9F8F3] border-[#2A1001]/15 shadow-sm' : 'bg-gray-100 border-gray-200 opacity-60'}" data-day="${dayIdx}">
@@ -1169,13 +1452,47 @@
         return val;
     }
 
+    function validateScheduleRows(rows) {
+        for (const r of rows) {
+            if (!r.querySelector('.day-active-check').checked) continue;
+
+            const day = DAYS_NAMES[parseInt(r.dataset.day, 10)];
+            const start = r.querySelector('.start-time-input').value;
+            const end = r.querySelector('.end-time-input').value;
+            const breakStart = r.querySelector('.break-start-input').value;
+            const breakEnd = r.querySelector('.break-end-input').value;
+
+            if (!start || !end) return `Please set both the start and end of the shift on ${day}.`;
+            if (start >= end) return `Shift start must be before shift end on ${day}.`;
+            if (Boolean(breakStart) !== Boolean(breakEnd)) return `Set both lunch start and end on ${day}, or clear both.`;
+            if (breakStart && breakEnd) {
+                if (breakStart >= breakEnd) return `Lunch start must be before lunch end on ${day}.`;
+                if (breakStart < start || breakEnd > end) return `Lunch break must fall within the shift hours on ${day}.`;
+            }
+        }
+        return null;
+    }
+
     document.getElementById('doctorScheduleForm').addEventListener('submit', async function(e) {
         e.preventDefault();
         const doctorId = document.getElementById('scheduleDoctorId').value;
-        const rows = document.querySelectorAll('#weeklyScheduleRows > div');
+        const rows = document.querySelectorAll('#weeklyScheduleRows > div[data-day]');
         const saveBtn = document.getElementById('saveScheduleBtn');
-        const originalText = saveBtn.innerHTML;
 
+        if (saveBtn.disabled) return;
+
+        if (rows.length !== 7) {
+            showAlert('Schedule Not Ready', 'The schedule has not finished loading. Please close this window and try again.', 'error');
+            return;
+        }
+
+        const scheduleError = validateScheduleRows(rows);
+        if (scheduleError) {
+            showAlert('Validation Error', scheduleError, 'error');
+            return;
+        }
+
+        const originalText = saveBtn.innerHTML;
         saveBtn.disabled = true;
         saveBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving Schedule...';
 
@@ -1302,6 +1619,7 @@
             document.getElementById('editPosition').value = originalUserSnapshot.position || 'Dentist';
             setSelectedSpecializations('editSpecializationOption', originalUserSnapshot.specialization || '');
         }
+        clearFieldErrors(EDIT_FIELD_IDS);
         setFormLocked(true);
     });
 
@@ -1349,17 +1667,21 @@
         });
 
         toggleEditPositionField(u.role, u.position, u.specialization);
+        clearFieldErrors(EDIT_FIELD_IDS);
         setFormLocked(true);
 
         document.getElementById('editModal').classList.remove('hidden');
     }
 
-    document.getElementById('closeEditModal').addEventListener('click', () => {
+    function closeEditModal() {
         document.getElementById('editModal').classList.add('hidden');
-    });
+        clearFieldErrors(EDIT_FIELD_IDS);
+    }
+
+    document.getElementById('closeEditModal').addEventListener('click', closeEditModal);
 
     document.getElementById('editModal').addEventListener('click', function (e) {
-        if (e.target === this) this.classList.add('hidden');
+        if (e.target === this) closeEditModal();
     });
 
     document.getElementById('editAccountForm').addEventListener('submit', async function (e) {
@@ -1373,34 +1695,16 @@
             return;
         }
 
+        if (validateFieldsNow(EDIT_FIELD_IDS)) return;
+
         const firstName = document.getElementById('editFirstName').value.trim();
         const lastName = document.getElementById('editLastName').value.trim();
         const email = document.getElementById('editEmail').value.trim();
         const phone = document.getElementById('editPhone').value.trim();
         const selectedSexRadio = document.querySelector('input[name="editSex"]:checked');
 
-        const nameRegex = /^[A-Za-zÀ-ÖØ-öø-ÿ]+([ '-][A-Za-zÀ-ÖØ-öø-ÿ]+)*$/;
-        if (!nameRegex.test(firstName) || firstName.length < 2) {
-            showAlert('Validation Error', 'First name must contain only letters and be at least 2 characters.', 'error');
-            return;
-        }
-        if (!nameRegex.test(lastName) || lastName.length < 2) {
-            showAlert('Validation Error', 'Last name must contain only letters and be at least 2 characters.', 'error');
-            return;
-        }
-        if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email)) {
-            showAlert('Validation Error', 'Please enter a valid email address.', 'error');
-            return;
-        }
-        if (!/^09\d{9}$/.test(phone)) {
-            showAlert('Validation Error', 'Phone must be exactly 11 digits starting with 09.', 'error');
-            return;
-        }
-
         const saveEditBtn = document.getElementById('saveEditBtn');
         const originalText = saveEditBtn.innerHTML;
-        saveEditBtn.disabled = true;
-        saveEditBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...';
 
         const payload = {
             first_name: firstName,
@@ -1418,8 +1722,6 @@
             if (payload.position === 'Dentist') {
                 const specs = getSelectedSpecializations('editSpecializationOption');
                 if (!specs) {
-                    saveEditBtn.disabled = false;
-                    saveEditBtn.innerHTML = originalText;
                     showAlert('Validation Error', 'Please select at least one dentist specialization.', 'error');
                     return;
                 }
@@ -1427,14 +1729,13 @@
             }
         }
 
-        if (user.role === 'admin') {
-            payload.permission_level = 'Admin';
-        }
+        saveEditBtn.disabled = true;
+        saveEditBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...';
 
         try {
             await updateUser(id, payload);
             renderUsers();
-            document.getElementById('editModal').classList.add('hidden');
+            closeEditModal();
             showAlert('Changes Saved', 'User account details updated successfully.', 'success');
         } catch (error) {
             console.error('Failed to update user:', error);
@@ -1445,113 +1746,146 @@
         }
     });
 
-    document.getElementById('cancelStatusBtn').addEventListener('click', () => {
+    function closeStatusModal() {
         pendingStatusId = null;
         document.getElementById('statusModal').classList.add('hidden');
-    });
+        resetPasswordField('statusPasswordInput', 'statusPasswordError');
+    }
 
-    document.getElementById('confirmStatusBtn').addEventListener('click', async function() {
+    async function confirmStatusChange() {
         if (!pendingStatusId) return;
+
+        const btn = document.getElementById('confirmStatusBtn');
+        if (btn.disabled) return;
+
         const userId = pendingStatusId;
-        const originalText = this.innerHTML;
-        this.disabled = true;
-        this.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Updating...';
+        const target = users.find(u => Number(u.user_id) === Number(userId));
+        const willDisable = Boolean(target) && target.account_status === 'active';
+
+        const passwordInput = document.getElementById('statusPasswordInput');
+        const password = passwordInput.value;
+
+        if (willDisable && !password) {
+            setPasswordError('statusPasswordInput', 'statusPasswordError', 'Please enter your password to continue.');
+            passwordInput.focus();
+            return;
+        }
+
+        const originalText = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Updating...';
 
         try {
-            await toggleAccountStatus(userId);
-            pendingStatusId = null;
-            document.getElementById('statusModal').classList.add('hidden');
+            await toggleAccountStatus(userId, willDisable ? password : undefined);
+            closeStatusModal();
             renderUsers();
             showAlert('Status Updated', 'User account status changed successfully.', 'success');
         } catch (error) {
-            console.error('Failed to update account status:', error);
-            showAlert('Status Error', error.message, 'error');
+            if (PASSWORD_ERROR_CODES.includes(error.code)) {
+                setPasswordError('statusPasswordInput', 'statusPasswordError', error.message);
+                passwordInput.value = '';
+                passwordInput.focus();
+            } else {
+                console.error('Failed to update account status:', error);
+                showAlert('Status Error', error.message, 'error');
+            }
         } finally {
-            this.disabled = false;
-            this.innerHTML = originalText;
+            btn.innerHTML = originalText;
+            syncConfirmButton('statusPasswordInput');
         }
-    });
+    }
+
+    wirePasswordInput('statusPasswordInput', 'statusPasswordError', confirmStatusChange);
+    document.getElementById('cancelStatusBtn').addEventListener('click', closeStatusModal);
+    document.getElementById('confirmStatusBtn').addEventListener('click', confirmStatusChange);
 
     document.getElementById('statusModal').addEventListener('click', function (e) {
-        if (e.target === this) {
-            pendingStatusId = null;
-            this.classList.add('hidden');
-        }
+        if (e.target === this) closeStatusModal();
     });
 
-    document.getElementById('cancelDeleteBtn').addEventListener('click', () => {
+    function closeDeleteModal() {
         pendingDeleteId = null;
         document.getElementById('deleteModal').classList.add('hidden');
-    });
+        resetPasswordField('deletePasswordInput', 'deletePasswordError');
+    }
 
-    document.getElementById('confirmDeleteBtn').addEventListener('click', async function() {
+    async function confirmDeleteAccount() {
         if (!pendingDeleteId) return;
+
+        const btn = document.getElementById('confirmDeleteBtn');
+        if (btn.disabled) return;
+
         const userId = pendingDeleteId;
-        const originalText = this.innerHTML;
-        this.disabled = true;
-        this.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Deleting...';
+        const passwordInput = document.getElementById('deletePasswordInput');
+        const password = passwordInput.value;
+
+        if (!password) {
+            setPasswordError('deletePasswordInput', 'deletePasswordError', 'Please enter your password to continue.');
+            passwordInput.focus();
+            return;
+        }
+
+        const originalText = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Deleting...';
 
         try {
-            await deleteUser(userId);
-            pendingDeleteId = null;
-            document.getElementById('deleteModal').classList.add('hidden');
+            await deleteUser(userId, password);
+            closeDeleteModal();
             renderUsers();
             showAlert('Account Deleted', 'User account permanently deleted.', 'success');
         } catch (error) {
-            console.error('Failed to delete user:', error);
-            showAlert('Delete Error', error.message, 'error');
+            if (PASSWORD_ERROR_CODES.includes(error.code)) {
+                setPasswordError('deletePasswordInput', 'deletePasswordError', error.message);
+                passwordInput.value = '';
+                passwordInput.focus();
+            } else {
+                console.error('Failed to delete user:', error);
+                showAlert('Delete Error', error.message, 'error');
+            }
         } finally {
-            this.disabled = false;
-            this.innerHTML = originalText;
+            btn.innerHTML = originalText;
+            syncConfirmButton('deletePasswordInput');
         }
-    });
+    }
+
+    wirePasswordInput('deletePasswordInput', 'deletePasswordError', confirmDeleteAccount);
+    document.getElementById('cancelDeleteBtn').addEventListener('click', closeDeleteModal);
+    document.getElementById('confirmDeleteBtn').addEventListener('click', confirmDeleteAccount);
 
     document.getElementById('deleteModal').addEventListener('click', function (e) {
-        if (e.target === this) {
-            pendingDeleteId = null;
-            this.classList.add('hidden');
-        }
+        if (e.target === this) closeDeleteModal();
     });
 
     const createAccountForm = document.getElementById('createAccountForm');
     const saveCreateBtn = document.getElementById('saveCreateBtn');
     const userClearBtn = document.getElementById('userClearBtn');
 
+    // Enables "Create Account" only when everything on the form is valid.
     function checkForm() {
-        const requiredFields = createAccountForm.querySelectorAll(
-            'input[required]:not([type="radio"]), select[required]'
-        );
+        const val = id => document.getElementById(id).value.trim();
 
-        let allFilled = true;
-        requiredFields.forEach(input => {
-            if (input.value.trim() === '') allFilled = false;
-        });
+        let valid =
+            validateNameField(val('newFirstName'), 'First name', true) === null &&
+            validateNameField(val('newLastName'), 'Last name', true) === null &&
+            validateEmailField(val('newEmail'), true) === null &&
+            validatePhoneField(val('newPhone'), true) === null;
 
         const sexSelected = createAccountForm.querySelector('input[name="newSex"]:checked');
-        if (!sexSelected) allFilled = false;
+        if (!sexSelected) valid = false;
 
         const role = document.getElementById('newRole').value;
         const pos = document.getElementById('newPosition').value;
-        if (role === 'employee' && pos === 'Dentist') {
-            const hasSpec = Array.from(document.querySelectorAll('input[name="newSpecializationOption"]:checked')).length > 0;
-            if (!hasSpec) allFilled = false;
-        }
+        const hasCheckedSpec = document.querySelectorAll('input[name="newSpecializationOption"]:checked').length > 0;
+        if (role === 'employee' && pos === 'Dentist' && !hasCheckedSpec) valid = false;
 
-        saveCreateBtn.disabled = !allFilled;
+        saveCreateBtn.disabled = !valid;
 
-        const clearFields = [
-            document.getElementById('newFirstName'),
-            document.getElementById('newLastName'),
-            document.getElementById('newEmail'),
-            document.getElementById('newPhone')
-        ];
-
-        const somethingFilled = clearFields.some(field => field.value.trim() !== '');
-        const hasCheckedSpec = Array.from(document.querySelectorAll('input[name="newSpecializationOption"]:checked')).length > 0;
+        const somethingFilled = CREATE_FIELD_IDS.some(id => val(id) !== '');
         userClearBtn.disabled = !somethingFilled && !sexSelected && !hasCheckedSpec;
     }
 
-    document.getElementById('createAccountBtn').addEventListener('click', () => {
+    function resetCreateForm() {
         createAccountForm.reset();
 
         document.querySelectorAll('input[name="newSex"]').forEach(r => { r.checked = false; });
@@ -1563,8 +1897,18 @@
         document.getElementById('newPositionWrapper').classList.remove('hidden');
         document.getElementById('newSpecializationWrapper').classList.remove('hidden');
 
-        document.getElementById('createModal').classList.remove('hidden');
+        clearFieldErrors(CREATE_FIELD_IDS);
         checkForm();
+    }
+
+    function closeCreateModal() {
+        document.getElementById('createModal').classList.add('hidden');
+        clearFieldErrors(CREATE_FIELD_IDS);
+    }
+
+    document.getElementById('createAccountBtn').addEventListener('click', () => {
+        resetCreateForm();
+        document.getElementById('createModal').classList.remove('hidden');
     });
 
     createAccountForm.addEventListener('input', checkForm);
@@ -1586,31 +1930,21 @@
         checkForm();
     });
 
-    userClearBtn.addEventListener('click', () => {
-        createAccountForm.reset();
+    userClearBtn.addEventListener('click', resetCreateForm);
 
-        document.querySelectorAll('input[name="newSex"]').forEach(r => { r.checked = false; });
-        document.querySelectorAll('input[name="newSpecializationOption"]').forEach(cb => { cb.checked = false; });
-
-        document.getElementById('newRole').value = 'employee';
-        document.getElementById('newPosition').value = 'Dentist';
-
-        document.getElementById('newPositionWrapper').classList.remove('hidden');
-        document.getElementById('newSpecializationWrapper').classList.remove('hidden');
-
-        checkForm();
-    });
-
-    document.getElementById('closeCreateModal').addEventListener('click', () => {
-        document.getElementById('createModal').classList.add('hidden');
-    });
+    document.getElementById('closeCreateModal').addEventListener('click', closeCreateModal);
 
     document.getElementById('createModal').addEventListener('click', function (e) {
-        if (e.target === this) this.classList.add('hidden');
+        if (e.target === this) closeCreateModal();
     });
 
     createAccountForm.addEventListener('submit', async function (e) {
         e.preventDefault();
+
+        if (saveCreateBtn.disabled) return;
+
+        // Inline checks for the text fields (marks them red and focuses the first bad one)
+        if (validateFieldsNow(CREATE_FIELD_IDS)) return;
 
         const firstName = document.getElementById('newFirstName').value.trim();
         const lastName = document.getElementById('newLastName').value.trim();
@@ -1623,28 +1957,6 @@
             showAlert('Validation Error', 'Please select a sex (Male or Female).', 'error');
             return;
         }
-
-        const nameRegex = /^[A-Za-zÀ-ÖØ-öø-ÿ]+([ '-][A-Za-zÀ-ÖØ-öø-ÿ]+)*$/;
-        if (!nameRegex.test(firstName) || firstName.length < 2) {
-            showAlert('Validation Error', 'First name must contain only letters and be at least 2 characters.', 'error');
-            return;
-        }
-        if (!nameRegex.test(lastName) || lastName.length < 2) {
-            showAlert('Validation Error', 'Last name must contain only letters and be at least 2 characters.', 'error');
-            return;
-        }
-        if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email)) {
-            showAlert('Validation Error', 'Please enter a valid email address.', 'error');
-            return;
-        }
-        if (!/^09\d{9}$/.test(phoneVal)) {
-            showAlert('Validation Error', 'Phone must be exactly 11 digits starting with 09.', 'error');
-            return;
-        }
-
-        const originalText = saveCreateBtn.innerHTML;
-        saveCreateBtn.disabled = true;
-        saveCreateBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Creating Account...';
 
         const payload = {
             first_name: firstName,
@@ -1660,25 +1972,22 @@
             if (payload.position === 'Dentist') {
                 const specs = getSelectedSpecializations('newSpecializationOption');
                 if (!specs) {
-                    saveCreateBtn.disabled = false;
-                    saveCreateBtn.innerHTML = originalText;
                     showAlert('Validation Error', 'Please select at least one dentist specialization.', 'error');
                     return;
                 }
                 payload.specialization = specs;
             }
         }
+        // Permission level is set by the server (new admins always start as a standard Admin).
 
-        if (role === 'admin') {
-            payload.permission_level = 'Admin';
-        }
+        const originalText = saveCreateBtn.innerHTML;
+        saveCreateBtn.disabled = true;
+        saveCreateBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Creating Account...';
 
         try {
             const createdUser = await createUser(payload);
-            document.getElementById('createModal').classList.add('hidden');
-            createAccountForm.reset();
-            document.querySelectorAll('input[name="newSex"]').forEach(r => { r.checked = false; });
-            document.querySelectorAll('input[name="newSpecializationOption"]').forEach(cb => { cb.checked = false; });
+            closeCreateModal();
+            resetCreateForm();
             renderUsers();
 
             showCredentialsModal(
@@ -1700,35 +2009,42 @@
 
     // ================= GLOBAL CTRL + S KEYBOARD SHORTCUT =================
     window.addEventListener('keydown', function(e) {
-        if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S')) {
+        if (!((e.ctrlKey || e.metaKey) && String(e.key).toLowerCase() === 's')) return;
+
+        const isOpen = id => {
+            const el = document.getElementById(id);
+            return Boolean(el) && !el.classList.contains('hidden');
+        };
+
+        // A confirmation / result dialog is on top: don't submit the form underneath it.
+        if (['appAlertModal', 'statusModal', 'deleteModal', 'resetPassModal', 'passResultModal'].some(isOpen)) {
             e.preventDefault();
+            return;
+        }
 
-            const scheduleModal = document.getElementById('doctorScheduleModal');
-            if (scheduleModal && !scheduleModal.classList.contains('hidden')) {
-                const saveScheduleBtn = document.getElementById('saveScheduleBtn');
-                if (saveScheduleBtn && !saveScheduleBtn.disabled) {
-                    document.getElementById('doctorScheduleForm').requestSubmit();
-                }
-                return;
+        if (isOpen('doctorScheduleModal')) {
+            e.preventDefault();
+            const saveScheduleBtn = document.getElementById('saveScheduleBtn');
+            if (saveScheduleBtn && !saveScheduleBtn.disabled) {
+                document.getElementById('doctorScheduleForm').requestSubmit();
             }
+            return;
+        }
 
-            const editModal = document.getElementById('editModal');
-            if (editModal && !editModal.classList.contains('hidden')) {
-                const submitGroup = document.getElementById('submitGroup');
-                const saveEditBtn = document.getElementById('saveEditBtn');
-                if (submitGroup && !submitGroup.classList.contains('hidden') && saveEditBtn && !saveEditBtn.disabled) {
-                    document.getElementById('editAccountForm').requestSubmit();
-                }
-                return;
+        if (isOpen('editModal')) {
+            e.preventDefault();
+            const submitGroup = document.getElementById('submitGroup');
+            const saveEditBtn = document.getElementById('saveEditBtn');
+            if (submitGroup && !submitGroup.classList.contains('hidden') && saveEditBtn && !saveEditBtn.disabled) {
+                document.getElementById('editAccountForm').requestSubmit();
             }
+            return;
+        }
 
-            const createModal = document.getElementById('createModal');
-            if (createModal && !createModal.classList.contains('hidden')) {
-                const saveCreateBtn = document.getElementById('saveCreateBtn');
-                if (saveCreateBtn && !saveCreateBtn.disabled) {
-                    document.getElementById('createAccountForm').requestSubmit();
-                }
-                return;
+        if (isOpen('createModal')) {
+            e.preventDefault();
+            if (!saveCreateBtn.disabled) {
+                createAccountForm.requestSubmit();
             }
         }
     });
@@ -1750,7 +2066,8 @@
         try {
             const r = await fetch('/api/admin-profile', { headers: { 'Authorization': `Bearer ${localStorage.getItem('userToken')}` } });
             const me = r.ok ? await r.json() : {};
-            if (me.permission_level !== 'super_admin') {
+            const level = String(me.permission_level || '').toLowerCase().replace(/[\s_-]/g, '');
+            if (level !== 'superadmin') {
                 document.querySelector('#newRole option[value="admin"]')?.remove();
             }
         } catch (e) { /* the server still blocks it */ }
