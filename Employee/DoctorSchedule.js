@@ -286,6 +286,16 @@ async function loadDoctorSchedule(doctorId) {
     }
 }
 
+// Converts 'HH:MM[:SS]' to decimal hours (e.g. '13:30:00' -> 13.5).
+// Returns null for missing/invalid values (days with no shift or no lunch break
+// store NULL times in the database).
+function parseTime(t) {
+    if (!t) return null;
+    const [hr, mn] = String(t).split(':').map(Number);
+    if (Number.isNaN(hr)) return null;
+    return hr + ((mn || 0) / 60);
+}
+
 function renderWeeklyShiftGrid(schedules) {
     const container = document.getElementById('weeklyShiftGrid');
     if (!container) return;
@@ -421,56 +431,65 @@ function renderWeeklyShiftGrid(schedules) {
             }
         }
 
-        if (isActive) {
-            const parseTime = (t) => {
-                const [hr, mn] = t.split(':').map(Number);
-                return hr + (mn / 60);
-            };
+        // Day is marked active, so parse its times. Any of them can be NULL.
+        const startH = isActive ? parseTime(sched.start_time) : null;
+        const endH = isActive ? parseTime(sched.end_time) : null;
+        const breakStartH = isActive ? parseTime(sched.break_start) : null;
+        const breakEndH = isActive ? parseTime(sched.break_end) : null;
 
-            const startH = parseTime(sched.start_time);
-            const endH = parseTime(sched.end_time);
-            const breakStartH = parseTime(sched.break_start);
-            const breakEndH = parseTime(sched.break_end);
+        const hasShift = startH !== null && endH !== null;
+        const hasBreak = breakStartH !== null && breakEndH !== null
+            && hasShift && breakStartH > startH && breakEndH < endH;
 
-            if (breakStartH > startH && breakEndH < endH) {
-                // Morning Shift
-                const top1 = (startH - START_HOUR) * HOUR_HEIGHT;
-                const h1 = (breakStartH - startH) * HOUR_HEIGHT;
-
-                // Lunch Break
-                const topB = (breakStartH - START_HOUR) * HOUR_HEIGHT;
-                const hB = (breakEndH - breakStartH) * HOUR_HEIGHT;
-
-                // Afternoon Shift
-                const top2 = (breakEndH - START_HOUR) * HOUR_HEIGHT;
-                const h2 = (endH - breakEndH) * HOUR_HEIGHT;
-
-                html += `
-                    <div class="absolute rounded-md bg-[#EAF0DD] border-l-[3px] border-[#667733] shadow-sm overflow-hidden hover:bg-[#D7E3A5] transition-colors cursor-default z-10 flex flex-col justify-center p-1.5 sm:p-2" style="top:${top1}px; height:${h1}px; left:4%; width:92%;">
-                        <div class="font-bold text-[#1a281b] text-[9px] sm:text-[11px] leading-tight truncate">Duty Shift</div>
-                        <div class="text-[#556022] font-semibold text-[8px] sm:text-[10px] truncate">${format12Hour(sched.start_time)} - ${format12Hour(sched.break_start)}</div>
+        if (isActive && !hasShift) {
+            // Active day but no start/end time saved yet
+            html += `
+                <div class="absolute inset-0 flex items-center justify-center p-2 opacity-40 z-0">
+                    <div class="flex flex-col items-center gap-1 text-gray-400">
+                        <i class="fa-regular fa-clock text-xl sm:text-2xl"></i>
+                        <span class="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-center">No Shift Set</span>
                     </div>
+                </div>
+            `;
+        } else if (isActive && hasBreak) {
+            // Morning Shift
+            const top1 = (startH - START_HOUR) * HOUR_HEIGHT;
+            const h1 = (breakStartH - startH) * HOUR_HEIGHT;
 
-                    <div class="absolute rounded-md bg-amber-50 border-l-[3px] border-amber-400 shadow-sm overflow-hidden hover:bg-amber-100 transition-colors cursor-default opacity-80 z-10 flex flex-col justify-center items-center" style="top:${topB}px; height:${hB}px; left:4%; width:92%;">
-                        <div class="font-bold text-amber-800 text-[9px] sm:text-[10px] leading-tight flex items-center gap-1"><i class="fa-solid fa-mug-hot"></i> <span class="hidden sm:inline">Lunch Break</span></div>
-                        <div class="text-amber-700 font-semibold text-[8px] sm:text-[9px] truncate">${format12Hour(sched.break_start)} - ${format12Hour(sched.break_end)}</div>
-                    </div>
+            // Lunch Break
+            const topB = (breakStartH - START_HOUR) * HOUR_HEIGHT;
+            const hB = (breakEndH - breakStartH) * HOUR_HEIGHT;
 
-                    <div class="absolute rounded-md bg-[#EAF0DD] border-l-[3px] border-[#667733] shadow-sm overflow-hidden hover:bg-[#D7E3A5] transition-colors cursor-default z-10 flex flex-col justify-center p-1.5 sm:p-2" style="top:${top2}px; height:${h2}px; left:4%; width:92%;">
-                        <div class="font-bold text-[#1a281b] text-[9px] sm:text-[11px] leading-tight truncate">Duty Shift</div>
-                        <div class="text-[#556022] font-semibold text-[8px] sm:text-[10px] truncate">${format12Hour(sched.break_end)} - ${format12Hour(sched.end_time)}</div>
-                    </div>
-                `;
-            } else {
-                const top = (startH - START_HOUR) * HOUR_HEIGHT;
-                const height = (endH - startH) * HOUR_HEIGHT;
-                html += `
-                    <div class="absolute rounded-md bg-[#EAF0DD] border-l-[3px] border-[#667733] shadow-sm overflow-hidden hover:bg-[#D7E3A5] transition-colors cursor-default z-10 p-1.5 sm:p-2" style="top:${top}px; height:${height}px; left:4%; width:92%;">
-                        <div class="font-bold text-[#1a281b] text-[9px] sm:text-xs leading-tight truncate">Duty Shift</div>
-                        <div class="text-[#556022] font-semibold text-[8px] sm:text-[10px] truncate">${format12Hour(sched.start_time)} - ${format12Hour(sched.end_time)}</div>
-                    </div>
-                `;
-            }
+            // Afternoon Shift
+            const top2 = (breakEndH - START_HOUR) * HOUR_HEIGHT;
+            const h2 = (endH - breakEndH) * HOUR_HEIGHT;
+
+            html += `
+                <div class="absolute rounded-md bg-[#EAF0DD] border-l-[3px] border-[#667733] shadow-sm overflow-hidden hover:bg-[#D7E3A5] transition-colors cursor-default z-10 flex flex-col justify-center p-1.5 sm:p-2" style="top:${top1}px; height:${h1}px; left:4%; width:92%;">
+                    <div class="font-bold text-[#1a281b] text-[9px] sm:text-[11px] leading-tight truncate">Duty Shift</div>
+                    <div class="text-[#556022] font-semibold text-[8px] sm:text-[10px] truncate">${format12Hour(sched.start_time)} - ${format12Hour(sched.break_start)}</div>
+                </div>
+
+                <div class="absolute rounded-md bg-amber-50 border-l-[3px] border-amber-400 shadow-sm overflow-hidden hover:bg-amber-100 transition-colors cursor-default opacity-80 z-10 flex flex-col justify-center items-center" style="top:${topB}px; height:${hB}px; left:4%; width:92%;">
+                    <div class="font-bold text-amber-800 text-[9px] sm:text-[10px] leading-tight flex items-center gap-1"><i class="fa-solid fa-mug-hot"></i> <span class="hidden sm:inline">Lunch Break</span></div>
+                    <div class="text-amber-700 font-semibold text-[8px] sm:text-[9px] truncate">${format12Hour(sched.break_start)} - ${format12Hour(sched.break_end)}</div>
+                </div>
+
+                <div class="absolute rounded-md bg-[#EAF0DD] border-l-[3px] border-[#667733] shadow-sm overflow-hidden hover:bg-[#D7E3A5] transition-colors cursor-default z-10 flex flex-col justify-center p-1.5 sm:p-2" style="top:${top2}px; height:${h2}px; left:4%; width:92%;">
+                    <div class="font-bold text-[#1a281b] text-[9px] sm:text-[11px] leading-tight truncate">Duty Shift</div>
+                    <div class="text-[#556022] font-semibold text-[8px] sm:text-[10px] truncate">${format12Hour(sched.break_end)} - ${format12Hour(sched.end_time)}</div>
+                </div>
+            `;
+        } else if (isActive) {
+            // Shift with no lunch break (or a break outside the shift hours)
+            const top = (startH - START_HOUR) * HOUR_HEIGHT;
+            const height = (endH - startH) * HOUR_HEIGHT;
+            html += `
+                <div class="absolute rounded-md bg-[#EAF0DD] border-l-[3px] border-[#667733] shadow-sm overflow-hidden hover:bg-[#D7E3A5] transition-colors cursor-default z-10 p-1.5 sm:p-2" style="top:${top}px; height:${height}px; left:4%; width:92%;">
+                    <div class="font-bold text-[#1a281b] text-[9px] sm:text-xs leading-tight truncate">Duty Shift</div>
+                    <div class="text-[#556022] font-semibold text-[8px] sm:text-[10px] truncate">${format12Hour(sched.start_time)} - ${format12Hour(sched.end_time)}</div>
+                </div>
+            `;
         } else {
             html += `
                 <div class="absolute inset-0 flex items-center justify-center p-2 opacity-40 z-0">
@@ -494,7 +513,9 @@ function updateTopStats(schedules) {
     const today = new Date();
     const todayDayIdx = today.getDay();
     const todaySched = (schedules || []).find(s => s.day_of_week === todayDayIdx);
-    const isTodayOn = todaySched && (todaySched.is_active === 1 || todaySched.is_active === true);
+    const isTodayOn = todaySched
+        && (todaySched.is_active === 1 || todaySched.is_active === true)
+        && todaySched.start_time && todaySched.end_time;
 
     const shiftTextEl = document.getElementById('todayShiftText');
     const breakTextEl = document.getElementById('todayBreakText');
@@ -503,7 +524,11 @@ function updateTopStats(schedules) {
     if (shiftTextEl) {
         if (isTodayOn) {
             shiftTextEl.textContent = `${format12Hour(todaySched.start_time)} – ${format12Hour(todaySched.end_time)}`;
-            if (breakTextEl) breakTextEl.textContent = `Lunch: ${format12Hour(todaySched.break_start)} – ${format12Hour(todaySched.break_end)}`;
+            if (breakTextEl) {
+                breakTextEl.textContent = (todaySched.break_start && todaySched.break_end)
+                    ? `Lunch: ${format12Hour(todaySched.break_start)} – ${format12Hour(todaySched.break_end)}`
+                    : 'No lunch break scheduled';
+            }
             if (statusBadgeEl) statusBadgeEl.innerHTML = '<span class="text-green-700 flex items-center gap-1"><i class="fa-solid fa-circle text-[8px] animate-pulse text-green-600"></i> On Duty Today</span>';
         } else {
             shiftTextEl.textContent = 'Day Off / Closed';
