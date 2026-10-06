@@ -138,7 +138,7 @@ function renderServiceCards() {
             : fallbackIcon(service.label);
 
         if (!isCompatible && selectedDoctor) {
-            // 🔴 RED BANNER — INCOMPATIBLE WITH CURRENT DOCTOR
+            // 🔴 INCOMPATIBLE WITH CURRENT DOCTOR
             card.className = `flex flex-col w-full max-w-[240px] h-[285px] justify-between items-center text-center rounded-2xl border-2 border-dashed border-red-400 bg-red-50/50 transition-all duration-200 cursor-not-allowed p-4 pt-7 relative shadow-sm opacity-70 select-none overflow-hidden`;
 
             card.innerHTML = `
@@ -189,7 +189,6 @@ function renderServiceCards() {
 
                 <img src="${imgSrc}" class="w-16 h-16 object-contain my-1" alt="${escapeHtml(service.label)}" onerror="this.src='../assets/logowithtitle.png'">
 
-                <!-- Styled #D3DCBE View Details Button -->
                 <button type="button" class="viewServiceDetailBtn bg-[#D3DCBE] hover:bg-[#c4cfab] text-[#2A1001] px-3.5 py-1 rounded-full text-xs font-extrabold transition shadow-xs flex items-center gap-1.5 cursor-pointer mb-1 z-10 active:scale-95" data-service-id="${service.service_id}">
                     <i class="fa-solid fa-circle-info text-[#667733]"></i> View Details
                 </button>
@@ -209,7 +208,6 @@ function renderServiceCards() {
         serviceGrid.appendChild(card);
     });
 
-    // View Details Modal Trigger
     document.querySelectorAll('.viewServiceDetailBtn').forEach(btn => {
         btn.addEventListener('click', (e) => {
             e.stopPropagation();
@@ -221,6 +219,7 @@ function renderServiceCards() {
 
     updateLiveCalculations();
 }
+
 function openServiceDetailModal(service) {
     const modal = document.getElementById('service-detail-modal');
     if (!modal) return;
@@ -243,6 +242,7 @@ function openServiceDetailModal(service) {
 
     modal.classList.remove('hidden');
 }
+
 document.getElementById('close-service-detail')?.addEventListener('click', () => {
     document.getElementById('service-detail-modal').classList.add('hidden');
 });
@@ -626,9 +626,10 @@ function initCalendar() {
     renderCalendar(currentDate);
 }
 
-// ── 8. Booking Form & Summary Modals (With Subtotal & 12% VAT Breakdown) ─────
+// ── 7. Booking Form & Immediate Error Validation ─────────────────────────────
 function initBookingForm() {
     const bookingForm           = document.getElementById('booking-form');
+    const submitBtn             = document.getElementById('submit-btn');
     const receiptModal          = document.getElementById('receipt-modal');
     const closeModalBtn         = document.getElementById('close-modal');
     const receiptContent        = document.getElementById('receipt-content');
@@ -637,9 +638,10 @@ function initBookingForm() {
 
     if (!bookingForm) return;
 
-    bookingForm.addEventListener('submit', (e) => {
+    bookingForm.addEventListener('submit', async (e) => {
         e.preventDefault();
 
+        // 1. Client-side Form Checks
         if (!selectedDoctorId) {
             showValidationModal('Please select an attending dentist before continuing.', document.getElementById('doctorSelect'));
             return;
@@ -657,15 +659,65 @@ function initBookingForm() {
             return;
         }
 
+        const totalMinutes = selectedServices.reduce((sum, s) => sum + (s.duration_minutes || 30), 0);
+
+        // 2. 🛑 FAST PRE-VALIDATION CHECK: Check overlaps/conflicts BEFORE opening summary modal
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin mr-2"></i> Checking Availability…';
+        }
+
+        try {
+            const token = localStorage.getItem('userToken');
+            const valRes = await fetch(`${API_BASE_URL}/api/appointments/validate-slot`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                },
+                body: JSON.stringify({
+                    appointment_date: selectedDateValue,
+                    time_slot: selectedStartTime,
+                    end_time_slot: selectedEndTime,
+                    doctor_id: selectedDoctorId,
+                    duration_minutes: totalMinutes
+                })
+            });
+
+            const valData = await valRes.json().catch(() => ({}));
+
+            if (!valRes.ok) {
+                // ❌ Overlap or error detected: DO NOT show summary modal! Show error directly!
+                if (receiptModal) receiptModal.classList.add('hidden');
+                showValidationModal(valData.message || 'The selected time slot is unavailable.');
+                
+                // Refresh slots and clear selection
+                selectedStartTime = '';
+                selectedEndTime = '';
+                document.getElementById('selected-time').value = '';
+                document.getElementById('selected-end-time').value = '';
+                if (selectedDoctorId && selectedDateValue) {
+                    fetchAvailableSlotsForDoctor(selectedDoctorId, selectedDateValue);
+                }
+                return;
+            }
+        } catch (err) {
+            console.error('Validation check error:', err);
+        } finally {
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Review Booking & Pay';
+            }
+        }
+
+        // 3. ✅ Slot is completely valid: Show summary modal now
         const noteVal = sanitizeInput(document.getElementById('PNote')?.value, 250) || 'None';
         const docObj  = availableDoctors.find(d => d.doctor_id == selectedDoctorId);
         const doctorName = docObj ? docObj.name : 'Attending Dentist';
         
-        // 💰 Subtotal & 12% VAT Computation
         const totalAmount = selectedServices.reduce((sum, s) => sum + s.price, 0);
-        const subtotal = totalAmount / 1.12; // Net of VAT
-        const vatAmount = totalAmount - subtotal; // 12% Value Added Tax
-        const totalMinutes = selectedServices.reduce((sum, s) => sum + (s.duration_minutes || 30), 0);
+        const subtotal = totalAmount / 1.12;
+        const vatAmount = totalAmount - subtotal;
 
         const servicesListHtml = selectedServices.map(s => `
             <div class="flex justify-between items-center py-1 text-xs sm:text-sm border-b border-black/10 gap-2">
@@ -690,7 +742,6 @@ function initBookingForm() {
                 ${servicesListHtml}
             </div>
 
-            <!-- 🧾 Tax & Subtotal Breakdown -->
             <div class="border-t border-black/15 pt-2 flex flex-col gap-1 text-xs">
                 <div class="flex justify-between items-center text-[#2A1001]/80">
                     <span>Subtotal (VAT Exclusive):</span>
@@ -765,10 +816,8 @@ function showValidationModal(message, focusTarget = null, customTitle = null, ic
         return;
     }
 
-    // Clean up any raw "Booking Error:" prefixes
     const cleanMessage = String(message || '').replace(/^Booking Error:\s*/i, '').trim();
 
-    // 🎯 Smart Title Determination
     let finalTitle = customTitle;
     if (!finalTitle) {
         const lower = cleanMessage.toLowerCase();
@@ -778,6 +827,9 @@ function showValidationModal(message, focusTarget = null, customTitle = null, ic
         } else if (lower.includes('specializ') || lower.includes('cannot perform') || lower.includes('requires a')) {
             finalTitle = 'Specialist Required';
             iconType = 'specialist';
+        } else if (lower.includes('already have an appointment') || lower.includes('cannot book overlapping') || lower.includes('overlapping appointments')) {
+            finalTitle = 'Schedule Overlap Conflict';
+            iconType = 'clock';
         } else if (lower.includes('just been reserved') || lower.includes('different slot') || lower.includes('already booked')) {
             finalTitle = 'Slot Unavailable';
             iconType = 'clock';
@@ -796,7 +848,6 @@ function showValidationModal(message, focusTarget = null, customTitle = null, ic
         }
     }
 
-    // 🎨 Dynamic Icon Styling
     if (titleEl) titleEl.textContent = finalTitle;
     if (textEl) textEl.textContent = cleanMessage;
 
@@ -861,7 +912,7 @@ function showSuccessModal({ date, time, doctorName, servicesLabel, amount }) {
     };
 }
 
-// ── 9. Submit Appointment ───────────────────────────────────────────────────
+// ── 8. Submit Appointment ───────────────────────────────────────────────────
 function resetPayOnlineBtn() {
     const btn = document.getElementById('pay-online-btn');
     if (!btn) return;

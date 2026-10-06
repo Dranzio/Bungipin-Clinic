@@ -58,6 +58,7 @@ function registerBookingRoute(app, db) {
         const doctorId = Number(req.params.id);
         const { date } = req.query;
         const duration = Number(req.query.duration) || 30;
+        const patientId = req.user?.user_id;
 
         if (!Number.isInteger(doctorId) || doctorId <= 0) {
             return res.status(400).json({ message: 'Invalid doctor id' });
@@ -90,6 +91,7 @@ function registerBookingRoute(app, db) {
                 });
             }
 
+            // 1. Doctor's booked appointments
             const [bookedRows] = await db.query(
                 `SELECT a.time_slot, a.end_time, s.duration_minutes
                  FROM appointments a
@@ -98,6 +100,21 @@ function registerBookingRoute(app, db) {
                    AND ${BLOCKING_SQL}`,
                 [doctorId, date]
             );
+
+            // 2. Patient's own existing appointments across ANY doctor on this date
+            let patientBookedRows = [];
+            if (patientId && req.user.role === 'patient') {
+                const [pRows] = await db.query(
+                    `SELECT a.time_slot, a.end_time, s.duration_minutes, CONCAT('Dr. ', doc.first_name, ' ', doc.last_name) AS doctor_name
+                     FROM appointments a
+                     LEFT JOIN services s ON a.service_id = s.service_id
+                     LEFT JOIN users doc ON a.employee_id = doc.user_id
+                     WHERE a.patient_id = ? AND a.appointment_date = ?
+                       AND ${BLOCKING_SQL}`,
+                    [patientId, date]
+                );
+                patientBookedRows = pRows;
+            }
 
             const toMinutes = t => {
                 if (!t) return 0;
@@ -112,6 +129,15 @@ function registerBookingRoute(app, db) {
                     bEnd = bStart + (r.duration_minutes || 30);
                 }
                 return { start: bStart, end: bEnd };
+            });
+
+            const patientIntervals = patientBookedRows.map(r => {
+                const pStart = toMinutes(r.time_slot);
+                let pEnd = r.end_time ? toMinutes(r.end_time) : 0;
+                if (pEnd <= pStart) {
+                    pEnd = pStart + (r.duration_minutes || 30);
+                }
+                return { start: pStart, end: pEnd, doctor_name: r.doctor_name };
             });
 
             const startMins = toMinutes(schedule.start_time);
@@ -137,7 +163,7 @@ function registerBookingRoute(app, db) {
                 let isAvailable = true;
                 let reason = 'Available';
 
-                // 1. Slot is in the past for today (Philippine Time)
+                // 1. Slot in past for today
                 if (isToday && sM <= currentMinutes) {
                     isAvailable = false;
                     reason = 'Past Time';
@@ -147,17 +173,22 @@ function registerBookingRoute(app, db) {
                     isAvailable = false;
                     reason = 'Doctor Lunch Break';
                 }
-                // 3. Morning appointment running into lunch
+                // 3. Runs into lunch
                 else if (hasBreak && sM < breakStart && eM > breakStart) {
                     isAvailable = false;
                     reason = 'Too Long Before Lunch';
                 }
-                // 4. Exceeds shift closing
+                // 4. Exceeds shift
                 else if (eM > endMins) {
                     isAvailable = false;
                     reason = 'Exceeds Dentist Shift';
                 }
-                // 5. Already booked by another patient
+                // 5. Patient already has another appointment at this time
+                else if (patientIntervals.some(p => sM < p.end && p.start < eM)) {
+                    isAvailable = false;
+                    reason = 'Your Existing Appointment';
+                }
+                // 6. Already booked by another patient
                 else if (bookedIntervals.some(b => sM < b.end && b.start < eM)) {
                     isAvailable = false;
                     reason = 'Already Booked';
@@ -178,7 +209,88 @@ function registerBookingRoute(app, db) {
         }
     });
 
-    // ── 3. POST /api/appointments ──
+    // ── 3. POST /api/appointments/validate-slot (Fast Pre-Check on Submit) ──
+    app.post('/api/appointments/validate-slot', authenticateToken, async (req, res) => {
+        if (req.user.role !== 'patient') {
+            return res.status(403).json({ message: 'Only patients can book appointments' });
+        }
+
+        const patientId = req.user.user_id;
+        const { appointment_date, time_slot, end_time_slot, doctor_id, duration_minutes } = req.body;
+
+        if (!appointment_date || !time_slot || !doctor_id) {
+            return res.status(400).json({ message: 'Missing required booking information' });
+        }
+
+        const employeeId = Number(doctor_id);
+        const duration = Number(duration_minutes) || 30;
+
+        const [startH, startM] = time_slot.split(':').map(Number);
+        const totalStartMins = startH * 60 + startM;
+        const totalEndMins = totalStartMins + duration;
+        const endH = Math.floor(totalEndMins / 60);
+        const endM = totalEndMins % 60;
+        const endTime = end_time_slot || `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}:00`;
+
+        try {
+            // 1. Limit Check
+            const [activeRows] = await db.query(
+                `SELECT COUNT(*) AS active_count
+                 FROM appointments a
+                 WHERE a.patient_id = ?
+                   AND ${BLOCKING_SQL}`,
+                [patientId]
+            );
+
+            if (activeRows[0].active_count >= MAX_ACTIVE_BOOKINGS_LIMIT) {
+                return res.status(429).json({
+                    message: `You already have ${MAX_ACTIVE_BOOKINGS_LIMIT} active appointments. Please complete or cancel an existing appointment before booking a new one.`
+                });
+            }
+
+            // 2. Patient Clash Check
+            const [patientClashRows] = await db.query(
+                `SELECT a.appointment_id, a.time_slot, a.end_time, s.label, CONCAT('Dr. ', doc.first_name, ' ', doc.last_name) AS doctor_name
+                 FROM appointments a
+                 JOIN services s ON a.service_id = s.service_id
+                 LEFT JOIN users doc ON a.employee_id = doc.user_id
+                 WHERE a.patient_id = ? AND a.appointment_date = ?
+                   AND ${BLOCKING_SQL}
+                   AND a.time_slot < ? AND ? < a.end_time`,
+                [patientId, appointment_date, endTime, time_slot]
+            );
+
+            if (patientClashRows.length > 0) {
+                const clash = patientClashRows[0];
+                return res.status(409).json({
+                    message: `You already have an appointment on ${appointment_date} at ${format12Hour(clash.time_slot)} – ${format12Hour(clash.end_time)} (${clash.doctor_name || 'Attending Dentist'}). You cannot book overlapping appointments at the same time.`
+                });
+            }
+
+            // 3. Doctor Clash Check
+            const [clashRows] = await db.query(
+                `SELECT a.appointment_id FROM appointments a
+                 WHERE a.employee_id = ? AND a.appointment_date = ?
+                   AND ${BLOCKING_SQL}
+                   AND a.time_slot < ? AND ? < a.end_time`,
+                [employeeId, appointment_date, endTime, time_slot]
+            );
+
+            if (clashRows.length > 0) {
+                return res.status(409).json({
+                    message: 'This time slot has just been reserved by another patient. Please choose a different time slot.'
+                });
+            }
+
+            res.json({ valid: true });
+
+        } catch (err) {
+            console.error('Validate slot error:', err);
+            res.status(500).json({ message: 'Internal Server Error' });
+        }
+    });
+
+    // ── 4. POST /api/appointments ──
     app.post('/api/appointments', authenticateToken, async (req, res) => {
         if (req.user.role !== 'patient') {
             return res.status(403).json({ message: 'Only patients can book appointments' });
@@ -281,7 +393,7 @@ function registerBookingRoute(app, db) {
             const endM = totalEndMins % 60;
             const endTime = `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}:00`;
 
-            // 🛑 4. CRITICAL: PATIENT OVERLAP CHECK (Blocks patient from booking overlapping slots across ANY doctor)
+            // 🛑 4. CRITICAL: PATIENT OVERLAP CHECK
             const [patientClashRows] = await connection.query(
                 `SELECT a.appointment_id, a.time_slot, a.end_time, s.label, CONCAT('Dr. ', doc.first_name, ' ', doc.last_name) AS doctor_name
                  FROM appointments a
@@ -302,7 +414,7 @@ function registerBookingRoute(app, db) {
                 });
             }
 
-            // 🛑 5. DOCTOR OVERLAP CHECK (Blocks doctor from being double-booked by another patient)
+            // 🛑 5. DOCTOR OVERLAP CHECK
             const [clashRows] = await connection.query(
                 `SELECT a.appointment_id FROM appointments a
                  WHERE a.employee_id = ? AND a.appointment_date = ?
