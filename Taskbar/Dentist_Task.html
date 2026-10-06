@@ -60,3 +60,12 @@
     </div>
 
 </div>
+
+<script>
+    window.addEventListener('resize', () => {
+    const sidebar = document.getElementById('sidebar');
+    if (!sidebar) return;
+    const isCollapsed = sidebar.dataset.collapsed === 'true';
+    _applySidebarState(isCollapsed);
+});
+</script>
