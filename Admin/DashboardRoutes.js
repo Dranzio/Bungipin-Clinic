@@ -29,8 +29,8 @@ function registerDashboardRoutes(app, db) {
                     FROM appointments
                     WHERE appointment_date >= DATE_SUB(CURDATE(), INTERVAL WEEKDAY(CURDATE()) DAY)
                       AND appointment_date < DATE_ADD(
-                          DATE_SUB(CURDATE(), INTERVAL WEEKDAY(CURDATE()) DAY),
-                          INTERVAL 7 DAY
+                            DATE_SUB(CURDATE(), INTERVAL WEEKDAY(CURDATE()) DAY),
+                            INTERVAL 7 DAY
                       )
                     GROUP BY WEEKDAY(appointment_date)
                 `);
@@ -40,14 +40,14 @@ function registerDashboardRoutes(app, db) {
                     SELECT WEEKDAY(COALESCE(p.payment_date, a.appointment_date)) AS bucket,
                            COALESCE(SUM(CASE WHEN p.status = 'paid' OR a.appointment_status = 'completed' THEN COALESCE(p.amount, s.price, 0) ELSE 0 END), 0) AS total
                     FROM appointments a
-                    LEFT JOIN payments p ON a.appointment_id = p.appointment_id
-                    LEFT JOIN services s ON a.service_id = s.service_id
+                             LEFT JOIN payments p ON a.appointment_id = p.appointment_id
+                             LEFT JOIN services s ON a.service_id = s.service_id
                     WHERE COALESCE(p.payment_date, a.appointment_date)
-                          >= DATE_SUB(CURDATE(), INTERVAL WEEKDAY(CURDATE()) DAY)
+                        >= DATE_SUB(CURDATE(), INTERVAL WEEKDAY(CURDATE()) DAY)
                       AND COALESCE(p.payment_date, a.appointment_date)
-                          < DATE_ADD(
-                              DATE_SUB(CURDATE(), INTERVAL WEEKDAY(CURDATE()) DAY),
-                              INTERVAL 7 DAY
+                        < DATE_ADD(
+                                  DATE_SUB(CURDATE(), INTERVAL WEEKDAY(CURDATE()) DAY),
+                                  INTERVAL 7 DAY
                           )
                       AND (p.status = 'paid' OR a.appointment_status = 'completed')
                     GROUP BY WEEKDAY(COALESCE(p.payment_date, a.appointment_date))
@@ -71,8 +71,8 @@ function registerDashboardRoutes(app, db) {
                     SELECT FLOOR((DAY(COALESCE(p.payment_date, a.appointment_date)) - 1) / 7) AS bucket,
                            COALESCE(SUM(CASE WHEN p.status = 'paid' OR a.appointment_status = 'completed' THEN COALESCE(p.amount, s.price, 0) ELSE 0 END), 0) AS total
                     FROM appointments a
-                    LEFT JOIN payments p ON a.appointment_id = p.appointment_id
-                    LEFT JOIN services s ON a.service_id = s.service_id
+                             LEFT JOIN payments p ON a.appointment_id = p.appointment_id
+                             LEFT JOIN services s ON a.service_id = s.service_id
                     WHERE YEAR(COALESCE(p.payment_date, a.appointment_date)) = YEAR(CURDATE())
                       AND MONTH(COALESCE(p.payment_date, a.appointment_date)) = MONTH(CURDATE())
                       AND (p.status = 'paid' OR a.appointment_status = 'completed')
@@ -80,7 +80,10 @@ function registerDashboardRoutes(app, db) {
                 `);
 
             } else {
-                const currentYear = new Date().getFullYear();
+                // Use the DB's year (PH time via the +08:00 session) instead of the
+                // server's clock, which is UTC on Vercel and would lag behind on Jan 1.
+                const [[yearRow]] = await db.query('SELECT YEAR(CURDATE()) AS current_year');
+                const currentYear = Number(yearRow.current_year);
 
                 patientLabels = [
                     String(currentYear - 4),
@@ -94,7 +97,7 @@ function registerDashboardRoutes(app, db) {
 
                 [patientRows] = await db.query(`
                     SELECT YEAR(appointment_date) AS bucket,
-                           COUNT(DISTINCT patient_id) AS total
+                        COUNT(DISTINCT patient_id) AS total
                     FROM appointments
                     WHERE YEAR(appointment_date) BETWEEN ? AND ?
                     GROUP BY YEAR(appointment_date)
@@ -103,10 +106,10 @@ function registerDashboardRoutes(app, db) {
                 // 💳 Completed payments & revenue for yearly
                 [transactionRows] = await db.query(`
                     SELECT YEAR(COALESCE(p.payment_date, a.appointment_date)) AS bucket,
-                           COALESCE(SUM(CASE WHEN p.status = 'paid' OR a.appointment_status = 'completed' THEN COALESCE(p.amount, s.price, 0) ELSE 0 END), 0) AS total
+                        COALESCE(SUM(CASE WHEN p.status = 'paid' OR a.appointment_status = 'completed' THEN COALESCE(p.amount, s.price, 0) ELSE 0 END), 0) AS total
                     FROM appointments a
-                    LEFT JOIN payments p ON a.appointment_id = p.appointment_id
-                    LEFT JOIN services s ON a.service_id = s.service_id
+                        LEFT JOIN payments p ON a.appointment_id = p.appointment_id
+                        LEFT JOIN services s ON a.service_id = s.service_id
                     WHERE YEAR(COALESCE(p.payment_date, a.appointment_date)) BETWEEN ? AND ?
                       AND (p.status = 'paid' OR a.appointment_status = 'completed')
                     GROUP BY YEAR(COALESCE(p.payment_date, a.appointment_date))
@@ -145,28 +148,28 @@ function registerDashboardRoutes(app, db) {
             const [serviceRows] = await db.query(`
                 SELECT s.label, COUNT(a.appointment_id) AS total
                 FROM services s
-                LEFT JOIN appointments a ON s.service_id = a.service_id
+                         LEFT JOIN appointments a ON s.service_id = a.service_id
                 GROUP BY s.service_id, s.label
                 ORDER BY total DESC
-                LIMIT 5
+                    LIMIT 5
             `);
 
             // Location Demographics
             const [locationRows] = await db.query(`
-                SELECT 
+                SELECT
                     COALESCE(
-                        NULLIF(TRIM(pp.address_city), ''),
-                        NULLIF(TRIM(pp.address_province), ''),
-                        NULLIF(TRIM(pp.address), ''),
-                        'Unspecified'
+                            NULLIF(TRIM(pp.address_city), ''),
+                            NULLIF(TRIM(pp.address_province), ''),
+                            NULLIF(TRIM(pp.address), ''),
+                            'Unspecified'
                     ) AS city,
                     COUNT(DISTINCT pp.patient_id) AS total
                 FROM patient_profiles pp
-                JOIN users u ON pp.patient_id = u.user_id
+                         JOIN users u ON pp.patient_id = u.user_id
                 WHERE u.role = 'patient'
                 GROUP BY city
                 ORDER BY total DESC
-                LIMIT 6
+                    LIMIT 6
             `);
 
             res.json({

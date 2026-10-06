@@ -155,7 +155,7 @@ function registerBookingRoute(app, db) {
                 // 4. Exceeds shift closing
                 else if (eM > endMins) {
                     isAvailable = false;
-                    reason = 'Exceeds Dentist Shift'; 
+                    reason = 'Exceeds Dentist Shift';
                 }
                 // 5. Already booked by another patient
                 else if (bookedIntervals.some(b => sM < b.end && b.start < eM)) {
@@ -285,12 +285,12 @@ function registerBookingRoute(app, db) {
             const [patientClashRows] = await connection.query(
                 `SELECT a.appointment_id, a.time_slot, a.end_time, s.label, CONCAT('Dr. ', doc.first_name, ' ', doc.last_name) AS doctor_name
                  FROM appointments a
-                 JOIN services s ON a.service_id = s.service_id
-                 LEFT JOIN users doc ON a.employee_id = doc.user_id
+                          JOIN services s ON a.service_id = s.service_id
+                          LEFT JOIN users doc ON a.employee_id = doc.user_id
                  WHERE a.patient_id = ? AND a.appointment_date = ?
                    AND ${BLOCKING_SQL}
                    AND a.time_slot < ? AND ? < a.end_time
-                 FOR UPDATE`,
+                     FOR UPDATE`,
                 [patientId, appointment_date, endTime, time_slot]
             );
 
@@ -330,9 +330,10 @@ function registerBookingRoute(app, db) {
             );
             const appointmentId = result.insertId;
 
+            // Session time zone is +08:00 (see db.js), so CURDATE() is already the PH date.
             await connection.query(
                 `INSERT INTO payments (appointment_id, amount, payment_date, method, status)
-                 VALUES (?, ?, DATE(CONVERT_TZ(NOW(), '+00:00', '+08:00')), ?, 'pending')`,
+                 VALUES (?, ?, CURDATE(), ?, 'pending')`,
                 [appointmentId, totalPrice, methodEnum]
             );
 
@@ -401,15 +402,16 @@ function registerBookingRoute(app, db) {
 
     async function autoCancelExpiredAppointments(db, io = null) {
         try {
+            // Session time zone is +08:00 (see db.js), so CURDATE()/CURTIME() are already PH time.
             const [result] = await db.query(`
                 UPDATE appointments
                 SET appointment_status = 'cancelled',
                     patient_note = CONCAT(COALESCE(patient_note, ''), ' [System: Auto-cancelled due to expired schedule]')
                 WHERE appointment_status = 'pending'
                   AND (
-                    appointment_date < DATE(CONVERT_TZ(NOW(), '+00:00', '+08:00'))
-                    OR (appointment_date = DATE(CONVERT_TZ(NOW(), '+00:00', '+08:00')) AND end_time < TIME(CONVERT_TZ(NOW(), '+00:00', '+08:00')))
-                  )
+                    appointment_date < CURDATE()
+                        OR (appointment_date = CURDATE() AND end_time < CURTIME())
+                    )
             `);
 
             if (result.affectedRows > 0 && io) {
