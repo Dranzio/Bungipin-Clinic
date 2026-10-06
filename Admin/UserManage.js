@@ -10,7 +10,7 @@ function getIp(req) {
     return req.ip || req.headers['x-forwarded-for'];
 }
 
-const ALLOWED_ROLES = ['employee', 'admin', 'patient'];
+const CREATABLE_ROLES = ['employee', 'admin'];
 const ALLOWED_POSITIONS = ['Dentist', 'Receptionist'];
 const ALLOWED_SPECIALIZATIONS = [
     'General Dentist',
@@ -24,6 +24,12 @@ const ALLOWED_SPECIALIZATIONS = [
     'Oral Radiologist'
 ];
 
+// Shared validation patterns (kept identical to the ones used on the page)
+const NAME_RE = /^[A-Za-zÀ-ÖØ-öø-ÿ]+([ '-][A-Za-zÀ-ÖØ-öø-ÿ]+)*$/;
+const EMAIL_RE = /^[A-Za-z0-9._%+-]+@(?:[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?\.)+[A-Za-z]{2,}$/;
+const PHONE_RE = /^09\d{9}$/;
+const TEMP_PASSWORD_RE = /^[A-Za-z0-9_-]{8,64}$/;
+
 function requireAdmin(req, res, next) {
     if (req.user.role !== 'admin') {
         return res.status(403).json({ message: 'Admins only' });
@@ -31,50 +37,88 @@ function requireAdmin(req, res, next) {
     next();
 }
 
+// An audit-log failure must never turn a successful action into a 500 response.
+async function safeLog(db, entry) {
+    try {
+        await logActivity(db, entry);
+    } catch (err) {
+        console.error('Audit log error:', err);
+    }
+}
+
+async function safeRollback(connection) {
+    if (!connection) return;
+    try {
+        await connection.rollback();
+    } catch (err) {
+        console.error('Rollback error:', err);
+    }
+}
+
+function duplicateMessage(err) {
+    const detail = String(err.sqlMessage || '').toLowerCase();
+    return detail.includes('phone')
+        ? 'An account with this phone number already exists.'
+        : 'An account with this email already exists.';
+}
+
+function validateName(raw, label) {
+    // Phone keyboards often insert a typographic apostrophe, treat it as a normal one.
+    const value = typeof raw === 'string' ? raw.replace(/[\u2018\u2019]/g, "'").trim() : '';
+
+    if (!value) return { error: `${label} is required` };
+    if (value.length < 2 || value.length > 50) {
+        return { error: `${label} must be between 2 and 50 characters` };
+    }
+    if (!NAME_RE.test(value)) {
+        return { error: `${label} may only contain letters, single spaces, hyphens and apostrophes, and must start and end with a letter` };
+    }
+    if (/(.)\1{2,}/i.test(value) || /(.{2,})\1{2,}/i.test(value)) {
+        return { error: `${label} cannot contain 3 repeating characters or repetitive patterns (e.g., ababab)` };
+    }
+    return { value };
+}
+
+function validateEmail(raw) {
+    const email = typeof raw === 'string' ? raw.trim().toLowerCase() : '';
+    if (!email || email.length > 100 || email.includes('..') || !EMAIL_RE.test(email)) return null;
+
+    const local = email.split('@')[0];
+    if (local.length > 64 || local.startsWith('.') || local.endsWith('.')) return null;
+    return email;
+}
+
 /**
  * Strict Input Validation and Sanitization for User Management
  */
 function validateUserInput(body, isCreate = false) {
+    body = body && typeof body === 'object' ? body : {};
     const clean = {};
 
     // 1. First Name & Last Name
-    const firstName = typeof body.first_name === 'string' ? body.first_name.trim() : '';
-    const lastName = typeof body.last_name === 'string' ? body.last_name.trim() : '';
+    const first = validateName(body.first_name, 'First name');
+    if (first.error) return { error: first.error };
+    const last = validateName(body.last_name, 'Last name');
+    if (last.error) return { error: last.error };
 
-    if (!firstName || firstName.length < 2 || firstName.length > 50) {
-        return { error: 'First name must be between 2 and 50 characters' };
-    }
-    if (!lastName || lastName.length < 2 || lastName.length > 50) {
-        return { error: 'Last name must be between 2 and 50 characters' };
-    }
-
-    const nameRegex = /^[A-Za-zÀ-ÖØ-öø-ÿ]+([ '-][A-Za-zÀ-ÖØ-öø-ÿ]+)*$/;
-    if (!nameRegex.test(firstName) || /([ '-]){2,}/.test(firstName)) {
-        return { error: 'First name contains invalid characters or strange symbols' };
-    }
-    if (!nameRegex.test(lastName) || /([ '-]){2,}/.test(lastName)) {
-        return { error: 'Last name contains invalid characters or strange symbols' };
-    }
-
-    clean.first_name = firstName;
-    clean.last_name = lastName;
+    clean.first_name = first.value;
+    clean.last_name = last.value;
 
     // 2. Email
-    const email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : '';
-    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-    if (!email || !emailRegex.test(email) || email.length > 100) {
+    const email = validateEmail(body.email);
+    if (!email) {
         return { error: 'Please provide a valid email address' };
     }
     clean.email = email;
 
     // 3. Phone (Philippine Mobile: 09XXXXXXXXX)
-    const phone = typeof body.phone === 'string' ? body.phone.trim().replace(/\D/g, '') : '';
-    if (!phone || !/^09\d{9}$/.test(phone)) {
+    const phone = typeof body.phone === 'string' ? body.phone.trim().replace(/[\s-]/g, '') : '';
+    if (!PHONE_RE.test(phone)) {
         return { error: 'Phone number must be exactly 11 digits starting with 09 (e.g. 09171234567)' };
     }
     clean.phone = phone;
 
-    // 4. Sex Validation (Allowed on Create AND Edit)
+    // 4. Sex Validation (Required on Create, optional on Edit)
     if (isCreate || body.sex !== undefined) {
         const sex = typeof body.sex === 'string' ? body.sex.trim().toUpperCase() : '';
         if (!['M', 'F'].includes(sex)) {
@@ -86,17 +130,21 @@ function validateUserInput(body, isCreate = false) {
     // Role (only allowed on create)
     if (isCreate) {
         const role = typeof body.role === 'string' ? body.role.trim().toLowerCase() : '';
-        if (!['employee', 'admin'].includes(role)) {
+        if (!CREATABLE_ROLES.includes(role)) {
             return { error: "Role must be 'employee' or 'admin'" };
         }
         clean.role = role;
     }
 
-    // 5. Position & Multiple Specializations (for employee)
-    if (body.position !== undefined) {
+    // 5. Position & Multiple Specializations
+    // On create this is required for employees (and ignored for admins).
+    // On edit it is only processed when the page sends a position.
+    const needsPosition = isCreate ? clean.role === 'employee' : body.position !== undefined;
+
+    if (needsPosition) {
         const position = typeof body.position === 'string' ? body.position.trim() : '';
-        if (position && !ALLOWED_POSITIONS.includes(position)) {
-            return { error: 'Invalid staff position selected' };
+        if (!ALLOWED_POSITIONS.includes(position)) {
+            return { error: 'Please select a valid staff position (Dentist or Receptionist)' };
         }
         clean.position = position;
 
@@ -108,8 +156,10 @@ function validateUserInput(body, isCreate = false) {
                 specList = body.specialization.split(',').map(s => s.trim()).filter(Boolean);
             }
 
+            specList = [...new Set(specList)];
+
             if (specList.length === 0) {
-                specList = ['General Dentist'];
+                return { error: 'Please select at least one dentist specialization' };
             }
 
             for (const s of specList) {
@@ -166,6 +216,58 @@ function registerUserManagementRoutes(app, db) {
         }
     }
 
+    // Re-checks the LOGGED-IN admin's own password before a destructive action (disable / delete).
+    // Wrong guesses are counted per admin so a stolen, unattended session can't be used to brute-force it.
+    // (In-memory counter: it resets when the server restarts. Use a shared store if you run several instances.)
+    const PASSWORD_ATTEMPT_LIMIT = 5;
+    const PASSWORD_ATTEMPT_WINDOW_MS = 15 * 60 * 1000;
+    const passwordAttempts = new Map(); // admin user_id -> { count, resetAt }
+
+    // Returns true when the password is correct.
+    // Otherwise it has already sent the error response and returns false, so the caller just returns.
+    async function confirmAdminPassword(req, res) {
+        const adminId = Number(req.user.user_id);
+        const password = req.body ? req.body.password : undefined;
+
+        if (typeof password !== 'string' || password.length === 0 || password.length > 128) {
+            res.status(400).json({
+                message: 'Please enter your password to confirm this action.',
+                code: 'PASSWORD_REQUIRED'
+            });
+            return false;
+        }
+
+        const now = Date.now();
+        let entry = passwordAttempts.get(adminId);
+        if (!entry || entry.resetAt <= now) {
+            entry = { count: 0, resetAt: now + PASSWORD_ATTEMPT_WINDOW_MS };
+            passwordAttempts.set(adminId, entry);
+        }
+
+        if (entry.count >= PASSWORD_ATTEMPT_LIMIT) {
+            const minutes = Math.max(1, Math.ceil((entry.resetAt - now) / 60000));
+            res.status(429).json({
+                message: `Too many incorrect password attempts. Try again in ${minutes} minute${minutes === 1 ? '' : 's'}.`,
+                code: 'TOO_MANY_ATTEMPTS'
+            });
+            return false;
+        }
+
+        const [rows] = await db.query('SELECT password_hash FROM users WHERE user_id = ?', [adminId]);
+        const hash = rows.length > 0 ? rows[0].password_hash : null;
+        const matches = Boolean(hash) && await bcrypt.compare(password, hash);
+
+        if (!matches) {
+            entry.count += 1;
+            // 403 (not 401) on purpose: a wrong password must not look like an expired login session.
+            res.status(403).json({ message: 'Incorrect password.', code: 'INVALID_PASSWORD' });
+            return false;
+        }
+
+        passwordAttempts.delete(adminId);
+        return true;
+    }
+
     // GET /api/users — powers User Management list
     app.get('/api/users', authenticateToken, requireAdmin, async (req, res) => {
         try {
@@ -200,7 +302,7 @@ function registerUserManagementRoutes(app, db) {
                 [userId]
             );
 
-            await logActivity(db, {
+            await safeLog(db, {
                 user_id: req.user.user_id,
                 user_role: req.user.role,
                 action: 'ACCOUNT_UNLOCKED',
@@ -229,13 +331,15 @@ function registerUserManagementRoutes(app, db) {
             return res.status(403).json({ message: 'Only a super admin can create admin accounts.' });
         }
 
-        const connection = await db.getConnection();
+        let connection;
 
         try {
-            await connection.beginTransaction();
-
+            // Hash first so the transaction (and its locks) stays as short as possible.
             const tempPassword = crypto.randomBytes(9).toString('base64url');
             const passwordHash = await bcrypt.hash(tempPassword, SALT_ROUNDS);
+
+            connection = await db.getConnection();
+            await connection.beginTransaction();
 
             await connection.query(
                 'CALL sp_register_user(?, ?, ?, ?, ?, ?, ?, @new_id)',
@@ -263,7 +367,7 @@ function registerUserManagementRoutes(app, db) {
 
             await connection.commit();
 
-            await logActivity(db, {
+            await safeLog(db, {
                 user_id: req.user.user_id,
                 user_role: req.user.role,
                 action: 'CREATE_USER',
@@ -275,24 +379,30 @@ function registerUserManagementRoutes(app, db) {
 
             const user = await fetchUser(db, newUserId);
 
-            const emailSent = await notify(email, staffAccountCreated({
-                firstName: first_name,
-                role,
-                email,
-                tempPassword
-            }));
+            // The account already exists at this point, so a mail failure must not fail the request.
+            let emailSent = false;
+            try {
+                emailSent = Boolean(await notify(email, staffAccountCreated({
+                    firstName: first_name,
+                    role,
+                    email,
+                    tempPassword
+                })));
+            } catch (mailErr) {
+                console.error('Welcome email error:', mailErr);
+            }
 
             res.status(201).json({ ...user, temp_password: tempPassword, email_sent: emailSent });
 
         } catch (err) {
-            await connection.rollback();
+            await safeRollback(connection);
             if (err.code === 'ER_DUP_ENTRY') {
-                return res.status(409).json({ message: 'An account with this email already exists.' });
+                return res.status(409).json({ message: duplicateMessage(err) });
             }
             console.error('User creation error:', err);
             res.status(500).json({ message: 'Internal Server Error' });
         } finally {
-            connection.release();
+            if (connection) connection.release();
         }
     });
 
@@ -308,9 +418,10 @@ function registerUserManagementRoutes(app, db) {
 
         const { first_name, last_name, email, phone, sex, position, specialization } = validation.data;
 
-        const connection = await db.getConnection();
+        let connection;
 
         try {
+            connection = await db.getConnection();
             await connection.beginTransaction();
 
             const [[existing]] = await connection.query(
@@ -338,7 +449,7 @@ function registerUserManagementRoutes(app, db) {
 
             await connection.commit();
 
-            await logActivity(db, {
+            await safeLog(db, {
                 user_id: req.user.user_id,
                 user_role: req.user.role,
                 action: 'UPDATE_USER',
@@ -351,21 +462,22 @@ function registerUserManagementRoutes(app, db) {
             res.json(await fetchUser(db, userId));
 
         } catch (err) {
-            await connection.rollback();
+            await safeRollback(connection);
             if (err.code === 'ER_DUP_ENTRY') {
-                return res.status(409).json({ message: 'An account with this email already exists.' });
+                return res.status(409).json({ message: duplicateMessage(err) });
             }
             console.error('User update error:', err);
             res.status(500).json({ message: 'Internal Server Error' });
         } finally {
-            connection.release();
+            if (connection) connection.release();
         }
     });
 
     // PATCH /api/users/:id/status — Disable / Re-enable
+    // Disabling requires the admin's own password (body.password). Re-enabling does not.
     app.patch('/api/users/:id/status', authenticateToken, requireAdmin, guardAdminTarget, async (req, res) => { // eli change: guardAdminTarget
         const userId = Number(req.params.id);
-        const { account_status } = req.body;
+        const account_status = req.body ? req.body.account_status : undefined;
 
         if (!Number.isInteger(userId) || userId <= 0) {
             return res.status(400).json({ message: 'Invalid user id' });
@@ -373,11 +485,13 @@ function registerUserManagementRoutes(app, db) {
         if (!['active', 'suspended'].includes(account_status)) {
             return res.status(400).json({ message: "account_status must be 'active' or 'suspended'" });
         }
-        if (userId === req.user.user_id) {
+        if (userId === Number(req.user.user_id)) {
             return res.status(400).json({ message: 'You cannot disable your own account' });
         }
 
         try {
+            if (account_status === 'suspended' && !(await confirmAdminPassword(req, res))) return;
+
             const [result] = await db.query(
                 'UPDATE users SET account_status = ? WHERE user_id = ?',
                 [account_status, userId]
@@ -392,7 +506,7 @@ function registerUserManagementRoutes(app, db) {
                 );
             }
 
-            await logActivity(db, {
+            await safeLog(db, {
                 user_id: req.user.user_id,
                 user_role: req.user.role,
                 action: account_status === 'suspended' ? 'DEACTIVATE_USER' : 'ACTIVATE_USER',
@@ -427,7 +541,7 @@ function registerUserManagementRoutes(app, db) {
 
             if (result.affectedRows === 0) return res.status(404).json({ message: 'User not found' });
 
-            await logActivity(db, {
+            await safeLog(db, {
                 user_id: req.user.user_id,
                 user_role: req.user.role,
                 action: 'PASSWORD_CHANGED',
@@ -452,21 +566,23 @@ function registerUserManagementRoutes(app, db) {
     app.patch('/api/users/:id/reset-password', authenticateToken, requireAdmin, guardAdminTarget, handlePasswordReset);
     app.post('/api/users/:id/reset-password', authenticateToken, requireAdmin, guardAdminTarget, handlePasswordReset);
 
-    // DELETE /api/users/:id
+    // DELETE /api/users/:id — requires the admin's own password (body.password)
     app.delete('/api/users/:id', authenticateToken, requireAdmin, guardAdminTarget, async (req, res) => { // eli change: guardAdminTarget
         const userId = Number(req.params.id);
         if (!Number.isInteger(userId) || userId <= 0) {
             return res.status(400).json({ message: 'Invalid user id' });
         }
-        if (userId === req.user.user_id) {
+        if (userId === Number(req.user.user_id)) {
             return res.status(400).json({ message: 'You cannot delete your own account' });
         }
 
         try {
+            if (!(await confirmAdminPassword(req, res))) return;
+
             const [result] = await db.query('DELETE FROM users WHERE user_id = ?', [userId]);
             if (result.affectedRows === 0) return res.status(404).json({ message: 'User not found' });
 
-            await logActivity(db, {
+            await safeLog(db, {
                 user_id: req.user.user_id,
                 user_role: req.user.role,
                 action: 'DELETE_USER',
@@ -480,7 +596,7 @@ function registerUserManagementRoutes(app, db) {
         } catch (err) {
             if (err.code === 'ER_ROW_IS_REFERENCED_2') {
                 return res.status(409).json({
-                    message: 'This user still has related records (e.g. uploaded X-rays). Disable the account instead.'
+                    message: 'This user still has related records (e.g. appointments or uploaded X-rays). Disable the account instead.'
                 });
             }
             console.error('User delete error:', err);
@@ -491,6 +607,16 @@ function registerUserManagementRoutes(app, db) {
     // DOCTOR SCHEDULE MANAGEMENT (admin)
     const TIME_RE = /^([01]\d|2[0-3]):([0-5]\d)(:([0-5]\d))?$/;
     const DAYS_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+    // Returns 'HH:MM:SS' for a valid time, '' for an empty value, and null for an invalid one.
+    // Normalising first means 'HH:MM' and 'HH:MM:SS' values can be compared safely as strings.
+    function normalizeTime(value) {
+        const s = value === null || value === undefined ? '' : String(value).trim();
+        if (!s) return '';
+        const m = TIME_RE.exec(s);
+        if (!m) return null;
+        return `${m[1]}:${m[2]}:${m[4] || '00'}`;
+    }
 
     async function assertDentist(conn, employeeId) {
         const [[emp]] = await conn.query(
@@ -507,7 +633,9 @@ function registerUserManagementRoutes(app, db) {
     // GET /api/doctors/:id/schedule
     app.get('/api/doctors/:id/schedule', authenticateToken, requireAdmin, async (req, res) => {
         const employeeId = Number(req.params.id);
-        if (!Number.isInteger(employeeId)) return res.status(400).json({ message: 'Invalid doctor id' });
+        if (!Number.isInteger(employeeId) || employeeId <= 0) {
+            return res.status(400).json({ message: 'Invalid doctor id' });
+        }
 
         try {
             const check = await assertDentist(db, employeeId);
@@ -528,9 +656,11 @@ function registerUserManagementRoutes(app, db) {
     // PUT /api/doctors/:id/schedule
     app.put('/api/doctors/:id/schedule', authenticateToken, requireAdmin, async (req, res) => {
         const employeeId = Number(req.params.id);
-        if (!Number.isInteger(employeeId)) return res.status(400).json({ message: 'Invalid doctor id' });
+        if (!Number.isInteger(employeeId) || employeeId <= 0) {
+            return res.status(400).json({ message: 'Invalid doctor id' });
+        }
 
-        const { schedules } = req.body;
+        const schedules = req.body ? req.body.schedules : undefined;
         if (!Array.isArray(schedules) || schedules.length !== 7) {
             return res.status(400).json({ message: 'Exactly 7 day rows (0-6) are required' });
         }
@@ -539,38 +669,47 @@ function registerUserManagementRoutes(app, db) {
         const clean = [];
 
         for (const row of schedules) {
+            if (!row || typeof row !== 'object') {
+                return res.status(400).json({ message: 'Each schedule row must be an object' });
+            }
+
             const day = Number(row.day_of_week);
             if (!Number.isInteger(day) || day < 0 || day > 6 || seenDays.has(day)) {
                 return res.status(400).json({ message: `Invalid or duplicate day: ${row.day_of_week}` });
             }
             seenDays.add(day);
 
-            const isActive = !!row.is_active;
+            const isActive = row.is_active === true || Number(row.is_active) === 1;
 
             if (!isActive) {
                 clean.push({ day, start: null, end: null, breakStart: null, breakEnd: null, active: 0 });
                 continue;
             }
 
-            const startTime = row.start_time ? String(row.start_time).trim() : '';
-            const endTime = row.end_time ? String(row.end_time).trim() : '';
-            const breakStart = row.break_start ? String(row.break_start).trim() : '';
-            const breakEnd = row.break_end ? String(row.break_end).trim() : '';
+            const startTime = normalizeTime(row.start_time);
+            const endTime = normalizeTime(row.end_time);
 
-            if (!startTime || !endTime || !TIME_RE.test(startTime) || !TIME_RE.test(endTime)) {
+            if (!startTime || !endTime) {
                 return res.status(400).json({ message: `Invalid shift hours on ${DAYS_NAMES[day]}` });
             }
             if (startTime >= endTime) {
                 return res.status(400).json({ message: `Start time must be before end time on ${DAYS_NAMES[day]}` });
             }
 
+            const breakStart = normalizeTime(row.break_start);
+            const breakEnd = normalizeTime(row.break_end);
+
+            if (breakStart === null || breakEnd === null) {
+                return res.status(400).json({ message: `Invalid lunch break time on ${DAYS_NAMES[day]}` });
+            }
+            if (Boolean(breakStart) !== Boolean(breakEnd)) {
+                return res.status(400).json({ message: `Set both lunch start and end on ${DAYS_NAMES[day]}, or leave both empty` });
+            }
+
             let cleanBreakStart = null;
             let cleanBreakEnd = null;
 
             if (breakStart && breakEnd) {
-                if (!TIME_RE.test(breakStart) || !TIME_RE.test(breakEnd)) {
-                    return res.status(400).json({ message: `Invalid lunch break time on ${DAYS_NAMES[day]}` });
-                }
                 if (breakStart >= breakEnd || breakStart < startTime || breakEnd > endTime) {
                     return res.status(400).json({ message: `Lunch break must fall within the shift hours on ${DAYS_NAMES[day]}` });
                 }
@@ -581,12 +720,14 @@ function registerUserManagementRoutes(app, db) {
             clean.push({ day, start: startTime, end: endTime, breakStart: cleanBreakStart, breakEnd: cleanBreakEnd, active: 1 });
         }
 
-        const connection = await db.getConnection();
+        let connection;
 
         try {
+            connection = await db.getConnection();
+
             const check = await assertDentist(connection, employeeId);
             if (!check.ok) {
-                connection.release();
+                // The finally block releases the connection (releasing here too would release it twice).
                 return res.status(check.status).json({ message: check.message });
             }
 
@@ -617,21 +758,24 @@ function registerUserManagementRoutes(app, db) {
 
             res.json(updated);
         } catch (err) {
-            await connection.rollback();
+            await safeRollback(connection);
             console.error('Doctor schedule update error:', err);
             res.status(500).json({ message: 'Internal Server Error' });
         } finally {
-            connection.release();
+            if (connection) connection.release();
         }
     });
 
     // POST /api/users/:id/send-credentials
     app.post('/api/users/:id/send-credentials', authenticateToken, requireAdmin, guardAdminTarget, async (req, res) => { // eli change: guardAdminTarget
         const userId = Number(req.params.id);
-        const { temp_password } = req.body;
+        const temp_password = req.body ? req.body.temp_password : undefined;
 
         if (!Number.isInteger(userId) || userId <= 0 || !temp_password) {
             return res.status(400).json({ message: 'User ID and temporary password are required' });
+        }
+        if (typeof temp_password !== 'string' || !TEMP_PASSWORD_RE.test(temp_password)) {
+            return res.status(400).json({ message: 'Invalid temporary password format' });
         }
 
         try {
@@ -652,7 +796,7 @@ function registerUserManagementRoutes(app, db) {
                 });
             }
 
-            await logActivity(db, {
+            await safeLog(db, {
                 user_id: req.user.user_id,
                 user_role: req.user.role,
                 action: 'SEND_CREDENTIALS_EMAIL',
