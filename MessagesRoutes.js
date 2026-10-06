@@ -2,8 +2,84 @@
 // Shared inbox + 1:1 chat for patients and employees.
 // A patient and employee can only message each other if they share a
 // non-cancelled appointment. Admins bypass the restriction.
+//
+// Attachments: on Vercel they are uploaded to Vercel Blob (the filesystem there
+// is read-only). Locally they fall back to the ./uploads folder, same as before.
+// messages.file_url stays a JSON array of URLs. It MUST be a TEXT column, since
+// Blob URLs are long.
 
+const fs = require('fs');
+const path = require('path');
+const crypto = require('crypto');
+const multer = require('multer');
+const { put, del } = require('@vercel/blob');
 const authenticateToken = require('./authMiddleware');
+
+const isVercel = process.env.VERCEL === '1' || !!process.env.BLOB_READ_WRITE_TOKEN;
+const uploadDir = path.join(__dirname, 'uploads'); // local development only
+
+// Vercel rejects request bodies over ~4.5 MB, so keep uploads under that.
+const MAX_FILE_BYTES = 4 * 1024 * 1024;
+const MAX_FILES = 10;
+
+// Types that may be uploaded. SVG/HTML are deliberately excluded (script risk).
+const ALLOWED_MIME = new Set([
+    'image/jpeg', 'image/png', 'image/gif', 'image/webp',
+    'application/pdf',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'application/vnd.ms-excel',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    'text/plain'
+]);
+
+const upload = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: MAX_FILE_BYTES, files: MAX_FILES },
+    fileFilter: (req, file, cb) => {
+        if (!ALLOWED_MIME.has(file.mimetype)) {
+            return cb(new Error('This file type is not allowed. Use images, PDF, Word, Excel or text files.'));
+        }
+        cb(null, true);
+    }
+});
+
+// Runs multer and turns its errors into clean 400 responses (instead of a raw 500).
+function handleUpload(req, res, next) {
+    upload.array('attachments', MAX_FILES)(req, res, (err) => {
+        if (!err) return next();
+        const message = err.code === 'LIMIT_FILE_SIZE'
+            ? 'A file is too large (max 4 MB per file).'
+            : err.code === 'LIMIT_FILE_COUNT'
+                ? `You can attach up to ${MAX_FILES} files.`
+                : (err.message || 'Upload failed.');
+        return res.status(400).json({ error: message });
+    });
+}
+
+// Saves one uploaded file. Returns its public URL and a remove() for cleanup.
+// The random UUID in the name makes the URL unguessable.
+async function storeFile(file) {
+    const rawExt = path.extname(file.originalname || '').toLowerCase().replace('.', '');
+    const ext = /^[a-z0-9]{1,5}$/.test(rawExt) ? `.${rawExt}` : '';
+    const filename = `${crypto.randomUUID()}${ext}`;
+
+    if (isVercel) {
+        const blob = await put(`messages/${filename}`, file.buffer, {
+            access: 'public',
+            contentType: file.mimetype
+        });
+        return { url: blob.url, remove: () => del(blob.url) };
+    }
+
+    fs.mkdirSync(uploadDir, { recursive: true });
+    const fullPath = path.join(uploadDir, filename);
+    fs.writeFileSync(fullPath, file.buffer);
+    return {
+        url: `/uploads/${filename}`,
+        remove: async () => { try { fs.unlinkSync(fullPath); } catch (_) { /* ignore */ } }
+    };
+}
 
 module.exports = function registerMessagesRoutes(app, db) {
 
@@ -127,30 +203,9 @@ module.exports = function registerMessagesRoutes(app, db) {
         }
     });
 
-    // Configure multer for file uploads
-    const multer = require('multer');
-    const path = require('path');
-    const fs = require('fs');
-
-    // Ensure uploads directory exists
-    const uploadDir = path.join(__dirname, 'uploads');
-    if (!fs.existsSync(uploadDir)) {
-        fs.mkdirSync(uploadDir, { recursive: true });
-    }
-
-    const storage = multer.diskStorage({
-        destination: function (req, file, cb) {
-            cb(null, uploadDir);
-        },
-        filename: function (req, file, cb) {
-            const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-            cb(null, uniqueSuffix + path.extname(file.originalname));
-        }
-    });
-    const upload = multer({ storage: storage });
-
     // POST /api/messages/send
-    app.post('/api/messages/send', authenticateToken, upload.array('attachments', 10), async (req, res) => {
+    app.post('/api/messages/send', authenticateToken, handleUpload, async (req, res) => {
+        const stored = []; // files already saved, so they can be removed if something fails
         try {
             const { user_id, role } = req.user;
             const { receiver_id, content } = req.body;
@@ -168,11 +223,13 @@ module.exports = function registerMessagesRoutes(app, db) {
                 return res.status(403).json({ error: 'No appointment history with this contact' });
             }
 
-            // Save file paths as a JSON array if files are present
+            // Upload files first, then save their URLs as a JSON array on the message
             let fileUrls = null;
             if (hasFiles) {
-                const urls = req.files.map(f => '/uploads/' + f.filename);
-                fileUrls = JSON.stringify(urls);
+                for (const f of req.files) {
+                    stored.push(await storeFile(f));
+                }
+                fileUrls = JSON.stringify(stored.map(s => s.url));
             }
 
             const [result] = await db.query(
@@ -182,6 +239,8 @@ module.exports = function registerMessagesRoutes(app, db) {
 
             res.status(201).json({ message_id: result.insertId, sent_at: new Date() });
         } catch (err) {
+            // Best-effort cleanup of any files uploaded before the failure
+            await Promise.all(stored.map(s => Promise.resolve(s.remove()).catch(() => {})));
             console.error('Messages send error:', err);
             res.status(500).json({ error: 'Internal Server Error' });
         }

@@ -1,248 +1,331 @@
-// MessagesRoutes.js
-// Shared inbox + 1:1 chat for patients and employees.
-// A patient and employee can only message each other if they share a
-// non-cancelled appointment. Admins bypass the restriction.
-//
-// Attachments: on Vercel they are uploaded to Vercel Blob (the filesystem there
-// is read-only). Locally they fall back to the ./uploads folder, same as before.
-// messages.file_url stays a JSON array of URLs. It MUST be a TEXT column, since
-// Blob URLs are long.
-
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
-const multer = require('multer');
-const { put, del } = require('@vercel/blob');
+const { put } = require('@vercel/blob');
 const authenticateToken = require('../authMiddleware');
+const { logActivity } = require('./auditLogRoutes');
 
-const isVercel = process.env.VERCEL === '1' || !!process.env.BLOB_READ_WRITE_TOKEN;
-const uploadDir = path.join(__dirname, 'uploads'); // local development only
-
-// Vercel rejects request bodies over ~4.5 MB, so keep uploads under that.
-const MAX_FILE_BYTES = 4 * 1024 * 1024;
-const MAX_FILES = 10;
-
-// Types that may be uploaded. SVG/HTML are deliberately excluded (script risk).
-const ALLOWED_MIME = new Set([
-    'image/jpeg', 'image/png', 'image/gif', 'image/webp',
-    'application/pdf',
-    'application/msword',
-    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-    'application/vnd.ms-excel',
-    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    'text/plain'
-]);
-
-const upload = multer({
-    storage: multer.memoryStorage(),
-    limits: { fileSize: MAX_FILE_BYTES, files: MAX_FILES },
-    fileFilter: (req, file, cb) => {
-        if (!ALLOWED_MIME.has(file.mimetype)) {
-            return cb(new Error('This file type is not allowed. Use images, PDF, Word, Excel or text files.'));
-        }
-        cb(null, true);
-    }
-});
-
-// Runs multer and turns its errors into clean 400 responses (instead of a raw 500).
-function handleUpload(req, res, next) {
-    upload.array('attachments', MAX_FILES)(req, res, (err) => {
-        if (!err) return next();
-        const message = err.code === 'LIMIT_FILE_SIZE'
-            ? 'A file is too large (max 4 MB per file).'
-            : err.code === 'LIMIT_FILE_COUNT'
-                ? `You can attach up to ${MAX_FILES} files.`
-                : (err.message || 'Upload failed.');
-        return res.status(400).json({ error: message });
-    });
+function getIp(req) {
+    return req.ip || req.headers['x-forwarded-for'];
 }
 
-// Saves one uploaded file. Returns its public URL and a remove() for cleanup.
-// The random UUID in the name makes the URL unguessable.
-async function storeFile(file) {
-    const rawExt = path.extname(file.originalname || '').toLowerCase().replace('.', '');
-    const ext = /^[a-z0-9]{1,5}$/.test(rawExt) ? `.${rawExt}` : '';
-    const filename = `${crypto.randomUUID()}${ext}`;
+const ICON_DIR = path.join(__dirname, '..', 'uploads', 'services');
+const MAX_ICON_BYTES = 2 * 1024 * 1024;
+const isVercel = process.env.VERCEL === '1' || !!process.env.BLOB_READ_WRITE_TOKEN;
 
-    if (isVercel) {
-        const blob = await put(`messages/${filename}`, file.buffer, {
-            access: 'public',
-            contentType: file.mimetype
-        });
-        return { url: blob.url, remove: () => del(blob.url) };
+const ALLOWED_SPECIALIZATIONS = [
+    'General Dentist',
+    'Pediatric Dentist',
+    'Orthodontist',
+    'Endodontist',
+    'Oral Surgeon',
+    'Periodontist',
+    'Prosthodontist',
+    'Oral Pathologist',
+    'Oral Radiologist'
+];
+
+function requireAdmin(req, res, next) {
+    if (req.user.role !== 'admin') {
+        return res.status(403).json({ message: 'Admins only' });
+    }
+    next();
+}
+
+async function resolveIcon(icon) {
+    if (!icon) return null;
+    if (!icon.startsWith('data:')) {
+        if (!/^(\/uploads\/services\/[\w.-]+|\.\.\/assets\/[\w.-]+|\/assets\/[\w.-]+|https?:\/\/[^\s"'<>]+)$/.test(icon)) {
+            const err = new Error('Invalid icon value');
+            err.status = 400;
+            throw err;
+        }
+        return icon;
     }
 
-    fs.mkdirSync(uploadDir, { recursive: true });
-    const fullPath = path.join(uploadDir, filename);
-    fs.writeFileSync(fullPath, file.buffer);
+    const match = /^data:image\/(png|jpeg|webp|gif);base64,([A-Za-z0-9+/=]+)$/.exec(icon);
+    if (!match) {
+        const err = new Error('Icon must be a PNG, JPEG, WEBP or GIF image');
+        err.status = 400;
+        throw err;
+    }
+
+    const buffer = Buffer.from(match[2], 'base64');
+    if (buffer.length > MAX_ICON_BYTES) {
+        const err = new Error('Icon must be 2 MB or smaller');
+        err.status = 400;
+        throw err;
+    }
+
+    const ext = match[1] === 'jpeg' ? 'jpg' : match[1];
+    const filename = `${crypto.randomUUID()}.${ext}`;
+
+    if (isVercel) {
+        try {
+            const blob = await put(`services/${filename}`, buffer, {
+                access: 'public',
+                contentType: `image/${match[1]}`,
+            });
+            return blob.url;
+        } catch (uploadErr) {
+            const err = new Error('Failed to upload icon image to cloud storage');
+            err.status = 500;
+            throw err;
+        }
+    } else {
+        try {
+            fs.mkdirSync(ICON_DIR, { recursive: true });
+            fs.writeFileSync(path.join(ICON_DIR, filename), buffer);
+            return `/uploads/services/${filename}`;
+        } catch (localErr) {
+            const err = new Error('Failed to save icon locally');
+            err.status = 500;
+            throw err;
+        }
+    }
+}
+
+function toService(row) {
     return {
-        url: `/uploads/${filename}`,
-        remove: async () => { try { fs.unlinkSync(fullPath); } catch (_) { /* ignore */ } }
+        ...row,
+        price: Number(row.price),
+        duration_minutes: Number(row.duration_minutes || 30),
+        required_specialization: row.required_specialization || 'General Dentist',
+        specialization: row.required_specialization || 'General Dentist',
+        description: row.description || '',
+        is_available: row.is_available === 1 || row.is_available === true
     };
 }
 
-module.exports = function registerMessagesRoutes(app, db) {
+function validate(body) {
+    const label = typeof body.label === 'string' ? body.label.trim() : '';
+    const price = Number(body.price);
+    const duration = parseInt(body.duration_minutes, 10) || 30;
+    const description = typeof body.description === 'string' ? body.description.trim() : '';
+    const spec = typeof body.specialization === 'string'
+        ? body.specialization.trim()
+        : (typeof body.required_specialization === 'string' ? body.required_specialization.trim() : 'General Dentist');
 
-    // Returns the list of user_ids the current user is allowed to talk to.
-    async function getContactIds(userId, role) {
-        let query;
-        if (role === 'employee') {
-            query = `SELECT DISTINCT patient_id AS contact_id FROM appointments
-                     WHERE employee_id = ? AND appointment_status != 'cancelled'`;
-        } else if (role === 'patient') {
-            query = `SELECT DISTINCT employee_id AS contact_id FROM appointments
-                     WHERE patient_id = ? AND appointment_status != 'cancelled'`;
-        } else {
-            // Admins aren't restricted by appointment history.
-            return null;
-        }
-        const [rows] = await db.query(query, [userId]);
-        return rows.map(r => r.contact_id);
+    if (!label || label.length < 2 || label.length > 80) {
+        return { error: 'Service name is required (2 to 80 characters).' };
     }
 
-    // Checks whether userId is allowed to message contactId.
-    async function hasValidRelationship(userId, role, contactId) {
-        if (role === 'admin') return true;
-
-        const contactIds = await getContactIds(userId, role);
-        return contactIds !== null && contactIds.includes(Number(contactId));
+    if (/[%$^*<>{}[\]\\;~|_+=]/.test(label)) {
+        return { error: 'Service name contains forbidden symbols.' };
     }
 
-    // GET /api/messages/threads
-    // Returns one row per eligible contact, with their latest message (if any)
-    // and whether the current user has unread messages from them.
-    app.get('/api/messages/threads', authenticateToken, async (req, res) => {
+    if (/([()\-',/.]){2,}/.test(label)) {
+        return { error: 'Service name cannot contain repeated punctuation characters.' };
+    }
+
+    const openCount = (label.match(/\(/g) || []).length;
+    const closeCount = (label.match(/\)/g) || []).length;
+    if (openCount !== closeCount) {
+        return { error: 'Parentheses must be properly closed.' };
+    }
+
+    const cleanTitleRegex = /^[A-Za-z0-9][A-Za-z0-9\s\-',/().]*[A-Za-z0-9.)]$/;
+    if (!cleanTitleRegex.test(label)) {
+        return { error: 'Service name must start and end with valid characters.' };
+    }
+
+    if (!Number.isFinite(price) || price < 0 || price > 1500000) {
+        return { error: 'Price must be a valid number between 0 and 1,500,000 PHP.' };
+    }
+
+    if (duration < 5 || duration > 480) {
+        return { error: 'Duration must be between 5 and 480 minutes.' };
+    }
+
+    if (!ALLOWED_SPECIALIZATIONS.includes(spec)) {
+        return { error: 'Invalid dentist specialization selected.' };
+    }
+
+    if (description.length > 1000) {
+        return { error: 'Service description cannot exceed 1000 characters.' };
+    }
+
+    return { label, price, duration_minutes: duration, required_specialization: spec, description };
+}
+
+function registerServiceRoutes(app, db) {
+    // 0. GET /api/public/services — no login needed. Used by the public homepage.
+    //    All enabled services, only the fields the homepage shows.
+    app.get('/api/public/services', async (req, res) => {
         try {
-            const { user_id, role } = req.user;
-            const contactIds = await getContactIds(user_id, role);
-
-            if (!contactIds || contactIds.length === 0) {
-                return res.json([]);
-            }
-
-            const threads = await Promise.all(contactIds.map(async (contactId) => {
-                const [contactRows] = await db.query(
-                    'SELECT user_id, first_name, last_name FROM users WHERE user_id = ?',
-                    [contactId]
-                );
-                const contact = contactRows[0];
-                if (!contact) return null;
-
-                const [lastMsgRows] = await db.query(
-                    `SELECT content, sender_id, file_url, sent_at FROM messages
-                    WHERE (sender_id = ? AND receiver_id = ?) OR (sender_id = ? AND receiver_id = ?)
-                    ORDER BY sent_at DESC LIMIT 1`,
-                    [user_id, contactId, contactId, user_id]
-                );
-                const lastMsg = lastMsgRows[0];
-
-                const [unreadRows] = await db.query(
-                    `SELECT COUNT(*) AS unread_count FROM messages
-                     WHERE sender_id = ? AND receiver_id = ? AND is_read = FALSE`,
-                    [contactId, user_id]
-                );
-
-                return {
-                    user_id: contact.user_id,
-                    contact_id: contact.user_id,
-                    first_name: contact.first_name,
-                    last_name: contact.last_name,
-                    content: lastMsg ? lastMsg.content : null,
-                    sender_id: lastMsg ? lastMsg.sender_id : null,
-                    file_url: lastMsg ? lastMsg.file_url : null,
-                    sent_at: lastMsg ? lastMsg.sent_at : null,
-                    has_unread: unreadRows[0].unread_count > 0
-                };
-            }));
-
-            const validThreads = threads
-                .filter(Boolean)
-                .sort((a, b) => new Date(b.sent_at || 0) - new Date(a.sent_at || 0));
-
-            res.json(validThreads);
+            const [rows] = await db.query(
+                `SELECT service_id, label, description, price, icon
+                 FROM services WHERE is_available = TRUE ORDER BY service_id`
+            );
+            res.set('Cache-Control', 'no-store');
+            res.json(rows.map(r => ({
+                service_id: r.service_id,
+                label: r.label,
+                description: r.description || '',
+                price: r.price === null || r.price === undefined ? null : Number(r.price),
+                icon: r.icon || null
+            })));
         } catch (err) {
-            console.error('Messages threads error:', err);
-            res.status(500).json({ error: 'Internal Server Error' });
+            console.error('Public service list error:', err);
+            res.status(500).json({ message: 'Internal Server Error' });
         }
     });
 
-    // GET /api/messages/:contactId
-    // Returns the full conversation and marks incoming messages as read.
-    app.get('/api/messages/:contactId', authenticateToken, async (req, res) => {
+    // 1. GET /api/services — Returns all for admins, active only for patients
+    app.get('/api/services', authenticateToken, async (req, res) => {
         try {
-            const { user_id, role } = req.user;
-            const contactId = parseInt(req.params.contactId, 10);
+            const isAdmin = req.user && req.user.role === 'admin';
+            const sql = isAdmin
+                ? `SELECT service_id, label, price, duration_minutes, required_specialization, description, icon, is_available 
+                   FROM services ORDER BY service_id`
+                : `SELECT service_id, label, price, duration_minutes, required_specialization, description, icon, is_available 
+                   FROM services WHERE is_available = TRUE ORDER BY service_id`;
 
-            if (Number.isNaN(contactId)) {
-                return res.status(400).json({ error: 'Invalid contact id' });
-            }
-
-            const allowed = await hasValidRelationship(user_id, role, contactId);
-            if (!allowed) {
-                return res.status(403).json({ error: 'No appointment history with this contact' });
-            }
-
-            const [messages] = await db.query(
-                `SELECT message_id, sender_id, receiver_id, content, file_url, sent_at, is_read
-                 FROM messages
-                 WHERE (sender_id = ? AND receiver_id = ?) OR (sender_id = ? AND receiver_id = ?)
-                 ORDER BY sent_at ASC`,
-                [user_id, contactId, contactId, user_id]
-            );
-
-            await db.query(
-                `UPDATE messages SET is_read = TRUE
-                 WHERE sender_id = ? AND receiver_id = ? AND is_read = FALSE`,
-                [contactId, user_id]
-            );
-
-            res.json(messages);
+            const [rows] = await db.query(sql);
+            res.json(rows.map(toService));
         } catch (err) {
-            console.error('Messages fetch error:', err);
-            res.status(500).json({ error: 'Internal Server Error' });
+            console.error('Service list error:', err);
+            res.status(500).json({ message: 'Internal Server Error' });
         }
     });
 
-    // POST /api/messages/send
-    app.post('/api/messages/send', authenticateToken, handleUpload, async (req, res) => {
-        const stored = []; // files already saved, so they can be removed if something fails
+    // 2. POST /api/services
+    app.post('/api/services', authenticateToken, requireAdmin, async (req, res) => {
+        const v = validate(req.body);
+        if (v.error) return res.status(400).json({ message: v.error });
+
         try {
-            const { user_id, role } = req.user;
-            const { receiver_id, content } = req.body;
-
-            // Content or files must be present
-            const hasFiles = req.files && req.files.length > 0;
-            const hasContent = content && content.trim();
-
-            if (!receiver_id || (!hasContent && !hasFiles)) {
-                return res.status(400).json({ error: 'receiver_id and either content or files are required' });
-            }
-
-            const allowed = await hasValidRelationship(user_id, role, receiver_id);
-            if (!allowed) {
-                return res.status(403).json({ error: 'No appointment history with this contact' });
-            }
-
-            // Upload files first, then save their URLs as a JSON array on the message
-            let fileUrls = null;
-            if (hasFiles) {
-                for (const f of req.files) {
-                    stored.push(await storeFile(f));
-                }
-                fileUrls = JSON.stringify(stored.map(s => s.url));
-            }
-
+            const icon = await resolveIcon(req.body.icon);
             const [result] = await db.query(
-                `INSERT INTO messages (sender_id, receiver_id, content, file_url) VALUES (?, ?, ?, ?)`,
-                [user_id, receiver_id, hasContent ? content.trim() : null, fileUrls]
+                `INSERT INTO services (label, price, duration_minutes, required_specialization, description, icon, is_available) 
+                 VALUES (?, ?, ?, ?, ?, ?, 1)`,
+                [v.label, v.price, v.duration_minutes, v.required_specialization, v.description, icon]
             );
+            const [[row]] = await db.query('SELECT * FROM services WHERE service_id = ?', [result.insertId]);
 
-            res.status(201).json({ message_id: result.insertId, sent_at: new Date() });
+            await logActivity(db, {
+                user_id: req.user.user_id,
+                user_role: req.user.role,
+                action: 'CREATE_SERVICE',
+                target_table: 'services',
+                target_id: result.insertId,
+                notes: `Created service "${v.label}" at ₱${v.price}.`,
+                ip_address: getIp(req)
+            });
+
+            res.status(201).json(toService(row));
         } catch (err) {
-            // Best-effort cleanup of any files uploaded before the failure
-            await Promise.all(stored.map(s => Promise.resolve(s.remove()).catch(() => {})));
-            console.error('Messages send error:', err);
-            res.status(500).json({ error: 'Internal Server Error' });
+            if (err.status) return res.status(err.status).json({ message: err.message });
+            console.error('Service create error:', err);
+            res.status(500).json({ message: 'Internal Server Error' });
         }
     });
-};
+
+    // 3. PUT /api/services/:id
+    app.put('/api/services/:id', authenticateToken, requireAdmin, async (req, res) => {
+        const id = Number(req.params.id);
+        if (!Number.isInteger(id)) return res.status(400).json({ message: 'Invalid service id' });
+
+        const v = validate(req.body);
+        if (v.error) return res.status(400).json({ message: v.error });
+
+        try {
+            const icon = await resolveIcon(req.body.icon);
+            const [result] = await db.query(
+                `UPDATE services 
+                 SET label = ?, price = ?, duration_minutes = ?, required_specialization = ?, description = ?, icon = ? 
+                 WHERE service_id = ?`,
+                [v.label, v.price, v.duration_minutes, v.required_specialization, v.description, icon, id]
+            );
+            if (result.affectedRows === 0) return res.status(404).json({ message: 'Service not found' });
+
+            const [[row]] = await db.query('SELECT * FROM services WHERE service_id = ?', [id]);
+
+            await logActivity(db, {
+                user_id: req.user.user_id,
+                user_role: req.user.role,
+                action: 'UPDATE_SERVICE',
+                target_table: 'services',
+                target_id: id,
+                notes: `Updated service "${v.label}" to ₱${v.price}.`,
+                ip_address: getIp(req)
+            });
+
+            res.json(toService(row));
+        } catch (err) {
+            if (err.status) return res.status(err.status).json({ message: err.message });
+            console.error('Service update error:', err);
+            res.status(500).json({ message: 'Internal Server Error' });
+        }
+    });
+
+    // 4. Toggle Status: PATCH / PUT /api/services/:id/status
+    const handleStatusToggle = async (req, res) => {
+        const id = Number(req.params.id);
+        if (!Number.isInteger(id)) return res.status(400).json({ message: 'Invalid service id' });
+
+        try {
+            const [[existing]] = await db.query('SELECT service_id, label, is_available FROM services WHERE service_id = ?', [id]);
+            if (!existing) return res.status(404).json({ message: 'Service not found' });
+
+            const current = existing.is_available === 1 || existing.is_available === true;
+            const newStatus = current ? 0 : 1; // Integer 0/1 for MySQL TINYINT
+
+            await db.query('UPDATE services SET is_available = ? WHERE service_id = ?', [newStatus, id]);
+
+            await logActivity(db, {
+                user_id: req.user.user_id,
+                user_role: req.user.role,
+                action: newStatus === 1 ? 'ENABLE_SERVICE' : 'DISABLE_SERVICE',
+                target_table: 'services',
+                target_id: id,
+                notes: `${newStatus === 1 ? 'Enabled' : 'Disabled'} service "${existing.label}".`,
+                ip_address: getIp(req)
+            });
+
+            res.json({
+                service_id: id,
+                is_available: Boolean(newStatus),
+                message: `Service "${existing.label}" has been ${newStatus === 1 ? 'enabled' : 'disabled'}.`
+            });
+        } catch (err) {
+            console.error('Service status toggle error:', err);
+            res.status(500).json({ message: 'Database error: ' + err.message });
+        }
+    };
+
+    app.patch('/api/services/:id/status', authenticateToken, requireAdmin, handleStatusToggle);
+    app.put('/api/services/:id/status', authenticateToken, requireAdmin, handleStatusToggle);
+
+    // 5. DELETE /api/services/:id
+    app.delete('/api/services/:id', authenticateToken, requireAdmin, async (req, res) => {
+        const id = Number(req.params.id);
+        if (!Number.isInteger(id)) return res.status(400).json({ message: 'Invalid service id' });
+
+        try {
+            const [[existing] = []] = await db.query('SELECT label FROM services WHERE service_id = ?', [id]);
+            const [result] = await db.query('DELETE FROM services WHERE service_id = ?', [id]);
+            if (result.affectedRows === 0) return res.status(404).json({ message: 'Service not found' });
+
+            await logActivity(db, {
+                user_id: req.user.user_id,
+                user_role: req.user.role,
+                action: 'DELETE_SERVICE',
+                target_table: 'services',
+                target_id: id,
+                notes: existing ? `Deleted service "${existing.label}".` : `Deleted service #${id}.`,
+                ip_address: getIp(req)
+            });
+
+            res.json({ message: 'Service deleted' });
+        } catch (err) {
+            if (err.code === 'ER_ROW_IS_REFERENCED_2') {
+                return res.status(409).json({ message: 'This service has appointments booked against it and cannot be deleted. You can disable it instead.' });
+            }
+            console.error('Service delete error:', err);
+            res.status(500).json({ message: 'Internal Server Error' });
+        }
+    });
+}
+
+module.exports = registerServiceRoutes;
