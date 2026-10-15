@@ -613,12 +613,31 @@ function checkPasswordRequirements() {
         console.error('Failed to load profile:', error);
       }
     }
+        function hasFormChanges() {
+      if (!formSnapshot) return true;
+      const currentBirthday = document.getElementById('birthday')?.value || '';
+      const currentPhone = (phoneInput?.value || '').trim();
+      const hasPassword = Boolean(newPassword?.value);
+
+      if (hasPassword) return true;
+      if (currentBirthday !== formSnapshot.birthday) return true;
+      if (currentPhone !== formSnapshot.phone) return true;
+
+      return false;
+    }
 
     form?.addEventListener('submit', async function (e) {
       e.preventDefault();
 
       if (successMessage) successMessage.classList.add('hidden');
       if (errorMessage) errorMessage.classList.add('hidden');
+
+        if (!hasFormChanges()) {
+        setFormLocked(true);
+        if (submitBtn) submitBtn.textContent = 'Save Profile';
+        showNotification('info', 'No changes were made to your profile.');
+        return;
+      }
 
       const birthdayValue = document.getElementById('birthday')?.value;
       if (birthdayValue) {
@@ -746,7 +765,18 @@ if (newPassword?.value) {
     function showNotification(type, text) {
       if (successMessage) successMessage.classList.add('hidden');
       if (errorMessage) errorMessage.classList.add('hidden');
-      const target = type === 'success' ? successMessage : errorMessage;
+
+      let target;
+      if (type === 'success') {
+        target = successMessage;
+      } else if (type === 'info') {
+        target = errorMessage;
+        target.className = "text-center mb-6 p-4 bg-amber-100 border border-amber-400 text-amber-800 rounded-2xl font-poppins shadow-sm transition-all duration-300";
+      } else {
+        target = errorMessage;
+        target.className = "text-center mb-6 p-4 bg-red-100 border border-red-400 text-red-800 rounded-2xl font-poppins shadow-sm transition-all duration-300";
+      }
+
       if (target) {
         target.textContent = text;
         target.classList.remove('hidden');

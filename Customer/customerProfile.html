@@ -677,14 +677,23 @@ function checkPasswordRequirements() {
   });
 
   let isFormCurrentlyLocked = false;
-
   let messageTimer = null;
   function showNotification(type, text, duration = 4500) {
     if (messageTimer) clearTimeout(messageTimer);
     successMessage.classList.add('hidden');
     errorMessage.classList.add('hidden');
 
-    const target = type === 'success' ? successMessage : errorMessage;
+    let target = errorMessage;
+    if (type === 'success') {
+      target = successMessage;
+    } else if (type === 'info') {
+      target = errorMessage;
+      target.className = "text-center mb-6 p-4 bg-amber-100 border border-amber-400 text-amber-800 rounded-2xl font-poppins font-semibold text-sm shadow-sm transition-all duration-300";
+    } else {
+      target = errorMessage;
+      target.className = "text-center mb-6 p-4 bg-red-100 border border-red-400 text-red-800 rounded-2xl font-poppins font-semibold text-sm shadow-sm transition-all duration-300";
+    }
+
     target.textContent = text;
     target.classList.remove('hidden');
 
@@ -1846,11 +1855,76 @@ if (newPassword.value) {
   // ══════════════════════════════════════════════════════
   //  FORM SUBMISSION
   // ══════════════════════════════════════════════════════
+    function arraysEqual(a = [], b = []) {
+    if (a.length !== b.length) return false;
+    const sortedA = [...a].sort();
+    const sortedB = [...b].sort();
+    return sortedA.every((val, idx) => val === sortedB[idx]);
+  }
+
+  function prescriptionsEqual(a = [], b = []) {
+    if (a.length !== b.length) return false;
+    const norm = arr => arr.map(p => `${(p.medication_name || '').trim().toLowerCase()}|${(p.dosage || '').trim().toLowerCase()}`).sort();
+    const aNorm = norm(a);
+    const bNorm = norm(b);
+    return aNorm.every((val, idx) => val === bNorm[idx]);
+  }
+
+  function hasFormChanges() {
+    if (!formSnapshot) return true;
+    const s = formSnapshot;
+
+    if (Boolean(newPassword?.value)) return true;
+    if ((document.getElementById('birthday')?.value || '') !== (s.birthday || '')) return true;
+    if ((document.getElementById('secondary-email')?.value || '').trim() !== (s.secondaryEmail || '').trim()) return true;
+    if ((document.getElementById('address-street')?.value || '').trim() !== (s.addressStreet || '').trim()) return true;
+    if ((document.getElementById('address-province')?.value || '') !== (s.addressProvince || '')) return true;
+    if ((document.getElementById('address-city')?.value || '') !== (s.addressCity || '')) return true;
+    if ((document.getElementById('address-barangay')?.value || '') !== (s.addressBarangay || '')) return true;
+    if ((document.getElementById('phone')?.value || '').trim() !== (s.phone || '').trim()) return true;
+    if ((document.getElementById('pregnancy-status')?.value || '') !== (s.pregnancyStatus || '')) return true;
+
+    // Health conditions
+    const currentHc = [...document.querySelectorAll('.healthConditionCheckbox:checked')].map(cb => cb.value);
+    if (!arraysEqual(currentHc, s.healthConditions)) return true;
+    if (document.getElementById('healthConditionNoneCheckbox')?.checked !== s.healthConditionNoneChk) return true;
+    if (document.getElementById('healthConditionOtherCheckbox')?.checked !== s.healthConditionOtherChk) return true;
+    if (!arraysEqual(healthConditionOthers, s.healthConditionOthers)) return true;
+
+    // Surgeries
+    const currentSurg = [...document.querySelectorAll('.surgeryCheckbox:checked')].map(cb => cb.value);
+    if (!arraysEqual(currentSurg, s.surgeries)) return true;
+    if (document.getElementById('surgeryNoneCheckbox')?.checked !== s.surgeryNoneChk) return true;
+    if (document.getElementById('surgeryOtherCheckbox')?.checked !== s.surgeryOtherChk) return true;
+    if (!arraysEqual(surgeryOthers, s.surgeryOthers)) return true;
+
+    // Lifestyle factors
+    const currentLf = [...document.querySelectorAll('.lifeFactorCheckbox:checked')].map(cb => cb.value);
+    if (!arraysEqual(currentLf, s.lifeFactors)) return true;
+    if (document.getElementById('lifeFactorNoneCheckbox')?.checked !== s.lifeFactorNoneChk) return true;
+    if (document.getElementById('lifeFactorOtherCheckbox')?.checked !== s.lifeFactorOtherChk) return true;
+    if (!arraysEqual(lifeFactorOthers, s.lifeFactorsOthers)) return true;
+
+    // Allergies & Prescriptions
+    if (!arraysEqual(allergies, s.allergies)) return true;
+    if (!prescriptionsEqual(prescriptions, s.prescriptions)) return true;
+
+    return false;
+  }
+
   form.addEventListener('submit', async function (e) {
     e.preventDefault();
 
     successMessage.classList.add('hidden');
     errorMessage.classList.add('hidden');
+
+        // ── CHECK IF ANYTHING ACTUALLY CHANGED ──
+    if (!hasFormChanges()) {
+      setFormLocked(true);
+      submitBtnText.textContent = 'Update Changes';
+      showNotification('info', 'No changes were made to your profile.');
+      return;
+    }
 
     // Repetitive spam check
     const textInputs = form.querySelectorAll('input[type="text"]:not([readonly]), input[type="email"]:not([readonly]), input[type="password"]');
