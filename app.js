@@ -17,7 +17,7 @@ const registerPatientRecordsRoutes = require("./Employee/PatientRecords");
 const registerMessagesRoutes = require("./MessagesRoutes");
 const authenticateToken = require("./authMiddleware");
 const registerDoctorScheduleRoutes = require('./Employee/doctorScheduleRoutes');
-const { registerActivityLogRoutes } = require('./Admin/auditLogRoutes');
+const { registerActivityLogRoutes, logLandingVisit } = require('./Admin/auditLogRoutes');
 
 // show IO in routes
 const http = require('http');
@@ -122,6 +122,19 @@ app.get('/pageProtection.js', (req, res) => {
 // added route for passwordGate.js (kept returning 404 not found and loading a document type)
 app.get('/passwordGate.js', (req, res) => {
     res.sendFile(path.join(__dirname, 'passwordGate.js'));
+});
+
+// EXTERNAL LOG: count public landing-page visits (one rolling "N visits in the past hour" row,
+// not one row per visit). Only the four public pages are counted - never assets or API calls.
+// Not awaited, so logging can never slow a page load down. Must stay ABOVE the '/WelcomePage'
+// static mount and the page routes below, or those would answer the request first.
+const LANDING_PATHS = new Set([
+    '/', '/home.html', '/aboutus.html', '/contact.html',
+    '/WelcomePage/home.html', '/WelcomePage/aboutus.html', '/WelcomePage/contact.html'
+]);
+app.use((req, res, next) => {
+    if (req.method === 'GET' && LANDING_PATHS.has(req.path)) logLandingVisit(db);
+    next();
 });
 
 app.use('/LogInRegister', express.static(path.join(__dirname, 'LogInRegister')));

@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <!-- DENIED DIRECT PAGE ACCESS VIA URL -->
+    <script src="../pageProtection.js"></script>
+    <title>External Activity</title>
+    <link href="/output.css" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://kit.fontawesome.com/fc8c3f4103.js" crossorigin="anonymous"></script>
+    <script src="../Taskbar/Admin_Sidebar.js"></script>
+    <script type="module" src="../passwordGate.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
+        .font-poppins { font-family: 'Poppins', sans-serif; }
+
+        /* Smooth custom scrollbars for horizontal table */
+        .custom-scrollbar::-webkit-scrollbar {
+            height: 6px;
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(42, 16, 1, 0.05);
+            border-radius: 9999px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(102, 119, 51, 0.3);
+            border-radius: 9999px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: rgba(102, 119, 51, 0.6);
+        }
+    </style>
+</head>
+
+<body class="min-h-screen md:h-screen md:overflow-hidden bg-[#F3EFE4] relative flex flex-col md:flex-row antialiased font-poppins text-[#2A1001] overflow-x-hidden">
+
+<!-- SIDEBAR -->
+<div id="sidebar-placeholder" class="shrink-0 w-full md:w-auto"></div>
+<script>
+    function syncContentOffset() {
+        const placeholder = document.getElementById('sidebar-placeholder');
+        const sidebar = Array.from(placeholder?.children || []).find(el => !['SCRIPT', 'STYLE', 'LINK'].includes(el.tagName));
+        if (!sidebar) return;
+
+        const set = (el, prop, value) => { if (el.style[prop] !== value) el.style[prop] = value; };
+
+        const apply = () => {
+            const desktop = window.innerWidth >= 768;
+            set(placeholder, 'flexShrink', '0');
+            set(sidebar, 'position', desktop ? 'sticky' : 'relative');
+            set(sidebar, 'top', desktop ? '0px' : 'auto');
+            set(sidebar, 'height', desktop ? '100vh' : '');
+            set(sidebar, 'overflowY', desktop ? 'auto' : '');
+        };
+
+        window.addEventListener('resize', apply);
+        apply();
+    }
+
+    (async () => {
+        try {
+            const response = await fetch('/Taskbar/Admin_Task.html');
+            if (response.ok) {
+                const data = await response.text();
+                document.getElementById('sidebar-placeholder').innerHTML = data;
+                const currentPage = window.location.pathname.split("/").pop();
+                document.querySelectorAll('.nav-link').forEach(link => {
+                    if (link.getAttribute('data-page') === currentPage) {
+                        link.classList.add('bg-[#FDFCE9]');
+                    }
+                });
+                if (typeof initSidebar === 'function') initSidebar();
+                syncContentOffset();
+            }
+        } catch (error) {
+            console.log('Sidebar fallback:', error);
+        }
+    })();
+</script>
+
+<div id="main-content" class="flex-1 min-w-0 md:min-h-0 md:overflow-y-auto">
+
+    <!-- Responsive Header with logo -->
+    <div class="flex justify-between items-start pt-5 pl-6 pr-4 md:pl-24 md:pr-8">
+      <h1 class="text-2xl sm:text-3xl md:text-5xl 2xl:text-[73px] pt-5 font-bold text-[#2A1001] font-['Poppins']">
+        External Activity
+      </h1>
+      <img
+        src="../assets/logowithtitle.png"
+        class="w-20 sm:w-24 md:w-28 h-auto object-contain shrink-0"
+        onerror="this.style.display='none'"
+        alt="Logo"/>
+    </div>
+    <hr class="border-t border-[#2A1001] mt-2 mb-6" />
+
+    <!-- ── RESPONSIVE FILTERS & SEARCH CONTAINER ── -->
+    <div class="w-full md:w-[94%] lg:w-[92%] mx-auto px-3 sm:px-6 mb-6">
+        <div class="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 border border-[#2A1001]/15 shadow-sm">
+            
+            <!-- Row 1: Search Box + Quick Date Presets (Asia/Manila Aware) -->
+            <div class="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 mb-4">
+                
+                <div class="relative w-full lg:max-w-md flex items-center">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3.5 text-gray-400 text-xs sm:text-sm pointer-events-none"></i>
+                    <input 
+                        type="text" 
+                        id="searchInput" 
+                        placeholder="Search action, email, notes, IP..."
+                        class="h-10 sm:h-11 w-full pl-9 sm:pl-10 pr-4 rounded-full border border-[#2A1001]/20 bg-gray-50/50 outline-none shadow-xs text-xs sm:text-sm text-[#2A1001] placeholder:text-gray-400 focus:bg-white focus:border-[#667733] transition" 
+                    />
+                </div>
+
+                <!-- Quick Date Presets & Reset Button -->
+                <div class="flex flex-wrap items-center gap-1.5 sm:gap-2 w-full lg:w-auto justify-start lg:justify-end">
+                    <span class="text-[11px] sm:text-xs font-bold text-[#2A1001]/60 mr-1 hidden sm:inline">Presets:</span>
+                    <button type="button" class="date-preset-btn px-3 py-1.5 rounded-full border border-gray-200 text-[11px] sm:text-xs font-bold text-[#2A1001] hover:bg-[#FDFCE9] active:scale-95 transition cursor-pointer" data-range="today">
+                        Today
+                    </button>
+                    <button type="button" class="date-preset-btn px-3 py-1.5 rounded-full border border-gray-200 text-[11px] sm:text-xs font-bold text-[#2A1001] hover:bg-[#FDFCE9] active:scale-95 transition cursor-pointer" data-range="7days">
+                        7 Days
+                    </button>
+                    <button type="button" class="date-preset-btn px-3 py-1.5 rounded-full border border-gray-200 text-[11px] sm:text-xs font-bold text-[#2A1001] hover:bg-[#FDFCE9] active:scale-95 transition cursor-pointer" data-range="30days">
+                        30 Days
+                    </button>
+                    <button type="button" id="resetAllFiltersBtn" class="px-3 py-1.5 rounded-full bg-gray-100 hover:bg-red-50 text-gray-600 hover:text-red-600 text-[11px] sm:text-xs font-bold transition cursor-pointer flex items-center gap-1 active:scale-95" title="Reset all filters">
+                        <i class="fa-solid fa-arrow-rotate-left text-[10px]"></i> <span>Reset</span>
+                    </button>
+                </div>
+
+            </div>
+
+            <!-- Row 2: Responsive Filter Selectors -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 pt-3 border-t border-gray-100">
+                
+
+                <div class="flex flex-col gap-1">
+                    <label class="text-[10px] sm:text-[11px] font-extrabold text-[#2A1001] uppercase tracking-wide">Action Type</label>
+                    <select id="actionFilter" class="h-9 sm:h-10 px-3 rounded-xl bg-gray-50 border border-[#2A1001]/20 text-xs font-semibold text-[#2A1001] outline-none cursor-pointer focus:bg-white focus:border-[#667733]">
+                        <option value="all">All Actions</option>
+                        <option value="LANDING_PAGE_VISIT">Landing Page Visits</option>
+                        <option value="FAILED_LOGIN">Failed Login (no account)</option>
+                        <option value="PASSWORD_RESET_REQUESTED">Password Reset (no account)</option>
+                        <option value="CREATE_USER">Sign-up Awaiting Confirmation</option>
+                    </select>
+                </div>
+
+                <!-- Start Date -->
+                <div class="flex flex-col gap-1">
+                    <label class="text-[10px] sm:text-[11px] font-extrabold text-[#2A1001] uppercase tracking-wide">From Date</label>
+                    <input type="date" id="startDateFilter" class="h-9 sm:h-10 px-3 rounded-xl bg-gray-50 border border-[#2A1001]/20 text-xs font-semibold text-[#2A1001] outline-none cursor-pointer focus:bg-white focus:border-[#667733]" />
+                </div>
+
+                <!-- End Date -->
+                <div class="flex flex-col gap-1">
+                    <label class="text-[10px] sm:text-[11px] font-extrabold text-[#2A1001] uppercase tracking-wide">To Date</label>
+                    <input type="date" id="endDateFilter" class="h-9 sm:h-10 px-3 rounded-xl bg-gray-50 border border-[#2A1001]/20 text-xs font-semibold text-[#2A1001] outline-none cursor-pointer focus:bg-white focus:border-[#667733]" />
+                </div>
+
+            </div>
+
+            <p class="mt-3 text-[11px] sm:text-xs font-semibold text-[#2A1001]/70">
+                Activity from people without an account. Landing page visits are summarised as one row per hour
+                ("N visits in the past hour"); failed logins, resets and sign-ups are limited to 1 row per IP per hour.
+            </p>
+
+            <!-- Active Removable Chips -->
+            <div id="activeChipsContainer" class="flex flex-wrap items-center gap-1.5 sm:gap-2 mt-3 pt-3 border-t border-gray-100 empty:hidden"></div>
+
+        </div>
+    </div>
+
+    <!-- ── RESPONSIVE TABLE WITH HORIZONTAL SCROLL PROTECTION ── -->
+    <div class="w-full md:w-[94%] lg:w-[92%] mx-auto px-3 sm:px-6 mb-12">
+        <div class="overflow-x-auto custom-scrollbar rounded-2xl sm:rounded-3xl w-full shadow-lg border border-[#2A1001]/10 bg-[#ECF5E2]">
+            <table class="w-full min-w-[700px] border-collapse text-left">
+                <thead>
+                    <tr class="bg-[#667733] text-white text-xs sm:text-sm uppercase tracking-wider font-extrabold">
+                        <th class="py-3.5 sm:py-4 px-3.5 sm:px-6 w-[22%] whitespace-nowrap rounded-tl-2xl">Date &amp; Time (PHT)</th>
+                        <th class="py-3.5 sm:py-4 px-3.5 sm:px-6 w-[26%]">Source</th>
+                        <th class="py-3.5 sm:py-4 px-3.5 sm:px-6 w-[40%]">Activity &amp; Details</th>
+                        <th class="py-3.5 sm:py-4 px-3.5 sm:px-6 text-center w-20 sm:w-24 rounded-tr-2xl">Inspect</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody" class="divide-y divide-[#2A1001]/10 text-xs sm:text-sm font-medium">
+                    <!-- Rows injected dynamically by JS -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Empty State -->
+        <div id="emptyState" class="hidden text-center py-12 sm:py-14 bg-[#ECF5E2] rounded-2xl sm:rounded-3xl mt-4 border border-dashed border-[#2A1001]/20">
+            <i class="fa-solid fa-clock-rotate-left text-3xl sm:text-4xl text-[#2A1001]/30 mb-2 block"></i>
+            <p class="text-sm sm:text-base font-bold text-[#2A1001]/80">No external activity found</p>
+            <p class="text-xs text-[#2A1001]/50 mt-0.5">Try clearing filters or adjusting your date range.</p>
+        </div>
+
+        <!-- Responsive Pagination -->
+        <div class="flex flex-wrap justify-center items-center gap-1.5 sm:gap-2 my-6 sm:my-8" id="pagination"></div>
+    </div>
+
+</div>
+
+<!-- ================= LOG INSPECTION MODAL ================= -->
+<div id="logDetailModal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+    <div class="bg-white rounded-3xl w-full max-w-lg p-5 sm:p-7 relative shadow-2xl border border-[#2A1001]/20 max-h-[92vh] overflow-y-auto my-auto custom-scrollbar">
+        <button id="closeDetailModal" type="button" class="absolute top-4 right-5 text-2xl font-bold text-[#2A1001]/60 hover:text-[#2A1001] cursor-pointer">&times;</button>
+        
+        <div class="flex items-center gap-3 mb-4 border-b border-[#2A1001]/10 pb-3">
+            <div class="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl flex items-center justify-center text-base sm:text-lg font-bold bg-[#667733] text-white shadow-sm shrink-0">
+                <i class="fa-solid fa-clipboard-list"></i>
+            </div>
+            <div class="min-w-0">
+                <h3 class="text-sm sm:text-lg font-bold text-[#2A1001] truncate">External Activity Breakdown</h3>
+                <p class="text-[11px] sm:text-xs text-gray-500 font-medium truncate" id="detailModalTimestamp"></p>
+            </div>
+        </div>
+
+        <div class="flex flex-col gap-3 text-xs sm:text-sm">
+            <div class="bg-[#ECF5E2] p-3.5 sm:p-4 rounded-2xl border border-[#2A1001]/10 shadow-inner min-w-0">
+                <span class="block text-[10px] font-bold uppercase tracking-wider text-[#2A1001]/60 mb-1">Source</span>
+                <p class="font-extrabold text-[#2A1001] text-xs sm:text-sm break-words" id="detailModalUser">—</p>
+                <p class="text-[11px] sm:text-xs text-[#2A1001]/70 font-medium truncate break-all" id="detailModalEmail">—</p>
+                <div class="mt-2 flex flex-wrap items-center gap-2">
+                    <span id="detailModalRoleText" class="font-bold text-[11px] sm:text-xs capitalize text-[#2A1001]"></span>
+                    <span class="text-[11px] sm:text-xs text-gray-500 font-mono" id="detailModalIp"></span>
+                </div>
+            </div>
+
+            <div class="bg-[#ECF5E2] p-3.5 sm:p-4 rounded-2xl border border-[#2A1001]/10 shadow-inner min-w-0">
+                <span class="block text-[10px] font-bold uppercase tracking-wider text-[#2A1001]/60 mb-1">Action Performed</span>
+                <div id="detailModalActionBadge" class="mb-1"></div>
+                <p class="text-xs font-mono text-[#2A1001]/70 break-all" id="detailModalTarget">—</p>
+            </div>
+
+            <div class="bg-[#ECF5E2] p-3.5 sm:p-4 rounded-2xl border border-[#2A1001]/10 shadow-inner min-w-0">
+                <span class="block text-[10px] font-bold uppercase tracking-wider text-[#2A1001]/60 mb-1">Detailed Remarks &amp; Audit Output</span>
+                <p class="text-xs text-[#2A1001] font-medium leading-relaxed whitespace-pre-wrap break-words [overflow-wrap:anywhere]" id="detailModalNotes">—</p>
+            </div>
+        </div>
+
+        <div class="mt-5 flex justify-end">
+            <button id="closeDetailModalBtn" type="button" class="w-full sm:w-auto px-6 py-2.5 rounded-full bg-[#667733] hover:bg-[#556022] text-white text-xs font-bold transition shadow-sm cursor-pointer active:scale-95">
+                Close
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let allLogs = [];
+    let totalItems = 0;
+    let currentActionFilter = "all";
+    let currentSearch = "";
+    let startDate = "";
+    let endDate = "";
+    const rowsPerPage = 8;
+    let currentPage = 1;
+    let searchDebounce = null;
+
+    function authHeaders() {
+        const token = localStorage.getItem('userToken') || localStorage.getItem('token');
+        return {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+        };
+    }
+
+    function escapeHtml(str) {
+        if (str === null || str === undefined) return '';
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+
+    // ── STRICT PHILIPPINE STANDARD TIME (UTC+8 / Asia/Manila) FORMATTER ──
+    function formatTimestamp(raw) {
+        if (!raw) return 'N/A';
+
+        let dateObj;
+        if (typeof raw === 'string') {
+            dateObj = new Date(raw.includes('T') || raw.includes('Z') ? raw : raw.replace(' ', 'T') + '+08:00');
+        } else {
+            dateObj = new Date(raw);
+        }
+
+        if (isNaN(dateObj.getTime())) return String(raw);
+
+        return new Intl.DateTimeFormat('en-US', {
+            timeZone: 'Asia/Manila',
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: true
+        }).format(dateObj);
+    }
+
+    // Helper to calculate YYYY-MM-DD in Asia/Manila for Quick Presets
+    function getManilaDateString(offsetDays = 0) {
+        const now = new Date();
+        if (offsetDays !== 0) {
+            now.setDate(now.getDate() + offsetDays);
+        }
+        return new Intl.DateTimeFormat('en-CA', {
+            timeZone: 'Asia/Manila',
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit'
+        }).format(now);
+    }
+
+    function formatActionDetails(action) {
+        const act = (action || '').replace(/_/g, ' ');
+        return `<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] sm:text-xs font-bold bg-white border border-[#2A1001]/20 text-[#2A1001] shadow-xs"><i class="fa-solid fa-circle text-[6px] text-[#667733]"></i> ${escapeHtml(act)}</span>`;
+    }
+
+    function generateAutomaticSummary(item) {
+        if (item.notes && item.notes.trim()) {
+            return item.notes.trim();
+        }
+        const target = item.target_table || 'system';
+        const idStr = item.target_id ? ` #${item.target_id}` : '';
+        return `Action executed on ${target}${idStr}`;
+    }
+
+    async function getLogs() {
+        try {
+            const params = new URLSearchParams();
+            params.append('page', currentPage);
+            params.append('limit', rowsPerPage);
+            if (startDate) params.append('startDate', startDate);
+            if (endDate) params.append('endDate', endDate);
+            if (currentActionFilter !== 'all') params.append('action', currentActionFilter);
+            if (currentSearch.trim()) params.append('search', currentSearch.trim());
+
+            const response = await fetch(`/api/external-logs?${params.toString()}`, {
+                method: 'GET',
+                headers: authHeaders()
+            });
+
+            // eli change: a regular admin who opens this page directly is sent to the access-denied page
+            if (response.status === 403) { window.location.href = '/denied.html'; return { data: [], total: 0 }; }
+            if (!response.ok) throw new Error(`Server returned ${response.status}`);
+            const result = await response.json();
+            return { data: result.data || [], total: result.total || 0 };
+        } catch (error) {
+            console.error("Failed to load external logs:", error);
+            return { data: [], total: 0 };
+        }
+    }
+
+    // Fetches the current page from the server, then redraws the table.
+    async function loadLogs() {
+        const result = await getLogs();
+        allLogs = result.data;
+        totalItems = result.total;
+        // If filters shrank the result set below the current page, jump to the last page.
+        const lastPage = Math.max(1, Math.ceil(totalItems / rowsPerPage));
+        if (currentPage > lastPage) {
+            currentPage = lastPage;
+            const retry = await getLogs();
+            allLogs = retry.data;
+            totalItems = retry.total;
+        }
+        renderTable();
+    }
+
+    // Who/what the row is about. Visit counters have no email or IP; they are just website traffic.
+    function sourceName(item) {
+        if (item.action === 'LANDING_PAGE_VISIT') return 'Website visitors';
+        return item.email || 'Unknown email';
+    }
+    function sourceDetail(item) {
+        if (item.action === 'LANDING_PAGE_VISIT') return 'Public landing pages';
+        return item.ip_address ? `IP: ${item.ip_address}` : 'IP: Unknown';
+    }
+
+    function updateActiveChips() {
+        const container = document.getElementById('activeChipsContainer');
+        const chips = [];
+
+        if (currentActionFilter !== 'all') {
+            chips.push({ key: 'action', label: `Action: ${currentActionFilter}` });
+        }
+
+        if (startDate || endDate) {
+            chips.push({ key: 'date', label: `Date: ${startDate || 'Any'} to ${endDate || 'Any'}` });
+        }
+
+        if (currentSearch.trim()) {
+            chips.push({ key: 'search', label: `Search: "${currentSearch.trim()}"` });
+        }
+
+        container.innerHTML = chips.map(c => `
+            <span class="inline-flex items-center gap-1.5 bg-white border border-[#2A1001]/20 px-2.5 sm:px-3 py-1 rounded-full text-[11px] sm:text-xs font-bold text-[#2A1001] shadow-xs">
+                <span>${escapeHtml(c.label)}</span>
+                <button type="button" class="removeChipBtn text-gray-400 hover:text-red-500 font-bold ml-1 cursor-pointer" data-key="${c.key}">&times;</button>
+            </span>
+        `).join('');
+    }
+
+    function renderTable() {
+        const pageItems = allLogs; // the server already returned just this page
+
+        const tbody = document.getElementById('tableBody');
+        const emptyState = document.getElementById('emptyState');
+        tbody.innerHTML = '';
+
+        if (pageItems.length === 0) {
+            emptyState.classList.remove('hidden');
+            renderPagination(0);
+            return;
+        } else {
+            emptyState.classList.add('hidden');
+        }
+
+        pageItems.forEach(item => {
+            const row = document.createElement('tr');
+            row.className = "hover:bg-[#FDFCE9]/70 transition-colors border-b border-[#2A1001]/10";
+
+            const dateText = formatTimestamp(item.created_at);
+            const actionBadge = formatActionDetails(item.action);
+            const summaryText = generateAutomaticSummary(item);
+
+            row.innerHTML = `
+                <!-- 1. Date & Time -->
+                <td class="py-3.5 sm:py-4 px-3.5 sm:px-6 font-medium text-[#2A1001]/80 whitespace-nowrap text-xs sm:text-sm">
+                    ${escapeHtml(dateText)}
+                </td>
+
+                <!-- 2. Source -->
+                <td class="py-3.5 sm:py-4 px-3.5 sm:px-6">
+                    <div class="font-extrabold text-[#2A1001] text-xs sm:text-sm break-words">${escapeHtml(sourceName(item))}</div>
+                    <div class="text-[11px] sm:text-xs text-[#2A1001]/60 font-normal truncate max-w-xs">${escapeHtml(sourceDetail(item))}</div>
+                </td>
+
+                <!-- 3. Activity & Automatic Summary -->
+                <td class="py-3.5 sm:py-4 px-3.5 sm:px-6">
+                    <div class="flex items-center gap-2 mb-1 flex-wrap">
+                        ${actionBadge}
+                        <span class="text-[10px] sm:text-[11px] font-mono text-gray-500 bg-white px-2 py-0.5 rounded-md border border-[#2A1001]/10">
+                            ${escapeHtml(item.target_table || 'system')}
+                        </span>
+                    </div>
+                    <p class="text-[11px] sm:text-xs text-[#2A1001]/80 font-medium leading-relaxed line-clamp-2 break-words [overflow-wrap:anywhere]">
+                        ${escapeHtml(summaryText)}
+                    </p>
+                </td>
+
+                <!-- 4. Inspect Action Button -->
+                <td class="py-3.5 sm:py-4 px-3.5 sm:px-6 text-center whitespace-nowrap">
+                    <button type="button" class="viewDetailBtn inline-flex items-center justify-center gap-1.5 bg-[#667733] hover:bg-[#556022] text-white text-[11px] sm:text-xs font-bold px-3.5 sm:px-4 py-1.5 rounded-full transition shadow-xs cursor-pointer active:scale-95" data-log-id="${item.log_id}">
+                        <i class="fa-solid fa-eye text-[10px] sm:text-xs"></i>
+                        <span>View</span>
+                    </button>
+                </td>
+            `;
+
+            tbody.appendChild(row);
+        });
+
+        renderPagination(totalItems);
+    }
+
+    function renderPagination(totalItems) {
+        const totalPages = Math.max(1, Math.ceil(totalItems / rowsPerPage));
+        const pagination = document.getElementById('pagination');
+        pagination.innerHTML = '';
+
+        if (totalPages <= 1) return;
+
+        const maxVisible = 7;
+        const currentBatch = Math.floor((currentPage - 1) / maxVisible);
+        const batchStart = currentBatch * maxVisible + 1;
+        const batchEnd = Math.min(batchStart + maxVisible - 1, totalPages);
+
+        if (batchStart > 1) {
+            const prevBtn = document.createElement('button');
+            prevBtn.textContent = '‹';
+            prevBtn.className = "w-8 h-8 sm:w-9 sm:h-9 rounded-full font-bold text-[#2A1001] bg-white border border-[#2A1001]/20 hover:bg-[#2A1001]/10 transition flex items-center justify-center cursor-pointer text-xs sm:text-sm";
+            prevBtn.addEventListener('click', () => {
+                currentPage = batchStart - 1;
+                loadLogs();
+            });
+            pagination.appendChild(prevBtn);
+        }
+
+        for (let i = batchStart; i <= batchEnd; i++) {
+            const btn = document.createElement('button');
+            btn.textContent = i;
+            btn.className = `w-8 h-8 sm:w-9 sm:h-9 rounded-full font-semibold cursor-pointer transition text-xs sm:text-sm ${
+                i === currentPage
+                    ? 'bg-[#667733] text-white shadow'
+                    : 'bg-white text-[#2A1001] border border-[#2A1001]/20 hover:bg-gray-50'
+            }`;
+            btn.addEventListener('click', () => {
+                currentPage = i;
+                loadLogs();
+            });
+            pagination.appendChild(btn);
+        }
+
+        if (batchEnd < totalPages) {
+            const nextBtn = document.createElement('button');
+            nextBtn.textContent = '›';
+            nextBtn.className = "w-8 h-8 sm:w-9 sm:h-9 rounded-full font-bold text-[#2A1001] bg-white border border-[#2A1001]/20 hover:bg-[#2A1001]/10 transition flex items-center justify-center cursor-pointer text-xs sm:text-sm";
+            nextBtn.addEventListener('click', () => {
+                currentPage = batchEnd + 1;
+                loadLogs();
+            });
+            pagination.appendChild(nextBtn);
+        }
+    }
+
+    // ── QUICK DATE PRESET BUTTONS (Asia/Manila PHT Aware) ──
+    document.querySelectorAll('.date-preset-btn').forEach(btn => {
+        btn.addEventListener('click', async function () {
+            const range = this.dataset.range;
+            endDate = getManilaDateString(0);
+
+            if (range === 'today') {
+                startDate = getManilaDateString(0);
+            } else if (range === '7days') {
+                startDate = getManilaDateString(-7);
+            } else if (range === '30days') {
+                startDate = getManilaDateString(-30);
+            }
+
+            document.getElementById('startDateFilter').value = startDate;
+            document.getElementById('endDateFilter').value = endDate;
+
+            currentPage = 1;
+            updateActiveChips();
+            await loadLogs();
+        });
+    });
+
+    // ── INSPECTION DETAIL MODAL ──
+    document.getElementById('tableBody').addEventListener('click', function (e) {
+        const btn = e.target.closest('.viewDetailBtn');
+        if (!btn) return;
+        const logId = parseInt(btn.dataset.logId, 10);
+        const item = allLogs.find(l => l.log_id === logId);
+        if (!item) return;
+
+        document.getElementById('detailModalTimestamp').textContent = formatTimestamp(item.created_at);
+        document.getElementById('detailModalUser').textContent = sourceName(item);
+        document.getElementById('detailModalEmail').textContent = item.action === 'LANDING_PAGE_VISIT' ? '' : (item.email || 'N/A');
+        document.getElementById('detailModalIp').textContent = sourceDetail(item);
+
+        document.getElementById('detailModalRoleText').textContent = 'Unregistered';
+        document.getElementById('detailModalActionBadge').innerHTML = formatActionDetails(item.action);
+        document.getElementById('detailModalTarget').textContent = `Target: ${item.target_table || 'system'}`;
+        document.getElementById('detailModalNotes').textContent = item.notes || generateAutomaticSummary(item);
+
+        document.getElementById('logDetailModal').classList.remove('hidden');
+    });
+
+    const closeDetail = () => document.getElementById('logDetailModal').classList.add('hidden');
+    document.getElementById('closeDetailModal').addEventListener('click', closeDetail);
+    document.getElementById('closeDetailModalBtn').addEventListener('click', closeDetail);
+    document.getElementById('logDetailModal').addEventListener('click', function(e) {
+        if (e.target === this) closeDetail();
+    });
+
+    // ── FILTER LISTENERS ──
+    document.getElementById('actionFilter').addEventListener('change', async function () {
+        currentActionFilter = this.value;
+        currentPage = 1;
+        updateActiveChips();
+        await loadLogs();
+    });
+
+    document.getElementById('searchInput').addEventListener('input', function () {
+        clearTimeout(searchDebounce);
+        searchDebounce = setTimeout(async () => {
+            currentSearch = this.value;
+            currentPage = 1;
+            updateActiveChips();
+            await loadLogs();
+        }, 250);
+    });
+
+    ['startDateFilter', 'endDateFilter'].forEach(id => {
+        document.getElementById(id).addEventListener('change', async function () {
+            startDate = document.getElementById('startDateFilter').value;
+            endDate = document.getElementById('endDateFilter').value;
+            currentPage = 1;
+            updateActiveChips();
+            await loadLogs();
+        });
+    });
+
+    document.getElementById('resetAllFiltersBtn').addEventListener('click', async () => {
+        document.getElementById('searchInput').value = '';
+        document.getElementById('actionFilter').value = 'all';
+        document.getElementById('startDateFilter').value = '';
+        document.getElementById('endDateFilter').value = '';
+        currentSearch = '';
+        currentActionFilter = 'all';
+        startDate = '';
+        endDate = '';
+        currentPage = 1;
+        updateActiveChips();
+        await loadLogs();
+    });
+
+    document.getElementById('activeChipsContainer').addEventListener('click', async function (e) {
+        const btn = e.target.closest('.removeChipBtn');
+        if (!btn) return;
+        const key = btn.dataset.key;
+
+        if (key === 'action') {
+            currentActionFilter = 'all';
+            document.getElementById('actionFilter').value = 'all';
+        }
+        if (key === 'date') {
+            startDate = '';
+            endDate = '';
+            document.getElementById('startDateFilter').value = '';
+            document.getElementById('endDateFilter').value = '';
+        }
+        if (key === 'search') {
+            currentSearch = '';
+            document.getElementById('searchInput').value = '';
+        }
+
+        currentPage = 1;
+        updateActiveChips();
+        await loadLogs();
+    });
+
+    // Initialize on page load
+    (async function init() {
+        updateActiveChips();
+        await loadLogs();
+    })();
+</script>
+<script src="/InactivityTimer/InactivityTimer.js"></script>
+</body>
+</html>

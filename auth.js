@@ -8,7 +8,7 @@ const { sendEmail } = require('./Mailer');
 const { passwordReset, verifyRegistration } = require('./EmailTemplates');
 const authenticateToken = require('./authMiddleware');
 const { clearAuthCookie, extractToken } = authenticateToken;
-const { logActivity } = require('./Admin/auditLogRoutes');
+const { logActivity, logGuestEvent } = require('./Admin/auditLogRoutes');
 const { isPasswordReused, REUSE_MESSAGE } = require('./Utils/passwordHistory'); // eli change
 
 const SALT_ROUNDS = 10;
@@ -157,13 +157,13 @@ router.post('/register', async (req, res) => {
             return res.status(502).json({ error: 'We could not send the confirmation email. Please check the address and try again.' });
         }
 
-        await logActivity(db, {
-            user_id: null,
-            user_email: email,
-            user_role: 'unregistered',
+        // Guest event: throttled to one row per IP per hour. The real CREATE_USER
+        // entry is logged in /verify-registration once the email is confirmed.
+        await logGuestEvent(db, {
             action: 'CREATE_USER',
             target_table: 'pending_registrations',
-            notes: `Registration started for ${first_name} ${last_name}; awaiting email confirmation.`,
+            user_email: email,
+            description: 'Registration started; awaiting email confirmation.',
             ip_address
         });
 
@@ -284,13 +284,11 @@ router.post('/login', async (req, res) => {
         const user = rows[0];
 
         if (!user) {
-            await logActivity(db, {
-                user_id: null,
-                user_email: email,
-                user_role: 'unregistered',
+            // Guest event: throttled to one row per IP per hour so a bot can't flood the log.
+            await logGuestEvent(db, {
                 action: 'FAILED_LOGIN',
-                target_table: 'users',
-                notes: 'Login attempt for an email with no matching account.',
+                user_email: email,
+                description: 'Login attempts for an email with no matching account.',
                 ip_address
             });
             return res.status(401).json({ error: 'Invalid email or password' });
@@ -448,13 +446,11 @@ router.post('/forgot-password', async (req, res) => {
         const [rows] = await db.query('SELECT user_id, role FROM users WHERE email = ?', [email]);
 
         if (rows.length === 0) {
-            await logActivity(db, {
-                user_id: null,
-                user_email: email,
-                user_role: 'unregistered',
+            // Guest event: throttled to one row per IP per hour.
+            await logGuestEvent(db, {
                 action: 'PASSWORD_RESET_REQUESTED',
-                target_table: 'users',
-                notes: 'Reset requested for an email with no matching account.',
+                user_email: email,
+                description: 'Password reset requested for an email with no matching account.',
                 ip_address
             });
             // Same response as the success path — see comment above.

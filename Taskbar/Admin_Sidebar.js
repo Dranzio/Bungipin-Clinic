@@ -139,6 +139,8 @@ async function _loadSidebarUser() {
             if (data.permission_level !== 'super_admin') {
                 const logsLink = document.querySelector('a[href$="auditLogs.html"]');
                 if (logsLink) logsLink.style.display = 'none';
+                const externalLink = document.querySelector('a[href$="externalLogs.html"]');
+                if (externalLink) externalLink.style.display = 'none';
             }
 
             // Handle Profile Picture

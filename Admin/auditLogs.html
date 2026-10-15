@@ -133,7 +133,7 @@
             </div>
 
             <!-- Row 2: Responsive Filter Selectors -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-3 border-t border-gray-100">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 pt-3 border-t border-gray-100">
                 
                 <!-- Role Filter -->
                 <div class="flex flex-col gap-1">
@@ -143,7 +143,16 @@
                         <option value="admin">Admin</option>
                         <option value="employee">Employee / Staff</option>
                         <option value="patient">Patient</option>
-                        <option value="unregistered">Unregistered / Guest</option>
+                    </select>
+                </div>
+
+                <!-- Position Filter (Dentist / Receptionist) -->
+                <div class="flex flex-col gap-1">
+                    <label class="text-[10px] sm:text-[11px] font-extrabold text-[#2A1001] uppercase tracking-wide">Staff Position</label>
+                    <select id="positionFilter" class="h-9 sm:h-10 px-3 rounded-xl bg-gray-50 border border-[#2A1001]/20 text-xs font-semibold text-[#2A1001] outline-none cursor-pointer focus:bg-white focus:border-[#667733]">
+                        <option value="all">All Positions</option>
+                        <option value="Dentist">Dentist</option>
+                        <option value="Receptionist">Receptionist</option>
                     </select>
                 </div>
 
@@ -195,11 +204,8 @@
                             <option value="UPDATE_PROFILE">Updated Patient Profile</option>
                             <option value="UPLOAD_PDF">Uploaded Medical PDF</option>
                             <option value="DELETE_PDF">Deleted Medical PDF</option>
-                            <option value="VIEW_PDF">Viewed Medical PDF</option>
                             <option value="UPLOAD_XRAY">Uploaded Dental X-Ray</option>
                             <option value="DELETE_XRAY">Deleted Dental X-Ray</option>
-                            <option value="PRINT_RECEIPT">Printed Official Receipt</option>
-                            <option value="PRINT_CHART">Printed Patient Chart</option>
                         </optgroup>
                     </select>
                 </div>
@@ -305,6 +311,8 @@
 <script>
     let allLogs = [];
     let currentRoleFilter = "all";
+    let currentPositionFilter = "all";
+    let totalItems = 0;
     let currentActionFilter = "all";
     let currentSearch = "";
     let startDate = "";
@@ -387,6 +395,9 @@
     async function getLogs() {
         try {
             const params = new URLSearchParams();
+            params.append('page', currentPage);
+            params.append('limit', rowsPerPage);
+            if (currentPositionFilter !== 'all') params.append('position', currentPositionFilter);
             if (startDate) params.append('startDate', startDate);
             if (endDate) params.append('endDate', endDate);
             if (currentRoleFilter !== 'all') params.append('role', currentRoleFilter);
@@ -399,14 +410,35 @@
             });
 
             // eli change: a regular admin who opens this page directly is sent to the access-denied page
-            if (response.status === 403) { window.location.href = '/denied.html'; return []; }
+            if (response.status === 403) { window.location.href = '/denied.html'; return { data: [], total: 0 }; }
             if (!response.ok) throw new Error(`Server returned ${response.status}`);
             const result = await response.json();
-            return result.data || [];
+            return { data: result.data || [], total: result.total || 0 };
         } catch (error) {
             console.error("Failed to load activity logs:", error);
-            return [];
+            return { data: [], total: 0 };
         }
+    }
+
+    // Fetches the current page from the server, then redraws the table.
+    async function loadLogs() {
+        const result = await getLogs();
+        allLogs = result.data;
+        totalItems = result.total;
+        // If filters shrank the result set below the current page, jump to the last page.
+        const lastPage = Math.max(1, Math.ceil(totalItems / rowsPerPage));
+        if (currentPage > lastPage) {
+            currentPage = lastPage;
+            const retry = await getLogs();
+            allLogs = retry.data;
+            totalItems = retry.total;
+        }
+        renderTable();
+    }
+
+    function roleLabel(item) {
+        const role = item.user_role || '—';
+        return item.position ? `${role} · ${item.position}` : role;
     }
 
     function updateActiveChips() {
@@ -415,6 +447,10 @@
 
         if (currentRoleFilter !== 'all') {
             chips.push({ key: 'role', label: `Role: ${currentRoleFilter.toUpperCase()}` });
+        }
+
+        if (currentPositionFilter !== 'all') {
+            chips.push({ key: 'position', label: `Position: ${currentPositionFilter}` });
         }
 
         if (currentActionFilter !== 'all') {
@@ -437,27 +473,8 @@
         `).join('');
     }
 
-    function getFiltered() {
-        return allLogs.filter(log => {
-            const matchesRole = currentRoleFilter === "all" || log.user_role === currentRoleFilter;
-            const matchesAction = currentActionFilter === "all" || (log.action || '').toUpperCase() === currentActionFilter.toUpperCase();
-            const searchLower = currentSearch.toLowerCase();
-            const matchesSearch = !currentSearch ||
-                (log.user_full_name && log.user_full_name.toLowerCase().includes(searchLower)) ||
-                (log.email && log.email.toLowerCase().includes(searchLower)) ||
-                (log.action && log.action.toLowerCase().includes(searchLower)) ||
-                (log.notes && log.notes.toLowerCase().includes(searchLower)) ||
-                (log.target_table && log.target_table.toLowerCase().includes(searchLower)) ||
-                (log.ip_address && log.ip_address.toLowerCase().includes(searchLower));
-
-            return matchesRole && matchesAction && matchesSearch;
-        });
-    }
-
     function renderTable() {
-        const filtered = getFiltered();
-        const start = (currentPage - 1) * rowsPerPage;
-        const pageItems = filtered.slice(start, start + rowsPerPage);
+        const pageItems = allLogs; // the server already returned just this page
 
         const tbody = document.getElementById('tableBody');
         const emptyState = document.getElementById('emptyState');
@@ -493,7 +510,7 @@
 
                 <!-- 3. Role -->
                 <td class="py-3.5 sm:py-4 px-3.5 sm:px-6 text-center whitespace-nowrap font-extrabold text-xs sm:text-sm text-[#2A1001] capitalize">
-                    ${escapeHtml(item.user_role || '—')}
+                    ${escapeHtml(roleLabel(item))}
                 </td>
 
                 <!-- 4. Activity & Automatic Summary -->
@@ -521,7 +538,7 @@
             tbody.appendChild(row);
         });
 
-        renderPagination(filtered.length);
+        renderPagination(totalItems);
     }
 
     function renderPagination(totalItems) {
@@ -542,7 +559,7 @@
             prevBtn.className = "w-8 h-8 sm:w-9 sm:h-9 rounded-full font-bold text-[#2A1001] bg-white border border-[#2A1001]/20 hover:bg-[#2A1001]/10 transition flex items-center justify-center cursor-pointer text-xs sm:text-sm";
             prevBtn.addEventListener('click', () => {
                 currentPage = batchStart - 1;
-                renderTable();
+                loadLogs();
             });
             pagination.appendChild(prevBtn);
         }
@@ -557,7 +574,7 @@
             }`;
             btn.addEventListener('click', () => {
                 currentPage = i;
-                renderTable();
+                loadLogs();
             });
             pagination.appendChild(btn);
         }
@@ -568,7 +585,7 @@
             nextBtn.className = "w-8 h-8 sm:w-9 sm:h-9 rounded-full font-bold text-[#2A1001] bg-white border border-[#2A1001]/20 hover:bg-[#2A1001]/10 transition flex items-center justify-center cursor-pointer text-xs sm:text-sm";
             nextBtn.addEventListener('click', () => {
                 currentPage = batchEnd + 1;
-                renderTable();
+                loadLogs();
             });
             pagination.appendChild(nextBtn);
         }
@@ -593,8 +610,7 @@
 
             currentPage = 1;
             updateActiveChips();
-            allLogs = await getLogs();
-            renderTable();
+            await loadLogs();
         });
     });
 
@@ -611,7 +627,7 @@
         document.getElementById('detailModalEmail').textContent = item.email || 'N/A';
         document.getElementById('detailModalIp').textContent = item.ip_address ? `IP: ${item.ip_address}` : 'IP: Unknown';
 
-        document.getElementById('detailModalRoleText').textContent = item.user_role;
+        document.getElementById('detailModalRoleText').textContent = roleLabel(item);
         document.getElementById('detailModalActionBadge').innerHTML = formatActionDetails(item.action);
         document.getElementById('detailModalTarget').textContent = `Target: ${item.target_table || 'system'}${item.target_id ? ` (ID #${item.target_id})` : ''}`;
         document.getElementById('detailModalNotes').textContent = item.notes || generateAutomaticSummary(item);
@@ -631,16 +647,21 @@
         currentRoleFilter = this.value;
         currentPage = 1;
         updateActiveChips();
-        allLogs = await getLogs();
-        renderTable();
+        await loadLogs();
+    });
+
+    document.getElementById('positionFilter').addEventListener('change', async function () {
+        currentPositionFilter = this.value;
+        currentPage = 1;
+        updateActiveChips();
+        await loadLogs();
     });
 
     document.getElementById('actionFilter').addEventListener('change', async function () {
         currentActionFilter = this.value;
         currentPage = 1;
         updateActiveChips();
-        allLogs = await getLogs();
-        renderTable();
+        await loadLogs();
     });
 
     document.getElementById('searchInput').addEventListener('input', function () {
@@ -649,8 +670,7 @@
             currentSearch = this.value;
             currentPage = 1;
             updateActiveChips();
-            allLogs = await getLogs();
-            renderTable();
+            await loadLogs();
         }, 250);
     });
 
@@ -660,26 +680,26 @@
             endDate = document.getElementById('endDateFilter').value;
             currentPage = 1;
             updateActiveChips();
-            allLogs = await getLogs();
-            renderTable();
+            await loadLogs();
         });
     });
 
     document.getElementById('resetAllFiltersBtn').addEventListener('click', async () => {
         document.getElementById('searchInput').value = '';
         document.getElementById('roleFilter').value = 'all';
+        document.getElementById('positionFilter').value = 'all';
         document.getElementById('actionFilter').value = 'all';
         document.getElementById('startDateFilter').value = '';
         document.getElementById('endDateFilter').value = '';
         currentSearch = '';
         currentRoleFilter = 'all';
+        currentPositionFilter = 'all';
         currentActionFilter = 'all';
         startDate = '';
         endDate = '';
         currentPage = 1;
         updateActiveChips();
-        allLogs = await getLogs();
-        renderTable();
+        await loadLogs();
     });
 
     document.getElementById('activeChipsContainer').addEventListener('click', async function (e) {
@@ -690,6 +710,10 @@
         if (key === 'role') {
             currentRoleFilter = 'all';
             document.getElementById('roleFilter').value = 'all';
+        }
+        if (key === 'position') {
+            currentPositionFilter = 'all';
+            document.getElementById('positionFilter').value = 'all';
         }
         if (key === 'action') {
             currentActionFilter = 'all';
@@ -708,15 +732,13 @@
 
         currentPage = 1;
         updateActiveChips();
-        allLogs = await getLogs();
-        renderTable();
+        await loadLogs();
     });
 
     // Initialize on page load
     (async function init() {
-        allLogs = await getLogs();
         updateActiveChips();
-        renderTable();
+        await loadLogs();
     })();
 </script>
 <script src="/InactivityTimer/InactivityTimer.js"></script>
