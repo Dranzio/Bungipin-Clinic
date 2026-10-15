@@ -136,62 +136,157 @@
         </main>
     </div>
 
-    <!-- ================= DECLINE / CANCEL MODAL ================= -->
-    <div id="declineModal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div class="bg-white rounded-3xl p-6 sm:p-8 max-w-lg w-full border border-[#2A1001]/20 shadow-2xl relative my-auto">
-            <h3 class="text-xl font-bold text-[#2A1001] mb-2 font-['Poppins']" id="declineModalTitle">Decline Booking</h3>
-            <p id="declineModalText" class="text-xs sm:text-sm text-[#2A1001]/80 mb-4 leading-relaxed">
-                Are you sure you want to decline this booking request? This action cannot be undone.
-            </p>
-            <div id="paidWarning" class="hidden bg-amber-100 border-l-4 border-amber-500 text-amber-900 p-3 rounded-r-xl text-xs mb-4">
-                <i class="fa-solid fa-circle-exclamation mr-1 text-amber-700"></i>
-                <strong>Notice:</strong> This patient has already paid online. If declined, a refund will need to be processed. Consider contacting the patient or offering a reschedule.
+    <!-- ================= DECLINE / CANCEL MODAL (MATCHES SCREENSHOT DESIGN 1:1 WITH EMPLOYEE REASONS) ================= -->
+    <div id="declineModal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+        <div class="bg-[#F2F0EF] border border-[#1a281b]/20 rounded-3xl p-5 sm:p-7 w-full max-w-lg flex flex-col gap-4 shadow-2xl my-auto max-h-[94vh]">
+            <div class="flex items-start gap-3">
+                <div class="w-11 h-11 rounded-full bg-red-100 text-red-600 flex items-center justify-center text-lg shrink-0">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                </div>
+                <div>
+                    <h2 class="font-extrabold text-lg sm:text-xl text-[#1a281b]" id="declineModalTitle">Cancel Appointment?</h2>
+                    <p class="text-xs text-gray-600 leading-relaxed mt-0.5" id="declineModalText">
+                        Please select why this appointment is being cancelled or declined.
+                    </p>
+                </div>
             </div>
-            <div class="flex flex-col-reverse sm:flex-row items-center justify-end gap-2.5 mt-6 w-full">
-                <button id="cancelDeclineBtn" type="button" class="w-full sm:w-auto px-5 py-2.5 text-xs sm:text-sm font-semibold text-[#2A1001] bg-white border border-[#2A1001]/20 rounded-full hover:bg-gray-100 transition cursor-pointer text-center">
-                    Cancel
-                </button>
-                <button id="rescheduleInsteadBtn" type="button" class="hidden w-full sm:w-auto px-5 py-2.5 text-xs sm:text-sm font-bold text-white bg-[#667733] rounded-full hover:bg-[#556022] transition flex items-center justify-center gap-1.5 shadow-sm cursor-pointer active:scale-95">
-                    <i class="fa-solid fa-calendar-days text-xs"></i> Reschedule Instead
-                </button>
-                <button id="confirmDeclineBtn" type="button" class="w-full sm:w-auto px-5 py-2.5 text-xs sm:text-sm font-bold text-white bg-[#D9534F] rounded-full hover:bg-[#c9302c] transition shadow-sm cursor-pointer active:scale-95 text-center">
-                    Confirm Decline
-                </button>
-            </div>
-        </div>
-    </div>
 
-    <!-- ================= DECLINE RESCHEDULE REQUEST MODAL ================= -->
-    <div id="declineRescheduleModal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div class="bg-white rounded-3xl p-6 sm:p-8 max-w-lg w-full border border-[#2A1001]/20 shadow-2xl relative my-auto">
-            <h3 class="text-xl font-bold text-[#2A1001] mb-2 font-['Poppins']">Decline Reschedule Request</h3>
-            <p class="text-xs sm:text-sm text-[#2A1001]/80 mb-3" id="declineReschedModalSummary">
-                The appointment will keep its original confirmed schedule.
-            </p>
-            <div class="bg-white rounded-2xl p-4 border border-black/15 shadow-inner mb-4">
-                <label class="block text-xs font-bold text-[#2A1001] uppercase tracking-wide mb-1.5">
-                    Reason for Declining Reschedule (Optional)
+            <div class="flex flex-col gap-2 bg-white rounded-2xl p-3.5 sm:p-4 border border-[#1a281b]/15 shadow-sm max-h-[50vh] overflow-y-auto pr-1">
+                <label class="text-xs font-bold text-[#1a281b] uppercase tracking-wide flex items-center gap-1.5">
+                    <i class="fa-solid fa-circle-question text-red-600"></i> REASON FOR CANCELLATION <span class="text-red-500">*</span>
                 </label>
-                <textarea
-                    id="declineReschedReasonInput"
-                    rows="3"
-                    placeholder="E.g. The requested slot is fully booked / dentist unavailable at requested time..."
-                    class="w-full rounded-xl border border-black/20 bg-gray-50 px-3 py-2 text-xs outline-none focus:ring-2 focus:ring-[#667733] focus:bg-white resize-none"
-                ></textarea>
-                <p class="text-[10px] text-gray-500 mt-1">This explanation will be sent to the patient's dashboard.</p>
+
+                <!-- Employee Side Single-Column Pill Options (NOT pre-selected) -->
+                <div class="flex flex-col gap-2 mt-0.5" id="cancelReasonOptions">
+                    <label class="flex items-center gap-3 py-2.5 px-4 rounded-full border border-gray-300 hover:border-gray-400 hover:bg-[#FDFCE9] cursor-pointer transition text-xs sm:text-sm font-medium text-[#1a281b]">
+                        <input type="radio" name="cancelReasonRadio" value="Attending Dentist Not Available / Emergency Leave" class="accent-red-600 w-4 h-4 cursor-pointer">
+                        <span>Attending Dentist Not Available / Emergency Leave</span>
+                    </label>
+                    <label class="flex items-center gap-3 py-2.5 px-4 rounded-full border border-gray-300 hover:border-gray-400 hover:bg-[#FDFCE9] cursor-pointer transition text-xs sm:text-sm font-medium text-[#1a281b]">
+                        <input type="radio" name="cancelReasonRadio" value="Patient Requested Cancellation (via Call/Walk-in)" class="accent-red-600 w-4 h-4 cursor-pointer">
+                        <span>Patient Requested Cancellation (via Call / Walk-in)</span>
+                    </label>
+                    <label class="flex items-center gap-3 py-2.5 px-4 rounded-full border border-gray-300 hover:border-gray-400 hover:bg-[#FDFCE9] cursor-pointer transition text-xs sm:text-sm font-medium text-[#1a281b]">
+                        <input type="radio" name="cancelReasonRadio" value="Clinic Under Construction / Maintenance" class="accent-red-600 w-4 h-4 cursor-pointer">
+                        <span>Clinic Under Construction / Maintenance</span>
+                    </label>
+                    <label class="flex items-center gap-3 py-2.5 px-4 rounded-full border border-gray-300 hover:border-gray-400 hover:bg-[#FDFCE9] cursor-pointer transition text-xs sm:text-sm font-medium text-[#1a281b]">
+                        <input type="radio" name="cancelReasonRadio" value="Fully Booked / Capacity Exceeded" class="accent-red-600 w-4 h-4 cursor-pointer">
+                        <span>Fully Booked / Capacity Exceeded</span>
+                    </label>
+                    <label class="flex items-center gap-3 py-2.5 px-4 rounded-full border border-gray-300 hover:border-gray-400 hover:bg-[#FDFCE9] cursor-pointer transition text-xs sm:text-sm font-medium text-[#1a281b]">
+                        <input type="radio" name="cancelReasonRadio" value="Medical Emergency / Schedule Conflict" class="accent-red-600 w-4 h-4 cursor-pointer">
+                        <span>Medical Emergency / Schedule Conflict</span>
+                    </label>
+                    <label class="flex items-center gap-3 py-2.5 px-4 rounded-full border border-gray-300 hover:border-gray-400 hover:bg-[#FDFCE9] cursor-pointer transition text-xs sm:text-sm font-medium text-[#1a281b]">
+                        <input type="radio" name="cancelReasonRadio" value="other" id="radioCancelOther" class="accent-red-600 w-4 h-4 cursor-pointer">
+                        <span>Other Reason (Please specify below)</span>
+                    </label>
+                </div>
+
+                <div id="customCancelReasonContainer" class="hidden flex flex-col gap-1 mt-1">
+                    <textarea
+                        id="customCancelReasonText"
+                        rows="2"
+                        maxlength="200"
+                        placeholder="Please specify the cancellation reason..."
+                        class="w-full rounded-xl border border-black/20 bg-gray-50 px-3 py-2 text-xs outline-none focus:ring-2 focus:ring-red-500 focus:bg-white resize-none"></textarea>
+                    <span class="text-[10px] text-gray-500 text-right"><span id="customCancelReasonCount">0</span>/200</span>
+                </div>
+                <p id="cancelReasonError" class="hidden text-[11px] font-bold text-red-600 mt-1">⚠️ Please select a reason before cancelling.</p>
             </div>
-            <div class="flex flex-col-reverse sm:flex-row items-center justify-end gap-2.5 w-full">
-                <button id="cancelDeclineReschedBtn" type="button" class="w-full sm:w-auto px-5 py-2.5 text-xs sm:text-sm font-semibold text-[#2A1001] bg-white border border-[#2A1001]/20 rounded-full hover:bg-gray-100 transition cursor-pointer text-center">
-                    Cancel
+
+            <!-- Paid Warning Notice -->
+            <div id="paidWarning" class="hidden bg-amber-50 border border-amber-300 text-amber-900 p-3 rounded-2xl text-xs font-semibold leading-relaxed">
+                <i class="fa-solid fa-circle-exclamation mr-1 text-amber-700"></i>
+                <strong>Notice:</strong> This patient has already paid online. If cancelled/declined, a refund will need to be processed.
+            </div>
+
+            <div class="flex gap-2.5 mt-1 shrink-0">
+                <button id="confirmDeclineBtn" type="button"
+                        class="flex-1 bg-[#D9534F] hover:bg-[#c9302c] text-white font-bold py-2.5 sm:py-3 px-4 rounded-full cursor-pointer active:scale-95 transition-all shadow-md text-xs sm:text-sm text-center">
+                    Yes, Cancel It
                 </button>
-                <button id="confirmDeclineReschedBtn" type="button" class="w-full sm:w-auto px-5 py-2.5 text-xs sm:text-sm font-bold text-white bg-[#D9534F] rounded-full hover:bg-[#c9302c] transition shadow-sm cursor-pointer active:scale-95 text-center">
-                    Decline Reschedule Request
+                <button id="cancelDeclineBtn" type="button"
+                        class="flex-1 bg-white hover:bg-gray-100 text-[#1a281b] font-bold py-2.5 sm:py-3 px-4 rounded-full border border-gray-300 cursor-pointer active:scale-95 transition-all shadow-sm text-xs sm:text-sm text-center">
+                    Go Back
                 </button>
             </div>
         </div>
     </div>
 
-    <!-- ================= STAFF RESCHEDULE CALENDAR MODAL ================= -->
+    <!-- ================= DECLINE RESCHEDULE REQUEST MODAL (SCREENSHOT DESIGN 1:1 WITH EMPLOYEE REASONS) ================= -->
+    <div id="declineRescheduleModal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+        <div class="bg-[#F2F0EF] border border-[#1a281b]/20 rounded-3xl p-5 sm:p-7 w-full max-w-lg flex flex-col gap-4 shadow-2xl my-auto max-h-[94vh]">
+            <div class="flex items-start gap-3">
+                <div class="w-11 h-11 rounded-full bg-red-100 text-red-600 flex items-center justify-center text-lg shrink-0">
+                    <i class="fa-solid fa-calendar-xmark"></i>
+                </div>
+                <div>
+                    <h2 class="font-extrabold text-lg sm:text-xl text-[#1a281b]">Decline Reschedule Request?</h2>
+                    <p class="text-xs text-gray-600 leading-relaxed mt-0.5" id="declineReschedModalSummary">
+                        The appointment will keep its original confirmed schedule. Please select why this request cannot be accommodated.
+                    </p>
+                </div>
+            </div>
+
+            <div class="flex flex-col gap-2 bg-white rounded-2xl p-3.5 sm:p-4 border border-[#1a281b]/15 shadow-sm max-h-[50vh] overflow-y-auto pr-1">
+                <label class="text-xs font-bold text-[#1a281b] uppercase tracking-wide flex items-center gap-1.5">
+                    <i class="fa-solid fa-circle-question text-red-600"></i> REASON FOR DECLINING RESCHEDULE <span class="text-red-500">*</span>
+                </label>
+
+                <!-- Employee Side Decline Reschedule Choices (NOT pre-selected) -->
+                <div class="flex flex-col gap-2 mt-0.5" id="declineReschedReasonOptions">
+                    <label class="flex items-center gap-3 py-2.5 px-4 rounded-full border border-gray-300 hover:border-gray-400 hover:bg-[#FDFCE9] cursor-pointer transition text-xs sm:text-sm font-medium text-[#1a281b]">
+                        <input type="radio" name="declineReschedReasonRadio" value="Requested Time Slot is Fully Booked" class="accent-red-600 w-4 h-4 cursor-pointer">
+                        <span>Requested Time Slot is Fully Booked</span>
+                    </label>
+                    <label class="flex items-center gap-3 py-2.5 px-4 rounded-full border border-gray-300 hover:border-gray-400 hover:bg-[#FDFCE9] cursor-pointer transition text-xs sm:text-sm font-medium text-[#1a281b]">
+                        <input type="radio" name="declineReschedReasonRadio" value="Attending Dentist Not Available at Requested Time" class="accent-red-600 w-4 h-4 cursor-pointer">
+                        <span>Attending Dentist Not Available at Requested Time</span>
+                    </label>
+                    <label class="flex items-center gap-3 py-2.5 px-4 rounded-full border border-gray-300 hover:border-gray-400 hover:bg-[#FDFCE9] cursor-pointer transition text-xs sm:text-sm font-medium text-[#1a281b]">
+                        <input type="radio" name="declineReschedReasonRadio" value="Clinic Under Construction / Maintenance" class="accent-red-600 w-4 h-4 cursor-pointer">
+                        <span>Clinic Under Construction / Maintenance</span>
+                    </label>
+                    <label class="flex items-center gap-3 py-2.5 px-4 rounded-full border border-gray-300 hover:border-gray-400 hover:bg-[#FDFCE9] cursor-pointer transition text-xs sm:text-sm font-medium text-[#1a281b]">
+                        <input type="radio" name="declineReschedReasonRadio" value="Clinic Closed / Outside Operating Hours on Selected Date" class="accent-red-600 w-4 h-4 cursor-pointer">
+                        <span>Clinic Closed / Outside Operating Hours on Selected Date</span>
+                    </label>
+                    <label class="flex items-center gap-3 py-2.5 px-4 rounded-full border border-gray-300 hover:border-gray-400 hover:bg-[#FDFCE9] cursor-pointer transition text-xs sm:text-sm font-medium text-[#1a281b]">
+                        <input type="radio" name="declineReschedReasonRadio" value="Patient Requested to Keep Original Schedule" class="accent-red-600 w-4 h-4 cursor-pointer">
+                        <span>Patient Requested to Keep Original Schedule</span>
+                    </label>
+                    <label class="flex items-center gap-3 py-2.5 px-4 rounded-full border border-gray-300 hover:border-gray-400 hover:bg-[#FDFCE9] cursor-pointer transition text-xs sm:text-sm font-medium text-[#1a281b]">
+                        <input type="radio" name="declineReschedReasonRadio" value="other" id="radioDeclineReschedOther" class="accent-red-600 w-4 h-4 cursor-pointer">
+                        <span>Other Reason (Please specify below)</span>
+                    </label>
+                </div>
+
+                <div id="customDeclineReschedReasonContainer" class="hidden flex flex-col gap-1 mt-1">
+                    <textarea
+                        id="customDeclineReschedReasonText"
+                        rows="2"
+                        maxlength="200"
+                        placeholder="Please specify why the reschedule cannot be accommodated..."
+                        class="w-full rounded-xl border border-black/20 bg-gray-50 px-3 py-2 text-xs outline-none focus:ring-2 focus:ring-red-500 focus:bg-white resize-none"></textarea>
+                    <span class="text-[10px] text-gray-500 text-right"><span id="customDeclineReschedReasonCount">0</span>/200</span>
+                </div>
+                <p id="declineReschedReasonError" class="hidden text-[11px] font-bold text-red-600 mt-1">⚠️ Please select a reason before declining.</p>
+            </div>
+
+            <div class="flex gap-2.5 mt-1 shrink-0">
+                <button id="confirmDeclineReschedBtn" type="button" class="flex-1 bg-[#D9534F] hover:bg-[#c9302c] text-white font-bold py-2.5 sm:py-3 px-4 rounded-full cursor-pointer active:scale-95 transition-all shadow-md text-xs sm:text-sm text-center">
+                    Yes, Decline Request
+                </button>
+                <button id="cancelDeclineReschedBtn" type="button" class="flex-1 bg-white hover:bg-gray-100 text-[#1a281b] font-bold py-2.5 sm:py-3 px-4 rounded-full border border-gray-300 cursor-pointer active:scale-95 transition-all shadow-sm text-xs sm:text-sm text-center">
+                    Go Back
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= STAFF RESCHEDULE CALENDAR MODAL (WITH REASONS) ================= -->
     <div id="rescheduleModal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
         <div class="bg-[#F3EFE4] rounded-3xl p-5 sm:p-8 relative max-w-4xl w-full shadow-2xl border-[3px] border-[#2A1001]/20 my-auto max-h-[94vh] flex flex-col">
             <!-- Close Button -->
@@ -238,10 +333,48 @@
                         <div class="grid grid-cols-7 gap-1 sm:gap-1.5 px-2 sm:px-3 py-2 place-items-center" id="days"></div>
                     </div>
                 </div>
+
                 <p class="text-xs sm:text-sm text-[#2A1001] text-center font-medium bg-white py-2 px-3 sm:px-4 rounded-full border border-black/10 mx-auto max-w-full break-words shadow-sm" id="selectedDateDisplay">
                     No date selected yet.
                 </p>
+
+                <!-- Reschedule Reason Selection (Employee Side Choices, NOT Pre-selected) -->
+                <div class="bg-white rounded-2xl p-4 sm:p-5 border border-[#2A1001]/15 shadow-sm flex flex-col gap-2.5">
+                    <label class="text-xs sm:text-sm font-extrabold text-[#2A1001] uppercase tracking-wide flex items-center gap-1.5">
+                        <i class="fa-solid fa-clipboard-question text-[#667733]"></i> Reason for Rescheduling <span class="text-red-500">*</span>
+                    </label>
+                    <p class="text-xs text-[#2A1001]/60 -mt-1">Please select the reason for moving this appointment:</p>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-1" id="rescheduleReasonOptions">
+                        <label class="flex items-center gap-2.5 p-2.5 rounded-xl border border-black/15 hover:bg-[#FDFCE9] cursor-pointer transition text-xs sm:text-sm font-semibold text-[#2A1001]">
+                            <input type="radio" name="reschedReasonRadio" value="Patient Requested Reschedule (via Call/Walk-in)" class="accent-[#667733] w-4 h-4 cursor-pointer">
+                            <span>Patient Requested Reschedule</span>
+                        </label>
+                        <label class="flex items-center gap-2.5 p-2.5 rounded-xl border border-black/15 hover:bg-[#FDFCE9] cursor-pointer transition text-xs sm:text-sm font-semibold text-[#2A1001]">
+                            <input type="radio" name="reschedReasonRadio" value="Attending Dentist Not Available / Schedule Change" class="accent-[#667733] w-4 h-4 cursor-pointer">
+                            <span>Dentist Not Available / Schedule Change</span>
+                        </label>
+                        <label class="flex items-center gap-2.5 p-2.5 rounded-xl border border-black/15 hover:bg-[#FDFCE9] cursor-pointer transition text-xs sm:text-sm font-semibold text-[#2A1001]">
+                            <input type="radio" name="reschedReasonRadio" value="Clinic Under Construction / Maintenance" class="accent-[#667733] w-4 h-4 cursor-pointer">
+                            <span>Clinic Under Construction / Maintenance</span>
+                        </label>
+                        <label class="flex items-center gap-2.5 p-2.5 rounded-xl border border-black/15 hover:bg-[#FDFCE9] cursor-pointer transition text-xs sm:text-sm font-semibold text-[#2A1001]">
+                            <input type="radio" name="reschedReasonRadio" value="Emergency Case / Priority Procedure" class="accent-[#667733] w-4 h-4 cursor-pointer">
+                            <span>Emergency Case / Priority Procedure</span>
+                        </label>
+                        <label class="flex items-center gap-2.5 p-2.5 rounded-xl border border-black/15 hover:bg-[#FDFCE9] cursor-pointer transition text-xs sm:text-sm font-semibold text-[#2A1001] sm:col-span-2">
+                            <input type="radio" name="reschedReasonRadio" value="other" id="radioReasonOther" class="accent-[#667733] w-4 h-4 cursor-pointer">
+                            <span>Other Reason (Please specify below)</span>
+                        </label>
+                    </div>
+
+                    <div id="customReasonContainer" class="hidden flex flex-col gap-1 mt-1">
+                        <textarea id="customReasonText" rows="2" maxlength="200" placeholder="Please specify reason for rescheduling..." class="w-full rounded-xl border border-black/20 bg-gray-50 px-3 py-2 text-xs sm:text-sm outline-none focus:ring-2 focus:ring-[#667733] focus:bg-white resize-none"></textarea>
+                        <span class="text-[11px] text-gray-500 text-right"><span id="customReasonCount">0</span>/200</span>
+                    </div>
+                </div>
             </div>
+
             <!-- Confirmation Buttons -->
             <div class="mt-4 pt-3 border-t border-[#2A1001]/10 flex flex-col sm:flex-row items-center justify-center gap-3 shrink-0">
                 <button id="cancelRescheduleModalBtn" type="button" class="w-full sm:w-auto px-6 py-2.5 text-xs sm:text-sm font-semibold text-[#2A1001] bg-white border border-[#2A1001]/20 rounded-full hover:bg-gray-100 transition cursor-pointer text-center">
@@ -349,8 +482,6 @@
         let pendingDeclineApptId = null;
         let pendingDeclineReschedApptId = null;
         let pendingRescheduleApptId = null;
-
-        // Calendar State
         let calCurrentDate = new Date();
         const calToday = new Date();
         let calSelectedDate = null;
@@ -358,46 +489,52 @@
         let calSelectedTime = null;
         let calSelectedEndTime = null;
 
-        function authHeaders(json = false) {
-            const token = localStorage.getItem('userToken') || localStorage.getItem('token');
-            const headers = {};
-            if (token) headers['Authorization'] = `Bearer ${token}`;
-            if (json) headers['Content-Type'] = 'application/json';
-            return headers;
+        function authHeaders(isJson = false) {
+            const token = localStorage.getItem('userToken');
+            const h = {};
+            if (token) h['Authorization'] = `Bearer ${token}`;
+            if (isJson) h['Content-Type'] = 'application/json';
+            return h;
         }
-        function isNewBooking(submittedAt) {
-            if (!submittedAt) return false;
-            const hoursSince = (new Date() - new Date(submittedAt)) / (1000 * 60 * 60);
-            return hoursSince <= 24;
+
+        function isNewBooking(createdAtStr) {
+            if (!createdAtStr) return false;
+            const diffMs = Date.now() - new Date(createdAtStr).getTime();
+            return diffMs >= 0 && diffMs <= 86400000;
         }
-        function showNotice(message, { title = "Notice", type = "info" } = {}) {
+
+        function showNotice(msg, options = {}) {
             const modal = document.getElementById('noticeModal');
-            if (!modal) return;
-            const iconWrap = document.getElementById('noticeIconWrap');
-            const icon = document.getElementById('noticeIcon');
             const titleEl = document.getElementById('noticeTitle');
             const msgEl = document.getElementById('noticeMessage');
-            const styles = {
-                success: { wrap: 'bg-green-100 text-green-700', icon: 'fa-circle-check' },
-                error:   { wrap: 'bg-red-100 text-red-600',     icon: 'fa-circle-exclamation' },
-                info:    { wrap: 'bg-[#EAF0DD] text-[#556022]', icon: 'fa-circle-info' }
-            };
-            const s = styles[type] || styles.info;
-            iconWrap.className = `w-10 h-10 rounded-full flex items-center justify-center text-lg shrink-0 ${s.wrap}`;
-            icon.className = `fa-solid ${s.icon}`;
-            titleEl.textContent = title;
-            msgEl.textContent = message;
+            const iconEl = document.getElementById('noticeIcon');
+            const iconWrap = document.getElementById('noticeIconWrap');
+            if (!modal) { alert(msg); return; }
+            titleEl.textContent = options.title || 'Notice';
+            msgEl.textContent = msg;
+            if (options.type === 'error') {
+                iconWrap.className = 'w-10 h-10 rounded-full flex items-center justify-center text-lg shrink-0 bg-red-100 text-red-600';
+                iconEl.className = 'fa-solid fa-triangle-exclamation';
+            } else if (options.type === 'success') {
+                iconWrap.className = 'w-10 h-10 rounded-full flex items-center justify-center text-lg shrink-0 bg-green-100 text-green-700';
+                iconEl.className = 'fa-solid fa-circle-check';
+            } else {
+                iconWrap.className = 'w-10 h-10 rounded-full flex items-center justify-center text-lg shrink-0 bg-[#EAF0DD] text-[#556022]';
+                iconEl.className = 'fa-solid fa-circle-info';
+            }
             modal.classList.remove('hidden');
         }
+
         function closeNoticeModal() {
-            const modal = document.getElementById('noticeModal');
-            if (modal) modal.classList.add('hidden');
+            document.getElementById('noticeModal')?.classList.add('hidden');
         }
+
         document.addEventListener('DOMContentLoaded', () => {
             initEventListeners();
             initSocketEvents();
             loadAllBookings();
         });
+
         function initSocketEvents() {
             if (typeof io !== 'function') return;
             const socket = io();
@@ -405,6 +542,7 @@
             socket.on('appointment-updated', () => { loadAllBookings(); });
             socket.on('queue_updated', () => { loadAllBookings(); });
         }
+
         function initEventListeners() {
             document.getElementById('noticeOkBtn')?.addEventListener('click', closeNoticeModal);
             document.getElementById('noticeModal')?.addEventListener('click', (e) => {
@@ -425,21 +563,74 @@
                 });
             });
             document.getElementById('booking-container')?.addEventListener('click', handleCardActionClicks);
+            
+            // ── Cancel Modal Listeners ──
             document.getElementById('cancelDeclineBtn')?.addEventListener('click', closeDeclineModal);
             document.getElementById('declineModal')?.addEventListener('click', (e) => {
                 if (e.target === document.getElementById('declineModal')) closeDeclineModal();
             });
             document.getElementById('confirmDeclineBtn')?.addEventListener('click', handleConfirmDecline);
-            document.getElementById('rescheduleInsteadBtn')?.addEventListener('click', () => {
-                const id = pendingDeclineApptId;
-                closeDeclineModal();
-                if (id) openRescheduleModal(id);
+
+            // Cancel Radio change listeners
+            const cancelRadios = document.querySelectorAll('input[name="cancelReasonRadio"]');
+            const customCancelContainer = document.getElementById('customCancelReasonContainer');
+            const customCancelText = document.getElementById('customCancelReasonText');
+            const customCancelCount = document.getElementById('customCancelReasonCount');
+            const cancelError = document.getElementById('cancelReasonError');
+
+            cancelRadios.forEach(radio => {
+                radio.addEventListener('change', (e) => {
+                    if (cancelError) cancelError.classList.add('hidden');
+                    if (e.target.value === 'other') {
+                        customCancelContainer?.classList.remove('hidden');
+                        customCancelText?.focus();
+                    } else {
+                        customCancelContainer?.classList.add('hidden');
+                    }
+                });
             });
+
+            if (customCancelText && customCancelCount) {
+                customCancelText.addEventListener('input', () => {
+                    if (cancelError) cancelError.classList.add('hidden');
+                    customCancelCount.textContent = customCancelText.value.length;
+                });
+            }
+
+            // ── Decline Reschedule Modal Listeners ──
             document.getElementById('cancelDeclineReschedBtn')?.addEventListener('click', closeDeclineReschedModal);
             document.getElementById('declineRescheduleModal')?.addEventListener('click', (e) => {
                 if (e.target === document.getElementById('declineRescheduleModal')) closeDeclineReschedModal();
             });
             document.getElementById('confirmDeclineReschedBtn')?.addEventListener('click', handleConfirmDeclineReschedule);
+
+            // Decline Reschedule Radio change listeners
+            const declineReschedRadios = document.querySelectorAll('input[name="declineReschedReasonRadio"]');
+            const customDeclineReschedContainer = document.getElementById('customDeclineReschedReasonContainer');
+            const customDeclineReschedText = document.getElementById('customDeclineReschedReasonText');
+            const customDeclineReschedCount = document.getElementById('customDeclineReschedCount');
+            const declineReschedError = document.getElementById('declineReschedReasonError');
+
+            declineReschedRadios.forEach(radio => {
+                radio.addEventListener('change', (e) => {
+                    if (declineReschedError) declineReschedError.classList.add('hidden');
+                    if (e.target.value === 'other') {
+                        customDeclineReschedContainer?.classList.remove('hidden');
+                        customDeclineReschedText?.focus();
+                    } else {
+                        customDeclineReschedContainer?.classList.add('hidden');
+                    }
+                });
+            });
+
+            if (customDeclineReschedText && customDeclineReschedCount) {
+                customDeclineReschedText.addEventListener('input', () => {
+                    if (declineReschedError) declineReschedError.classList.add('hidden');
+                    customDeclineReschedCount.textContent = customDeclineReschedText.value.length;
+                });
+            }
+
+            // ── Staff Calendar Reschedule Modal Listeners ──
             document.getElementById('closeRescheduleModal')?.addEventListener('click', closeRescheduleModal);
             document.getElementById('cancelRescheduleModalBtn')?.addEventListener('click', closeRescheduleModal);
             document.getElementById('rescheduleModal')?.addEventListener('click', (e) => {
@@ -454,7 +645,33 @@
                 renderCalendar(calCurrentDate);
             });
             document.getElementById('confirmRescheduleBtn')?.addEventListener('click', handleConfirmDirectReschedule);
+
+            // Staff Reschedule Radio change listeners
+            const reschedRadios = document.querySelectorAll('input[name="reschedReasonRadio"]');
+            const customReschedContainer = document.getElementById('customReasonContainer');
+            const customReschedText = document.getElementById('customReasonText');
+            const customReschedCount = document.getElementById('customReasonCount');
+
+            reschedRadios.forEach(radio => {
+                radio.addEventListener('change', (e) => {
+                    if (e.target.value === 'other') {
+                        customReschedContainer?.classList.remove('hidden');
+                        customReschedText?.focus();
+                    } else {
+                        customReschedContainer?.classList.add('hidden');
+                    }
+                    updateCalendarSummary();
+                });
+            });
+
+            if (customReschedText && customReschedCount) {
+                customReschedText.addEventListener('input', () => {
+                    customReschedCount.textContent = customReschedText.value.length;
+                    updateCalendarSummary();
+                });
+            }
         }
+
         async function loadAllBookings() {
             try {
                 const res = await fetch(`${API_BASE_URL}/api/appointments?status=all`, { headers: authHeaders() });
@@ -469,10 +686,10 @@
                 console.error('Network error loading bookings:', err);
             }
         }
+
         function updateBadges() {
             const todayStr = getTodayDateStr();
 
-            // Count only active today/upcoming pending requests
             const pendingCount = allBookings.filter(b => {
                 const s = (b.appointment_status || '').toLowerCase();
                 const dateStr = b.appointment_date ? b.appointment_date.split('T')[0] : '';
@@ -481,7 +698,6 @@
 
             const reschedCount = allBookings.filter(b => (b.reschedule_status || '').toLowerCase() === 'requested').length;
 
-            // Count only active today/upcoming approved appointments
             const approvedCount = allBookings.filter(b => {
                 const s = (b.appointment_status || '').toLowerCase();
                 const dateStr = b.appointment_date ? b.appointment_date.split('T')[0] : '';
@@ -509,15 +725,12 @@
 
                 let matchesStatus = false;
                 if (currentStatusFilter === 'pending') {
-                    // Only active upcoming/today pending requests
                     matchesStatus = status === 'pending' && !isPast;
                 } else if (currentStatusFilter === 'reschedule_requested') {
                     matchesStatus = resched === 'requested';
                 } else if (currentStatusFilter === 'approved') {
-                    // Only active upcoming/today approved visits
                     matchesStatus = status === 'approved' && !isPast;
                 } else {
-                    // Show All
                     matchesStatus = true;
                 }
 
@@ -579,7 +792,6 @@
                     dentistBadge = `<span class="inline-flex items-center gap-1 text-[11px] font-bold text-amber-800 bg-amber-50 px-2.5 py-0.5 rounded-full border border-amber-200"><i class="fa-regular fa-clock text-amber-600"></i> Any Available Dentist</span>`;
                 }
 
-                // Status Badge at the top of the card
                 let statusBadge = '';
                 if (status === 'completed') {
                     statusBadge = '<span class="text-[9px] sm:text-[10px] bg-green-100 text-green-800 font-black px-2.5 py-0.5 rounded-full border border-green-300">COMPLETED</span>';
@@ -627,7 +839,6 @@
                     `;
                 }
 
-                // Action area on the right: matches CANCELLED clean muted text styling
                 let actionButtons = '';
                 if (isPast && status !== 'completed') {
                     actionButtons = `<span class="text-xs font-bold text-gray-400 uppercase tracking-wide">SCHEDULE PASSED</span>`;
@@ -779,12 +990,12 @@
             }
         }
 
-        async function submitAppointmentStatus(appointmentId, appointment_status) {
+        async function submitAppointmentStatus(appointmentId, appointment_status, reason = '') {
             try {
                 const res = await fetch(`${API_BASE_URL}/api/appointments/${appointmentId}/status`, {
                     method: 'PATCH',
                     headers: authHeaders(true),
-                    body: JSON.stringify({ appointment_status })
+                    body: JSON.stringify({ appointment_status, reason })
                 });
                 const result = await res.json().catch(() => ({}));
                 if (res.ok) {
@@ -799,21 +1010,29 @@
             }
         }
 
+        // Open Decline / Cancel Modal - NEVER PRESELECTED
         function openDeclineModal(id) {
             pendingDeclineApptId = id;
             const booking = allBookings.find(b => b.appointment_id === id);
             if (!booking) return;
-            const patientName = `${booking.first_name || ''} ${booking.last_name || ''}`.trim() || 'Patient';
-            document.getElementById('declineModalText').textContent =
-                `Are you sure you want to decline the booking request from ${patientName}? This action cannot be undone.`;
+
+            // Clear all radio choices so none are pre-selected
+            document.querySelectorAll('input[name="cancelReasonRadio"]').forEach(r => r.checked = false);
+            const customCancelContainer = document.getElementById('customCancelReasonContainer');
+            const customCancelText = document.getElementById('customCancelReasonText');
+            const customCancelCount = document.getElementById('customCancelReasonCount');
+            const reasonError = document.getElementById('cancelReasonError');
+
+            if (customCancelContainer) customCancelContainer.classList.add('hidden');
+            if (customCancelText) customCancelText.value = '';
+            if (customCancelCount) customCancelCount.textContent = '0';
+            if (reasonError) reasonError.classList.add('hidden');
+
             const paidWarning = document.getElementById('paidWarning');
-            const reschedBtn = document.getElementById('rescheduleInsteadBtn');
             if ((booking.payment_status || '').toLowerCase() === 'paid') {
                 paidWarning?.classList.remove('hidden');
-                reschedBtn?.classList.remove('hidden');
             } else {
                 paidWarning?.classList.add('hidden');
-                reschedBtn?.classList.add('hidden');
             }
             document.getElementById('declineModal')?.classList.remove('hidden');
         }
@@ -824,13 +1043,54 @@
         }
 
         async function handleConfirmDecline() {
-            if (pendingDeclineApptId) {
-                const id = pendingDeclineApptId;
+            if (!pendingDeclineApptId) return;
+
+            const selectedRadio = document.querySelector('input[name="cancelReasonRadio"]:checked');
+            const reasonError = document.getElementById('cancelReasonError');
+
+            if (!selectedRadio) {
+                if (reasonError) {
+                    reasonError.textContent = '⚠️ Please select a reason before cancelling.';
+                    reasonError.classList.remove('hidden');
+                }
+                return;
+            }
+
+            let finalReason = selectedRadio.value;
+            if (finalReason === 'other') {
+                const customText = document.getElementById('customCancelReasonText')?.value.trim();
+                if (!customText) {
+                    if (reasonError) {
+                        reasonError.textContent = '⚠️ Please specify your reason in the text box.';
+                        reasonError.classList.remove('hidden');
+                    }
+                    document.getElementById('customCancelReasonText')?.focus();
+                    return;
+                }
+                finalReason = customText;
+            }
+
+            if (reasonError) reasonError.classList.add('hidden');
+
+            const id = pendingDeclineApptId;
+            const confirmBtn = document.getElementById('confirmDeclineBtn');
+            if (confirmBtn) {
+                confirmBtn.disabled = true;
+                confirmBtn.textContent = 'Cancelling...';
+            }
+
+            try {
                 closeDeclineModal();
-                await submitAppointmentStatus(id, 'cancelled');
+                await submitAppointmentStatus(id, 'cancelled', finalReason);
+            } finally {
+                if (confirmBtn) {
+                    confirmBtn.disabled = false;
+                    confirmBtn.textContent = 'Yes, Cancel It';
+                }
             }
         }
 
+        // Open Decline Reschedule Modal - NEVER PRESELECTED
         function openDeclineReschedModal(id) {
             pendingDeclineReschedApptId = id;
             const booking = allBookings.find(b => b.appointment_id === id);
@@ -838,7 +1098,18 @@
             const patientName = `${booking.first_name || ''} ${booking.last_name || ''}`.trim() || 'Patient';
             document.getElementById('declineReschedModalSummary').innerHTML =
                 `Decline reschedule request for <strong>${escapeHtml(patientName)}</strong>. The appointment will remain active on <strong>${escapeHtml(booking.appointment_date)} at ${escapeHtml(formatTime12h(booking.time_slot))}</strong>.`;
-            document.getElementById('declineReschedReasonInput').value = '';
+            
+            // Clear all radio choices so none are pre-selected
+            document.querySelectorAll('input[name="declineReschedReasonRadio"]').forEach(r => r.checked = false);
+            const customContainer = document.getElementById('customDeclineReschedReasonContainer');
+            const customText = document.getElementById('customDeclineReschedReasonText');
+            const customCount = document.getElementById('customDeclineReschedReasonCount');
+            const errorEl = document.getElementById('declineReschedReasonError');
+            if (customContainer) customContainer.classList.add('hidden');
+            if (customText) customText.value = '';
+            if (customCount) customCount.textContent = '0';
+            if (errorEl) errorEl.classList.add('hidden');
+
             document.getElementById('declineRescheduleModal')?.classList.remove('hidden');
         }
 
@@ -849,12 +1120,53 @@
 
         async function handleConfirmDeclineReschedule() {
             if (!pendingDeclineReschedApptId) return;
+
+            const selectedRadio = document.querySelector('input[name="declineReschedReasonRadio"]:checked');
+            const errorEl = document.getElementById('declineReschedReasonError');
+
+            if (!selectedRadio) {
+                if (errorEl) {
+                    errorEl.textContent = '⚠️ Please select a reason before declining the reschedule request.';
+                    errorEl.classList.remove('hidden');
+                }
+                return;
+            }
+
+            let finalReason = selectedRadio.value;
+            if (finalReason === 'other') {
+                const customText = document.getElementById('customDeclineReschedReasonText')?.value.trim();
+                if (!customText) {
+                    if (errorEl) {
+                        errorEl.textContent = '⚠️ Please specify your reason in the text box.';
+                        errorEl.classList.remove('hidden');
+                    }
+                    document.getElementById('customDeclineReschedReasonText')?.focus();
+                    return;
+                }
+                finalReason = customText;
+            }
+
+            if (errorEl) errorEl.classList.add('hidden');
+
             const id = pendingDeclineReschedApptId;
-            const reason = document.getElementById('declineReschedReasonInput')?.value.trim();
-            closeDeclineReschedModal();
-            await submitRescheduleReview(id, 'decline', reason);
+            const confirmBtn = document.getElementById('confirmDeclineReschedBtn');
+            if (confirmBtn) {
+                confirmBtn.disabled = true;
+                confirmBtn.textContent = 'Declining...';
+            }
+
+            try {
+                closeDeclineReschedModal();
+                await submitRescheduleReview(id, 'decline', finalReason);
+            } finally {
+                if (confirmBtn) {
+                    confirmBtn.disabled = false;
+                    confirmBtn.textContent = 'Yes, Decline Request';
+                }
+            }
         }
 
+        // Open Staff Reschedule Modal - NEVER PRESELECTED
         function openRescheduleModal(appointmentId) {
             pendingRescheduleApptId = appointmentId;
             const booking = allBookings.find(b => b.appointment_id === appointmentId);
@@ -873,6 +1185,16 @@
             calSelectedTime = null;
             calSelectedEndTime = null;
             calCurrentDate = new Date();
+
+            // Clear radio selections so none are pre-selected
+            document.querySelectorAll('input[name="reschedReasonRadio"]').forEach(r => r.checked = false);
+            const customContainer = document.getElementById('customReasonContainer');
+            const customText = document.getElementById('customReasonText');
+            const customCount = document.getElementById('customReasonCount');
+            if (customContainer) customContainer.classList.add('hidden');
+            if (customText) customText.value = '';
+            if (customCount) customCount.textContent = '0';
+
             renderCalendar(calCurrentDate);
             renderAvailableSlots(null);
             updateCalendarSummary();
@@ -1072,16 +1394,28 @@
             }
         }
 
+        // Summary validation: Requires Date, Slot AND Reason before enabling Confirm button
         function updateCalendarSummary() {
             const display = document.getElementById('selectedDateDisplay');
             const confirmBtn = document.getElementById('confirmRescheduleBtn');
             if (!display || !confirmBtn) return;
+
+            const selectedRadio = document.querySelector('input[name="reschedReasonRadio"]:checked');
+            let hasValidReason = false;
+            if (selectedRadio) {
+                if (selectedRadio.value === 'other') {
+                    hasValidReason = Boolean(document.getElementById('customReasonText')?.value.trim());
+                } else {
+                    hasValidReason = true;
+                }
+            }
+
             if (calSelectedDate && calSelectedTime) {
                 const timeText = calSelectedEndTime
                     ? `${formatTime12h(calSelectedTime)} – ${formatTime12h(calSelectedEndTime)}`
                     : formatTime12h(calSelectedTime);
                 display.innerHTML = `New Schedule: <strong class="text-[#667733]">${escapeHtml(calSelectedDate)}</strong> at <strong class="text-[#667733]">${timeText}</strong>`;
-                confirmBtn.disabled = false;
+                confirmBtn.disabled = !hasValidReason;
             } else if (calSelectedDate) {
                 display.innerHTML = `Selected Date: <strong>${escapeHtml(calSelectedDate)}</strong> (Please choose an available AM or PM slot)`;
                 confirmBtn.disabled = true;
@@ -1096,6 +1430,24 @@
                 showNotice('Please select both a date and a time slot.', { title: 'Incomplete Selection', type: 'error' });
                 return;
             }
+
+            const selectedRadio = document.querySelector('input[name="reschedReasonRadio"]:checked');
+            if (!selectedRadio) {
+                showNotice('Please select a reason for rescheduling.', { title: 'Reason Required', type: 'error' });
+                return;
+            }
+
+            let finalReason = selectedRadio.value;
+            if (finalReason === 'other') {
+                const customText = document.getElementById('customReasonText')?.value.trim();
+                if (!customText) {
+                    showNotice('Please provide your specific reason for rescheduling in the text box.', { title: 'Reason Required', type: 'error' });
+                    document.getElementById('customReasonText')?.focus();
+                    return;
+                }
+                finalReason = customText;
+            }
+
             const appointmentId = pendingRescheduleApptId;
             const confirmBtn = document.getElementById('confirmRescheduleBtn');
             if (confirmBtn) {
@@ -1110,7 +1462,7 @@
                         appointment_date: calSelectedDateFormatted,
                         time_slot: calSelectedTime,
                         end_time: calSelectedEndTime,
-                        reason: 'Rescheduled by Clinic Staff'
+                        reason: finalReason
                     })
                 });
                 const result = await res.json().catch(() => ({}));

@@ -65,7 +65,6 @@ function registerBookingRequestRoutes(app, db, io) {
             return res.status(403).json({ message: 'Not authorized' });
         }
 
-        // Automatically auto-cancel past pending & approved appointments before returning data
         await autoCancelExpiredAppointments(db, io);
 
         const { status } = req.query;
@@ -150,13 +149,13 @@ function registerBookingRequestRoutes(app, db, io) {
         }
     });
 
-    // ── 3. PATCH /api/appointments/:id/status — Accept or decline pending booking ──
+    // ── 3. PATCH /api/appointments/:id/status — Accept or decline pending booking (with Reason) ──
     app.patch('/api/appointments/:id/status', authenticateToken, async (req, res) => {
         if (!['employee', 'admin'].includes(req.user.role)) {
             return res.status(403).json({ message: 'Not authorized' });
         }
 
-        const { appointment_status } = req.body;
+        const { appointment_status, reason } = req.body;
         const validStatuses = ['approved', 'cancelled'];
         if (!validStatuses.includes(appointment_status)) {
             return res.status(400).json({ message: 'Invalid appointment_status value' });
@@ -169,7 +168,7 @@ function registerBookingRequestRoutes(app, db, io) {
             await connection.beginTransaction();
 
             const [apptRows] = await connection.query(
-                'SELECT patient_id, appointment_status FROM appointments WHERE appointment_id = ? FOR UPDATE',
+                'SELECT patient_id, appointment_status, appointment_date, time_slot FROM appointments WHERE appointment_id = ? FOR UPDATE',
                 [appointmentId]
             );
             if (apptRows.length === 0) {
@@ -207,10 +206,11 @@ function registerBookingRequestRoutes(app, db, io) {
                 );
             }
 
-            const notifTitle = appointment_status === 'approved' ? 'Appointment Approved' : 'Appointment Declined';
+            const notifTitle = appointment_status === 'approved' ? 'Appointment Approved' : 'Appointment Cancelled';
+            const reasonSnippet = reason ? ` Reason: ${reason}` : '';
             const notifMessage = appointment_status === 'approved'
                 ? 'Your appointment request has been approved and confirmed!'
-                : 'Your appointment request has been declined. Please contact the clinic or choose a different slot.';
+                : `Your appointment request has been cancelled by the clinic.${reasonSnippet}`;
 
             await connection.query(
                 `INSERT INTO notifications (user_id, type, title, message, appointment_id)
@@ -226,7 +226,9 @@ function registerBookingRequestRoutes(app, db, io) {
                 action: appointment_status === 'approved' ? 'APPROVE_APPOINTMENT' : 'CANCEL_APPOINTMENT',
                 target_table: 'appointments',
                 target_id: appointmentId,
-                notes: appointment_status === 'approved' ? 'Booking request approved.' : 'Booking request declined.',
+                notes: appointment_status === 'approved' 
+                    ? 'Booking request approved.' 
+                    : `Booking request cancelled by clinic.${reasonSnippet}`,
                 ip_address: getIp(req)
             });
 
@@ -234,7 +236,7 @@ function registerBookingRequestRoutes(app, db, io) {
                 db,
                 appointmentId,
                 appointment_status === 'approved' ? 'approved' : 'cancelled',
-                { cancelledBy: 'clinic', declined: apptRows[0].appointment_status === 'pending' }
+                { cancelledBy: 'clinic', declined: apptRows[0].appointment_status === 'pending', reason }
             );
 
             if (io) {
@@ -253,7 +255,7 @@ function registerBookingRequestRoutes(app, db, io) {
         }
     });
 
-    // ── 4. PATCH /api/appointments/:id/reschedule-review — Staff Decision on Customer Reschedule Requests ──
+    // ── 4. PATCH /api/appointments/:id/reschedule-review — Approve or decline customer reschedule ──
     app.patch('/api/appointments/:id/reschedule-review', authenticateToken, async (req, res) => {
         if (!['employee', 'admin'].includes(req.user.role)) {
             return res.status(403).json({ message: 'Not authorized' });
@@ -271,24 +273,24 @@ function registerBookingRequestRoutes(app, db, io) {
         try {
             await connection.beginTransaction();
 
-            const [apptRows] = await connection.query(
-                `SELECT a.appointment_id, a.patient_id, a.appointment_date, a.time_slot,
-                        a.reschedule_status, a.requested_date, a.requested_time, s.label AS service_label
+            const [rows] = await connection.query(
+                `SELECT a.*, s.label AS service_label
                  FROM appointments a
                           JOIN services s ON a.service_id = s.service_id
                  WHERE a.appointment_id = ? FOR UPDATE`,
                 [appointmentId]
             );
 
-            if (!apptRows.length) {
+            if (rows.length === 0) {
                 await connection.rollback();
                 return res.status(404).json({ message: 'Appointment not found' });
             }
 
-            const appt = apptRows[0];
+            const appt = rows[0];
+
             if (appt.reschedule_status !== 'requested') {
                 await connection.rollback();
-                return res.status(400).json({ message: 'No active reschedule request for this appointment' });
+                return res.status(400).json({ message: 'No pending reschedule request for this appointment' });
             }
 
             if (action === 'approve') {
@@ -297,7 +299,7 @@ function registerBookingRequestRoutes(app, db, io) {
                 const reqEnd = reqStart + duration;
                 const calculatedEnd = calculateEndTime(appt.requested_time, duration);
 
-                const [existing] = await connection.query(
+                const [conflicts] = await connection.query(
                     `SELECT appointment_id, time_slot, end_time FROM appointments
                      WHERE appointment_date = ?
                        AND appointment_status = 'approved'
@@ -305,16 +307,16 @@ function registerBookingRequestRoutes(app, db, io) {
                     [appt.requested_date, appointmentId]
                 );
 
-                const hasOverlap = existing.some(b => {
+                const hasConflict = conflicts.some(b => {
                     const bStart = timeToMins(b.time_slot);
                     const bEnd = b.end_time ? timeToMins(b.end_time) : bStart + 30;
                     return reqStart < bEnd && reqEnd > bStart;
                 });
 
-                if (hasOverlap) {
+                if (hasConflict) {
                     await connection.rollback();
                     return res.status(409).json({
-                        message: 'Requested slot is already booked by another confirmed patient. Please use "Pick Other Slot".'
+                        message: 'Cannot approve: Requested slot overlaps with another confirmed appointment.'
                     });
                 }
 
