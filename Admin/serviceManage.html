@@ -153,12 +153,12 @@
                 <p id="serviceDescError" class="text-[11px] font-bold text-red-600 hidden mt-1"></p>
             </div>
 
-            <!-- Estimated Duration & Price in 2-Columns -->
+            <!-- Estimated Duration & Price in 2-Columns (Unified Input Architecture) -->
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full">
                 <!-- Estimated Duration -->
                 <div>
                     <label class="block text-xs font-bold text-[#2A1001] uppercase mb-1">Duration (mins) <span class="text-red-500">*</span></label>
-                    <input id="serviceDurationInput" type="number" min="5" max="480" step="5" readonly class="w-full h-11 px-4 rounded-full border border-[#2A1001]/20 outline-none bg-[#dedede] text-[#2c3e2b]/70 font-semibold text-xs sm:text-sm transition cursor-not-allowed shadow-inner" placeholder="30" />
+                    <input id="serviceDurationInput" type="text" inputmode="numeric" maxlength="3" readonly class="w-full h-11 px-4 rounded-full border border-[#2A1001]/20 outline-none bg-[#dedede] text-[#2c3e2b]/70 font-semibold text-xs sm:text-sm transition cursor-not-allowed shadow-inner placeholder:text-gray-400" placeholder="30" />
                     <p id="serviceDurationError" class="text-[11px] font-bold text-red-600 hidden mt-1"></p>
                 </div>
 
@@ -383,7 +383,7 @@
         return `${mins} mins`;
     }
 
-    // ── INLINE ERROR HELPERS (Replaces Alert Popups) ──
+    // ── INLINE ERROR HELPERS ──
     function clearInlineErrors() {
         ['serviceName', 'serviceDesc', 'serviceDuration', 'servicePrice'].forEach(field => {
             const errEl = document.getElementById(`${field}Error`);
@@ -475,13 +475,52 @@
     }
 
     // Remove errors on user typing
-    ['serviceNameInput', 'serviceDurationInput'].forEach(id => {
+    ['serviceNameInput'].forEach(id => {
         document.getElementById(id)?.addEventListener('input', function() {
             this.classList.remove('border-red-500', 'ring-2', 'ring-red-500/30');
             const errId = id.replace('Input', 'Error');
             document.getElementById(errId)?.classList.add('hidden');
         });
     });
+
+    // ── STRICT NUMERIC INPUT VALIDATION FOR DURATION (MATCHES PRICE VALIDATION) ──
+    const durationInputEl = document.getElementById('serviceDurationInput');
+    if (durationInputEl) {
+        durationInputEl.addEventListener('keydown', function (e) {
+            const allowedKeys = [
+                'Backspace', 'Delete', 'Tab', 'Escape', 'Enter',
+                'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'
+            ];
+            if (allowedKeys.includes(e.key) || e.ctrlKey || e.metaKey) return;
+            // Digits 0-9 only (no decimals or symbols for minutes)
+            if (/^[0-9]$/.test(e.key)) return;
+            e.preventDefault();
+        });
+
+        durationInputEl.addEventListener('input', function () {
+            this.classList.remove('border-red-500', 'ring-2', 'ring-red-500/30');
+            document.getElementById('serviceDurationError')?.classList.add('hidden');
+
+            let val = this.value.replace(/\D/g, '');
+            const numVal = parseInt(val, 10);
+            if (!isNaN(numVal) && numVal > 480) {
+                this.value = '480';
+                setFieldError('serviceDurationInput', 'serviceDurationError', '⚠️ The maximum allowed duration is 480 minutes (8 hours).');
+                return;
+            }
+            this.value = val;
+        });
+
+        durationInputEl.addEventListener('blur', function () {
+            const val = this.value.trim();
+            if (val !== '') {
+                const numVal = parseInt(val, 10);
+                if (isNaN(numVal) || numVal < 5) {
+                    setFieldError('serviceDurationInput', 'serviceDurationError', '⚠️ Duration must be at least 5 minutes.');
+                }
+            }
+        });
+    }
 
     // ── STRICT NUMERIC INPUT VALIDATION FOR PRICE ──
     const priceInputEl = document.getElementById('servicePriceInput');
@@ -526,11 +565,17 @@
             }
             this.value = val;
         });
-    }
 
-    document.getElementById('serviceDurationInput')?.addEventListener('input', function() {
-        this.value = this.value.replace(/\D/g, '');
-    });
+        priceInputEl.addEventListener('blur', function () {
+            const val = this.value.trim();
+            if (val !== '') {
+                const numVal = parseFloat(val);
+                if (isNaN(numVal) || numVal < 0) {
+                    setFieldError('servicePriceInput', 'servicePriceError', '⚠️ Price must be between ₱0 and ₱1,500,000.', 'servicePriceContainer');
+                }
+            }
+        });
+    }
 
     function populateModalData(service) {
         clearInlineErrors();
@@ -547,7 +592,7 @@
             specInput.value = service.specialization || service.required_specialization || 'General Dentist';
             descInput.value = service.description || '';
             priceInput.value = service.price !== undefined ? Number(service.price) : '';
-            durationInput.value = service.duration_minutes !== undefined ? parseInt(service.duration_minutes, 10) : 30;
+            durationInput.value = service.duration_minutes !== undefined ? parseInt(service.duration_minutes, 10) : '30';
             document.getElementById('descCount').textContent = (service.description || '').length;
 
             if (service.icon) {
@@ -598,6 +643,35 @@
         document.getElementById('serviceModal').classList.remove('hidden');
     }
 
+    // ── CHECK IF SERVICE DATA HAS ACTUALLY CHANGED ──
+    function hasServiceChanges() {
+        if (!originalServiceSnapshot || isCreatingNew) return true;
+        const s = originalServiceSnapshot;
+
+        const currentName = document.getElementById('serviceNameInput').value.trim();
+        const currentSpec = document.getElementById('serviceSpecializationInput').value.trim();
+        const currentDesc = document.getElementById('serviceDescriptionInput').value.trim();
+        const currentDuration = parseInt(document.getElementById('serviceDurationInput').value, 10);
+        const currentPrice = parseFloat(document.getElementById('servicePriceInput').value);
+        const currentIcon = uploadedIconData;
+
+        const origName = (s.label || '').trim();
+        const origSpec = (s.specialization || s.required_specialization || 'General Dentist').trim();
+        const origDesc = (s.description || '').trim();
+        const origDuration = parseInt(s.duration_minutes, 10) || 30;
+        const origPrice = parseFloat(s.price);
+        const origIcon = s.icon || null;
+
+        if (currentName !== origName) return true;
+        if (currentSpec !== origSpec) return true;
+        if (currentDesc !== origDesc) return true;
+        if (currentDuration !== origDuration) return true;
+        if (isNaN(currentPrice) !== isNaN(origPrice) || (!isNaN(currentPrice) && currentPrice !== origPrice)) return true;
+        if (currentIcon !== origIcon) return true;
+
+        return false;
+    }
+
     // ── OPEN "ARE YOU SURE?" CONFIRMATION MODAL FOR DISABLE/ENABLE ──
     function openStatusConfirmModal(id) {
         const cleanId = parseInt(id, 10);
@@ -635,7 +709,7 @@
         modal.classList.remove('hidden');
     }
 
-    // ── RENDER RESPONSIVE SERVICE CARDS WITH DESCRIPTIONS & RED DISABLE BUTTON ──
+    // ── RENDER RESPONSIVE SERVICE CARDS ──
     async function renderServices() {
         const grid = document.getElementById('serviceGrid');
         grid.innerHTML = `<div class="col-span-full text-center py-12 text-[#2A1001]/60 font-semibold"><i class="fa-solid fa-spinner fa-spin mr-2"></i>Loading services catalog...</div>`;
@@ -704,19 +778,18 @@
                     <h3 class="font-extrabold text-[#2A1001] text-sm sm:text-base line-clamp-1 w-full">${escapeHtml(s.label)}</h3>
                 </div>
 
-                <!-- Description Block (Responsive Multi-line) -->
+                <!-- Description Block -->
                 <p class="text-xs text-gray-600 leading-relaxed line-clamp-2 text-center my-1.5 px-1 font-normal" title="${escapeHtml(descriptionText)}">
                     ${escapeHtml(descriptionText)}
                 </p>
 
-                <!-- Bottom Bar: Price & RED Disable / GREEN Enable Button -->
+                <!-- Bottom Bar: Price & Toggle Status Button -->
                 <div class="w-full pt-3 border-t border-[#2A1001]/10 flex items-center justify-between mt-2">
                     <div>
                         <span class="text-[10px] font-bold text-gray-400 block uppercase tracking-wider">Price</span>
                         <span class="font-black text-sm sm:text-base text-[#667733]">₱${cleanPrice}</span>
                     </div>
 
-                    <!-- Card Button: RED for Disable, GREEN for Enable -->
                     <button class="toggleStatusOption px-3.5 py-1.5 rounded-full text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-95 ${
                         isAvailable 
                             ? 'bg-red-100 hover:bg-red-200 text-red-700 border border-red-300' 
@@ -875,9 +948,16 @@
         reader.readAsDataURL(file);
     });
 
-    // ── SAVE SERVICE WITH INLINE VALIDATION ──
+    // ── SAVE SERVICE WITH UNIFIED INLINE VALIDATION & NO-CHANGE PREVENTION ──
     document.getElementById('saveServiceBtn').addEventListener('click', async function () {
         clearInlineErrors();
+
+        // 1. Check if anything actually changed when editing an existing service
+        if (!isCreatingNew && !hasServiceChanges()) {
+            setFormLocked(true);
+            showAlert('No Changes', 'No changes were made to this service.', 'info');
+            return;
+        }
 
         const labelValue = document.getElementById('serviceNameInput').value.trim();
         const specValue = document.getElementById('serviceSpecializationInput').value.trim();
