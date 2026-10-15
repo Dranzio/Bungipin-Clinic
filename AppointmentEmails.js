@@ -15,7 +15,9 @@ const KINDS = {
     approved: T.appointmentApproved,
     cancelled: T.appointmentCancelled,
     rescheduled: T.appointmentRescheduled,
-    rescheduleApproved: T.rescheduleRequestApproved
+    rescheduleApproved: T.rescheduleRequestApproved,
+    rescheduleRequested: T.rescheduleRequested,
+    rescheduleDeclined: T.rescheduleDeclined
 };
 
 // Optional: set CUSTOMER_APPOINTMENTS_PATH (e.g. /Customer/appointments.html)
@@ -29,10 +31,11 @@ function viewUrl() {
 /**
  * @param {object} db            mysql2 pool
  * @param {number|string} appointmentId
- * @param {'booked'|'approved'|'cancelled'|'rescheduled'|'rescheduleApproved'} kind
+ * @param {'booked'|'approved'|'cancelled'|'rescheduled'|'rescheduleApproved'|'rescheduleRequested'|'rescheduleDeclined'} kind
  * @param {object} [extra]       overrides/extras merged into the template data:
  *   service        text to show instead of the appointment's single service (multi-service bookings)
  *   previousDate / previousTime   for the two reschedule emails
+ *   requestedDate / requestedTime   for rescheduleRequested / rescheduleDeclined
  *   reason         shown in cancelled/rescheduled emails
  *   cancelledBy    'customer' | 'clinic'
  *   declined       true when staff declined a still-pending request

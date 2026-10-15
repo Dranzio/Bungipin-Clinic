@@ -17,9 +17,9 @@ async function autoCancelExpiredAppointments(db, io = null) {
                 patient_note = CONCAT(COALESCE(patient_note, ''), ' [System: Auto-cancelled - scheduled date/time has passed]')
             WHERE appointment_status IN ('pending', 'approved')
               AND (
-                  appointment_date < CURDATE()
-                  OR (appointment_date = CURDATE() AND (end_time < CURTIME() OR time_slot < CURTIME()))
-              )
+                appointment_date < CURDATE()
+                    OR (appointment_date = CURDATE() AND (end_time < CURTIME() OR time_slot < CURTIME()))
+                )
               AND (queue_status IS NULL OR queue_status NOT IN ('completed', 'ongoing'))
         `);
 
@@ -181,6 +181,13 @@ function registerBookingRequestRoutes(app, db, io) {
                 return res.status(409).json({ message: 'This booking is still awaiting online payment.' });
             }
 
+            if (appointment_status === 'cancelled' && !['pending', 'approved'].includes(apptRows[0].appointment_status)) {
+                await connection.rollback();
+                return res.status(409).json({ message: 'Only active appointments can be cancelled' });
+            }
+
+            let refundRequested = false;
+
             if (appointment_status === 'approved') {
                 const assignedEmployeeId = req.user.role === 'employee' ? req.user.user_id : null;
                 await connection.query(
@@ -199,8 +206,15 @@ function registerBookingRequestRoutes(app, db, io) {
                     [appointmentId]
                 );
 
+                const [payRows] = await connection.query('SELECT status FROM payments WHERE appointment_id = ?', [appointmentId]);
+                refundRequested = payRows[0]?.status === 'paid';
+
                 await connection.query(
-                    `UPDATE payments SET status = CASE WHEN status = 'paid' THEN 'refund_pending' ELSE status END
+                    `UPDATE payments SET status = CASE
+                            WHEN status = 'paid' THEN 'refund_pending'
+                            WHEN status = 'pending' THEN 'cancelled'
+                            ELSE status
+                        END
                      WHERE appointment_id = ?`,
                     [appointmentId]
                 );
@@ -226,8 +240,8 @@ function registerBookingRequestRoutes(app, db, io) {
                 action: appointment_status === 'approved' ? 'APPROVE_APPOINTMENT' : 'CANCEL_APPOINTMENT',
                 target_table: 'appointments',
                 target_id: appointmentId,
-                notes: appointment_status === 'approved' 
-                    ? 'Booking request approved.' 
+                notes: appointment_status === 'approved'
+                    ? 'Booking request approved.'
                     : `Booking request cancelled by clinic.${reasonSnippet}`,
                 ip_address: getIp(req)
             });
@@ -244,7 +258,12 @@ function registerBookingRequestRoutes(app, db, io) {
                 io.emit('queue_updated');
             }
 
-            res.json({ message: `Appointment ${appointment_status} successfully` });
+            res.json({
+                message: `Appointment ${appointment_status} successfully.` + (refundRequested
+                    ? ' The patient was emailed, and their payment is now marked Refund Pending. Process it from the Payments page.'
+                    : (appointment_status === 'cancelled' ? ' The patient was emailed.' : '')),
+                refund_status: refundRequested ? 'refund_pending' : 'none'
+            });
 
         } catch (err) {
             await connection.rollback();
@@ -383,6 +402,14 @@ function registerBookingRequestRoutes(app, db, io) {
                 await sendAppointmentEmail(db, appointmentId, 'rescheduleApproved', {
                     previousDate: appt.appointment_date,
                     previousTime: appt.time_slot
+                });
+            }
+
+            if (action === 'decline') {
+                await sendAppointmentEmail(db, appointmentId, 'rescheduleDeclined', {
+                    requestedDate: appt.requested_date,
+                    requestedTime: appt.requested_time,
+                    reason: decline_reason
                 });
             }
 

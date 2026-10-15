@@ -55,23 +55,8 @@ function clinicContact() {
     return process.env.CLINIC_CONTACT_TEXT || 'the clinic';
 }
 
-// Turns a value into a real Date without shifting it.
-// db.js uses dateStrings: true and a +08:00 session, so MySQL timestamps arrive
-// as plain "YYYY-MM-DD HH:MM:SS" strings that are ALREADY Philippine time.
-// new Date() on such a string assumes the server's zone (UTC on Vercel), which
-// makes emails show times 8 hours late. Pin those strings to +08:00 instead.
-// Real Date objects and strings that already carry a zone pass through as-is.
-function parseDbDate(value) {
-    if (value instanceof Date) return value;
-    const s = String(value).trim();
-    if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(\.\d+)?$/.test(s)) {
-        return new Date(s.replace(' ', 'T') + '+08:00');
-    }
-    return new Date(s);
-}
-
-// Accepts 'YYYY-MM-DD', a JS Date, or an already-formatted string.
-// Returns e.g. "Saturday, October 10, 2026".
+// Accepts 'YYYY-MM-DD', a JS Date (what mysql2 returns for DATE columns), or an
+// already-formatted string. Returns e.g. "Saturday, October 10, 2026".
 function formatDate(value) {
     if (!value) return '';
     const opts = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
@@ -79,7 +64,7 @@ function formatDate(value) {
         const [y, m, d] = value.slice(0, 10).split('-').map(Number);
         return new Date(Date.UTC(y, m - 1, d)).toLocaleDateString('en-PH', { ...opts, timeZone: 'UTC' });
     }
-    const date = parseDbDate(value);
+    const date = new Date(value);
     if (isNaN(date)) return String(value);
     return date.toLocaleDateString('en-PH', { ...opts, timeZone: 'Asia/Manila' });
 }
@@ -95,7 +80,7 @@ function formatTime(value) {
     return `${h}:${match[2]} ${suffix}`;
 }
 
-// 1500 -> "PHP 1,500.00". mysql2 returns DECIMAL columns as strings, so coerce first.
+// 1500 -> "₱1,500.00". mysql2 returns DECIMAL columns as strings, so coerce first.
 function formatMoney(value) {
     const n = Number(value);
     if (!isFinite(n)) return '';
@@ -105,7 +90,7 @@ function formatMoney(value) {
 // Date + time in Manila time, e.g. "October 5, 2026, 2:30 PM".
 function formatStamp(value) {
     if (!value) return '';
-    const d = parseDbDate(value);
+    const d = new Date(value);
     if (isNaN(d)) return String(value);
     return d.toLocaleString('en-PH', {
         year: 'numeric', month: 'long', day: 'numeric',
@@ -395,6 +380,55 @@ function rescheduleRequestApproved(a) {
     });
 }
 
+// 5b. The customer asked to reschedule: confirmation that the request was received.
+//     Extra fields: requestedDate, requestedTime, reason (the customer's own reason)
+function rescheduleRequested(a) {
+    return compose({
+        subject: `We received your reschedule request${a.reference ? ` (#${a.reference})` : ''}`,
+        preheader: `Requested: ${when(a.requestedDate, a.requestedTime)}`,
+        badge: 'pending',
+        heading: 'Reschedule request received',
+        greeting: `Hi ${a.patientName || 'there'},`,
+        paragraphs: ['We received your request to move your appointment. The clinic will review it and email you once it has been approved or declined.'],
+        rows: [
+            ['Reference no.', a.reference],
+            ['Service', a.service],
+            ['Dentist', a.dentist],
+            ['Current schedule', when(a.date, a.time)],
+            ['Requested schedule', when(a.requestedDate, a.requestedTime)],
+            ['Your reason', a.reason]
+        ],
+        callout: { text: 'Your appointment stays on its current schedule until the clinic approves the change.', tone: 'warn' },
+        button: viewButton(a)
+    });
+}
+
+// 5c. The clinic declined the customer's reschedule request (the appointment keeps its current schedule).
+//     Extra fields: requestedDate, requestedTime, reason (the clinic's reason)
+function rescheduleDeclined(a) {
+    return compose({
+        subject: `Your reschedule request was declined${a.reference ? ` (#${a.reference})` : ''}`,
+        preheader: `Your appointment stays on ${when(a.date, a.time)}.`,
+        badge: 'declined',
+        heading: 'Reschedule request declined',
+        greeting: `Hi ${a.patientName || 'there'},`,
+        paragraphs: [
+            'Sorry, the clinic could not accommodate your reschedule request. Your appointment has not changed and remains on its current schedule.',
+            'If you still need to move it, you can submit another request from your account.'
+        ],
+        rows: [
+            ['Reference no.', a.reference],
+            ['Service', a.service],
+            ['Dentist', a.dentist],
+            ['Requested schedule', when(a.requestedDate, a.requestedTime)],
+            ['Current schedule', when(a.date, a.time)],
+            ['Reason', a.reason]
+        ],
+        callout: { text: `Questions? Please contact ${clinicContact()}.` },
+        button: viewButton(a)
+    });
+}
+
 // ---------- customer: payments ----------
 // payment object shape used by both of these:
 //   { patientName, reference, service, dentist, date, time, amount, method,
@@ -550,6 +584,8 @@ module.exports = {
     appointmentCancelled,
     appointmentRescheduled,
     rescheduleRequestApproved,
+    rescheduleRequested,
+    rescheduleDeclined,
     paymentReceived,
     paymentRefunded,
     staffAccountCreated,

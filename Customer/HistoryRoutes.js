@@ -109,12 +109,12 @@ function registerHistoryRoutes(app, db, io) {
 
             await connection.query(
                 `UPDATE appointments
-                SET appointment_status = 'cancelled',
-                    reschedule_status = 'none',
-                    requested_date = NULL,
-                    requested_time = NULL,
-                    reschedule_reason = NULL
-                WHERE appointment_id = ?`,
+                 SET appointment_status = 'cancelled',
+                     reschedule_status = 'none',
+                     requested_date = NULL,
+                     requested_time = NULL,
+                     reschedule_reason = NULL
+                 WHERE appointment_id = ?`,
                 [appointmentId]
             );
 
@@ -125,12 +125,12 @@ function registerHistoryRoutes(app, db, io) {
 
             await connection.query(
                 `UPDATE payments
-                SET status = CASE
-                        WHEN status = 'paid' THEN 'refund_pending'
-                        WHEN status = 'pending' THEN 'cancelled'
-                        ELSE status
-                    END
-                WHERE appointment_id = ?`,
+                 SET status = CASE
+                                  WHEN status = 'paid' THEN 'refund_pending'
+                                  WHEN status = 'pending' THEN 'cancelled'
+                                  ELSE status
+                     END
+                 WHERE appointment_id = ?`,
                 [appointmentId]
             );
 
@@ -325,6 +325,12 @@ function registerHistoryRoutes(app, db, io) {
                 io.emit('appointment-updated', { appointment_id: Number(appointmentId) });
             }
 
+            await sendAppointmentEmail(db, appointmentId, 'rescheduleRequested', {
+                requestedDate: requested_date,
+                requestedTime: normalizedTime,
+                reason: reschedule_reason.trim()
+            });
+
             res.json({
                 message: 'Your reschedule request has been submitted. Our clinic team will review and approve your request shortly.',
                 appointment_id: Number(appointmentId)
@@ -421,10 +427,10 @@ function registerHistoryRoutes(app, db, io) {
             // handlePaid in PaymongoWebhook.js revives it (or flags a refund if the slot was taken).
             const [holdResult] = await db.query(`
                 UPDATE appointments a
-                JOIN payments p ON p.appointment_id = a.appointment_id
-                SET a.appointment_status = 'cancelled',
-                    a.hold_expires_at = NULL,
-                    a.patient_note = CONCAT(COALESCE(a.patient_note, ''), ' [System: Online payment not completed in time]')
+                    JOIN payments p ON p.appointment_id = a.appointment_id
+                    SET a.appointment_status = 'cancelled',
+                        a.hold_expires_at = NULL,
+                        a.patient_note = CONCAT(COALESCE(a.patient_note, ''), ' [System: Online payment not completed in time]')
                 WHERE a.appointment_status = 'pending'
                   AND p.method = 'online' AND p.status = 'pending'
                   AND a.hold_expires_at IS NOT NULL AND a.hold_expires_at < NOW()
